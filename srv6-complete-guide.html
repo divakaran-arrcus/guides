@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRv6 Complete Guide — For SR-MPLS Engineers</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090e1a;
+    --bg-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    --surface: #0f1629;
+    --surface2: #162040;
+    --surface3: #1c2a52;
+    --border: #1e2d55;
+    --border-light: #2a3d6b;
+    --text: #dce4f8;
+    --text-dim: #7e90b8;
+    --text-muted: #4d5f84;
+    --blue: #4f9fff;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fb923c;
+    --purple: #a78bfa;
+    --yellow: #fbbf24;
+    --pink: #f472b6;
+    --teal: #2dd4bf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grain);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== LAYOUT ===== */
+  .page { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 24px 0;
+  }
+
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-group { padding: 0 12px; margin-bottom: 16px; }
+
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: #fff; background: rgba(79,159,255,0.15); border-left: 2px solid var(--blue); }
+
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 32px 40px;
+    max-width: 920px;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px 16px; }
+  }
+
+  /* ===== SECTIONS ===== */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===== TYPOGRAPHY ===== */
+  .sec-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .sec-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .card h3 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--blue); }
+  .card h4 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: var(--purple); }
+  .card p { font-size: 14px; line-height: 1.75; margin-bottom: 8px; }
+  .card ul { padding-left: 18px; margin: 6px 0 10px; }
+  .card li { font-size: 14px; margin-bottom: 4px; line-height: 1.65; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(79,159,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  /* ===== INFO BOXES ===== */
+  .info { border-left: 3px solid var(--blue); background: rgba(79,159,255,0.06); padding: 12px 16px; border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 13.5px; }
+  .info.green { border-color: var(--green); background: rgba(52,211,153,0.06); }
+  .info.orange { border-color: var(--orange); background: rgba(251,146,60,0.06); }
+  .info.red { border-color: var(--red); background: rgba(248,113,113,0.06); }
+  .info.purple { border-color: var(--purple); background: rgba(167,139,250,0.06); }
+  .info.yellow { border-color: var(--yellow); background: rgba(251,191,36,0.06); }
+  .info strong { color: var(--text); }
+
+  /* ===== TABLES ===== */
+  .tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 12px 0; font-size: 13px; }
+  .tbl th { background: var(--surface2); padding: 9px 12px; text-align: left; font-weight: 600; color: var(--cyan); border-bottom: 2px solid var(--border); font-size: 12px; }
+  .tbl th:first-child { border-radius: 6px 0 0 0; } .tbl th:last-child { border-radius: 0 6px 0 0; }
+  .tbl td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .tbl tr:last-child td:first-child { border-radius: 0 0 0 6px; } .tbl tr:last-child td:last-child { border-radius: 0 0 6px 0; }
+
+  /* ===== PACKET DIAGRAMS ===== */
+  .pkt { display: flex; align-items: stretch; border-radius: 5px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; min-height: 40px; margin: 4px 0; }
+  .pkt-c { padding: 7px 10px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgba(0,0,0,0.3); min-width: 50px; }
+  .pkt-c:last-child { border-right: none; }
+  .pkt-c .l { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.6; margin-bottom: 2px; }
+  .pkt-c .v { font-size: 11.5px; font-weight: 600; }
+
+  .bg-ipv6 { background: rgba(37,99,235,0.3); color: #93c5fd; }
+  .bg-srh { background: rgba(124,58,237,0.25); color: #c4b5fd; }
+  .bg-seg { background: rgba(5,150,105,0.22); color: #6ee7b7; }
+  .bg-vpn { background: rgba(13,148,136,0.25); color: #5eead4; }
+  .bg-pay { background: rgba(107,114,128,0.18); color: #d1d5db; }
+  .bg-mpls { background: rgba(251,146,60,0.25); color: #fed7aa; }
+  .bg-tilfa { background: rgba(251,146,60,0.2); color: #fed7aa; }
+  .bg-rem { background: repeating-linear-gradient(45deg, rgba(248,113,113,0.06), rgba(248,113,113,0.06) 4px, rgba(248,113,113,0.01) 4px, rgba(248,113,113,0.01) 8px); color: #fca5a5; border: 1px dashed rgba(248,113,113,0.3); }
+
+  .ann { font-size: 11.5px; color: var(--text-dim); margin: 4px 0 4px 4px; display: flex; gap: 5px; line-height: 1.5; }
+  .ann::before { content: '→'; color: var(--blue); font-weight: bold; flex-shrink: 0; }
+
+  .action { text-align: center; padding: 4px 0; color: var(--green); font-size: 12px; font-weight: 600; }
+
+  /* ===== SID FORMAT ===== */
+  .sid-fmt { display: flex; align-items: stretch; margin: 10px 0; border-radius: 6px; overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+  .sid-p { padding: 12px 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid rgba(0,0,0,0.3); }
+  .sid-p:last-child { border-right: none; }
+  .sid-p .n { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.65; margin-bottom: 3px; }
+  .sid-p .val { font-size: 12px; font-weight: 700; }
+  .sid-p .bits { font-size: 8.5px; opacity: 0.45; margin-top: 2px; }
+
+  /* ===== COMPARISON GRID ===== */
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  @media (max-width: 700px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp-c { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .cmp-c h4 { font-size: 14px; margin-bottom: 8px; }
+
+  /* ===== STEP BLOCKS ===== */
+  .stp { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 12px 0; }
+  .stp-h { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .stp-n { background: var(--blue); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .stp-n.grn { background: var(--green); } .stp-n.org { background: var(--orange); } .stp-n.red { background: var(--red); } .stp-n.pur { background: var(--purple); }
+  .stp-t { font-size: 14px; font-weight: 600; }
+  .stp p { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* ===== FLAVOR CARDS ===== */
+  .flv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  @media (max-width: 700px) { .flv-grid { grid-template-columns: 1fr; } }
+  .flv { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .flv-name { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+  .flv-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+
+  /* ===== TAG ===== */
+  .tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .t-r { background: rgba(248,113,113,0.18); color: var(--red); }
+  .t-g { background: rgba(52,211,153,0.18); color: var(--green); }
+  .t-o { background: rgba(251,146,60,0.18); color: var(--orange); }
+  .t-b { background: rgba(79,159,255,0.18); color: var(--blue); }
+  .t-p { background: rgba(167,139,250,0.18); color: var(--purple); }
+
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .marker-ok { background: rgba(52,211,153,0.08); border: 1px dashed var(--green); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--green); text-align: center; font-weight: 600; }
+  .marker-bad { background: rgba(248,113,113,0.08); border: 1px dashed var(--red); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--red); text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <h1>SRv6 Guide</h1>
+      <p>For SR-MPLS Engineers</p>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Foundations</div>
+      <button class="nav-item active" onclick="go('overview')">Overview: SRv6 vs SR-MPLS</button>
+      <button class="nav-item" onclick="go('sid-structure')">SID Structure & Locators</button>
+      <button class="nav-item" onclick="go('srh')">Segment Routing Header</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Micro-SIDs</div>
+      <button class="nav-item" onclick="go('usid')">What Are Micro-SIDs?</button>
+      <button class="nav-item" onclick="go('usid-processing')">uSID Processing</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">SID Behaviors</div>
+      <button class="nav-item" onclick="go('un')">uN (Node SID)</button>
+      <button class="nav-item" onclick="go('ua')">uA (Adjacency SID)</button>
+      <button class="nav-item" onclick="go('endpoints')">End.DT4, End.DT6, End.X</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">SID Flavors</div>
+      <button class="nav-item" onclick="go('psp')">PSP — Penultimate Segment Pop</button>
+      <button class="nav-item" onclick="go('usp-usd')">USP & USD</button>
+      <button class="nav-item" onclick="go('psp-vs-php')">PSP vs PHP (MPLS)</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Design</div>
+      <button class="nav-item" onclick="go('addressing')">Addressing & Locator Planning</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Operations</div>
+      <button class="nav-item" onclick="go('tilfa')">TI-LFA in SRv6</button>
+      <button class="nav-item" onclick="go('ecmp')">ECMP: uN vs uA</button>
+      <button class="nav-item" onclick="go('encap')">H.Encaps vs H.Insert</button>
+      <button class="nav-item" onclick="go('flexalgo')">Flex-Algo in SRv6</button>
+      <button class="nav-item" onclick="go('oam')">SRv6 OAM</button>
+      <button class="nav-item" onclick="go('troubleshoot')">Troubleshooting & Pcap Analysis</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">SR-Policy & VPN</div>
+      <button class="nav-item" onclick="go('srpolicy')">SR-Policy Structure</button>
+      <button class="nav-item" onclick="go('l3vpn')">L3VPN & L2VPN Overview</button>
+      <button class="nav-item" onclick="go('bgp-srv6')">BGP Signaling for SRv6</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">End-to-End</div>
+      <button class="nav-item" onclick="go('pkt-walk')">Full L3VPN Packet Walk</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <button class="nav-item" onclick="go('gotchas')">Common Gotchas</button>
+      <button class="nav-item" onclick="go('cheat')">Cheat Sheet</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <div id="overview" class="section active">
+      <div class="sec-title">SRv6: Segment Routing over IPv6</div>
+      <p class="sec-sub">Everything you need to bridge from SR-MPLS to SRv6</p>
+
+      <div class="card">
+        <h2>The Core Idea</h2>
+        <p>SRv6 replaces the MPLS data plane with <strong>native IPv6</strong>. Instead of pushing MPLS labels onto packets, you encode routing instructions as <strong>IPv6 addresses</strong> in an extension header. The network forwards using standard IPv6 longest-prefix-match — no MPLS infrastructure needed.</p>
+
+        <div class="info">
+          <strong>One-line summary:</strong> SRv6 uses IPv6 addresses as segment identifiers. The forwarding plane is IPv6. The instruction set is encoded in the destination address and a Segment Routing Header (SRH).
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SR-MPLS vs SRv6 — Architectural Comparison</h2>
+        <table class="tbl">
+          <tr><th>Aspect</th><th style="color:var(--orange);">SR-MPLS</th><th style="color:var(--cyan);">SRv6</th></tr>
+          <tr><td>Data plane</td><td>MPLS label switching</td><td>IPv6 forwarding</td></tr>
+          <tr><td>Segment identifier</td><td>20-bit MPLS label (4-byte header)</td><td>128-bit IPv6 address</td></tr>
+          <tr><td>Segment list</td><td>Stack of MPLS labels</td><td>SRH extension header with list of IPv6 addresses</td></tr>
+          <tr><td>Active segment</td><td>Top label in the stack</td><td>IPv6 Destination Address field</td></tr>
+          <tr><td>Advance to next</td><td>Pop top label (or swap)</td><td>Decrement Segments Left, copy next SID to DA</td></tr>
+          <tr><td>Transit forwarding</td><td>MPLS label swap/forward</td><td>Standard IPv6 longest-prefix-match</td></tr>
+          <tr><td>Overhead per segment</td><td>4 bytes</td><td>16 bytes (regular) / 2 bytes (micro-SID)</td></tr>
+          <tr><td>Node SID scope</td><td>Global within SR domain</td><td>Global (IPv6 address routable via locator)</td></tr>
+          <tr><td>Adjacency SID scope</td><td><strong>Local</strong> (only meaningful on allocating node)</td><td><strong>Global</strong> (routable via locator prefix)</td></tr>
+          <tr><td>Network functions</td><td>Limited to label operations</td><td>Rich — encoded in SID "function" field (VPN decap, cross-connect, etc.)</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>The Biggest Paradigm Shift: Adjacency SIDs Are Routable</h2>
+        <p>In SR-MPLS, an Adj-SID is a local label — to use ZR-11's Adj-SID toward MP-11, you <em>must</em> first push ZR-11's Node-SID to get there. Two labels minimum.</p>
+        <p>In SRv6, a uA (adjacency SID) is an IPv6 address within ZR-11's <strong>locator prefix</strong>. Any router can forward toward it using standard IPv6 routing. <strong>No separate Node SID is needed.</strong></p>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">SR-MPLS: 2 labels needed</h4>
+            <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Label 1</div><div class="v">Node-SID: ZR-11 (gets pkt there)</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-srh" style="flex:1;"><div class="l">Label 2</div><div class="v">Adj-SID: ZR-11→MP-11 (local only)</div></div></div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">SRv6: 1 SID does both</h4>
+            <div class="pkt"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">DA</div><div class="v">ZR-11:uA (locator routes it + function defines action)</div></div></div>
+            <div class="ann">Locator prefix gets it to ZR-11. Function tells ZR-11 what to do.</div>
+          </div>
+        </div>
+
+        <div class="info green">
+          <strong>Think of it this way:</strong> In SR-MPLS, a Node-SID is like a ZIP code (gets you to the city) and an Adj-SID is like an apartment number (only meaningful in the building). You need both. In SRv6, the uA is a full street address — the postal system (IPv6 routing) delivers directly.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SID STRUCTURE ==================== -->
+    <div id="sid-structure" class="section">
+      <div class="sec-title">SID Structure & Locators</div>
+      <p class="sec-sub">How an SRv6 SID encodes both routing and behavior in a single IPv6 address</p>
+
+      <div class="card">
+        <h2>Anatomy of an SRv6 SID</h2>
+        <p>Every SRv6 SID is a 128-bit IPv6 address. At the highest level it has two parts — Locator and Function. But the Locator itself is composed of a <strong>Block</strong> (shared across the domain) and a <strong>Node</strong> (unique per router):</p>
+
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;">
+            <div class="n">Locator Block</div>
+            <div class="val">fcbb:bb01:</div>
+            <div class="bits">32 bits — shared by all nodes in the SRv6 domain</div>
+          </div>
+          <div class="sid-p bg-srh" style="flex:1;">
+            <div class="n">Locator Node</div>
+            <div class="val">0011</div>
+            <div class="bits">16 bits — unique per router</div>
+          </div>
+          <div class="sid-p bg-seg" style="flex:1;">
+            <div class="n">Function</div>
+            <div class="val">0040</div>
+            <div class="bits">16 bits — behavior on the node</div>
+          </div>
+          <div class="sid-p bg-pay" style="flex:2;">
+            <div class="n">Arguments</div>
+            <div class="val">0000:0000:0000</div>
+            <div class="bits">64 bits — optional (often zero)</div>
+          </div>
+        </div>
+
+        <table class="tbl">
+          <tr><th>Part</th><th>Purpose</th><th>SR-MPLS Equivalent</th></tr>
+          <tr><td><strong>Locator Block</strong></td><td>Domain-wide prefix shared by all SRv6 nodes. Analogous to the SRGB in SR-MPLS.</td><td>SRGB (SR Global Block)</td></tr>
+          <tr><td><strong>Locator Node</strong></td><td>Identifies the specific node within the block. Block + Node together form the routable locator prefix (e.g., /48).</td><td>Node-SID index within SRGB</td></tr>
+          <tr><td><strong>Function</strong></td><td>Tells the node what behavior to execute (End, End.X, End.DT4, etc.). Only meaningful to the owning node.</td><td>The label action (swap, pop, VPN lookup)</td></tr>
+          <tr><td><strong>Arguments</strong></td><td>Optional parameters for the function (e.g., flow-based info). Often zero.</td><td>No direct equivalent</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>The Block+Node split matters for micro-SIDs:</strong> In uSID deployments, the Block is typically 32 bits and each uSID (Node + Function combined) is 16 bits. The BGP SRv6 SID Structure Sub-TLV explicitly communicates these lengths (LBL, LNL, FL, AL) so that remote PEs can correctly pack uSIDs into containers. See the BGP Signaling section for details.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Locator Prefix</h2>
+        <p>Each SRv6 node advertises one or more <strong>locator prefixes</strong> in IS-IS or OSPF. The locator is a normal IPv6 routable prefix that all routers install in their FIB. Every SID allocated by that node falls within its locator prefix.</p>
+
+        <div class="info">
+          <strong>Example:</strong> Node ZR-11 advertises locator <code>fcbb:bb01:0011::/48</code>. All of ZR-11's SIDs (uN, uA, End.DT4, etc.) are IPv6 addresses within this /48. Transit routers just do longest-prefix-match toward <code>fcbb:bb01:0011::/48</code> — they don't need to know about individual SIDs.
+        </div>
+
+        <h3>Anycast Locators (A-flag)</h3>
+        <p>A locator can be flagged as <strong>Anycast</strong> (A-flag) in IS-IS. Multiple nodes advertise the same locator prefix, and traffic is routed to the nearest one by IGP metric — exactly like an Anycast loopback in traditional IP or an Anycast prefix-SID in SR-MPLS. This is used for redundant service endpoints (e.g., dual PE nodes for VPN).</p>
+      </div>
+    </div>
+
+    <!-- ==================== SRH ==================== -->
+    <div id="srh" class="section">
+      <div class="sec-title">Segment Routing Header (SRH)</div>
+      <p class="sec-sub">The SRv6 equivalent of the MPLS label stack — RFC 8754</p>
+
+      <div class="card">
+        <h2>SRH = The Label Stack of SRv6</h2>
+        <p>The SRH is a <strong>Type 4 IPv6 Routing Extension Header</strong>. It carries an ordered list of SIDs (IPv6 addresses) that define the path or service chain. The key field is <code>Segments Left</code> — a pointer that tells each node which segment is active.</p>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">SR-MPLS Label Stack</h4>
+            <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Labels stacked. Top = active. Pop to advance.</p>
+            <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Top (Active)</div><div class="v">16007 — Node-SID</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-srh" style="flex:1;"><div class="l">2nd</div><div class="v">16011 — Node-SID</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">Bottom</div><div class="v">24001 — VPN label</div></div></div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">SRv6: IPv6 DA + SRH</h4>
+            <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">SIDs in SRH. DA = active. Decrement SL to advance.</p>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">IPv6 DA (Active)</div><div class="v">fcbb:bb01:0007::</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">SRH</div><div class="v">SL[1]: 0007:: | SL[0]: END.dt4</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SRH Wire Format</h2>
+        <div class="pkt">
+          <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Next Header</div><div class="v">e.g., 41 (IPv4)</div></div>
+          <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Hdr Ext Len</div><div class="v">(8-octet units)</div></div>
+          <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Routing Type</div><div class="v">4 (SRH)</div></div>
+          <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Segments Left</div><div class="v">THE pointer</div></div>
+        </div>
+        <div class="pkt" style="margin-top:2px;">
+          <div class="pkt-c bg-tilfa" style="flex:1;"><div class="l">Last Entry</div><div class="v">Index of last SID</div></div>
+          <div class="pkt-c bg-tilfa" style="flex:1;"><div class="l">Flags</div><div class="v">8 bits</div></div>
+          <div class="pkt-c bg-tilfa" style="flex:2;"><div class="l">Tag</div><div class="v">16 bits</div></div>
+        </div>
+        <div class="pkt" style="margin-top:2px;"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">Segment List [0]</div><div class="v">128-bit SID — LAST segment (final destination)</div></div></div>
+        <div class="pkt" style="margin-top:2px;"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">Segment List [1]</div><div class="v">128-bit SID — second-to-last</div></div></div>
+        <div class="pkt" style="margin-top:2px;"><div class="pkt-c bg-seg" style="flex:1;"><div class="l">Segment List [n]</div><div class="v">128-bit SID — FIRST segment (highest index = first processed)</div></div></div>
+
+        <div class="info orange">
+          <strong>Reverse order!</strong> SL[0] is the <em>last</em> segment. SL[n] is the <em>first</em>. <code>Segments Left</code> starts at <code>n</code> and decrements to 0. This is opposite from the intuitive MPLS mental model where the "first" label is on top.
+        </div>
+
+        <div class="info purple">
+          <strong>H.Encaps vs H.Encaps.Red — watch the Segments Left value:</strong> With standard <strong>H.Encaps</strong>, the first SID appears both in the DA and in the segment list (SL[n]), so SL = n. With <strong>H.Encaps.Red</strong> (Reduced Encapsulation — the most common variant), the first SID is ONLY in the DA and is NOT duplicated in the segment list, so SL = n-1 and Last Entry = n-1. This off-by-one is the most common source of confusion when reading SRv6 packet captures.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>When Is the SRH Present?</h2>
+        <p>The SRH is <strong>not always required</strong>. If there is only one SID (e.g., a simple L3VPN with no SR-Policy), the ingress PE can set the IPv6 DA to that single SID and <strong>omit the SRH entirely</strong>. The egress PE matches the DA to its local SID table and executes the behavior. No SRH processing needed.</p>
+
+        <div class="info green">
+          <strong>Rule of thumb:</strong> SRH is only needed when there are <strong>2 or more SIDs</strong> in the segment list. For single-SID encapsulation (common in basic L3VPN without TE), the packet is just an outer IPv6 header (DA = VPN SID) + inner customer packet. This is the lowest-overhead SRv6 mode — only 40 bytes of outer IPv6 header.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How the SRH Pointer Works</h2>
+        <table class="tbl">
+          <tr><th>Concept</th><th style="color:var(--orange);">SR-MPLS</th><th style="color:var(--cyan);">SRv6 SRH</th></tr>
+          <tr><td>Which segment is active?</td><td>Top label in stack</td><td>IPv6 DA field (copied from SL[Segments Left])</td></tr>
+          <tr><td>How to advance?</td><td>Pop the top label</td><td>Decrement SL, copy SL[new value] → DA</td></tr>
+          <tr><td>When done?</td><td>Bottom-of-stack bit (S=1)</td><td>Segments Left = 0</td></tr>
+          <tr><td>Overhead per segment</td><td>4 bytes</td><td>16 bytes (hence micro-SIDs!)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== ADDRESSING & DESIGN ==================== -->
+    <div id="addressing" class="section">
+      <div class="sec-title">Addressing & Locator Planning</div>
+      <p class="sec-sub">How to design your SRv6 address space — locator allocation, uSID block planning, and migration from SR-MPLS</p>
+
+      <div class="card">
+        <h2>SRv6 Addressing Architecture</h2>
+        <p>In SR-MPLS, your addressing plan involves SRGB ranges and per-node Prefix-SID indices. In SRv6, the address plan is about <strong>IPv6 prefix allocation</strong> — locator blocks, per-node prefixes, and function numbering. Getting this right is critical because unlike MPLS labels (which are local and re-assignable), SRv6 SIDs are globally routable IPv6 addresses that appear in IGP, BGP, and packet headers.</p>
+      </div>
+
+      <div class="card">
+        <h2>Address Hierarchy</h2>
+        <p>A well-designed SRv6 address plan has four layers:</p>
+
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;">
+            <div class="n">uSID Block</div>
+            <div class="val">fcbb:bb01::/32</div>
+            <div class="bits">Domain-wide — one per SRv6 domain</div>
+          </div>
+          <div class="sid-p bg-srh" style="flex:1.5;">
+            <div class="n">Node Locator</div>
+            <div class="val">:0001::/48</div>
+            <div class="bits">Per node — unique within block</div>
+          </div>
+          <div class="sid-p bg-seg" style="flex:1;">
+            <div class="n">Function</div>
+            <div class="val">:0040</div>
+            <div class="bits">Per SID on the node</div>
+          </div>
+          <div class="sid-p bg-pay" style="flex:1.5;">
+            <div class="n">Arguments</div>
+            <div class="val">::</div>
+            <div class="bits">Optional / zero</div>
+          </div>
+        </div>
+
+        <table class="tbl">
+          <tr><th>Layer</th><th>Scope</th><th>Bits</th><th>Capacity</th><th>SR-MPLS Equivalent</th></tr>
+          <tr><td><strong>uSID Block</strong></td><td>Entire SRv6 domain</td><td>32 bits (typical)</td><td>1 block per domain (or per AS in multi-domain)</td><td>SRGB range</td></tr>
+          <tr><td><strong>Node ID</strong></td><td>Per router</td><td>16 bits (typical)</td><td>65,536 nodes per block</td><td>Prefix-SID index</td></tr>
+          <tr><td><strong>Function</strong></td><td>Per SID on a node</td><td>16 bits (typical)</td><td>65,536 functions per node</td><td>Label action (implicit)</td></tr>
+          <tr><td><strong>Arguments</strong></td><td>Per invocation</td><td>64 bits (remaining)</td><td>Context-dependent</td><td>No equivalent</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>uSID Block Allocation</h2>
+        <p>The uSID block is the top-level prefix shared by all nodes in the SRv6 domain. It determines how many nodes you can address and how uSID containers are packed.</p>
+
+        <h3>Common Block Sizes</h3>
+        <table class="tbl">
+          <tr><th>Block Size</th><th>uSID Size</th><th>uSIDs per Container</th><th>Max Nodes</th><th>When to Use</th></tr>
+          <tr><td><strong>/32 block + 16-bit uSID</strong></td><td>16 bits</td><td>6</td><td>65,536</td><td>Most common. Suits networks up to ~64K nodes. Maximum SRH compression.</td></tr>
+          <tr><td>/32 block + 32-bit uSID</td><td>32 bits</td><td>3</td><td>~4 billion</td><td>Massive networks or rich function space. Less compression.</td></tr>
+          <tr><td>/48 block + 16-bit uSID</td><td>16 bits</td><td>5</td><td>65,536</td><td>Smaller block, fewer uSIDs per container. Used when /32 isn't available.</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>Recommendation:</strong> For most SP networks, <strong>/32 block + 16-bit uSID</strong> is the right choice. It gives you 6 uSIDs per container (enough for most SR-Policies), 64K node capacity, and maximum SRH compression. This is what Cisco, Arrcus, and most vendors default to.
+        </div>
+
+        <h3>Which IPv6 Range to Use?</h3>
+        <table class="tbl">
+          <tr><th>Range</th><th>Status</th><th>Notes</th></tr>
+          <tr><td><code>fc00::/7</code> (ULA)</td><td>Common in practice</td><td>Unique Local Addresses. Not globally routable — safe from external leaks. Most SRv6 deployments use this (e.g., <code>fcbb:bb01::/32</code>).</td></tr>
+          <tr><td><code>5f00::/16</code></td><td>IANA-allocated for SRv6 SIDs</td><td>Dedicated SRv6 SID block (RFC 9602). Future-proof, but newer and less commonly deployed.</td></tr>
+          <tr><td>Provider GUA</td><td>Possible but risky</td><td>Using globally routable addresses for SRv6 SIDs. Works but risks external exposure. Requires careful ACL filtering at borders.</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>SR-MPLS comparison:</strong> In SR-MPLS, you pick an SRGB range (e.g., 16000-23999) — a local decision with no external visibility. In SRv6, the block prefix is an IPv6 prefix that appears in IGP and potentially in BGP. Choosing a non-routable range (ULA or 5f00::/16) is analogous to using private label space — it keeps SRv6 SIDs internal.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Node Locator Allocation</h2>
+        <p>Each node gets a locator prefix within the block. With a /32 block and 16-bit node IDs, each node gets a /48 locator.</p>
+
+        <h3>Structured Node ID Scheme</h3>
+        <p>Assign node IDs systematically — don't just use sequential numbers. A structured scheme makes operations and troubleshooting easier:</p>
+
+        <table class="tbl">
+          <tr><th>Node ID Range</th><th>Role</th><th>Example</th></tr>
+          <tr><td><code>0001 – 00FF</code></td><td>PE routers (algo 0)</td><td>PE-1 = <code>fcbb:bb01:0001::/48</code></td></tr>
+          <tr><td><code>0100 – 01FF</code></td><td>P routers (algo 0)</td><td>P-1 = <code>fcbb:bb01:0100::/48</code></td></tr>
+          <tr><td><code>0200 – 02FF</code></td><td>RR / controller nodes</td><td>RR-1 = <code>fcbb:bb01:0200::/48</code></td></tr>
+          <tr><td><code>1001 – 10FF</code></td><td>PE routers (algo 128 — low-latency)</td><td>PE-1 algo-128 = <code>fcbb:bb01:1001::/48</code></td></tr>
+          <tr><td><code>1100 – 11FF</code></td><td>P routers (algo 128)</td><td>P-1 algo-128 = <code>fcbb:bb01:1100::/48</code></td></tr>
+          <tr><td><code>2001 – 20FF</code></td><td>PE routers (algo 129 — avoid-SRLG)</td><td>PE-1 algo-129 = <code>fcbb:bb01:2001::/48</code></td></tr>
+        </table>
+
+        <div class="info purple">
+          <strong>Pattern:</strong> The high nibble encodes the algorithm (0 = default, 1 = algo-128, 2 = algo-129). The low byte encodes the node role and ID. This way, looking at any SID in a packet capture, you can immediately tell which algorithm and which node it belongs to. This is far more readable than sequential numbering.
+        </div>
+
+        <h3>Anycast Locator Allocation</h3>
+        <p>Reserve a separate range for Anycast locators. Anycast locators are shared by multiple nodes (e.g., redundant PE pair), so they need distinct IDs that don't overlap with unicast node IDs:</p>
+
+        <table class="tbl">
+          <tr><th>Range</th><th>Purpose</th><th>Example</th></tr>
+          <tr><td><code>0A01 – 0AFF</code></td><td>Anycast PE pairs (algo 0)</td><td>PE-1/PE-2 Anycast = <code>fcbb:bb01:0A01::/48</code></td></tr>
+          <tr><td><code>1A01 – 1AFF</code></td><td>Anycast PE pairs (algo 128)</td><td>PE-1/PE-2 Anycast algo-128 = <code>fcbb:bb01:1A01::/48</code></td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Function Numbering</h2>
+        <p>Within each node's /48 locator, the 16-bit function field identifies specific SIDs. A consistent function numbering scheme makes operations predictable:</p>
+
+        <table class="tbl">
+          <tr><th>Function Range</th><th>Behavior</th><th>Example SID</th></tr>
+          <tr><td><code>0001</code></td><td>uN (Node SID — auto-allocated)</td><td><code>fcbb:bb01:0001:0001::</code></td></tr>
+          <tr><td><code>0040 – 004F</code></td><td>End.DT4 (IPv4 VPN — one per VRF)</td><td><code>fcbb:bb01:0001:0040::</code> = VRF "CUST-A"</td></tr>
+          <tr><td><code>0060 – 006F</code></td><td>End.DT6 (IPv6 VPN — one per VRF)</td><td><code>fcbb:bb01:0001:0060::</code> = VRF "CUST-A" IPv6</td></tr>
+          <tr><td><code>0080 – 008F</code></td><td>End.DT46 (dual-stack VRF)</td><td><code>fcbb:bb01:0001:0080::</code></td></tr>
+          <tr><td><code>00A0 – 00AF</code></td><td>End.DX2 (L2VPN per-AC)</td><td><code>fcbb:bb01:0001:00A0::</code></td></tr>
+          <tr><td><code>00C0+</code></td><td>End.X / uA (Adjacency SIDs)</td><td><code>fcbb:bb01:0001:00C0::</code> = adj to P-1</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Note:</strong> Most implementations auto-allocate function IDs. The ranges above are a design guideline — you typically configure the range policy on the node and let the system assign specific values. The key is reserving non-overlapping ranges per behavior type so that function IDs are predictable across the network.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Multi-Domain / Inter-AS Addressing</h2>
+        <p>For networks with multiple IGP domains or ASes (like Inter-AS L3VPN), each domain can use:</p>
+
+        <table class="tbl">
+          <tr><th>Approach</th><th>Block Allocation</th><th>Pros</th><th>Cons</th></tr>
+          <tr><td><strong>Shared block</strong></td><td>All domains use <code>fcbb:bb01::/32</code> with non-overlapping node IDs</td><td>uSID container packing works across domains. Simpler.</td><td>Requires coordinated node ID allocation across domains.</td></tr>
+          <tr><td><strong>Per-domain block</strong></td><td>Domain A: <code>fcbb:bb01::/32</code>, Domain B: <code>fcbb:bb02::/32</code></td><td>Independent allocation. No coordination needed.</td><td>Cross-domain uSID packing doesn't work (different blocks). Requires full 128-bit SIDs at domain boundaries.</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Recommendation:</strong> Use a <strong>shared block</strong> if your domains are under common administration (same operator, different IGP areas). Use <strong>per-domain blocks</strong> for truly independent ASes (different operators). In the shared-block case, partition the node ID space by domain (e.g., domain A = 0001-0FFF, domain B = 3001-3FFF).
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Migration Addressing Checklist</h2>
+        <p>When migrating from SR-MPLS to SRv6, plan these addressing elements:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Choose the uSID block prefix and size</div></div>
+          <p>Recommend: <code>fcbb:bbXX::/32</code> with 16-bit uSIDs. XX = your unique identifier (to avoid conflicts in multi-operator environments).</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Design the node ID numbering scheme</div></div>
+          <p>Map your existing SR-MPLS Prefix-SID indices to SRv6 node IDs. Example: if PE-1 has Prefix-SID index 1, assign node ID 0001. Preserve the mapping for operational familiarity.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Allocate per-algorithm locator ranges</div></div>
+          <p>If using Flex-Algo, reserve node ID ranges per algorithm (e.g., 0xxx for algo-0, 1xxx for algo-128). Each node gets one locator per participating algorithm.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">4</div><div class="stp-t">Reserve Anycast locator IDs</div></div>
+          <p>Identify all Anycast PE pairs and assign shared locator IDs from a dedicated range (e.g., 0Axx).</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">5</div><div class="stp-t">Define function numbering policy</div></div>
+          <p>Standardize which function ranges map to which behaviors (uN, End.DT4, End.DX2, uA, etc.). Configure this policy consistently across all nodes.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">6</div><div class="stp-t">Plan IPv6 infrastructure addressing</div></div>
+          <p>SRv6 requires IPv6 on all links (for the outer IPv6 header). Plan link /127s or /64s, loopbacks, and management addressing. The SRv6 locator is separate from the loopback — both are needed.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">7</div><div class="stp-t">Update ACLs and security policies</div></div>
+          <p>Permit the uSID block prefix at network edges. Block external traffic destined to your locator space. Update uRPF policies if deployed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MICRO-SIDS ==================== -->
+    <div id="usid" class="section">
+      <div class="sec-title">Micro-SIDs (uSID)</div>
+      <p class="sec-sub">Solving the SRv6 overhead problem — IETF draft-ietf-spring-srv6-srh-compression</p>
+
+      <div class="card">
+        <h2>The Problem: 16 Bytes Per SID</h2>
+        <p>A regular SRv6 SID is a full 128-bit IPv6 address = 16 bytes. A 5-segment policy needs 80 bytes of SRH, vs 20 bytes for 5 MPLS labels. Micro-SIDs fix this by <strong>packing multiple short SID instructions into a single 128-bit SRH entry</strong>.</p>
+
+        <div class="info green">
+          <strong>Key idea:</strong> A micro-SID (uSID) is only <strong>16 bits</strong> (2 bytes). You can fit up to <strong>6 micro-SIDs inside one 128-bit container</strong>. Overhead becomes comparable to MPLS.
+        </div>
+
+        <table class="tbl">
+          <tr><th>4-segment policy</th><th>SR-MPLS</th><th>SRv6 (regular)</th><th>SRv6 (uSID)</th></tr>
+          <tr><td>Per-segment</td><td>4 bytes</td><td>16 bytes</td><td>2 bytes</td></tr>
+          <tr><td>Total overhead</td><td>16 bytes</td><td>72 bytes</td><td>~24 bytes</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>uSID Container Format</h2>
+        <p>A single 128-bit SRH entry is structured as:</p>
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;"><div class="n">Block</div><div class="val">fcbb:bb01:</div><div class="bits">32 bits — shared by all nodes</div></div>
+          <div class="sid-p bg-srh" style="flex:1;"><div class="n">uSID 1</div><div class="val">0021</div><div class="bits">16 bits</div></div>
+          <div class="sid-p bg-seg" style="flex:1;"><div class="n">uSID 2</div><div class="val">0011</div><div class="bits">16 bits</div></div>
+          <div class="sid-p bg-vpn" style="flex:1;"><div class="n">uSID 3</div><div class="val">003e</div><div class="bits">16 bits</div></div>
+          <div class="sid-p bg-pay" style="flex:1;"><div class="n">uSID 4</div><div class="val">0000</div><div class="bits">16 bits — empty</div></div>
+          <div class="sid-p bg-pay" style="flex:1;"><div class="n">uSID 5</div><div class="val">0000</div><div class="bits">empty</div></div>
+          <div class="sid-p bg-pay" style="flex:1;"><div class="n">uSID 6</div><div class="val">0000</div><div class="bits">empty</div></div>
+        </div>
+        <div class="ann">Block prefix (32 bits) is shared across the SRv6 domain</div>
+        <div class="ann">Each uSID (16 bits) = node + behavior. Zeros = end marker</div>
+        <div class="ann">This single 128-bit entry carries 3 micro-SID instructions</div>
+
+        <div class="info">
+          <strong>Block and uSID lengths are flexible:</strong> The most common deployment uses a 32-bit block + 16-bit uSIDs (shown above), allowing 6 uSIDs per container. But other configurations exist: 48-bit block + 16-bit uSIDs (5 per container, larger node address space) or 32-bit block + 32-bit uSIDs (3 per container, more function space). The lengths are communicated via the SRv6 SID Structure Sub-TLV in IGP and BGP.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>The "u" Naming Convention</h2>
+        <p>The "u" prefix indicates the micro-SID variant of a standard SRv6 behavior:</p>
+        <table class="tbl">
+          <tr><th>uSID</th><th>Full SRv6 Equivalent</th><th>Behavior</th></tr>
+          <tr><td><code>uN</code></td><td>End (Node SID)</td><td>Shift to next uSID, forward via IPv6 routing</td></tr>
+          <tr><td><code>uA</code></td><td>End.X (Adjacency SID)</td><td>Shift to next uSID, forward out specific adjacency</td></tr>
+          <tr><td><code>uDT4</code></td><td>End.DT4</td><td>Decapsulate, IPv4 VPN lookup</td></tr>
+          <tr><td><code>uDT6</code></td><td>End.DT6</td><td>Decapsulate, IPv6 VPN lookup</td></tr>
+          <tr><td><code>uDX4</code></td><td>End.DX4</td><td>Decapsulate, forward to specific IPv4 next-hop</td></tr>
+          <tr><td><code>uB6</code></td><td>End.B6.Encaps</td><td>Binding SID — insert/update SRH</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== USID PROCESSING ==================== -->
+    <div id="usid-processing" class="section">
+      <div class="sec-title">uSID Processing: Shift-and-Forward</div>
+      <p class="sec-sub">How micro-SIDs advance within a container — analogous to MPLS label popping</p>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Packet arrives — DA = <code>fcbb:bb01:0021:0011:003e::</code></div></div>
+        <p>First uSID <code>0021</code> is in the active (leftmost) position. Node ZR-21 matches it.</p>
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;"><div class="n">Block</div><div class="val">fcbb:bb01:</div></div>
+          <div class="sid-p bg-srh" style="flex:1;border:2px solid var(--cyan);"><div class="n">Active</div><div class="val">0021 ← ME</div></div>
+          <div class="sid-p bg-seg" style="flex:1;"><div class="n">Next</div><div class="val">0011</div></div>
+          <div class="sid-p bg-vpn" style="flex:1;"><div class="n">Next</div><div class="val">003e</div></div>
+          <div class="sid-p bg-pay" style="flex:3;"><div class="n">Empty</div><div class="val">0000:0000:0000</div></div>
+        </div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">ZR-21 processes its uSID, LEFT-SHIFTS the container by 16 bits</div></div>
+        <p>Zeros fill in on the right. The next uSID (<code>0011</code>) moves to the active position:</p>
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;"><div class="n">Block</div><div class="val">fcbb:bb01:</div></div>
+          <div class="sid-p bg-seg" style="flex:1;border:2px solid var(--green);"><div class="n">Now Active</div><div class="val">0011 ← NEXT</div></div>
+          <div class="sid-p bg-vpn" style="flex:1;"><div class="n">Next</div><div class="val">003e</div></div>
+          <div class="sid-p bg-pay" style="flex:4;"><div class="n">Empty</div><div class="val">0000:0000:0000:0000</div></div>
+        </div>
+        <div class="ann">New DA = <code>fcbb:bb01:0011:003e::</code> — transit routers forward toward node 0011</div>
+        <div class="ann">This is like "popping" in MPLS, but shifting within a single 128-bit field</div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">When all uSIDs in a container are consumed</div></div>
+        <p>When the active position becomes <code>0000</code> (end marker), the node decrements <code>Segments Left</code> in the SRH and moves to the next 128-bit container. Micro-SIDs work <strong>within</strong> regular SRH entries, not as a replacement.</p>
+      </div>
+    </div>
+
+    <!-- ==================== uN ==================== -->
+    <div id="un" class="section">
+      <div class="sec-title">uN — Micro-Node SID</div>
+      <p class="sec-sub">The SRv6 equivalent of an SR-MPLS Node-SID</p>
+
+      <div class="card">
+        <h2>What uN Does</h2>
+        <p><code>uN</code> is the micro-SID variant of the <strong>End</strong> function. It means: "I am a transit waypoint — advance the SID pointer and forward."</p>
+
+        <div class="info">
+          <strong>uN behavior step by step:</strong><br>
+          1. Left-shift the uSID container by 16 bits (consume current uSID)<br>
+          2. If new active position ≠ 0000 → update DA, forward via longest-prefix-match<br>
+          3. If new active position = 0000 → decrement Segments Left, copy next SRH entry to DA<br>
+          4. Forward the packet with SRH intact
+        </div>
+
+        <h3>Key Property: uN Does NOT Remove the SRH</h3>
+        <p>The packet still has the full SRH attached after uN processing. uN only advances the pointer. This is analogous to an MPLS label swap — the label stack stays, only the top label changes.</p>
+
+        <h3>ECMP Behavior</h3>
+        <p>Since uN forwards via the IGP FIB (longest-prefix-match on the updated DA's locator), it naturally supports <strong>ECMP across all parallel paths</strong> to the next node. This is identical to how a Node-SID in SR-MPLS allows ECMP.</p>
+
+        <h3>uN with SID Flavors</h3>
+        <p>A uN SID can carry <strong>PSP, USP, and USD flavors</strong>. Most commonly, uN is advertised with PSP+USP. When the uN is at the penultimate segment position (SL becomes 0 after processing), PSP flavor causes the node to <strong>remove the SRH</strong> before forwarding — so the egress node receives a clean IPv6 packet with no SRH to parse. This is critical for multi-vendor interop. See the <strong>PSP section</strong> for full details.</p>
+      </div>
+    </div>
+
+    <!-- ==================== uA ==================== -->
+    <div id="ua" class="section">
+      <div class="sec-title">uA — Micro-Adjacency SID</div>
+      <p class="sec-sub">The SRv6 equivalent of an SR-MPLS Adjacency SID</p>
+
+      <div class="card">
+        <h2>What uA Does</h2>
+        <p><code>uA</code> is the micro-SID variant of <strong>End.X</strong>. It means: "forward out a specific interface/adjacency, not via IGP shortest path."</p>
+
+        <div class="info green">
+          <strong>uA behavior step by step:</strong><br>
+          1. Left-shift the uSID container by 16 bits (same as uN)<br>
+          2. Update DA (same as uN)<br>
+          3. Forward the packet out the <strong>specific adjacency</strong> bound to this uA (NOT via routing table lookup)
+        </div>
+
+        <h3>Why uA Doesn't Need uN (Unlike SR-MPLS)</h3>
+        <p>A uA SID is an IPv6 address within the advertising node's locator prefix. Since the locator is in every router's IPv6 FIB, transit routers forward toward it using standard IPv6 routing. No separate Node SID needed — one SID encodes both "get to the node" and "use this adjacency."</p>
+
+        <h3>ECMP Behavior — The Important Limitation</h3>
+        <p>A standard uA is bound to a <strong>single adjacency (link)</strong>. If there are multiple parallel links between two nodes, uA pins traffic to one. This is the same as per-link Adj-SIDs in SR-MPLS.</p>
+
+        <div class="info orange">
+          <strong>Parallel/Bundle uA:</strong> Some implementations support a uA that represents an entire link-bundle or LAG, allowing ECMP across parallel links to the same neighbor. This is analogous to an SR-MPLS Adj-SID with B-flag unset (parallel adjacency set). Whether this is available depends on the platform and IS-IS TLV encoding.
+        </div>
+
+        <table class="tbl">
+          <tr><th>SID Type</th><th>Forwards via</th><th>ECMP?</th></tr>
+          <tr><td>uN (Node SID)</td><td>IGP FIB longest-prefix-match</td><td><span class="tag t-g">Yes — full IGP ECMP</span></td></tr>
+          <tr><td>uA (per-link)</td><td>Specific single adjacency</td><td><span class="tag t-r">No — single link</span></td></tr>
+          <tr><td>uA (bundle/parallel)</td><td>Adjacency group to same neighbor</td><td><span class="tag t-o">Yes — within bundle</span></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== ENDPOINTS ==================== -->
+    <div id="endpoints" class="section">
+      <div class="sec-title">Endpoint Behaviors</div>
+      <p class="sec-sub">End.DT4, End.DT6, End.X — the service functions at the final node</p>
+
+      <div class="card">
+        <h2>Common SRv6 Endpoint Behaviors (RFC 8986)</h2>
+        <table class="tbl">
+          <tr><th>Behavior</th><th>uSID variant</th><th>Action</th><th>SR-MPLS Equivalent</th></tr>
+          <tr><td><strong>End</strong></td><td>uN</td><td>Transit: advance SID pointer, forward via IGP</td><td>Node-SID (label swap)</td></tr>
+          <tr><td><strong>End.X</strong></td><td>uA</td><td>Transit: advance pointer, forward on specific adjacency</td><td>Adj-SID</td></tr>
+          <tr><td><strong>End.DT4</strong></td><td>uDT4</td><td>Decapsulate outer IPv6, do IPv4 VPN lookup in VRF</td><td>VPN label (per-VRF)</td></tr>
+          <tr><td><strong>End.DT6</strong></td><td>uDT6</td><td>Decapsulate outer IPv6, do IPv6 VPN lookup in VRF</td><td>VPN label (per-VRF, IPv6)</td></tr>
+          <tr><td><strong>End.DX4</strong></td><td>uDX4</td><td>Decapsulate, forward to specific IPv4 next-hop (cross-connect)</td><td>VPN label (per-CE)</td></tr>
+          <tr><td><strong>End.DX6</strong></td><td>uDX6</td><td>Decapsulate, forward to specific IPv6 next-hop</td><td>VPN label (per-CE, IPv6)</td></tr>
+          <tr><td><strong>End.DT46</strong></td><td>uDT46</td><td>Decapsulate, do IP lookup in dual-stack VRF</td><td>—</td></tr>
+          <tr><td><strong>End.B6.Encaps</strong></td><td>uB6</td><td>Binding SID: encapsulate with new SRH (policy stitching)</td><td>Binding SID</td></tr>
+          <tr><td><strong>End.BM</strong></td><td>—</td><td>Binding SID with MPLS encap (SRv6→MPLS interworking)</td><td>—</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Key difference from SR-MPLS:</strong> In SR-MPLS, the "VPN label" is a separate label below the transport labels — you pop down to it. In SRv6, the VPN SID (End.DT4) is just another SID in the segment list. When it becomes the active SID (DA = End.DT4 SID), the node performs the VPN decap. No separate label space needed.
+        </div>
+
+        <h3>Decap Behaviors and SID Flavors</h3>
+        <p>The decap behaviors (End.DT4, End.DT6, End.DX4, etc.) interact with SID flavors:</p>
+        <ul>
+          <li><strong>With USP (default):</strong> The egress node first removes the SRH (if present with SL=0), then processes the decap function — removing the outer IPv6 header and performing the VRF lookup.</li>
+          <li><strong>With USD:</strong> The egress node removes both the SRH and the outer IPv6 header in one step, then does the VRF lookup. This is the most common mode for VPN endpoints.</li>
+          <li><strong>With PSP on the penultimate node:</strong> The SRH is already gone when the packet arrives at the egress. The egress just sees DA = its End.DT4 SID with no SRH, decaps the outer IPv6, and does the VRF lookup. This simplifies egress processing and avoids interop issues with SRH handling.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ==================== PSP ==================== -->
+    <div id="psp" class="section">
+      <div class="sec-title">PSP — Penultimate Segment Pop</div>
+      <p class="sec-sub">Not PHP. The penultimate segment node removes the SRH when it's no longer needed.</p>
+
+      <div class="card">
+        <h2>What PSP Does</h2>
+        <p>PSP is a <strong>flavor</strong> (optional behavior modifier) that can be applied to any SRv6 SID. When a node processes a SID with PSP flavor and <code>Segments Left</code> becomes 0 (meaning this node is the penultimate segment), it <strong>removes the entire SRH extension header</strong> before forwarding.</p>
+
+        <div class="info">
+          <strong>PSP trigger condition:</strong> After processing its own SID, if Segments Left = 0 AND the SID has PSP flavor → remove the SRH. The IPv6 header stays. The DA already contains the final SID. Only the SRH extension header is stripped.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>PSP Step by Step</h2>
+        <p>3-SID policy: SID-A → SID-B (PSP) → SID-C (final). Node B is the penultimate segment.</p>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Packet at source</div></div>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">DA</div><div class="v">SID-A (active)</div></div><div class="pkt-c bg-srh" style="flex:1;"><div class="l">SL</div><div class="v">2</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-seg"><div class="l">SL[2]</div><div class="v">SID-A</div></div><div class="pkt-c bg-seg"><div class="l">SL[1]</div><div class="v">SID-B</div></div><div class="pkt-c bg-seg"><div class="l">SL[0]</div><div class="v">SID-C</div></div></div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">At Node A — normal processing</div></div>
+        <p>Decrements SL: 2→1. Copies SL[1] (SID-B) to DA. SRH intact. Forwards toward B.</p>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n pur">3</div><div class="stp-t">At Node B — PSP kicks in</div></div>
+        <p>Decrements SL: 1→<strong>0</strong>. Copies SL[0] (SID-C) to DA. <strong>SL = 0 + PSP flavor → REMOVE SRH.</strong></p>
+        <div class="action">PSP: SRH removed. Forward toward SID-C via IGP (ECMP preserved).</div>
+        <p>Packet leaving Node B:</p>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">DA</div><div class="v">SID-C</div></div><div class="pkt-c bg-rem" style="flex:1;"><div class="l">SRH</div><div class="v">GONE</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer packet</div></div></div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n grn">4</div><div class="stp-t">At Node C — clean packet, no SRH</div></div>
+        <p>DA = SID-C (its own SID). No SRH present. Processes SID-C purely from the DA (e.g., End.DT4 → VPN decap).</p>
+        <div class="marker-ok">✓ Node C never parses any SRH. Just matches DA → executes behavior.</div>
+      </div>
+
+      <div class="card">
+        <h3>How PSP Is Signaled</h3>
+        <p>PSP is a <strong>property of the SID itself</strong>, advertised in IGP (IS-IS/OSPF). The node advertising the SID decides which flavors to support. It is NOT signaled by the egress node (unlike PHP in MPLS).</p>
+        <table class="tbl">
+          <tr><th>Protocol</th><th>Where PSP Is Advertised</th></tr>
+          <tr><td>IS-IS</td><td>SRv6 SID Structure Sub-Sub-TLV — flags for PSP, USP, USD</td></tr>
+          <tr><td>OSPFv3</td><td>SRv6 SID Structure in End SID TLV</td></tr>
+          <tr><td>BGP</td><td>SRv6 SID Information Sub-TLV with behavior + flags</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== USP & USD ==================== -->
+    <div id="usp-usd" class="section">
+      <div class="sec-title">USP & USD Flavors</div>
+      <p class="sec-sub">The other SID flavors — Ultimate Segment Pop and Ultimate Segment Decap</p>
+
+      <div class="card">
+        <h2>All Three SID Flavors</h2>
+        <div class="flv-grid">
+          <div class="flv">
+            <div class="flv-name" style="color:var(--cyan);">PSP</div>
+            <div class="flv-desc"><strong>Penultimate Segment Pop</strong><br><br>When: SL = 0 after processing<br>Who: Penultimate segment node<br>Action: Remove SRH<br>Egress sees: No SRH</div>
+          </div>
+          <div class="flv">
+            <div class="flv-name" style="color:var(--green);">USP</div>
+            <div class="flv-desc"><strong>Ultimate Segment Pop</strong><br><br>When: SL = 0 at the final node<br>Who: Egress (last segment node)<br>Action: Final node removes SRH itself<br>This is the DEFAULT behavior</div>
+          </div>
+          <div class="flv">
+            <div class="flv-name" style="color:var(--orange);">USD</div>
+            <div class="flv-desc"><strong>Ultimate Segment Decap</strong><br><br>When: SL = 0 at the final node<br>Who: Egress<br>Action: Remove SRH AND outer IPv6 header<br>Used for End.DT4, End.DT6, etc.</div>
+          </div>
+        </div>
+
+        <h3>How Flavors Interact</h3>
+        <table class="tbl">
+          <tr><th>Scenario</th><th>Who Removes SRH?</th><th>What Egress Receives</th></tr>
+          <tr><td>No PSP (default / USP)</td><td>Egress node</td><td>IPv6 + SRH (SL=0) + inner</td></tr>
+          <tr><td>PSP enabled on penultimate</td><td>Penultimate node</td><td>IPv6 (DA = final SID) + inner — <strong>no SRH</strong></td></tr>
+          <tr><td>USD at egress</td><td>Egress removes SRH + outer IPv6</td><td>Just the inner packet</td></tr>
+          <tr><td>PSP + USD combined</td><td>Penultimate removes SRH. Egress does full decap.</td><td>Egress decaps without SRH parsing</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>A SID can have multiple flavors.</strong> Common: <code>End with PSP, USP</code> — supports both penultimate and ultimate pop. The network uses whichever is appropriate based on the node's position in the segment list.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PSP vs PHP ==================== -->
+    <div id="psp-vs-php" class="section">
+      <div class="sec-title">PSP vs PHP — The Critical Differences</div>
+      <p class="sec-sub">They're often compared, but they're fundamentally different mechanisms</p>
+
+      <div class="card">
+        <h2>Side-by-Side Comparison</h2>
+        <table class="tbl">
+          <tr><th>Property</th><th style="color:var(--orange);">PHP (MPLS)</th><th style="color:var(--cyan);">PSP (SRv6)</th></tr>
+          <tr><td>What gets removed</td><td>Top MPLS label (4 bytes)</td><td>Entire SRH extension header (variable)</td></tr>
+          <tr><td>"Penultimate" means</td><td>Router <strong>one physical hop</strong> before egress</td><td>Node processing the <strong>second-to-last SID</strong> (may be multiple hops away)</td></tr>
+          <tr><td>Trigger</td><td>Egress advertises implicit-null (label 3)</td><td><code>Segments Left = 0</code> + SID has PSP flavor</td></tr>
+          <tr><td>Who decides</td><td>Egress signals it; penultimate executes</td><td>Penultimate node's own SID flavor; egress doesn't signal</td></tr>
+          <tr><td>What egress receives</td><td>Packet with top label gone</td><td>Plain IPv6 — DA has final SID, no SRH</td></tr>
+          <tr><td>IPv6 header</td><td>N/A</td><td><strong>Stays.</strong> Only SRH removed. NH field updated.</td></tr>
+          <tr><td>The thing being popped belongs to...</td><td>The <strong>egress</strong> (its Node-SID label)</td><td><strong>Nobody</strong> — the SRH is a shared header, not a single node's property</td></tr>
+          <tr><td>ECMP after pop</td><td>Yes — IGP ECMP to egress</td><td>Yes — IGP ECMP to egress</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>The Fundamental Conceptual Difference</h2>
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">PHP: "Pop someone else's label"</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">The penultimate pops the <strong>egress's label</strong> because the egress asked for it (implicit-null). It's cooperative — the egress signals "remove my label before sending to me."</p>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">PSP: "Remove a now-useless header"</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">The penultimate segment node removes the <strong>SRH</strong> — a routing header that has served its purpose (all segments traversed). The final SID is still in DA. The egress doesn't ask for this; it's the penultimate node's own SID configuration.</p>
+          </div>
+        </div>
+
+        <div class="info purple">
+          <strong>Key implication:</strong> In PHP, fixing a problem at the egress requires the egress to change its signaling. In PSP, the penultimate node acts independently — even if the egress is broken or misconfigured, the penultimate can still strip the SRH. This makes PSP useful for interop workarounds in multi-vendor networks.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TI-LFA ==================== -->
+    <div id="tilfa" class="section">
+      <div class="sec-title">TI-LFA in SRv6</div>
+      <p class="sec-sub">Fast-reroute with segment routing — same concept as SR-MPLS TI-LFA, different encoding</p>
+
+      <div class="card">
+        <h2>How TI-LFA Works in SRv6</h2>
+        <p>TI-LFA (Topology Independent Loop-Free Alternate) in SRv6 uses the same algorithm as SR-MPLS TI-LFA — compute a post-convergence backup path and encode it as an explicit SID list. The difference is in the encapsulation.</p>
+
+        <h3>SR-MPLS TI-LFA: Push extra labels</h3>
+        <p>The PLR (Point of Local Repair) pushes additional MPLS labels on top of the existing label stack to steer traffic through the backup path.</p>
+
+        <h3>SRv6 TI-LFA: Wrap in outer IPv6/SRH (H.Encaps)</h3>
+        <p>The PLR encapsulates the entire original packet inside a <strong>new outer IPv6 header + SRH</strong> that carries the backup path SIDs. This creates a <strong>nested encapsulation</strong> — an outer IPv6/SRH wrapping the inner IPv6/SRH.</p>
+      </div>
+
+      <div class="card">
+        <h2>The Nested Encapsulation Challenge</h2>
+        <p>In SR-MPLS, pushing extra labels is straightforward — you just add more labels to the stack. In SRv6, the TI-LFA repair creates an entirely new IPv6 header + SRH <em>around</em> the original packet. This means the endpoint of the backup path must:</p>
+        <ul>
+          <li>Decapsulate the outer TI-LFA IPv6/SRH</li>
+          <li>Then process the original inner IPv6/SRH</li>
+        </ul>
+        <p>This <strong>nested SRH</strong> or <strong>nested IPv6 decapsulation</strong> can be problematic if the endpoint's implementation doesn't handle it correctly.</p>
+
+        <div class="info orange">
+          <strong>Multi-vendor concern:</strong> Not all implementations handle nested IPv6/SRH encapsulations cleanly, especially for edge cases like native IPv6 prefixes (non-SRv6 locators). This is a known interop challenge in production SRv6 deployments.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Multihomed Prefix Originator Change</h2>
+        <p>A special case arises with <strong>Anycast or multihomed prefixes</strong> — when the prefix is originated by multiple nodes and the best originator changes during convergence. TI-LFA must steer traffic to the <strong>new originator</strong>, which may require adding an extra SID for the new originator's node to prevent microloops.</p>
+
+        <p>This extra SID adds another layer to the nested encapsulation, making the decapsulation even more complex at the endpoint. Optimizations exist (Q-space checks, distance comparisons) to suppress the extra SID when the backup path is inherently loop-free, but they don't work for all topologies.</p>
+      </div>
+
+      <div class="card">
+        <h2>TI-LFA Packet Structure — Before and After</h2>
+        <h3>Original packet (before failure)</h3>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">IPv6 DA</div><div class="v">Egress-PE SID (SR-Policy endpoint)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-srh" style="flex:1;"><div class="l">SRH SL</div><div class="v">1</div></div><div class="pkt-c bg-seg" style="flex:2;"><div class="l">SL[0]</div><div class="v">End.DT4 (VPN SID)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer packet</div></div></div>
+
+        <h3>After TI-LFA encapsulation at PLR (H.Encaps)</h3>
+        <p>The PLR wraps the entire original packet in a new outer IPv6 + SRH:</p>
+        <div class="pkt"><div class="pkt-c bg-tilfa" style="flex:2;"><div class="l">OUTER IPv6 DA</div><div class="v">Repair-node uN (TI-LFA first hop)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-tilfa" style="flex:1;opacity:0.8;"><div class="l">OUTER SRH SL</div><div class="v">1</div></div><div class="pkt-c bg-tilfa" style="flex:2;opacity:0.8;"><div class="l">SL'[0]</div><div class="v">Destination uN (new originator)</div></div></div>
+        <div class="pkt" style="margin-top:6px;"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">INNER IPv6 DA</div><div class="v">Egress-PE SID (unchanged)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-srh" style="flex:1;"><div class="l">INNER SRH SL</div><div class="v">1</div></div><div class="pkt-c bg-seg" style="flex:2;"><div class="l">SL[0]</div><div class="v">End.DT4 (unchanged)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer packet (unchanged)</div></div></div>
+        <div class="ann">Two complete IPv6/SRH layers — the endpoint must decapsulate the outer, then process the inner</div>
+        <div class="ann">In SR-MPLS, TI-LFA just pushes extra labels onto the same stack — no nesting</div>
+
+        <div class="info">
+          <strong>SR-MPLS comparison:</strong> In SR-MPLS TI-LFA, the PLR pushes additional labels on top of the existing stack. The packet stays as one flat label stack. In SRv6, the PLR creates an entirely new outer IPv6+SRH around the original — creating a nested structure that requires full decapsulation at the repair endpoint.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ECMP ==================== -->
+    <div id="ecmp" class="section">
+      <div class="sec-title">ECMP: uN vs uA</div>
+      <p class="sec-sub">How SID type affects load balancing across parallel links</p>
+
+      <div class="card">
+        <h2>ECMP Behavior by SID Type</h2>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--blue);">uN: Full ECMP</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">uN forwards via the IGP FIB. If there are multiple equal-cost paths to the next node, all paths are used. Hash-based load balancing distributes traffic across all ECMP links.</p>
+            <div class="marker-ok" style="font-size:11px;">All parallel links utilized</div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">uA (per-link): No ECMP</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">A per-link uA is bound to a single adjacency. Even with multiple parallel links to the same neighbor, only the one specified by the uA is used. All traffic funneled through one link.</p>
+            <div class="marker-bad" style="font-size:11px;">Single link — potential congestion</div>
+          </div>
+        </div>
+
+        <p>This is identical to SR-MPLS behavior: a Node-SID allows ECMP; a per-link Adj-SID pins to one interface.</p>
+
+        <h3>Parallel/Bundle uA</h3>
+        <p>Some implementations support a uA bound to a <strong>link bundle or LAG</strong> rather than a single link. This preserves ECMP across all member links while still providing adjacency-specific forwarding. This is analogous to an SR-MPLS Adj-SID with the B-flag unset (parallel adjacency).</p>
+
+        <table class="tbl">
+          <tr><th>SID Type</th><th>SR-MPLS Equivalent</th><th>ECMP?</th><th>Use Case</th></tr>
+          <tr><td>uN</td><td>Node-SID</td><td><span class="tag t-g">Full</span></td><td>Normal transit, backup paths</td></tr>
+          <tr><td>uA (per-link)</td><td>Adj-SID (B-flag set)</td><td><span class="tag t-r">None</span></td><td>Traffic engineering, specific link steering</td></tr>
+          <tr><td>uA (bundle)</td><td>Adj-SID (B-flag unset)</td><td><span class="tag t-g">Within bundle</span></td><td>Adjacency steering with load balancing</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== H.ENCAPS vs H.INSERT ==================== -->
+    <div id="encap" class="section">
+      <div class="sec-title">H.Encaps vs H.Insert</div>
+      <p class="sec-sub">Two ways to add SRv6 segments to a packet in transit</p>
+
+      <div class="card">
+        <h2>Three Encapsulation Modes</h2>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">H.Encaps</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">Wraps the original packet inside a <strong>new outer IPv6 header + SRH</strong>. The first SID appears in both the DA and the segment list (duplicated).</p>
+            <div class="pkt"><div class="pkt-c bg-tilfa" style="flex:1;"><div class="l">New Outer</div><div class="v">IPv6 (DA=SID-A) + SRH [SID-A, SID-B, SID-C]</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Original</div><div class="v">Inner packet (unchanged)</div></div></div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--purple);">H.Encaps.Red (Reduced) <span class="tag t-g">Most Common</span></h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">Same as H.Encaps, but the first SID is <strong>only in the DA</strong> — NOT duplicated in the segment list. Saves 16 bytes. <strong>This is the most commonly deployed variant.</strong></p>
+            <div class="pkt"><div class="pkt-c bg-tilfa" style="flex:1;"><div class="l">New Outer</div><div class="v">IPv6 (DA=SID-A) + SRH [SID-B, SID-C] — no SID-A in list</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Original</div><div class="v">Inner packet (unchanged)</div></div></div>
+          </div>
+        </div>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--green);">H.Insert (Insertion)</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);"><strong>Inserts SIDs directly into the existing SRH</strong> without creating a new outer header. Single SRH context. No nesting.</p>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Same header</div><div class="v">IPv6 + SRH (modified — extra SIDs inserted)</div></div></div>
+          </div>
+          <div class="cmp-c" style="display:flex;flex-direction:column;justify-content:center;">
+            <div class="info" style="margin:0;">
+              <strong>H.Encaps.Red is the default in most implementations</strong> (Cisco IOS-XR, ArcOS, Nokia SROS). When vendor documentation says "H.Encaps" it often means H.Encaps.Red in practice. Always check Segments Left in packet captures to confirm which variant is in use.
+            </div>
+          </div>
+        </div>
+
+        <table class="tbl">
+          <tr><th>Property</th><th>H.Encaps</th><th>H.Encaps.Red</th><th>H.Insert</th></tr>
+          <tr><td>Packet structure</td><td>Nested: outer + inner</td><td>Nested: outer + inner</td><td>Single SRH (modified)</td></tr>
+          <tr><td>First SID duplication</td><td>In DA + SRH (duplicated)</td><td>In DA only (saves 16B)</td><td>N/A</td></tr>
+          <tr><td>Segments Left value</td><td>SL = n (includes first SID)</td><td>SL = n-1 (first SID not in list)</td><td>SL adjusted for inserted SIDs</td></tr>
+          <tr><td>Overhead for 3-SID policy</td><td>40 + 8 + 48 = 96 bytes</td><td>40 + 8 + 32 = 80 bytes</td><td>Only the added SID bytes</td></tr>
+          <tr><td>Inner packet integrity</td><td>Fully preserved</td><td>Fully preserved</td><td>Modified (SRH changed)</td></tr>
+          <tr><td>Security</td><td>Clean</td><td>Clean</td><td>RFC 8754 advises caution</td></tr>
+          <tr><td>Implementation support</td><td>Widely supported</td><td>Most common in production</td><td>Less common, interop concerns</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== FLEX-ALGO ==================== -->
+    <div id="flexalgo" class="section">
+      <div class="sec-title">Flex-Algo in SRv6</div>
+      <p class="sec-sub">IGP Flexible Algorithms (RFC 9350) — topology-aware SIDs for constraint-based routing</p>
+
+      <div class="card">
+        <h2>What Is Flex-Algo?</h2>
+        <p>Flex-Algo lets you define <strong>multiple routing topologies</strong> within a single IGP instance, each with its own metric type or constraints. Each algorithm computes a separate SPF and produces a separate set of SIDs. Traffic using Algorithm 128's SIDs takes the low-latency path; traffic using Algorithm 129's SIDs takes the path avoiding certain SRLGs — all within the same IGP, same routers, same links.</p>
+
+        <div class="info">
+          <strong>The SR-MPLS version you know:</strong> In SR-MPLS, each node advertises a separate Prefix-SID per algorithm (e.g., Node-SID 16001 for algo 0, Node-SID 16101 for algo 128). The label stack uses the algorithm-specific SID. The FIB has per-algorithm entries. The concept in SRv6 is identical — only the SID encoding changes.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo Components</h2>
+
+        <h3>Algorithm IDs</h3>
+        <table class="tbl">
+          <tr><th>Range</th><th>Purpose</th></tr>
+          <tr><td>0</td><td>Default SPF (standard IGP shortest path by metric)</td></tr>
+          <tr><td>1 – 127</td><td>Reserved (standards)</td></tr>
+          <tr><td><strong>128 – 255</strong></td><td><strong>Flex-Algo</strong> — user-defined algorithms</td></tr>
+        </table>
+
+        <h3>Flex-Algorithm Definition (FAD)</h3>
+        <p>Each Flex-Algo is defined by a <strong>FAD</strong> advertised in IS-IS/OSPF by one or more nodes (typically the "definition" node — any node with the highest priority for that algo). The FAD contains:</p>
+
+        <table class="tbl">
+          <tr><th>FAD Field</th><th>Purpose</th><th>Example</th></tr>
+          <tr><td><strong>Metric Type</strong></td><td>Which metric to use for SPF</td><td>IGP metric, TE metric, min-unidirectional-delay, min-unidirectional-loss</td></tr>
+          <tr><td><strong>Calculation Type</strong></td><td>Algorithm for path computation</td><td>SPF (standard), Strict SPF</td></tr>
+          <tr><td><strong>Constraints</strong></td><td>Include/exclude links based on properties</td><td>Affinity include-any, exclude-any, include-all, SRLG exclude</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>Example FAD:</strong> Algorithm 128 — metric-type = min-unidirectional-delay, no constraints. This creates a "low-latency topology" where SPF uses delay as the metric instead of IGP cost. All links are still eligible, but the path minimizes delay.
+        </div>
+
+        <div class="info">
+          <strong>Example FAD:</strong> Algorithm 129 — metric-type = IGP metric, constraint = exclude links with affinity "red". This creates a topology that avoids all "red" links (perhaps submarine cables or high-risk links), using normal IGP metric for path selection among the remaining links.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SR-MPLS vs SRv6: How Flex-Algo SIDs Differ</h2>
+        <p>This is the key mapping from your SR-MPLS knowledge:</p>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">SR-MPLS: Prefix-SID per Algorithm</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);margin-bottom:8px;">Each node advertises a <strong>separate Prefix-SID per algorithm</strong>. Same node, different labels for different algos.</p>
+            <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Algo 0 (default)</div><div class="v">Prefix-SID: 16001</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Algo 128 (low-latency)</div><div class="v">Prefix-SID: 16101</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Algo 129 (avoid-red)</div><div class="v">Prefix-SID: 16201</div></div></div>
+            <div class="ann">Same node-ID, different label per algo. SPF computed per algo.</div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">SRv6: Locator per Algorithm</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);margin-bottom:8px;">Each node advertises a <strong>separate SRv6 locator per algorithm</strong>. Different locator prefix = different forwarding topology.</p>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Algo 0 (default)</div><div class="v">Locator: fcbb:bb01:0001::/48</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Algo 128 (low-latency)</div><div class="v">Locator: fcbb:bb01:1001::/48</div></div></div>
+            <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Algo 129 (avoid-red)</div><div class="v">Locator: fcbb:bb01:2001::/48</div></div></div>
+            <div class="ann">Same block (fcbb:bb01), different node ID per algo. Each locator has its own FIB entries computed by that algo's SPF.</div>
+          </div>
+        </div>
+
+        <div class="info purple">
+          <strong>The key difference:</strong> In SR-MPLS, Flex-Algo changes the <em>label</em> for the same prefix. In SRv6, Flex-Algo changes the <em>locator prefix</em> entirely. All SIDs under a given locator (uN, uA, End.DT4, etc.) inherit the algorithm of that locator. When you use an algo-128 End.DT4 SID, the packet is forwarded through the algo-128 topology all the way to the egress PE.
+        </div>
+
+        <table class="tbl">
+          <tr><th>Aspect</th><th style="color:var(--orange);">SR-MPLS</th><th style="color:var(--cyan);">SRv6</th></tr>
+          <tr><td>What's per-algo?</td><td>Prefix-SID (label) per algo per node</td><td>Locator prefix per algo per node</td></tr>
+          <tr><td>IGP advertisement</td><td>Multiple Prefix-SID sub-TLVs with algo field</td><td>Multiple SRv6 Locator TLVs with algo field</td></tr>
+          <tr><td>FIB entries</td><td>Per-algo label entries in LFIB</td><td>Per-algo IPv6 prefix entries in FIB</td></tr>
+          <tr><td>SID inherits algo?</td><td>Yes — Prefix-SID bound to specific algo</td><td>Yes — all SIDs under a locator inherit its algo</td></tr>
+          <tr><td>VPN SID per algo?</td><td>Same VPN label, different transport labels</td><td>Different End.DT4 SIDs (one per locator/algo)</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo + SR-Policy</h2>
+        <p>Flex-Algo SIDs can be used directly inside SR-Policy segment lists. When an SR-Policy's segment list references SIDs from an algo-128 locator, the traffic follows the algo-128 constrained topology at each hop.</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Simple case: All SIDs from the same algo</div></div>
+          <p>SR-Policy segment list: [P1-uN-algo128, P2-uN-algo128, PE2-End.DT4-algo128]. Every hop uses the low-latency topology. This is equivalent to using algo-128 Prefix-SIDs in an SR-MPLS policy.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Mixed case: Different algos in the same policy</div></div>
+          <p>You can mix SIDs from different algorithms within a single SR-Policy. For example: use algo-128 (low-latency) for the first portion, then algo-0 (default) for the last hop. Each SID determines the forwarding topology for its segment.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Color-to-Algo mapping via ODN (On-Demand Next-hop)</div></div>
+          <p>In many deployments, SR-Policies are created automatically using <strong>ODN templates</strong>. A Color Extended Community (e.g., color 100 = low-latency) triggers the headend to auto-create a policy using algo-128 SIDs. The mapping is: Color → ODN template → Flex-Algo ID → locator selection → SID list.</p>
+        </div>
+
+        <div class="info">
+          <strong>TI-LFA + Flex-Algo:</strong> TI-LFA computes backup paths <em>within</em> the Flex-Algo constrained topology. If algo-128 excludes certain links, TI-LFA's backup path also excludes them — the repair stays within the constrained topology. This is the same behavior as SR-MPLS Flex-Algo TI-LFA.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo Constraints</h2>
+        <table class="tbl">
+          <tr><th>Constraint Type</th><th>What It Does</th><th>Configured Where</th></tr>
+          <tr><td><strong>Exclude Affinity</strong></td><td>Exclude links with specific admin-group colors (e.g., "red")</td><td>FAD: exclude-any, exclude-all</td></tr>
+          <tr><td><strong>Include Affinity</strong></td><td>Only use links with specific colors (e.g., "low-latency")</td><td>FAD: include-any, include-all</td></tr>
+          <tr><td><strong>Exclude SRLG</strong></td><td>Exclude links sharing a Shared Risk Link Group</td><td>FAD: exclude-srlg</td></tr>
+          <tr><td><strong>Min-bandwidth</strong></td><td>Only use links meeting a bandwidth threshold</td><td>FAD: flags (where supported)</td></tr>
+        </table>
+
+        <p>Constraints are applied during SPF computation. Links that don't meet the constraints are pruned from the topology before SPF runs. The result is a constrained shortest path within the eligible sub-topology.</p>
+
+        <div class="info orange">
+          <strong>Operational note:</strong> If constraints prune too many links, a node may become unreachable in that algo's topology. The node won't have a locator route for that algo, and SIDs from that algo will be invalid. Always verify algo reachability after defining constraints. This is the same risk as over-constraining RSVP-TE tunnels.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo Participation Model</h2>
+        <p><strong>Not every node needs to participate in every Flex-Algo.</strong> This is one of the most operationally important properties of Flex-Algo — you can deploy a new algorithm incrementally without touching every router in the network.</p>
+
+        <table class="tbl">
+          <tr><th>Node Role</th><th>What It Does</th><th>What It Advertises</th></tr>
+          <tr><td><strong>Participating node</strong></td><td>Computes algo-X SPF, installs per-algo FIB entries, advertises algo-X locator, processes algo-X SIDs</td><td>SRv6 Locator TLV with algo = X</td></tr>
+          <tr><td><strong>Non-participating node</strong></td><td>Does NOT compute algo-X SPF. Still forwards transit traffic to algo-X locators via its default IPv6 FIB (locator prefixes are standard IPv6 routes).</td><td>Nothing for algo X</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>Key insight:</strong> Because SRv6 locators are just IPv6 prefixes, a non-participating node still has a route to every algo-X locator in its IPv6 FIB (learned from participating nodes' IGP advertisements). It forwards transit traffic normally — it just doesn't have its own algo-X SIDs or compute the constrained SPF. This means you can deploy algo-128 on a subset of nodes (e.g., only PEs and key P routers) and the rest of the network transparently forwards the traffic.
+        </div>
+
+        <div class="info">
+          <strong>SR-MPLS comparison:</strong> The same partial participation model applies in SR-MPLS Flex-Algo. Non-participating nodes don't have algo-X Prefix-SIDs but still swap labels for algo-X traffic in transit. The difference is that in SRv6, transit forwarding is via IPv6 FIB (inherently works), while in SR-MPLS it requires MPLS forwarding entries which may need explicit configuration.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo vs SR-Policy: When to Use Which</h2>
+        <p>Both Flex-Algo and SR-Policy provide traffic engineering in SRv6, but they solve different problems:</p>
+
+        <table class="tbl">
+          <tr><th>Aspect</th><th style="color:var(--cyan);">Flex-Algo</th><th style="color:var(--purple);">SR-Policy</th></tr>
+          <tr><td><strong>Path determination</strong></td><td>IGP computes it (distributed SPF within constraints)</td><td>Explicit SID list (headend or PCE computes it)</td></tr>
+          <tr><td><strong>Granularity</strong></td><td>Topology-wide — all traffic using algo-X SIDs follows the same constrained SPF</td><td>Per-flow — each policy can have a unique path</td></tr>
+          <tr><td><strong>Overhead</strong></td><td>Zero SRH overhead if using single algo-X End.DT4 SID (no TE waypoints needed)</td><td>SRH with explicit SID list (more overhead per segment)</td></tr>
+          <tr><td><strong>Use case</strong></td><td>Broad traffic classes: "all low-latency traffic uses delay-optimized paths"</td><td>Specific flows: "this VPN takes path A→B→C→D exactly"</td></tr>
+          <tr><td><strong>Scalability</strong></td><td>Excellent — one algo serves all traffic of that class, no per-flow state</td><td>Per-policy state on headend, scales with number of policies</td></tr>
+          <tr><td><strong>Path control</strong></td><td>Indirect — you define constraints, IGP computes the path</td><td>Direct — you specify the exact hop-by-hop path</td></tr>
+          <tr><td><strong>Failure handling</strong></td><td>IGP reconverges within the constrained topology (TI-LFA within algo)</td><td>Candidate path fallback, or PCE recomputation</td></tr>
+        </table>
+
+        <div class="info purple">
+          <strong>Common combined pattern:</strong> Use <strong>Flex-Algo for the broad constraint</strong> (e.g., algo-128 = low-latency topology) and <strong>SR-Policy with algo-128 SIDs for additional TE within that topology</strong> (e.g., explicit path through specific nodes). Flex-Algo provides the constrained topology; SR-Policy provides the explicit path within it. The Color Extended Community maps to both: color selects the SR-Policy, which uses algo-specific SIDs.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Flex-Algo Packet Example</h2>
+        <p>VPN traffic from PE-1 to PE-2 using algo-128 (low-latency). PE-2 has algo-128 locator <code>fcbb:bb01:1002::/48</code> with End.DT4 SID <code>fcbb:bb01:1002:0040::</code>.</p>
+
+        <h3>Without SR-Policy (single-SID, no SRH needed)</h3>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">IPv6 DA</div><div class="v">fcbb:bb01:1002:0040:: (algo-128 End.DT4)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer IPv4 packet</div></div></div>
+        <div class="ann">No SRH! Just outer IPv6 with algo-128 SID as DA. Transit routers forward via algo-128 locator prefix entries in their FIB — which were computed using delay-based SPF. The packet automatically takes the low-latency path.</div>
+
+        <h3>With SR-Policy (explicit path through algo-128 topology)</h3>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">IPv6 DA</div><div class="v">fcbb:bb01:1010:: (P1 uN algo-128)</div></div></div>
+        <div class="pkt">
+          <div class="pkt-c bg-srh"><div class="l">SRH SL</div><div class="v">0</div></div>
+          <div class="pkt-c bg-vpn"><div class="l">SL[0]</div><div class="v">fcbb:bb01:1002:0040:: (End.DT4 algo-128)</div></div>
+        </div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer IPv4 packet</div></div></div>
+        <div class="ann">All SIDs use algo-128 locators (1010, 1002). Every hop forwards through the delay-optimized topology.</div>
+        <div class="ann">If you mixed algo-0 and algo-128 SIDs, different segments would use different topologies.</div>
+      </div>
+    </div>
+
+    <!-- ==================== OAM ==================== -->
+    <div id="oam" class="section">
+      <div class="sec-title">SRv6 OAM</div>
+      <p class="sec-sub">Ping, traceroute, and troubleshooting in an SRv6 network</p>
+
+      <div class="card">
+        <h2>SRv6 OAM vs MPLS OAM</h2>
+        <p>OAM in SRv6 leverages native IPv6 mechanisms rather than the MPLS-specific tools you're used to.</p>
+
+        <table class="tbl">
+          <tr><th>Function</th><th style="color:var(--orange);">MPLS OAM</th><th style="color:var(--cyan);">SRv6 OAM</th></tr>
+          <tr><td>Ping an LSP / SID path</td><td><code>ping mpls segment-routing</code> with label stack</td><td><code>ping ipv6</code> with the SRv6 SID as destination. Standard ICMPv6 echo.</td></tr>
+          <tr><td>Traceroute</td><td><code>traceroute mpls</code> — uses MPLS TTL expiry + label stack</td><td><code>traceroute ipv6</code> with SRH — uses IPv6 Hop Limit expiry. Each hop returns ICMPv6 Time Exceeded.</td></tr>
+          <tr><td>Path verification</td><td>MPLS LSP ping (RFC 8287) with FEC validation</td><td>SRv6 OAM (RFC 9259) — ICMPv6 Echo with SRH, validates SID at each hop.</td></tr>
+          <tr><td>BFD</td><td>BFD over MPLS LSP (RFC 5884)</td><td>Seamless BFD (S-BFD) or BFD over IPv6 with SRH encapsulation</td></tr>
+          <tr><td>Error reporting</td><td>MPLS TTL expiry returns ICMP with label stack info</td><td>IPv6 Hop Limit expiry returns ICMPv6 with full IPv6+SRH headers — transit routers are visible</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Key Advantage: Native IPv6 Tooling</h2>
+        <p>Unlike MPLS where you need specialized LSP ping/traceroute tools, SRv6 OAM uses <strong>standard IPv6 tools</strong>. A <code>ping6</code> to an End.DT4 SID verifies that the <strong>SRv6 underlay path and SID processing</strong> are working — the packet reaches the egress PE and the SID is recognized. To verify true <strong>overlay VPN reachability</strong> (CE-to-CE forwarding), you still need to ping the customer prefix within the VRF context, just like in MPLS.</p>
+
+        <div class="info">
+          <strong>What each ping tests:</strong><br>
+          <code>ping6 fcbb:bb01:0002:0040::</code> → Tests: SRv6 transport + SID processing at PE-2. Does NOT test VRF forwarding.<br>
+          <code>ping vrf CUST-A 10.2.2.2</code> → Tests: Full end-to-end VPN path including VRF lookup and CE reachability.
+        </div>
+
+        <div class="info green">
+          <strong>Practical benefit:</strong> Transit routers (which just do IPv6 forwarding) are visible in traceroute output — they decrement Hop Limit and return ICMPv6 Time Exceeded with their source address. In MPLS, transit P routers are often invisible unless you use MPLS-specific traceroute. SRv6 gives you IP-level visibility for free.
+        </div>
+
+        <div class="info orange">
+          <strong>Caveat:</strong> The outer IPv6 Source Address of SRv6 packets matters for OAM. When a transit node sends ICMPv6 back (e.g., Time Exceeded), the reply goes to the SA of the outer IPv6 header. If the SA isn't routable (e.g., a non-globally-reachable address), OAM replies will be lost. Most implementations use the ingress PE's loopback or locator address as the SA.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 OAM for SR-Policy Paths</h2>
+        <p>To verify a specific SR-Policy path, you construct an ICMPv6 Echo Request with the policy's SRH (full segment list). The packet follows the exact path the policy specifies, and each hop's response confirms forwarding correctness. This is the SRv6 equivalent of MPLS LSP traceroute with a specific label stack.</p>
+        <p>For Flex-Algo paths, use the algo-specific locator SIDs in the OAM probe — the probe will follow the constrained topology of that algorithm.</p>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 Security Considerations</h2>
+        <p>SRv6 introduces security considerations that differ from MPLS:</p>
+
+        <table class="tbl">
+          <tr><th>Concern</th><th>MPLS</th><th>SRv6</th></tr>
+          <tr><td>SID spoofing</td><td>MPLS labels are local — hard to spoof from outside</td><td>SRv6 SIDs are IPv6 addresses — can potentially be spoofed from any IPv6 source. Infrastructure ACLs needed at network edges.</td></tr>
+          <tr><td>Transit filtering</td><td>P routers don't filter by label content</td><td>Transit routers forward by DA prefix — same as any IPv6. ACLs must permit SRv6 locator prefixes.</td></tr>
+          <tr><td>SRH authentication</td><td>No equivalent</td><td>RFC 8754 defines an optional <strong>HMAC TLV</strong> in the SRH for path authentication. Allows nodes to verify the SRH wasn't tampered with.</td></tr>
+          <tr><td>Source address validation</td><td>Rarely applied to MPLS</td><td>uRPF on SRv6 packets can verify the SA is from a legitimate ingress PE. Important for anti-spoofing.</td></tr>
+        </table>
+
+        <div class="info orange">
+          <strong>Practical deployment note:</strong> When deploying SRv6, operators must update edge ACLs to <strong>permit SRv6 locator prefixes</strong> as valid IPv6 destinations while blocking external traffic destined to locator space. A common pattern is to filter at AS borders: only accept traffic with SRv6 DA from known peers, and only if the packet entered via an expected interface. This is analogous to the iACL (infrastructure ACL) practice for protecting loopbacks, but extended to the entire locator prefix range.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TROUBLESHOOTING ==================== -->
+    <div id="troubleshoot" class="section">
+      <div class="sec-title">Troubleshooting & Packet Capture Analysis</div>
+      <p class="sec-sub">How to read SRv6 packet captures and debug forwarding issues — the SR-MPLS engineer's guide</p>
+
+      <div class="card">
+        <h2>Reading an SRv6 Packet in Wireshark</h2>
+        <p>When you capture an SRv6 packet, here's what to look at and in what order — mapped to what you'd check in MPLS:</p>
+
+        <table class="tbl">
+          <tr><th>Check</th><th style="color:var(--orange);">MPLS: What You'd Look At</th><th style="color:var(--cyan);">SRv6: What to Look At</th></tr>
+          <tr><td>1. Is it SR-encapsulated?</td><td>Is there an MPLS header? (EtherType 0x8847)</td><td>Is Next Header = 43 (Routing)? If yes → SRH present. If NH = 4 or 41 → no SRH (single-SID or PSP stripped it).</td></tr>
+          <tr><td>2. What's the active segment?</td><td>Top label value</td><td>IPv6 DA field — this IS the active SID</td></tr>
+          <tr><td>3. How deep is the stack?</td><td>Count labels until S-bit = 1</td><td>Check <code>Last Entry</code> field in SRH. Number of SIDs = Last Entry + 1. (With H.Encaps.Red, actual segments = Last Entry + 2, because the first SID is only in DA.)</td></tr>
+          <tr><td>4. Where in the path are we?</td><td>Which label is on top (after how many pops)</td><td><code>Segments Left</code> value. SL = 0 means we're at or past the penultimate segment.</td></tr>
+          <tr><td>5. What's the VPN SID?</td><td>Bottom label (above S-bit)</td><td>SL[0] in the segment list — always the last SID to be processed</td></tr>
+          <tr><td>6. What's the inner payload?</td><td>Payload after label stack (check bottom-of-stack)</td><td>Look at the SRH's Next Header field: 4 = IPv4 inner, 41 = IPv6 inner, 143 = Ethernet (L2VPN)</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Identifying the Encapsulation Variant</h2>
+        <p>One of the first things to determine in a capture — is this H.Encaps or H.Encaps.Red?</p>
+
+        <table class="tbl">
+          <tr><th>Check</th><th>H.Encaps</th><th>H.Encaps.Red</th></tr>
+          <tr><td>Is the DA SID also in the segment list?</td><td><strong>Yes</strong> — DA = SL[Last Entry]</td><td><strong>No</strong> — DA is NOT in the segment list</td></tr>
+          <tr><td>Segments Left value</td><td>SL = Last Entry</td><td>SL = Last Entry (but total segments = Last Entry + 2)</td></tr>
+          <tr><td>Quick test</td><td>DA matches the highest-index SID in the list</td><td>DA is a SID that doesn't appear anywhere in the segment list</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Quick identification trick:</strong> Compare the IPv6 DA with SL[Last Entry]. If they match → H.Encaps. If they don't → H.Encaps.Red (the DA has the first SID which was omitted from the list).
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Decoding uSID Containers in Captures</h2>
+        <p>When micro-SIDs are in use, a single 128-bit SRH entry contains multiple packed uSIDs. Here's how to read them:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Identify the block prefix</div></div>
+          <p>The first 32 bits (4 bytes) of each segment list entry is the uSID block. It should match your domain's block (e.g., <code>fcbb:bb01</code>). If it doesn't, it's either a full-length SID or from a different domain.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Read uSIDs left-to-right after the block</div></div>
+          <p>Each 16-bit (2-byte) chunk after the block is a uSID. Read them left-to-right — the leftmost is the first to be processed (or the next to be processed if this is the DA).</p>
+          <p>Example: <code>fcbb:bb01:0001:0100:0042:0000:0000:0000</code></p>
+          <p>→ Block: <code>fcbb:bb01</code>, uSID 1: <code>0001</code> (PE-1 uN), uSID 2: <code>0100</code> (P-1 uN), uSID 3: <code>0042</code> (PE-2 End.DT4), rest is zeros (end markers).</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Zeros mean "end of container"</div></div>
+          <p>When you hit <code>0000</code>, the remaining uSID slots in this container are empty. The node processing the last non-zero uSID will decrement Segments Left and move to the next SRH entry (if any).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Common Troubleshooting Scenarios</h2>
+
+        <h3>Scenario 1: Traffic black-holed after SRv6 encapsulation</h3>
+        <table class="tbl">
+          <tr><th>Symptom</th><th>Check</th><th>Likely Cause</th></tr>
+          <tr><td>Packet never reaches egress PE</td><td>Is the DA's locator prefix in the transit routers' IPv6 FIB?</td><td>Locator not advertised in IGP, or filtered by IPv6 ACL on transit links. Verify IS-IS SRv6 locator TLV is present.</td></tr>
+          <tr><td>Packet reaches egress PE but is dropped</td><td>Does the egress PE have the SID in its local SID table?</td><td>Function not configured, or locator mismatch. Verify <code>show segment-routing srv6 sid</code>.</td></tr>
+          <tr><td>VPN traffic dropped at egress</td><td>Is the End.DT4 SID correctly bound to the VRF?</td><td>VRF not configured for SRv6, or End.DT4 SID not allocated for this VRF. Check VRF SRv6 configuration.</td></tr>
+        </table>
+
+        <h3>Scenario 2: TI-LFA backup path drops packets</h3>
+        <table class="tbl">
+          <tr><th>Symptom</th><th>Check</th><th>Likely Cause</th></tr>
+          <tr><td>Packets dropped during link failure</td><td>Capture at the repair endpoint — does it see a nested IPv6/SRH?</td><td>Endpoint can't handle nested SRH decapsulation. Check if PSP is available on the penultimate node to strip the outer SRH before delivery.</td></tr>
+          <tr><td>Microloop during convergence</td><td>Check if the TI-LFA SID list includes the new prefix originator's uN</td><td>Multihomed prefix originator change — the extra SID may be needed but causing interop issues. See ANPN-25479 optimization pattern.</td></tr>
+        </table>
+
+        <h3>Scenario 3: BGP VPN route not usable</h3>
+        <table class="tbl">
+          <tr><th>Symptom</th><th>Check</th><th>Likely Cause</th></tr>
+          <tr><td>VPN route received but not installed</td><td>Is the SRv6 SID in the Prefix-SID attribute resolvable?</td><td>The locator prefix of the remote PE is not in the IPv6 RIB. Check IGP reachability or BGP IPv6 unicast for the locator.</td></tr>
+          <tr><td>Route installed but traffic not forwarded</td><td>Is there an SR-Policy matching the color + endpoint?</td><td>Color Extended Community present but no matching SR-Policy. Check ODN template or static policy configuration.</td></tr>
+          <tr><td>SRH constructed wrong</td><td>Verify the SID Structure sub-TLV in the BGP update</td><td>Incorrect LBL/LNL/FL values cause the ingress PE to mis-parse the SID, leading to wrong uSID container packing.</td></tr>
+        </table>
+
+        <h3>Scenario 4: Flex-Algo path not used</h3>
+        <table class="tbl">
+          <tr><th>Symptom</th><th>Check</th><th>Likely Cause</th></tr>
+          <tr><td>Traffic takes default algo-0 path instead of algo-128</td><td>Is the algo-128 locator advertised by all participating nodes?</td><td>One or more nodes not participating in algo-128. Check FAD advertisement and locator TLVs in IS-IS database.</td></tr>
+          <tr><td>Algo-128 path unreachable</td><td>Are constraints too restrictive?</td><td>Affinity/SRLG constraints pruned a critical link, partitioning the algo-128 topology. Verify SPF reachability within the constrained topology.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Key CLI Commands (Vendor-Independent Concepts)</h2>
+        <p>The exact syntax varies by vendor (IOS-XR, SROS, ArcOS, Junos), but these are the operations you need:</p>
+
+        <table class="tbl">
+          <tr><th>What to Check</th><th>Concept</th><th>SR-MPLS Equivalent</th></tr>
+          <tr><td>Local SID table</td><td>List all SIDs this node owns and their behaviors</td><td><code>show mpls forwarding</code> / <code>show segment-routing mpls</code></td></tr>
+          <tr><td>Locator status</td><td>Verify locator is advertised in IGP, per-algo status</td><td><code>show isis segment-routing prefix-sid</code></td></tr>
+          <tr><td>SRv6 TE policy</td><td>Active candidate path, segment list, BSID, traffic counters</td><td><code>show segment-routing traffic-eng policy</code></td></tr>
+          <tr><td>BGP VPN SID</td><td>Check Prefix-SID attribute on received VPN routes</td><td><code>show bgp vpnv4 unicast ... detail</code> (look for label field)</td></tr>
+          <tr><td>SRH counters</td><td>Per-SID packet/byte counters at the endpoint</td><td><code>show mpls forwarding labels ...</code></td></tr>
+          <tr><td>IPv6 FIB for locator</td><td>Verify remote locators are in the forwarding table with correct next-hops</td><td><code>show mpls forwarding</code> for remote Node-SIDs</td></tr>
+          <tr><td>TI-LFA backup path</td><td>Verify TI-LFA SID list for protected prefixes</td><td><code>show isis fast-reroute</code> / <code>show ip route ... backup</code></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== SR-POLICY ==================== -->
+    <div id="srpolicy" class="section">
+      <div class="sec-title">SR-Policy Structure</div>
+      <p class="sec-sub">Color, BSID, candidate paths, segment lists — the SRv6 traffic engineering construct</p>
+
+      <div class="card">
+        <h2>What Is an SR-Policy?</h2>
+        <p>An SR-Policy is a <strong>named tunnel</strong> that steers traffic through a specific path in the network using a segment list. It's the SRv6 equivalent of an RSVP-TE LSP or an SR-MPLS policy — but expressed as a list of SRv6 SIDs.</p>
+        <p>An SR-Policy is uniquely identified by a <strong>3-tuple</strong>:</p>
+        <table class="tbl">
+          <tr><th>Field</th><th>Description</th><th>SR-MPLS Equivalent</th></tr>
+          <tr><td><strong>Headend</strong></td><td>The node that originates the policy (ingress PE)</td><td>LSP headend</td></tr>
+          <tr><td><strong>Endpoint</strong></td><td>The destination node (egress PE or Anycast group)</td><td>LSP tailend (tunnel destination)</td></tr>
+          <tr><td><strong>Color</strong></td><td>A 32-bit numeric value that represents the <em>intent</em> or SLA class (e.g., low-latency, high-bandwidth)</td><td>No direct equivalent — closest is tunnel affinity/attribute</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Color is the key innovation:</strong> BGP routes carry an extended community called the <strong>Color Extended Community</strong>. When a PE receives a VPN route with a color, it automatically maps the traffic to the SR-Policy with that color + endpoint. This is how SRv6 achieves <strong>intent-based routing</strong> — you tag traffic with a color (intent) and the policy delivers it.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SR-Policy Hierarchy</h2>
+        <p>An SR-Policy has a layered structure:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">SR-Policy (headend, endpoint, color)</div></div>
+          <p>The top-level construct. One policy can have multiple candidate paths for redundancy.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Candidate Paths (preference + origin)</div></div>
+          <p>Each candidate path has a <strong>preference</strong> (higher = more preferred) and an <strong>origin</strong> (configured locally, from PCE, or from BGP). Only the highest-preference valid candidate path is active. Others are standby.</p>
+          <table class="tbl">
+            <tr><th>Origin</th><th>Description</th></tr>
+            <tr><td>Configuration</td><td>Statically defined on the headend</td></tr>
+            <tr><td>PCE (Path Computation Element)</td><td>Dynamically computed by an external controller</td></tr>
+            <tr><td>BGP SR-Policy</td><td>Distributed via BGP from a controller or RR</td></tr>
+          </table>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Segment Lists (weighted)</div></div>
+          <p>Each candidate path contains one or more <strong>segment lists</strong> (SID lists). Multiple segment lists can be used for <strong>weighted ECMP</strong> — traffic is distributed across them based on configurable weights.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">4</div><div class="stp-t">Segments (SIDs)</div></div>
+          <p>Each segment list is an ordered list of SRv6 SIDs that define the explicit path. These get encoded into the SRH when traffic is steered into the policy.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Binding SID (BSID)</h2>
+        <p>Every SR-Policy has an associated <strong>Binding SID (BSID)</strong> — a local SID that, when matched in the DA, causes the node to steer the packet into the policy's active segment list. This is how policies are <strong>stitched together</strong> across domains.</p>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">SR-MPLS BSID</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">A local MPLS label. When the headend receives a packet with this label, it pops it and pushes the policy's SID list. Used for Inter-AS stitching and nested policies.</p>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--cyan);">SRv6 BSID (End.B6.Encaps)</h4>
+            <p style="font-size:12.5px;color:var(--text-dim);">An SRv6 SID (IPv6 address). When matched in the DA, the node encapsulates the packet with the policy's SRH. Same purpose: policy stitching and abstraction.</p>
+          </div>
+        </div>
+
+        <div class="info green">
+          <strong>BSID as abstraction:</strong> A remote node only needs to know the BSID — it doesn't need to know the full SID list inside the policy. If the policy path changes (re-routed by PCE, new candidate path), the BSID stays the same. This is the same abstraction as MPLS Binding SIDs.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How Traffic Gets Steered into an SR-Policy</h2>
+        <p>The "glue" that connects VPN routes to SR-Policies is the <strong>Color Extended Community + BGP next-hop resolution</strong>. Here's the chain:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Egress PE attaches Color Extended Community to VPN route</div></div>
+          <p>Example: VPN route 10.2.2.0/24 with Color = 100 (meaning "low-latency"), next-hop = PE-2.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Ingress PE receives the route and resolves the next-hop</div></div>
+          <p>PE-1 looks for an SR-Policy matching <strong>(endpoint = PE-2, color = 100)</strong>. If found, the VPN route is steered into that policy.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">SR-Policy provides the SRH encapsulation</div></div>
+          <p>The policy's active segment list (e.g., [P1-uN, PE-2-End.DT4]) becomes the SRH. Traffic matching the VPN route is encapsulated with outer IPv6 + this SRH and forwarded.</p>
+        </div>
+
+        <div class="info">
+          <strong>Fallback behavior:</strong> If no SR-Policy matches the (endpoint, color) tuple, the behavior depends on configuration. Common options: fall back to a policy with no color (best-effort IGP path), fall back to the default BGP next-hop resolution (just use the End.DT4 SID with no TE path), or drop the route (strict mode).
+        </div>
+
+        <div class="info orange">
+          <strong>SR-MPLS comparison:</strong> In SR-MPLS, the same mechanism exists — Color Extended Community on VPN routes maps to SR-TE policies. The steering logic is identical. Only the encapsulation changes (MPLS label stack vs IPv6 SRH).
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== L3VPN ==================== -->
+    <div id="l3vpn" class="section">
+      <div class="sec-title">L3VPN & L2VPN Overview</div>
+      <p class="sec-sub">How SRv6 replaces the MPLS VPN label stack — L3VPN in detail, L2VPN/EVPN overview</p>
+
+      <div class="card">
+        <h2>MPLS L3VPN Recap</h2>
+        <p>In MPLS L3VPN, a PE-to-PE VPN packet has a two-label stack:</p>
+        <div class="pkt"><div class="pkt-c bg-mpls" style="flex:1;"><div class="l">Transport Label</div><div class="v">Node-SID of egress PE (16003)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-vpn" style="flex:1;"><div class="l">VPN Label</div><div class="v">Per-VRF or per-CE label (24001)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Payload</div><div class="v">Customer IPv4/IPv6 packet</div></div></div>
+        <div class="ann">Transport label gets the packet to the egress PE</div>
+        <div class="ann">VPN label tells the egress PE which VRF to use for lookup</div>
+        <div class="ann">BGP carries the VPN label in the MP_REACH_NLRI as a 3-byte label field</div>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 L3VPN — The Mapping</h2>
+        <p>In SRv6 L3VPN, the two MPLS labels are replaced by <strong>SRv6 SIDs</strong>:</p>
+
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">IPv6 DA (Active SID)</div><div class="v">Egress PE's End.DT4 SID or Anycast SID</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-srh" style="flex:1;"><div class="l">SRH (optional)</div><div class="v">SL[0]: End.DT4 SID (VPN decap)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer IPv4/IPv6 packet</div></div></div>
+
+        <table class="tbl">
+          <tr><th>Function</th><th style="color:var(--orange);">MPLS L3VPN</th><th style="color:var(--cyan);">SRv6 L3VPN</th></tr>
+          <tr><td>Get to egress PE</td><td>Transport label (Node-SID)</td><td>IPv6 routing via locator prefix (DA carries the SID)</td></tr>
+          <tr><td>Identify VRF</td><td>VPN label (per-VRF or per-CE)</td><td>End.DT4 / End.DT6 SID (one per VRF on egress PE)</td></tr>
+          <tr><td>Signal VPN binding</td><td>BGP label field in MP_REACH_NLRI</td><td>BGP Prefix-SID attribute with SRv6 SID TLV</td></tr>
+          <tr><td>VPN route target</td><td>RT extended community (unchanged)</td><td>RT extended community (unchanged)</td></tr>
+          <tr><td>VPN route distinguisher</td><td>RD in NLRI (unchanged)</td><td>RD in NLRI (unchanged)</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Key simplification:</strong> In MPLS L3VPN you need a separate transport label AND a VPN label. In SRv6, if there's no TE policy involved and the egress PE is reachable via IGP, the End.DT4 SID alone is sufficient — its locator prefix provides the transport routing, and the function provides the VPN action. One SID does both jobs.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>VPN SID Types for L3VPN</h2>
+        <table class="tbl">
+          <tr><th>SRv6 SID</th><th>MPLS Equivalent</th><th>Behavior</th><th>When Used</th></tr>
+          <tr><td><strong>End.DT4</strong></td><td>Per-VRF VPN label (IPv4)</td><td>Decap outer IPv6, IPv4 lookup in VRF</td><td>Standard IPv4 L3VPN</td></tr>
+          <tr><td><strong>End.DT6</strong></td><td>Per-VRF VPN label (IPv6)</td><td>Decap outer IPv6, IPv6 lookup in VRF</td><td>Standard IPv6 L3VPN</td></tr>
+          <tr><td><strong>End.DT46</strong></td><td>—</td><td>Decap, dual-stack lookup in VRF</td><td>Dual-stack VRF</td></tr>
+          <tr><td><strong>End.DX4</strong></td><td>Per-CE VPN label (IPv4)</td><td>Decap, forward to specific IPv4 NH</td><td>Per-CE cross-connect</td></tr>
+          <tr><td><strong>End.DX6</strong></td><td>Per-CE VPN label (IPv6)</td><td>Decap, forward to specific IPv6 NH</td><td>Per-CE cross-connect</td></tr>
+        </table>
+
+        <h3>Per-VRF vs Per-CE (Same as MPLS)</h3>
+        <p>Just like in MPLS L3VPN, the egress PE can allocate VPN SIDs in two modes:</p>
+        <ul>
+          <li><strong>Per-VRF (End.DT4/DT6)</strong>: One SID per VRF. Egress PE does a full IP lookup in the VRF. More scalable (fewer SIDs).</li>
+          <li><strong>Per-CE (End.DX4/DX6)</strong>: One SID per CE next-hop. Egress PE forwards directly to the CE without a VRF lookup. Used for specific traffic engineering or simplified forwarding.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 L3VPN with SR-Policy (Traffic Engineering)</h2>
+        <p>When an SR-Policy is involved (e.g., for low-latency path), the packet has additional SIDs in the SRH for the policy's explicit path:</p>
+
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">IPv6 DA</div><div class="v">First hop SID (SR-Policy waypoint)</div></div></div>
+        <div class="pkt">
+          <div class="pkt-c bg-srh"><div class="l">SRH SL</div><div class="v">2</div></div>
+          <div class="pkt-c bg-seg"><div class="l">SL[2]</div><div class="v">Waypoint-A (TE hop)</div></div>
+          <div class="pkt-c bg-seg"><div class="l">SL[1]</div><div class="v">Waypoint-B (TE hop)</div></div>
+          <div class="pkt-c bg-vpn"><div class="l">SL[0]</div><div class="v">End.DT4 (VPN decap)</div></div>
+        </div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner</div><div class="v">Customer packet</div></div></div>
+        <div class="ann">The SR-Policy's segment list is the TE path. End.DT4 is always the last SID.</div>
+        <div class="ann">Equivalent to: MPLS [Transport-Label-A | Transport-Label-B | VPN-Label]</div>
+      </div>
+
+      <div class="card">
+        <h2>L2VPN and EVPN with SRv6</h2>
+        <p>SRv6 also supports <strong>L2VPN</strong> services via EVPN (RFC 9136). The mapping follows the same pattern as L3VPN — MPLS service labels are replaced by SRv6 SIDs:</p>
+
+        <table class="tbl">
+          <tr><th>EVPN Function</th><th>MPLS</th><th>SRv6 SID</th></tr>
+          <tr><td>Per-EVI (VLAN-aware bundle)</td><td>EVPN service label</td><td><strong>End.DX2</strong> — decap outer IPv6, forward L2 frame on specific AC (attachment circuit)</td></tr>
+          <tr><td>BUM traffic (broadcast/unknown/multicast)</td><td>Ingress replication label</td><td><strong>End.DT2M</strong> — decap, replicate to all ACs in the bridge domain</td></tr>
+          <tr><td>Unicast (known MAC)</td><td>EVPN service label</td><td><strong>End.DT2U</strong> — decap, forward to specific MAC destination in bridge domain</td></tr>
+          <tr><td>IRB (Integrated Routing & Bridging)</td><td>VPN + EVPN labels</td><td>Combination of End.DT2/End.DT4/End.DT46 SIDs</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>Same BGP signaling:</strong> EVPN routes (AFI/SAFI 25/70) carry the SRv6 VPN SID in the BGP Prefix-SID attribute, exactly like L3VPN. Route Targets, Route Distinguishers, and ESI (Ethernet Segment Identifier) work identically. The only change is the SID behavior type (End.DX2 instead of End.DT4).
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BGP SIGNALING ==================== -->
+    <div id="bgp-srv6" class="section">
+      <div class="sec-title">BGP Signaling for SRv6</div>
+      <p class="sec-sub">How BGP carries SRv6 SIDs — replacing the MPLS label field in VPNv4/VPNv6 updates</p>
+
+      <div class="card">
+        <h2>The Problem: MPLS Labels Don't Fit in SRv6</h2>
+        <p>In MPLS L3VPN, BGP carries a 3-byte VPN label in the MP_REACH_NLRI (RFC 4364). In SRv6, the "VPN label" is replaced by a 128-bit SRv6 SID. A 3-byte label field can't hold a 16-byte IPv6 address. So BGP needed a new mechanism.</p>
+
+        <h3>Two Approaches Standardized</h3>
+        <table class="tbl">
+          <tr><th>Approach</th><th>RFC / Draft</th><th>How It Works</th></tr>
+          <tr><td><strong>BGP Prefix-SID</strong></td><td>RFC 9252</td><td>New BGP attribute: <strong>SRv6 SID Information Sub-TLV</strong> attached to VPN routes. Carries the full SRv6 SID, behavior, and SID structure.</td></tr>
+          <tr><td><strong>SRv6 SID in Label Field</strong></td><td>RFC 9252 (transposition)</td><td>Encodes part of the SRv6 SID in the existing MPLS label field using a transposition scheme. Enables backward-compatible signaling through existing RRs.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>BGP Prefix-SID Attribute (Primary Method)</h2>
+        <p>The egress PE advertises its VPN routes with a new BGP attribute containing the SRv6 VPN SID:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Egress PE allocates an End.DT4 SID for the VRF</div></div>
+          <p>Example: <code>fcbb:bb01:0003:0040::</code> where <code>fcbb:bb01:0003::/48</code> is the PE's locator and <code>0040</code> is the End.DT4 function.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">BGP UPDATE includes the SRv6 SID in the Prefix-SID attribute</div></div>
+          <p>The attribute contains:</p>
+          <table class="tbl">
+            <tr><th>Field</th><th>Value</th><th>Purpose</th></tr>
+            <tr><td>SRv6 SID</td><td><code>fcbb:bb01:0003:0040::</code></td><td>The full 128-bit VPN SID</td></tr>
+            <tr><td>SRv6 Endpoint Behavior</td><td>End.DT4 (0x0012)</td><td>Tells the ingress PE what this SID does</td></tr>
+            <tr><td>SRv6 SID Structure</td><td>Locator Block: 32, Locator Node: 16, Function: 16, Arg: 0</td><td>Tells the ingress PE how to parse the SID into parts</td></tr>
+          </table>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Ingress PE receives the route and installs it</div></div>
+          <p>The ingress PE extracts the SRv6 SID from the Prefix-SID attribute and uses it as the VPN SID in the SRH when encapsulating customer traffic. If an SR-Policy exists for the endpoint + color, the VPN SID becomes the last entry in the policy's segment list.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 SID Structure Sub-TLV</h2>
+        <p>This is the critical new piece. In MPLS, a VPN label is opaque — the ingress PE doesn't need to understand its structure. In SRv6, the ingress PE needs to know how the SID is structured to perform <strong>micro-SID compression</strong> and proper SRH construction.</p>
+
+        <div class="sid-fmt">
+          <div class="sid-p bg-ipv6" style="flex:2;"><div class="n">Locator Block</div><div class="val">fcbb:bb01:</div><div class="bits">32 bits (LBL)</div></div>
+          <div class="sid-p bg-srh" style="flex:1;"><div class="n">Locator Node</div><div class="val">0003</div><div class="bits">16 bits (LNL)</div></div>
+          <div class="sid-p bg-seg" style="flex:1;"><div class="n">Function</div><div class="val">0040</div><div class="bits">16 bits (FL)</div></div>
+          <div class="sid-p bg-pay" style="flex:2;"><div class="n">Argument</div><div class="val">0000:0000:0000</div><div class="bits">64 bits (AL)</div></div>
+        </div>
+
+        <p>The <strong>SID Structure</strong> sub-TLV tells the remote PE: "This SID has a 32-bit block, 16-bit node, 16-bit function, and 0-bit argument." This enables the remote PE to:</p>
+        <ul>
+          <li>Pack multiple uSIDs into a single SRH entry (micro-SID compression)</li>
+          <li>Correctly construct the SRH with proper container alignment</li>
+          <li>Understand which part of the SID is the routable locator vs the local function</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Transposition Scheme (Backward Compatibility)</h2>
+        <p>For networks with existing Route Reflectors that don't understand the SRv6 Prefix-SID attribute, RFC 9252 defines a <strong>transposition</strong> scheme. The variable part of the SRv6 SID (function + argument) is encoded into the existing 3-byte MPLS label field:</p>
+
+        <div class="info">
+          <strong>How transposition works:</strong> The label field carries the <strong>function bits</strong> of the SID (e.g., <code>0040</code>). The Prefix-SID attribute carries the rest (locator block + node). The ingress PE reconstructs the full SID by combining both. This lets legacy RRs forward the UPDATE without understanding SRv6 — they just see a label like any MPLS VPN route.
+        </div>
+
+        <table class="tbl">
+          <tr><th>Component</th><th>Where It Goes</th><th>Example</th></tr>
+          <tr><td>Locator Block + Node</td><td>SRv6 SID field in Prefix-SID attribute</td><td><code>fcbb:bb01:0003::</code></td></tr>
+          <tr><td>Function (transposed)</td><td>MPLS label field in MP_REACH_NLRI</td><td><code>0x000040</code> (as 3-byte label)</td></tr>
+          <tr><td>Transposition info</td><td>SRv6 SID Structure sub-TLV (offset + length)</td><td>Transpose offset: 48, length: 16</td></tr>
+        </table>
+
+        <div class="ann">Ingress PE takes locator from Prefix-SID + function from label field → reconstructs full SID</div>
+      </div>
+
+      <div class="card">
+        <h2>BGP Signaling Comparison</h2>
+        <table class="tbl">
+          <tr><th>Aspect</th><th style="color:var(--orange);">MPLS L3VPN</th><th style="color:var(--cyan);">SRv6 L3VPN</th></tr>
+          <tr><td>VPN binding carried in</td><td>3-byte MPLS label in MP_REACH_NLRI</td><td>SRv6 SID in BGP Prefix-SID attribute (RFC 9252)</td></tr>
+          <tr><td>AFI/SAFI</td><td>VPNv4 (1/128), VPNv6 (2/128)</td><td>Same: VPNv4 (1/128), VPNv6 (2/128)</td></tr>
+          <tr><td>Next-Hop</td><td>Loopback IPv4 (or IPv6-mapped)</td><td>IPv6 loopback (must be within SRv6 locator space)</td></tr>
+          <tr><td>Route Targets</td><td>Extended community (unchanged)</td><td>Extended community (unchanged)</td></tr>
+          <tr><td>Route Distinguisher</td><td>8-byte RD in NLRI</td><td>8-byte RD in NLRI (unchanged)</td></tr>
+          <tr><td>RR transparency</td><td>Label is opaque to RR</td><td>Prefix-SID is opaque to RR (or use transposition)</td></tr>
+          <tr><td>Color/TE intent</td><td>Color Extended Community</td><td>Color Extended Community (unchanged)</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>For your Inter-AS context:</strong> In Inter-AS Option C, where RRs exchange VPNv4 routes between ASes, the SRv6 SID replaces the MPLS VPN label. The eBGP VPNv4 session between RRs carries the Prefix-SID attribute with the SRv6 SID. The remote AS needs reachability to the egress PE's locator prefix — this is typically achieved via <strong>BGP IPv6 unicast</strong> (redistributing locator prefixes into BGP between ASes) or <strong>inter-domain IGP</strong>. Note: there is no BGP Labeled Unicast (BGP-LU) equivalent in SRv6 — locators are standard IPv6 prefixes, not labeled. The Binding SID (End.B6) can play the role of the ASBR label abstraction from MPLS Option B/C.
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FULL PACKET WALK ==================== -->
+    <div id="pkt-walk" class="section">
+      <div class="sec-title">Full L3VPN Packet Walk</div>
+      <p class="sec-sub">End-to-end: CE → Ingress PE → Transit → Egress PE → CE — every hop, every header</p>
+
+      <div class="card">
+        <h2>Scenario</h2>
+        <p>Customer sends an IPv4 packet from CE-1 (behind PE-1) to CE-2 (behind PE-2) across an SRv6 backbone. PE-1 is the ingress, PE-2 is the egress. An SR-Policy provides the path via a midpoint node P1. PE-2 uses per-VRF mode (End.DT4).</p>
+
+        <table class="tbl">
+          <tr><th>Node</th><th>Role</th><th>SRv6 SIDs</th></tr>
+          <tr><td>PE-1</td><td>Ingress PE</td><td>Locator: <code>fcbb:bb01:0001::/48</code></td></tr>
+          <tr><td>P1</td><td>Transit (SR-Policy midpoint)</td><td>uN: <code>fcbb:bb01:0010::</code></td></tr>
+          <tr><td>PE-2</td><td>Egress PE</td><td>Locator: <code>fcbb:bb01:0002::/48</code><br>End.DT4: <code>fcbb:bb01:0002:0040::</code></td></tr>
+        </table>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">CE-1 → PE-1: Customer IPv4 packet arrives</div></div>
+        <p>CE-1 sends a standard IPv4 packet. It knows nothing about SRv6.</p>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">IPv4</div><div class="v">Src: 10.1.1.1 (CE-1) → Dst: 10.2.2.2 (CE-2)</div></div></div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">PE-1: VRF lookup → SRv6 encapsulation</div></div>
+        <p>PE-1 does an IPv4 lookup in the VRF. Finds 10.2.2.0/24 → next-hop PE-2 via BGP VPNv4. The BGP route carries PE-2's End.DT4 SID (<code>fcbb:bb01:0002:0040::</code>) in the Prefix-SID attribute. An SR-Policy (color X, endpoint PE-2) exists with segment list: [P1-uN, PE-2-End.DT4].</p>
+        <p>PE-1 encapsulates using <strong>H.Encaps.Red</strong> (the first SID goes only in the DA, not duplicated in the segment list):</p>
+
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">Outer IPv6</div><div class="v">SA: PE-1 loopback | DA: fcbb:bb01:0010:: (P1 uN — active SID) | NH: 43 (Routing)</div></div></div>
+        <div class="pkt">
+          <div class="pkt-c bg-srh"><div class="l">SRH SL</div><div class="v">0</div></div>
+          <div class="pkt-c bg-vpn"><div class="l">SL[0]</div><div class="v">fcbb:bb01:0002:0040:: (End.DT4)</div></div>
+        </div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner IPv4</div><div class="v">Src: 10.1.1.1 → Dst: 10.2.2.2 (unchanged)</div></div></div>
+        <div class="ann">H.Encaps.Red: DA carries the first SID (P1's uN). SRH only contains the remaining SID (End.DT4). SL = 0.</div>
+        <div class="ann">With plain H.Encaps, SL[1] = P1-uN would also appear in the list and SL would be 1.</div>
+        <div class="ann"><strong>Source Address:</strong> The outer IPv6 SA is typically PE-1's loopback or locator address. This must be globally routable — it's used as the reply-to address for ICMPv6 errors (traceroute, unreachable) and for RPF checks. Some implementations allow configuring a specific SA for SRv6-encapsulated traffic.</div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Transit routers between PE-1 and P1: standard IPv6 forwarding</div></div>
+        <p>Transit routers see DA = <code>fcbb:bb01:0010::</code>. They match P1's locator prefix in their IPv6 FIB and forward via ECMP. <strong>No SRH processing — just normal IPv6 longest-prefix-match forwarding.</strong> Packet is unchanged.</p>
+        <div class="ann">This is identical to MPLS transit label swapping, but using IPv6 FIB instead of LFIB</div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n pur">4</div><div class="stp-t">At P1: uN processing (advance SID pointer)</div></div>
+        <p>P1 matches its own uN in the DA. Processes the uN behavior:</p>
+        <p>• SL is already 0 (H.Encaps.Red — P1's uN was only in the DA, not in the segment list)</p>
+        <p>• Copy SL[0] (<code>fcbb:bb01:0002:0040::</code>) to DA</p>
+        <p>• <strong>SL = 0 after processing:</strong> P1 is the penultimate segment</p>
+        <p>• <strong>If P1 has PSP flavor:</strong> remove the SRH entirely before forwarding</p>
+        <p>• Forward toward PE-2 via IGP FIB (ECMP preserved)</p>
+
+        <div class="info">
+          <strong>Note on H.Encaps.Red:</strong> With H.Encaps.Red, the first SID (P1's uN) was only in the DA, not in the segment list. So when P1 processes, SL is already 0 — meaning P1 is both the first segment to process AND the penultimate segment. This is the common case for a 2-SID policy with H.Encaps.Red. With plain H.Encaps, SL would start at 1 and decrement to 0 here.
+        </div>
+
+        <p><strong>With PSP at P1 — packet leaving P1:</strong></p>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">Outer IPv6</div><div class="v">SA: PE-1 | DA: fcbb:bb01:0002:0040:: (End.DT4) | NH: 4 (IPv4)</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-rem" style="flex:1;"><div class="l">SRH</div><div class="v">Removed by PSP</div></div></div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner IPv4</div><div class="v">10.1.1.1 → 10.2.2.2</div></div></div>
+        <div class="ann">Clean IPv6 + inner IPv4. No SRH. PE-2 just sees DA = End.DT4 SID.</div>
+
+        <div class="divider"></div>
+
+        <p><strong>Without PSP at P1 — packet leaving P1:</strong></p>
+        <div class="pkt"><div class="pkt-c bg-ipv6" style="flex:2;"><div class="l">Outer IPv6</div><div class="v">DA: fcbb:bb01:0002:0040:: | NH: 43 (Routing)</div></div></div>
+        <div class="pkt">
+          <div class="pkt-c bg-srh"><div class="l">SRH SL</div><div class="v">0</div></div>
+          <div class="pkt-c bg-vpn"><div class="l">SL[0]</div><div class="v">End.DT4</div></div>
+        </div>
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner IPv4</div><div class="v">10.1.1.1 → 10.2.2.2</div></div></div>
+        <div class="ann">SRH still present with SL=0. PE-2 must process and remove it (USP behavior).</div>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n">5</div><div class="stp-t">Transit routers between P1 and PE-2: IPv6 forwarding</div></div>
+        <p>Same as step 3. Transit routers forward via <code>fcbb:bb01:0002::/48</code> (PE-2's locator). ECMP. No SRH processing.</p>
+      </div>
+
+      <div class="stp">
+        <div class="stp-h"><div class="stp-n grn">6</div><div class="stp-t">At PE-2: End.DT4 processing — VPN decap</div></div>
+        <p>PE-2 matches DA = its own End.DT4 SID (<code>fcbb:bb01:0002:0040::</code>). Executes End.DT4 behavior:</p>
+        <p>• If SRH is present (no PSP): remove SRH first (USP), then decap</p>
+        <p>• Remove the outer IPv6 header</p>
+        <p>• Extract the inner IPv4 packet (10.1.1.1 → 10.2.2.2)</p>
+        <p>• Lookup 10.2.2.2 in the VRF routing table</p>
+        <p>• Forward to CE-2</p>
+
+        <div class="pkt"><div class="pkt-c bg-pay" style="flex:1;"><div class="l">IPv4</div><div class="v">Src: 10.1.1.1 → Dst: 10.2.2.2 (original customer packet)</div></div></div>
+        <div class="marker-ok">✓ Customer packet delivered to CE-2. Identical to MPLS L3VPN — CE sees no difference.</div>
+      </div>
+
+      <div class="card">
+        <h2>Side-by-Side: MPLS L3VPN vs SRv6 L3VPN Packet Walk</h2>
+        <table class="tbl">
+          <tr><th>Hop</th><th style="color:var(--orange);">MPLS L3VPN</th><th style="color:var(--cyan);">SRv6 L3VPN</th></tr>
+          <tr><td>CE→PE (ingress)</td><td>IPv4 arrives. PE pushes [Transport-Label | VPN-Label]</td><td>IPv4 arrives. PE encaps in IPv6 + SRH with [uN-SID, End.DT4-SID]</td></tr>
+          <tr><td>Transit</td><td>MPLS label swap on transport label</td><td>IPv6 longest-prefix-match on DA's locator</td></tr>
+          <tr><td>Midpoint (P1)</td><td>Label swap (or pop if PHP)</td><td>uN: shift SID pointer, update DA (or PSP: remove SRH)</td></tr>
+          <tr><td>More transit</td><td>MPLS label swap toward egress PE</td><td>IPv6 forwarding toward egress PE's locator</td></tr>
+          <tr><td>PE (egress)</td><td>Pop transport label → VPN label lookup → VRF → forward</td><td>Match End.DT4 in DA → decap outer IPv6 → VRF lookup → forward</td></tr>
+          <tr><td>PE→CE (egress)</td><td>Original IPv4 to CE</td><td>Original IPv4 to CE</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== GOTCHAS ==================== -->
+    <div id="gotchas" class="section">
+      <div class="sec-title">Common Gotchas</div>
+      <p class="sec-sub">Mistakes and surprises that catch SR-MPLS engineers moving to SRv6</p>
+
+      <div class="card">
+        <h2>1. SRH Segment List Is in Reverse Order</h2>
+        <p>SL[0] is the <em>last</em> segment, SL[n] is the <em>first</em>. When reading packet captures, the bottom of the segment list is the first SID processed, and the top is the last. This is the opposite of MPLS where the top label is the first processed. Virtually every engineer gets confused by this at first.</p>
+      </div>
+
+      <div class="card">
+        <h2>2. Segments Left Off-by-One (H.Encaps vs H.Encaps.Red)</h2>
+        <p>With <strong>H.Encaps</strong>, the first SID is duplicated in both the DA and SL[n], so SL = n. With <strong>H.Encaps.Red</strong> (the common variant), the first SID is only in the DA, so SL = n-1. If you see SL = 1 with 2 SIDs in the segment list, you're looking at H.Encaps. If SL = 1 with 1 SID in the list, it's H.Encaps.Red. Getting this wrong leads to incorrect path analysis.</p>
+      </div>
+
+      <div class="card">
+        <h2>3. "End" and "uN" Are Different IANA Behavior Codes</h2>
+        <p>This guide (and most documentation) treats End and uN as synonymous. Functionally they're similar — both are node-level transit SIDs. But they have <strong>different IANA behavior codes</strong>:</p>
+        <table class="tbl">
+          <tr><th>Behavior</th><th>IANA Code</th><th>Defined In</th></tr>
+          <tr><td>End</td><td>0x0001</td><td>RFC 8986 — full-length SID (128-bit)</td></tr>
+          <tr><td>End with PSP</td><td>0x0002</td><td>RFC 8986</td></tr>
+          <tr><td>End with PSP, USP</td><td>0x0004</td><td>RFC 8986</td></tr>
+          <tr><td>uN (micro-SID Node)</td><td>0x003E</td><td>draft-ietf-spring-srv6-srh-compression</td></tr>
+          <tr><td>uA (micro-SID Adjacency)</td><td>0x003F</td><td>draft-ietf-spring-srv6-srh-compression</td></tr>
+        </table>
+        <p>In packet captures and BGP Prefix-SID attributes, the behavior code tells you whether you're looking at a full-length SID or a micro-SID. Don't assume they're interchangeable in debugging.</p>
+      </div>
+
+      <div class="card">
+        <h2>4. PSP ≠ PHP — Don't Apply MPLS Mental Models</h2>
+        <p>PSP removes the SRH extension header; the outer IPv6 header stays with the final SID in the DA. PHP removes a label and exposes what's underneath. PSP is controlled by the penultimate node's SID flavor, not by the egress. See the PSP vs PHP section for the full breakdown.</p>
+      </div>
+
+      <div class="card">
+        <h2>5. SRH Is Optional for Single-SID Packets</h2>
+        <p>If there's only one SID (e.g., End.DT4 with no SR-Policy), the SRH can be omitted entirely. The packet is just outer IPv6 (DA = SID) + inner payload. Many engineers expect SRH to always be present — it's not. Check for Next Header = 43 (Routing) to know if SRH exists.</p>
+      </div>
+
+      <div class="card">
+        <h2>6. uA SID Kills ECMP (Unless Bundle uA)</h2>
+        <p>A per-link uA pins traffic to one physical link, even if there are multiple parallel links to the same neighbor. If you're troubleshooting congestion on a TI-LFA backup path that uses uA, this is likely the cause. Use uN for ECMP or verify if your platform supports bundle/parallel uA.</p>
+      </div>
+
+      <div class="card">
+        <h2>7. Nested SRH in TI-LFA Is Not Like Nested Labels</h2>
+        <p>In SR-MPLS, TI-LFA pushes extra labels onto the same flat stack — the egress just pops more labels. In SRv6, TI-LFA creates a fully nested IPv6+SRH encapsulation (H.Encaps). The endpoint must decapsulate the entire outer layer, then process the inner layer. Some platforms don't handle this correctly, especially for non-SRv6 (native IPv6) prefixes.</p>
+      </div>
+
+      <div class="card">
+        <h2>8. Locator ≠ Loopback</h2>
+        <p>In MPLS, the loopback address and the Node-SID prefix are often the same /32. In SRv6, the locator is a /48 (or /32) prefix — it's a <em>range</em>, not a single address. All SIDs on the node are addresses within this range. Don't confuse the locator prefix with the node's management loopback address — they're different things, though the loopback may be within the locator range.</p>
+      </div>
+    </div>
+
+    <!-- ==================== CHEAT SHEET ==================== -->
+    <div id="cheat" class="section">
+      <div class="sec-title">SRv6 Cheat Sheet</div>
+      <p class="sec-sub">Quick reference for SR-MPLS engineers</p>
+
+      <div class="card">
+        <h2>Translation Table: SR-MPLS → SRv6</h2>
+        <table class="tbl">
+          <tr><th>SR-MPLS Concept</th><th>SRv6 Equivalent</th><th>Key Difference</th></tr>
+          <tr><td>MPLS label</td><td>128-bit IPv6 SID (or 16-bit uSID)</td><td>SID is a routable IPv6 address</td></tr>
+          <tr><td>Label stack</td><td>SRH (Segment Routing Header)</td><td>SIDs stored in reverse order in SRH</td></tr>
+          <tr><td>Top label = active</td><td>IPv6 DA = active SID</td><td>Active SID is in the DA field, not a stack</td></tr>
+          <tr><td>Pop label</td><td>Decrement SL, copy next SID to DA</td><td>Or left-shift in uSID container</td></tr>
+          <tr><td>Bottom-of-stack (S-bit)</td><td>Segments Left = 0</td><td>Integer pointer vs bit flag</td></tr>
+          <tr><td>Node-SID</td><td>uN (End)</td><td>Both globally routable. ECMP in both.</td></tr>
+          <tr><td>Adj-SID (local)</td><td>uA (End.X)</td><td>uA is globally routable via locator — no Node-SID needed</td></tr>
+          <tr><td>VPN label</td><td>End.DT4 / End.DT6 SID</td><td>VPN SID is just another SID in the list</td></tr>
+          <tr><td>Binding SID</td><td>End.B6.Encaps</td><td>Same concept, IPv6 encoding</td></tr>
+          <tr><td>PHP (Penultimate Hop Pop)</td><td>PSP (Penultimate Segment Pop)</td><td>PSP removes SRH header, not a single label. Controlled by penultimate, not egress.</td></tr>
+          <tr><td>Implicit-null (label 3)</td><td>PSP flavor on the SID</td><td>PSP is per-SID config, not per-prefix signaling</td></tr>
+          <tr><td>Label swap</td><td>uN processing (shift-and-forward)</td><td>Left-shift in uSID container</td></tr>
+          <tr><td>TI-LFA: push repair labels</td><td>TI-LFA: H.Encaps outer IPv6/SRH</td><td>Creates nested encapsulation (outer + inner)</td></tr>
+          <tr><td>Prefix-SID Anycast</td><td>Anycast locator (A-flag)</td><td>Same concept — multiple nodes, same prefix</td></tr>
+          <tr><td>SRGB (SR Global Block)</td><td>uSID Block prefix (e.g., fcbb:bb01::/32)</td><td>Shared prefix for all nodes in the domain</td></tr>
+          <tr><td>Flex-Algo Prefix-SID (per algo)</td><td>Locator per algo (e.g., algo-128 locator)</td><td>MPLS: different label per algo. SRv6: different locator prefix per algo.</td></tr>
+          <tr><td>Color Extended Community</td><td>Color Extended Community (unchanged)</td><td>Same in both. Maps VPN routes to SR-Policies.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 SID Flavors Quick Reference</h2>
+        <table class="tbl">
+          <tr><th>Flavor</th><th>When</th><th>Who</th><th>Action</th></tr>
+          <tr><td><strong>PSP</strong></td><td>SL = 0 after processing</td><td>Penultimate segment node</td><td>Remove SRH. IPv6 header stays.</td></tr>
+          <tr><td><strong>USP</strong></td><td>SL = 0 at final node</td><td>Egress (last segment)</td><td>Remove SRH. Default behavior.</td></tr>
+          <tr><td><strong>USD</strong></td><td>SL = 0 at final node</td><td>Egress</td><td>Remove SRH + outer IPv6. Full decap.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Key Packet Fields to Watch</h2>
+        <table class="tbl">
+          <tr><th>Field</th><th>Location</th><th>Purpose</th></tr>
+          <tr><td><strong>DA (Destination Address)</strong></td><td>IPv6 header</td><td>Carries the currently active SID</td></tr>
+          <tr><td><strong>Segments Left (SL)</strong></td><td>SRH</td><td>Pointer — decrements at each waypoint. When 0, all segments traversed.</td></tr>
+          <tr><td><strong>Last Entry</strong></td><td>SRH</td><td>Index of the last SID in the list</td></tr>
+          <tr><td><strong>Next Header (NH)</strong></td><td>IPv6 header</td><td>43 = Routing Header (SRH follows). 4 = IPv4 payload. 41 = IPv6 payload.</td></tr>
+          <tr><td><strong>Routing Type</strong></td><td>SRH</td><td>Always 4 for SRH</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>SRv6 Overhead Comparison</h2>
+        <table class="tbl">
+          <tr><th>Segments</th><th>SR-MPLS</th><th>SRv6 (H.Encaps.Red)</th><th>SRv6 (uSID)</th></tr>
+          <tr><td>1 (no SRH needed)</td><td>4 B</td><td>40 B (outer IPv6 only — no SRH)</td><td>40 B</td></tr>
+          <tr><td>2</td><td>8 B</td><td>64 B (40 IPv6 + 8 SRH + 1×16 SID)</td><td>~48 B (40 + 8 SRH with 1 uSID container)</td></tr>
+          <tr><td>3</td><td>12 B</td><td>80 B (40 + 8 + 2×16)</td><td>~48 B (3 uSIDs in 1 container)</td></tr>
+          <tr><td>6</td><td>24 B</td><td>128 B (40 + 8 + 5×16)</td><td>~48 B (6 uSIDs in 1 container)</td></tr>
+          <tr><td>8</td><td>32 B</td><td>160 B (40 + 8 + 7×16)</td><td>~64 B (2 uSID containers)</td></tr>
+        </table>
+        <div class="ann">All SRv6 regular calculations use H.Encaps.Red: first SID is only in DA, not duplicated in segment list</div>
+        <div class="ann">For 1 segment, no SRH is needed — just outer IPv6 header with DA = the SID (40 bytes total)</div>
+        <div class="ann">H.Encaps (non-reduced) adds 16B to each row (first SID duplicated in list)</div>
+      </div>
+
+      <div class="card">
+        <h2>RFC & Standards Reference</h2>
+        <table class="tbl">
+          <tr><th>Standard</th><th>Title</th><th>Covers</th></tr>
+          <tr><td><strong>RFC 8402</strong></td><td>Segment Routing Architecture</td><td>SR architecture, SID types, control plane overview</td></tr>
+          <tr><td><strong>RFC 8754</strong></td><td>IPv6 Segment Routing Header (SRH)</td><td>SRH wire format, processing rules, security</td></tr>
+          <tr><td><strong>RFC 8986</strong></td><td>SRv6 Network Programming</td><td>All endpoint behaviors (End, End.X, End.DT4, etc.), SID flavors (PSP, USP, USD)</td></tr>
+          <tr><td><strong>RFC 9252</strong></td><td>BGP Overlay Services Based on SRv6</td><td>BGP Prefix-SID attribute, SRv6 SID TLV, transposition, L3VPN/EVPN signaling</td></tr>
+          <tr><td><strong>RFC 9256</strong></td><td>Segment Routing Policy Architecture</td><td>SR-Policy structure, candidate paths, BSID, color, weighted ECMP</td></tr>
+          <tr><td><strong>RFC 9350</strong></td><td>IGP Flexible Algorithm</td><td>Flex-Algo definition, FAD, metric types, constraints</td></tr>
+          <tr><td><strong>RFC 9259</strong></td><td>Operations and Management of SRv6</td><td>SRv6 OAM, ping/traceroute with SRH</td></tr>
+          <tr><td><strong>RFC 9352</strong></td><td>IS-IS Extensions for SRv6</td><td>SRv6 locator TLV, SID sub-TLVs, Flex-Algo in IS-IS</td></tr>
+          <tr><td><strong>RFC 9513</strong></td><td>OSPFv3 Extensions for SRv6</td><td>SRv6 locator LSA, SID TLVs for OSPFv3</td></tr>
+          <tr><td><strong>draft-ietf-spring-srv6-srh-compression</strong></td><td>SRv6 SID List Compression (uSID)</td><td>Micro-SID format, uSID container, shift-and-forward processing</td></tr>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+    document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
