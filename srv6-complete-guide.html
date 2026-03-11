@@ -243,6 +243,102 @@
 
   .marker-ok { background: rgba(52,211,153,0.08); border: 1px dashed var(--green); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--green); text-align: center; font-weight: 600; }
   .marker-bad { background: rgba(248,113,113,0.08); border: 1px dashed var(--red); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--red); text-align: center; font-weight: 600; }
+
+  /* ===== LIGHT MODE ===== */
+  body.light {
+    --bg: #f5f7fa;
+    --bg-grain: none;
+    --surface: #ffffff;
+    --surface2: #eef1f6;
+    --surface3: #e2e7ef;
+    --border: #d1d8e4;
+    --border-light: #b8c3d4;
+    --text: #1a2332;
+    --text-dim: #4a5568;
+    --text-muted: #8694a7;
+    --blue: #2563eb;
+    --cyan: #0891b2;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #d97706;
+    --purple: #7c3aed;
+    --yellow: #b45309;
+    --pink: #db2777;
+    --teal: #0d9488;
+  }
+
+  body.light .bg-ipv6 { background: rgba(37,99,235,0.12); color: #1e40af; }
+  body.light .bg-srh { background: rgba(124,58,237,0.1); color: #5b21b6; }
+  body.light .bg-seg { background: rgba(5,150,105,0.1); color: #065f46; }
+  body.light .bg-vpn { background: rgba(13,148,136,0.1); color: #115e59; }
+  body.light .bg-pay { background: rgba(107,114,128,0.08); color: #374151; }
+  body.light .bg-mpls { background: rgba(217,119,6,0.1); color: #92400e; }
+  body.light .bg-tilfa { background: rgba(217,119,6,0.08); color: #92400e; }
+  body.light .bg-rem { background: repeating-linear-gradient(45deg, rgba(220,38,38,0.04), rgba(220,38,38,0.04) 4px, rgba(220,38,38,0.01) 4px, rgba(220,38,38,0.01) 8px); color: #991b1b; border: 1px dashed rgba(220,38,38,0.3); }
+
+  body.light code { background: rgba(37,99,235,0.08); color: var(--cyan); }
+  body.light .info { background: rgba(37,99,235,0.05); }
+  body.light .info.green { background: rgba(5,150,105,0.05); }
+  body.light .info.orange { background: rgba(217,119,6,0.05); }
+  body.light .info.red { background: rgba(220,38,38,0.05); }
+  body.light .info.purple { background: rgba(124,58,237,0.05); }
+  body.light .info.yellow { background: rgba(180,83,9,0.05); }
+  body.light .marker-ok { background: rgba(5,150,105,0.06); }
+  body.light .marker-bad { background: rgba(220,38,38,0.06); }
+
+  body.light .nav-item.active { color: var(--blue); background: rgba(37,99,235,0.08); border-left: 2px solid var(--blue); }
+  body.light .sidebar { background: #ffffff; border-right-color: var(--border); }
+  body.light .card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  body.light .t-r { background: rgba(220,38,38,0.1); color: var(--red); }
+  body.light .t-g { background: rgba(5,150,105,0.1); color: var(--green); }
+  body.light .t-o { background: rgba(217,119,6,0.1); color: var(--orange); }
+  body.light .t-b { background: rgba(37,99,235,0.1); color: var(--blue); }
+  body.light .t-p { background: rgba(124,58,237,0.1); color: var(--purple); }
+
+  /* ===== THEME TOGGLE ===== */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    margin-top: 4px;
+  }
+
+  .theme-toggle-btn {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .theme-toggle-btn::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.2s;
+  }
+
+  body.light .theme-toggle-btn::after {
+    left: 20px;
+    background: var(--blue);
+  }
+
+  .theme-toggle-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    user-select: none;
+  }
 </style>
 </head>
 <body>
@@ -253,6 +349,11 @@
     <div class="sidebar-brand">
       <h1>SRv6 Guide</h1>
       <p>For SR-MPLS Engineers</p>
+    </div>
+
+    <div class="theme-toggle">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode"></button>
+      <span class="theme-toggle-label">Light mode</span>
     </div>
 
     <div class="nav-group">
@@ -2055,6 +2156,21 @@
     document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.querySelector('.theme-toggle-label').textContent = isLight ? 'Dark mode' : 'Light mode';
+    localStorage.setItem('guide-theme', isLight ? 'light' : 'dark');
+  }
+
+  // Restore saved theme preference
+  (function() {
+    const saved = localStorage.getItem('guide-theme');
+    if (saved === 'light') {
+      document.body.classList.add('light');
+      document.querySelector('.theme-toggle-label').textContent = 'Dark mode';
+    }
+  })();
 </script>
 </body>
 </html>
