@@ -10,6 +10,7 @@ Each guide is a self-contained HTML file with sidebar navigation, dark/light mod
 |-------|------|-------------|
 | SRv6 Complete Guide | [srv6-complete-guide.html](srv6-complete-guide.html) | SRv6 for SR-MPLS engineers — covers SID structure, micro-SIDs, behaviors, flavors, TI-LFA, SR-Policy, VPN, and full packet walks |
 | BGP EVPN Guide | [bgp-evpn-guide.html](bgp-evpn-guide.html) | From VXLAN fundamentals to production L2VPN — VLANs, VXLAN packet format, BGP EVPN route types, ARP suppression, multi-homing, IRB, and full deployment walkthrough |
+| SR-MPLS Complete Guide | [sr-mpls-guide.html](sr-mpls-guide.html) | From LDP/RSVP-TE to Segment Routing — SRGB/SRLB, Prefix-SID, Adj-SID, ISIS/OSPF extensions, TI-LFA, SR-Policy, Flex-Algo, BGP-LS, L3VPN, and LDP migration |
 
 ## Usage
 
