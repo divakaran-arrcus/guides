@@ -581,7 +581,7 @@
     </div>
 
     <div class="info">
-      <strong>Special MAC addresses:</strong> <code>ff:ff:ff:ff:ff:ff</code> is the broadcast MAC — every device on the segment receives this frame. MAC addresses starting with <code>01:xx:xx:xx:xx:xx</code> are multicast MACs.
+      <strong>Special MAC addresses:</strong> The multicast/group bit is bit 0 (the least-significant bit) of the first byte of a MAC address. Any MAC with an odd first byte is a multicast (group) address — for example <code>01:xx:xx:xx:xx:xx</code>, <code>03:xx:xx:xx:xx:xx</code>, <code>05:xx:xx:xx:xx:xx</code>, etc. <code>01:xx:xx:xx:xx:xx</code> is the most common multicast prefix (used by Ethernet multicast, STP, LACP, etc.) but not the only one. <code>ff:ff:ff:ff:ff:ff</code> is a special case: the broadcast address (every device on the segment receives it), which is technically also a multicast address since its first byte (0xff = 255) is odd.
     </div>
 
     <h3>How Ethernet Differs from IP Routing</h3>
@@ -1071,9 +1071,9 @@
 
     <div class="sid-fmt">
       <div class="sid-p bg-pay" style="flex:4;">
-        <div class="n">Reserved</div>
+        <div class="n">Flags</div>
         <div class="val">8 bits</div>
-        <div class="bits">Always 0 (flag bits)</div>
+        <div class="bits">0x08 (I=1); bit 3 (I-flag) must be set to 1</div>
       </div>
       <div class="sid-p bg-seg" style="flex:24;">
         <div class="n">VNI — VXLAN Network Identifier</div>
@@ -1145,21 +1145,21 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;">
         <div style="background:rgba(79,159,255,0.15);border:2px solid var(--blue);border-radius:6px;padding:8px;text-align:center;">
           <div style="color:var(--blue);font-weight:700;">Leaf-1</div>
-          <div style="color:var(--cyan);font-size:9px;">VTEP: 10.1.1.1</div>
+          <div style="color:var(--cyan);font-size:9px;">VTEP: 192.168.1.1</div>
           <div style="font-size:9px;color:var(--text-muted);">VNI 10100 active</div>
         </div>
         <div style="background:rgba(79,159,255,0.08);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
           <div style="color:var(--text-dim);font-weight:700;">Leaf-2</div>
-          <div style="font-size:9px;color:var(--text-muted);">VTEP: 10.1.1.2</div>
+          <div style="font-size:9px;color:var(--text-muted);">VTEP: 192.168.1.2</div>
         </div>
         <div style="background:rgba(79,159,255,0.15);border:2px solid var(--blue);border-radius:6px;padding:8px;text-align:center;">
           <div style="color:var(--blue);font-weight:700;">Leaf-3</div>
-          <div style="color:var(--cyan);font-size:9px;">VTEP: 10.1.1.3</div>
+          <div style="color:var(--cyan);font-size:9px;">VTEP: 192.168.1.3</div>
           <div style="font-size:9px;color:var(--text-muted);">VNI 10100 active</div>
         </div>
         <div style="background:rgba(79,159,255,0.08);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
           <div style="color:var(--text-dim);font-weight:700;">Leaf-4</div>
-          <div style="font-size:9px;color:var(--text-muted);">VTEP: 10.1.1.4</div>
+          <div style="font-size:9px;color:var(--text-muted);">VTEP: 192.168.1.4</div>
         </div>
       </div>
 
@@ -1167,7 +1167,7 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
         <div style="background:rgba(52,211,153,0.1);border:1px solid var(--green);border-radius:4px;padding:6px;text-align:center;">
           <div style="color:var(--green);font-size:10px;font-weight:700;">VM-A</div>
-          <div style="font-size:9px;color:var(--text-muted);">10.0.1.10</div>
+          <div style="font-size:9px;color:var(--text-muted);">10.1.1.10</div>
           <div style="font-size:9px;color:var(--text-muted);">VLAN 100</div>
         </div>
         <div style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:6px;text-align:center;">
@@ -1175,7 +1175,7 @@
         </div>
         <div style="background:rgba(52,211,153,0.1);border:1px solid var(--green);border-radius:4px;padding:6px;text-align:center;">
           <div style="color:var(--green);font-size:10px;font-weight:700;">VM-B</div>
-          <div style="font-size:9px;color:var(--text-muted);">10.0.1.20</div>
+          <div style="font-size:9px;color:var(--text-muted);">10.1.1.20</div>
           <div style="font-size:9px;color:var(--text-muted);">VLAN 100</div>
         </div>
         <div style="background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:6px;text-align:center;">
@@ -1185,8 +1185,8 @@
 
       <!-- VXLAN tunnel indicator -->
       <div style="margin-top:14px;border:1px dashed var(--purple);border-radius:6px;padding:10px;text-align:center;">
-        <div style="color:var(--purple);font-size:10px;font-weight:700;margin-bottom:4px;">VXLAN OVERLAY TUNNEL: Leaf-1 VTEP (10.1.1.1) ←→ Leaf-3 VTEP (10.1.1.3)</div>
-        <div style="font-size:10px;color:var(--text-dim);">VM-A frame → Leaf-1 encapsulates in VXLAN VNI 10100 → UDP/IP to 10.1.1.3 → Spine-1 or Spine-2 (ECMP) → Leaf-3 decapsulates → delivers to VM-B</div>
+        <div style="color:var(--purple);font-size:10px;font-weight:700;margin-bottom:4px;">VXLAN OVERLAY TUNNEL: Leaf-1 VTEP (192.168.1.1) ←→ Leaf-3 VTEP (192.168.1.3)</div>
+        <div style="font-size:10px;color:var(--text-dim);">VM-A frame → Leaf-1 encapsulates in VXLAN VNI 10100 → UDP/IP to 192.168.1.3 → Spine-1 or Spine-2 (ECMP) → Leaf-3 decapsulates → delivers to VM-B</div>
       </div>
 
       <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -1204,7 +1204,7 @@
       <div style="display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr;gap:8px;align-items:center;">
         <!-- Leaf-1 -->
         <div style="border:1px solid var(--blue);border-radius:6px;padding:10px;text-align:center;">
-          <div style="color:var(--blue);font-size:10px;margin-bottom:6px;text-transform:uppercase;">Leaf-1 (VTEP 10.1.1.1)</div>
+          <div style="color:var(--blue);font-size:10px;margin-bottom:6px;text-transform:uppercase;">Leaf-1 (VTEP 192.168.1.1)</div>
           <div style="background:rgba(79,159,255,0.1);border-radius:3px;padding:6px;margin-bottom:4px;">
             <div style="color:var(--cyan);">VLAN 100</div>
             <div style="font-size:10px;color:var(--text-muted);">local to this switch</div>
@@ -1226,7 +1226,7 @@
         <div style="text-align:center;color:var(--orange);">→</div>
         <!-- Leaf-3 -->
         <div style="border:1px solid var(--blue);border-radius:6px;padding:10px;text-align:center;">
-          <div style="color:var(--blue);font-size:10px;margin-bottom:6px;text-transform:uppercase;">Leaf-3 (VTEP 10.1.1.3)</div>
+          <div style="color:var(--blue);font-size:10px;margin-bottom:6px;text-transform:uppercase;">Leaf-3 (VTEP 192.168.1.3)</div>
           <div style="background:rgba(79,159,255,0.1);border-radius:3px;padding:6px;margin-bottom:4px;">
             <div style="color:var(--cyan);">VLAN 100</div>
             <div style="font-size:10px;color:var(--text-muted);">local to this switch</div>
@@ -1242,7 +1242,7 @@
     <h3>MPLS Label vs VXLAN VNI: The Parallel</h3>
     <table class="tbl">
       <tr><th>Property</th><th style="color:var(--orange);">MPLS VPN Label</th><th style="color:var(--cyan);">VXLAN VNI</th></tr>
-      <tr><td>Purpose</td><td>Identifies the VPN (VRF)</td><td>Identifies the virtual L2 segment</td></div></tr>
+      <tr><td>Purpose</td><td>Identifies the VPN (VRF)</td><td>Identifies the virtual L2 segment</td></tr>
       <tr><td>Scope</td><td>Global (distributed by BGP)</td><td>Global (configured or distributed by BGP EVPN)</td></tr>
       <tr><td>Locally significant?</td><td>Local label at ingress PE; remote PE has its own label</td><td>VNI is consistent across all VTEPs (not locally significant like MPLS)</td></tr>
       <tr><td>Carried in</td><td>MPLS label stack</td><td>VXLAN header (8 bytes)</td></tr>
@@ -1264,14 +1264,14 @@
       <div class="ann">Outer Ethernet: changes hop-by-hop (rewritten at each L3 hop, like normal IP routing)</div>
 
       <div class="pkt" style="margin-top:4px;">
-        <div class="pkt-c bg-ipv6" style="flex:3;"><div class="l">Outer Src IP</div><div class="v">VTEP-1: 10.1.1.1</div></div>
-        <div class="pkt-c bg-ipv6" style="flex:3;"><div class="l">Outer Dst IP</div><div class="v">VTEP-3: 10.1.1.3</div></div>
+        <div class="pkt-c bg-ipv6" style="flex:3;"><div class="l">Outer Src IP</div><div class="v">VTEP-1: 192.168.1.1</div></div>
+        <div class="pkt-c bg-ipv6" style="flex:3;"><div class="l">Outer Dst IP</div><div class="v">VTEP-3: 192.168.1.3</div></div>
         <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Proto</div><div class="v">UDP (17)</div></div>
         <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">TTL</div><div class="v">64</div></div>
       </div>
       <div class="ann">Outer IP: src=ingress VTEP, dst=egress VTEP. Unchanged end-to-end (only TTL decrements)</div>
 
-      <div class="info blue">
+      <div class="info">
         <strong>QoS: DSCP and ECN Copying.</strong> Most VTEP implementations copy the inner IP DSCP value to the outer IP DSCP field at encapsulation time. This preserves QoS priority end-to-end — traffic marked as high-priority (e.g., DSCP EF for voice) by the application remains high-priority in the underlay, so spine QoS policies treat it correctly. ECN (Explicit Congestion Notification) bits may also be propagated to the outer header, allowing congestion signaling to work across the tunnel. On decapsulation, the egress VTEP preserves the inner DSCP unchanged (it was never modified), so the receiving host sees the original marking.
       </div>
 
@@ -1724,7 +1724,7 @@
         <h4 style="color:var(--orange);">MPLS (L3VPN)</h4>
         <p><strong>What gets encapsulated:</strong> Only the IP packet. The original Ethernet header is stripped at the PE.</p>
         <p><strong>Label stack:</strong> VPN label (bottom) + Transport label (top) pushed in front of IP header.</p>
-        <p><strong>Overhead:</strong> 8 bytes (2 x 4-byte MPLS labels) per label.</p>
+        <p><strong>Overhead:</strong> 4 bytes per label, 8 bytes total for a typical 2-label stack.</p>
         <p><strong>Forwarding:</strong> Label switching at every hop — swaps transport label.</p>
         <p><strong>Service:</strong> L3VPN — IP routing between sites. No L2 (MAC) information carried.</p>
         <p><strong>MTU impact:</strong> Adds 8 bytes (2 labels) → underlay needs 1508 bytes for 1500B packets.</p>
@@ -2395,18 +2395,18 @@
       </div>
       <div class="sid-p bg-srh" style="flex:3;">
         <div class="n">ESI (Ethernet Segment ID)</div>
-        <div class="val">00:01:02:03:04:05:06:07:08:09</div>
+        <div class="val">01:00:11:22:33:44:55:00:66:77</div>
         <div class="bits">10 bytes</div>
       </div>
       <div class="sid-p bg-vpn" style="flex:2;">
         <div class="n">Ethernet Tag ID</div>
-        <div class="val">0 (per-EVI) or VNI</div>
+        <div class="val">0 (per-EVI) or 0xFFFFFFFF (per-ES)</div>
         <div class="bits">4 bytes</div>
       </div>
     </div>
     <div class="ann">RD makes the route globally unique in BGP</div>
     <div class="ann">ESI identifies the Ethernet Segment (the multi-homed link or LAG) — must be the same on both VTEPs</div>
-    <div class="ann">Ethernet Tag 0 = per-EVI route (applies to all VNIs in the EVI); specific value = per-VLAN/VNI</div>
+    <div class="ann">Ethernet Tag = 0 for per-EVI routes; 0xFFFFFFFF (MAX_ET) for per-ES routes. VNI is carried in the MPLS Label field, not the Ethernet Tag.</div>
   </div>
 
   <div class="card">
@@ -2567,7 +2567,7 @@
       </div>
       <div class="sid-p bg-srh" style="flex:3;">
         <div class="n">ESI</div>
-        <div class="val">00:01:02:03:04:05:06:07:08:09</div>
+        <div class="val">01:00:11:22:33:44:55:00:66:77</div>
         <div class="bits">10 bytes</div>
       </div>
       <div class="sid-p bg-seg" style="flex:1;">
@@ -2584,6 +2584,7 @@
     <div class="ann">ESI must match exactly between VTEP-1 and VTEP-2 for them to recognize they share the same segment</div>
     <div class="ann">Type-4 routes are scoped to the ESI — they use RT 0:ESI (auto-derived from ESI) for import/export</div>
     <div class="ann">DF election result: one VTEP becomes active forwarder for BUM; both can forward known-unicast (active/active)</div>
+    <div class="ann">RD assigned number is 0 because Type-4 is scoped to the Ethernet Segment (not a specific EVI). Unlike Type-2/Type-3 routes that use EVI-ID (e.g., :100), Type-4 routes are ES-global.</div>
   </div>
 
   <div class="card">
@@ -2606,7 +2607,7 @@
       </div>
       <div class="sid-p bg-ipv6" style="flex:1.5;">
         <div class="n">RD</div>
-        <div class="val">192.168.1.1:100</div>
+        <div class="val">192.168.1.1:1</div>
         <div class="bits">8 bytes</div>
       </div>
       <div class="sid-p bg-srh" style="flex:2;">
@@ -2631,7 +2632,7 @@
       </div>
       <div class="sid-p bg-seg" style="flex:2;">
         <div class="n">GW IP (optional)</div>
-        <div class="val">10.1.2.1</div>
+        <div class="val">0.0.0.0</div>
         <div class="bits">4 or 16 bytes</div>
       </div>
       <div class="sid-p bg-vpn" style="flex:1.5;">
@@ -2642,7 +2643,7 @@
     </div>
     <div class="ann">IP Prefix = the subnet being advertised (e.g., 10.1.2.0/24 — an entire subnet, not a single host MAC)</div>
     <div class="ann">MPLS Label carries the L3 VNI — used for inter-subnet routing (symmetric IRB requires an L3 VNI per tenant VRF)</div>
-    <div class="ann">Gateway IP is the anycast gateway IP — used when advertising external routes into the EVPN fabric</div>
+    <div class="ann">Gateway IP = 0.0.0.0 in most VXLAN implementations; the BGP Next-Hop attribute (VTEP IP) is used for forwarding instead</div>
     <div class="ann">In DCI (Data Center Interconnect) scenarios, Type-5 is used to advertise summarized subnet routes between DC sites</div>
 
     <div class="info purple">
@@ -3026,7 +3027,7 @@
 
     <div class="pkt" style="margin-top:6px;">
       <div class="pkt-c bg-mpls" style="flex:3;"><div class="l">Extended Community: Route Target</div><div class="v">65000:10100</div></div>
-      <div class="pkt-c bg-mpls" style="flex:3;"><div class="l">Extended Community: Encapsulation</div><div class="v">VXLAN (0x0308)</div></div>
+      <div class="pkt-c bg-mpls" style="flex:3;"><div class="l">Extended Community: Encapsulation</div><div class="v">Type 0x03, Sub-type 0x0C, Value 8 (VXLAN)</div></div>
     </div>
     <div class="ann">Two extended communities: RT for import/export control, and Encapsulation type to signal VXLAN (not MPLS) data plane</div>
 
@@ -4006,7 +4007,7 @@
     <h3>DF Election Process</h3>
 
     <div class="stp">
-      <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Both Leaf-1 and Leaf-2 advertise Type-4 with ESI 00:11:22:33:44:55:66:77:88:99</div></div>
+      <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Both Leaf-1 and Leaf-2 advertise Type-4 with ESI 01:00:11:22:33:44:55:00:66:77</div></div>
       <p>Host-C is dual-homed to Leaf-1 (192.168.1.1) and Leaf-2 (192.168.1.2). Both are configured with the same ESI. Both advertise Type-4 routes tagged with the ES-Import RT derived from the ESI.</p>
     </div>
 
@@ -4027,6 +4028,10 @@
         <tr><td>VLAN 201</td><td>201 mod 2 = 1 → index 1</td><td><span class="tag t-b">Leaf-2</span></td><td>Leaf-1 (blocks BUM to ES)</td></tr>
       </table>
       <div class="ann">Only the DF forwards BUM (Broadcast, Unknown unicast, Multicast) traffic from the VXLAN fabric to the ES. The Non-DF drops BUM destined to the ES to prevent duplicates.</div>
+    </div>
+
+    <div class="info">
+      <strong>DF Election Algorithms — RFC 7432 vs RFC 8584:</strong> The modulo-based algorithm shown above is the default defined in RFC 7432. RFC 8584 introduced two improved algorithms: <strong>Preference-based</strong> (allows manual DF assignment by configuring a preference value per VTEP, enabling explicit control over which leaf is DF for which segments) and <strong>HRW (Highest Random Weight)</strong> (uses a hash of the VTEP IP and VNI for more even statistical distribution across VTEPs, especially when the number of VTEPs is not a power of two). Most modern EVPN implementations support multiple algorithms negotiated via BGP. The modulo method is shown here for simplicity; production deployments with more than two VTEPs per ES may use HRW for more even BUM load distribution.
     </div>
 
     <div class="stp">
@@ -4136,7 +4141,7 @@
       <p>Leaf-1 immediately withdraws the per-ES Type-1 route (1 BGP UPDATE).</p>
       <div class="pkt">
         <div class="pkt-c bg-rem" style="flex:1.2;"><div class="l">WITHDRAWN</div><div class="v">Type-1 per-ES</div></div>
-        <div class="pkt-c bg-mpls" style="flex:2;"><div class="l">ESI</div><div class="v">00:11:22:33:44:55:66:77:88:99</div></div>
+        <div class="pkt-c bg-mpls" style="flex:2;"><div class="l">ESI</div><div class="v">01:00:11:22:33:44:55:00:66:77</div></div>
         <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Eth Tag</div><div class="v">0xFFFFFFFF (all EVI)</div></div>
       </div>
     </div>
@@ -4367,15 +4372,16 @@
 
     <h3>Type-5 NLRI Format</h3>
     <div class="pkt">
-      <div class="pkt-c bg-vpn" style="flex:1.2;"><div class="l">RD</div><div class="v">192.168.1.1:0</div></div>
+      <div class="pkt-c bg-vpn" style="flex:1.2;"><div class="l">RD</div><div class="v">192.168.1.3:1</div></div>
       <div class="pkt-c bg-pay" style="flex:1.5;"><div class="l">ESI</div><div class="v">0 (all zeros)</div></div>
       <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Eth Tag ID</div><div class="v">0</div></div>
       <div class="pkt-c bg-ipv6" style="flex:0.6;"><div class="l">IP Prefix Len</div><div class="v">24</div></div>
       <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">IP Prefix</div><div class="v">10.2.2.0</div></div>
-      <div class="pkt-c bg-seg" style="flex:1;"><div class="l">Gateway IP</div><div class="v">192.168.1.3 (VTEP)</div></div>
+      <div class="pkt-c bg-seg" style="flex:1;"><div class="l">Gateway IP</div><div class="v">0.0.0.0</div></div>
       <div class="pkt-c bg-mpls" style="flex:0.8;"><div class="l">MPLS Label</div><div class="v">50000 (L3 VNI)</div></div>
     </div>
     <div class="ann">Extended Community: RT=65000:50000 (VRF RT) | Router's MAC EC: Leaf-3's router MAC for inner Ethernet reconstruction</div>
+    <div class="ann">Gateway IP = 0.0.0.0 in most VXLAN implementations; the BGP Next-Hop attribute (VTEP IP) is used for forwarding instead</div>
 
     <h3>Type-5 vs VPNv4 — The Connection to L3VPN</h3>
     <div class="info"><strong>For the L3VPN engineer:</strong> Type-5 IS essentially VPNv4. It carries an IP prefix with an RD, RT, and a "label" (the L3 VNI). The only differences are the address family (L2VPN EVPN vs VPNv4) and the encapsulation (VXLAN vs MPLS). The control-plane logic is identical.</div>
@@ -4670,6 +4676,9 @@
       <tr><td>MAC flapping alerts</td><td>Host actually moving (live migration), or duplicate MAC</td><td>Check MAC mobility sequence numbers in Type-2 routes</td></tr>
       <tr><td>BUM flooding excessive</td><td>ARP suppression not enabled</td><td>Enable ARP/ND suppression on EVI; verify MAC+IP in Type-2 routes</td></tr>
       <tr><td>Asymmetric traffic (one direction works)</td><td>Missing reverse Type-2 route</td><td>Check BGP table on both ends — verify bidirectional Type-2 advertisement</td></tr>
+      <tr><td>ESI not forming / no DF elected</td><td>ESI mismatch between leaves</td><td>Verify same ESI configured on both leaves for the same ES</td></tr>
+      <tr><td>Duplicate packets to dual-homed host</td><td>DF election not working or split-horizon failure</td><td>Check Type-4 routes and DF election state on both leaves</td></tr>
+      <tr><td>No ECMP to dual-homed host</td><td>Type-1 per-EVI route missing (aliasing broken)</td><td>Verify Type-1 routes with correct ESI advertised by both VTEPs</td></tr>
     </table>
   </div>
 
