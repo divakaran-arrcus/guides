@@ -14,6 +14,7 @@ Each guide is a self-contained HTML file with sidebar navigation, dark/light mod
 | MPLS to SRv6 Migration Guide | [mpls-to-srv6-migration-guide.html](mpls-to-srv6-migration-guide.html) | SR-MPLS to SRv6 migration — coexistence models, gateway stitching, per-service migration (L3VPN, L2VPN, SR-TE), phase planning, and full packet walks |
 | DC Fabric Design Guide | [dc-fabric-design-guide.html](dc-fabric-design-guide.html) | From legacy 3-tier to modern leaf-spine — IP fabrics, VXLAN, BGP EVPN, multi-tenancy, symmetric IRB, multi-site DCI, and full packet walks |
 | SR-TE Policy Guide | [sr-te-policy-guide.html](sr-te-policy-guide.html) | Segment Routing Traffic Engineering — SR Policies, ODN, PCE/PCEP, constraints, flex-algo integration, BSID chaining, VPN steering, and full packet walks |
+| SRv6 Network Programming | [srv6-network-programming-guide.html](srv6-network-programming-guide.html) | Advanced SRv6 operations — uSID behaviors (uN, uA, uDT, uDX, uB6), headend encapsulation, SRv6 TE policies, cross-domain B6 chaining, SR-MPLS interworking, and 5 detailed packet walks |
 
 ## Usage
 
