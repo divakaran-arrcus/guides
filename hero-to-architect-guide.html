@@ -2870,7 +2870,7 @@ You:   "That is the root cause. Now show me the minimal fix."</code></pre>
       <p><strong>git bisect workflow with an agent:</strong></p>
       <pre><code>git bisect start
 git bisect bad                        # current commit is broken
-git bisect good f185e18               # known-good commit
+git bisect good &lt;known-good-sha&gt;       # last commit known to pass the test
 # git checks out the midpoint commit
 # Ask agent: "Run pytest tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date"
 # If PASS: git bisect good
@@ -2961,7 +2961,7 @@ AssertionError</code></pre>
 
       <h2>9.10 The systematic-debugging skill and Kilo Debug mode</h2>
       <p><strong>Claude Code</strong> has no built-in <code>/debug</code> slash command. Do not look for one — it does not exist. The correct path is the <code>superpowers:systematic-debugging</code> skill. Invoke it via the Skill tool or by typing the skill name in a Claude Code session. The skill enforces the 5-stage cycle (§9.1), requires evidence at each stage, and prevents the agent from advancing to Fix without a stated root cause. It is the structured alternative to ad-hoc debugging.</p>
-      <p><strong>Kilo Code</strong> provides a dedicated <strong>Debug mode</strong> — a constrained diagnostic mode that limits the agent to read-only operations until a root cause is stated. In Debug mode, Kilo Code will not write code, will not modify files, and will not run fix commands. It can run tests, read files, and add print statements for tracing. This constraint is the point: it forces the agent to produce a diagnosis before it is permitted to act. Debug mode is exited explicitly when you approve the root cause statement.</p>
+      <p><strong>Kilo Code</strong> provides a dedicated <strong>Debug mode</strong> — designed for targeted diagnostics. In practice, Debug mode encodes the diagnostic-before-fix discipline by surfacing tools and prompts oriented around reading, tracing, and root-cause analysis rather than writing fixes. <strong>Verify exact enforcement guarantees against current Kilo Code docs</strong>, as mode constraints evolve across versions. The pedagogical value is the same regardless: switching to Debug mode is a signal to yourself (and the agent) to slow down and diagnose before patching.</p>
       <p><strong>Patterns and limits (both tools):</strong></p>
       <ul>
         <li>Both tools work best when fed the evidence described in §9.7 — full test output, relevant stack frame, minimal reproducer.</li>
