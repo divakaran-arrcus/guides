@@ -6206,6 +6206,175 @@ gemini extensions install --source &lt;git-url&gt;</code></pre>
       </dl>
     </section>
 
+    <section id="ref-reading" class="section">
+      <h1>Further Reading</h1>
+      <p class="lede">Canonical documentation, curated community resources, and pointers to other guides in this series. Updated periodically — always verify URLs are current.</p>
+
+      <h2>Canonical Documentation</h2>
+
+      <div class="card-grid">
+
+        <div class="tool-card">
+          <h4>Claude Code Docs</h4>
+          <p><strong>URL:</strong> <code>https://docs.anthropic.com/claude-code</code></p>
+          <p><strong>What's there:</strong> Official reference for install, slash commands, hooks, skills, plugins, settings.json schema, MCP integration, and the Claude Code SDK for programmatic use.</p>
+          <p><strong>Freshness:</strong> Maintained by Anthropic — updated with each Claude Code release. Verify the URL is current; the canonical domain may shift between docs.anthropic.com and docs.claude.ai.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>Kilo Code Docs</h4>
+          <p><strong>URL:</strong> <code>https://kilocode.ai/docs</code> — source at <code>https://github.com/Kilo-Org/kilocode</code></p>
+          <p><strong>What's there:</strong> Custom modes reference, BYO model configuration, MCP server integration, custom rules syntax, and the full slash command index.</p>
+          <p><strong>Freshness:</strong> Community-maintained; check the GitHub repo for the latest release notes. The hosted docs site may lag a version behind.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>Gemini CLI Docs</h4>
+          <p><strong>URL:</strong> <code>https://github.com/google-gemini/gemini-cli</code></p>
+          <p><strong>What's there:</strong> Install guide, GEMINI.md format, extensions system, slash command reference, MCP tool integration, and Vertex AI / ADC backend configuration.</p>
+          <p><strong>Freshness:</strong> Google-maintained open-source repo. README and /docs directory are the authoritative source; verify branch for stable vs. nightly.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>MCP Specification</h4>
+          <p><strong>URL:</strong> <code>https://modelcontextprotocol.io</code></p>
+          <p><strong>What's there:</strong> The full protocol specification, SDK docs for TypeScript and Python, transport layer reference (stdio, HTTP/SSE), and the official MCP server registry.</p>
+          <p><strong>Freshness:</strong> Anthropic-maintained. The spec evolves; check the changelog before building new servers to catch breaking changes in tool/resource schema.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>OpenSpec</h4>
+          <p><strong>URL:</strong> <code>https://github.com/Fission-AI/OpenSpec</code></p>
+          <p><strong>What's there:</strong> Spec-driven development methodology, CLI reference for <code>openspec init / validate / archive</code>, directory layout conventions, and spec lifecycle documentation.</p>
+          <p><strong>Freshness:</strong> Verify the GitHub org — the repo may have moved. The README is the primary reference; there is no separate hosted docs site as of this writing.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>SpecKit</h4>
+          <p><strong>URL:</strong> Search "SpecKit Claude Code skill" — canonical repo TBC</p>
+          <p><strong>What's there:</strong> Reference for the <code>/specify</code>, <code>/plan</code>, <code>/tasks</code>, and <code>/implement</code> slash commands; the approval-gated pipeline; and integration with OpenSpec directory conventions.</p>
+          <p><strong>Freshness:</strong> Distributed as a Claude Code skill; the canonical source repo is not yet publicly stable. Check the Superpowers marketplace or the Claude Code community for the latest install path.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>Superpowers</h4>
+          <p><strong>URL:</strong> <code>https://github.com/obra/superpowers-marketplace</code> — verify current URL</p>
+          <p><strong>What's there:</strong> The canonical Claude Code methodology plugin — brainstorming, writing plans, executing plans, TDD, systematic debugging, verification-before-completion, code review, and git worktrees skills.</p>
+          <p><strong>Freshness:</strong> Community-maintained. The marketplace repo may have moved; search "superpowers Claude Code" to find the current canonical location and install instructions.</p>
+        </div>
+
+        <div class="tool-card">
+          <h4>Antigravity (Google)</h4>
+          <p><strong>URL:</strong> Closed-source preview — search "Google Antigravity IDE agent" for current access</p>
+          <p><strong>What's there:</strong> Google's agent-first IDE built around the Gemini model family. Designed for full-task autonomy rather than assist-on-request; integrates deeply with Google Cloud toolchains.</p>
+          <p><strong>Freshness:</strong> As of this writing, Antigravity is in limited preview with no public docs URL. Monitor the Google Cloud blog and Google I/O announcements for GA access details.</p>
+        </div>
+
+      </div>
+
+      <h2>Curated Reading List</h2>
+
+      <h3>Agentic Patterns</h3>
+      <ul>
+        <li><em>"Building effective agents"</em> — Anthropic's canonical blog post laying out the core agent architecture patterns: augmented LLMs, prompt chaining, routing, parallelisation, orchestrator–subagent, and evaluator–optimizer. Search: "building effective agents anthropic blog"</li>
+        <li><em>"ReAct: Synergizing Reasoning and Acting in Language Models"</em> (Yao et al., 2022) — the foundational paper behind the think–act–observe loop that most coding agents implement. Available on arXiv.</li>
+        <li><em>"Plan-and-Execute Agents"</em> — LangChain blog post introducing the plan-then-execute architecture, separating planning from execution to reduce context churn. Search: "plan-and-execute agents langchain blog"</li>
+        <li><em>"Cognitive Architectures for Language Agents"</em> (Sumers et al., 2023) — academic survey mapping agent memory, action, and decision-making patterns. arXiv:2309.02427.</li>
+        <li><em>"Multi-Agent Systems with LLMs"</em> — Microsoft AutoGen technical report; covers orchestrator–worker patterns, human-in-the-loop, and group chat architectures. Search: "AutoGen multi-agent Microsoft research"</li>
+      </ul>
+
+      <h3>Spec-Driven Development</h3>
+      <ul>
+        <li><em>OpenSpec README</em> — <code>https://github.com/Fission-AI/OpenSpec</code> — the primary reference for the proposal → spec → implementation lifecycle and directory conventions used throughout this guide.</li>
+        <li><em>"Programs as Specifications"</em> — Dijkstra's classic formulation of correctness-by-construction; the philosophical ancestor of spec-driven dev. Search: "Dijkstra programs as specifications EWD"</li>
+        <li><em>"Specification by Example"</em> (Adzic, 2011) — the book that popularised living documentation and acceptance-test-driven specs; directly applicable to AI-assisted development workflows.</li>
+        <li><em>"The Spec is the Test"</em> — blog series on using formal specs as the ground truth for AI code generation, with concrete examples in LLM-assisted TDD. Search: "spec is the test AI TDD blog"</li>
+      </ul>
+
+      <h3>Prompting and Evals</h3>
+      <ul>
+        <li><em>Anthropic Prompt Engineering Guide</em> — <code>https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview</code> — the canonical reference for system prompt structure, chain-of-thought, XML tagging, and few-shot patterns.</li>
+        <li><em>"Eval-Driven Development"</em> — Hamel Husain's writing on building regression eval suites before changing prompts; the ML equivalent of TDD for LLM behaviour. Search: "eval-driven development hamel husain"</li>
+        <li><em>"PromptBench: Towards Evaluating the Robustness of Large Language Models on Adversarial Prompts"</em> (Zhu et al., 2023) — academic grounding for prompt regression testing. arXiv:2306.04528.</li>
+        <li><em>OpenAI Evals framework</em> — <code>https://github.com/openai/evals</code> — open-source eval harness with a large library of community-contributed eval sets; useful as a pattern reference regardless of which model you use.</li>
+        <li><em>"Measuring Massive Multitask Language Understanding"</em> (Hendrycks et al.) — foundational benchmark paper that established the modern eval methodology. Reference when designing your own domain-specific evals.</li>
+      </ul>
+
+      <h3>Open Source Coding Agents</h3>
+      <ul>
+        <li><em>Cline (formerly Claude Dev)</em> — <code>https://github.com/cline/cline</code> — VS Code extension supporting multiple backends, MCP tools, and approval-gated file editing. One of the most active open-source coding agent projects.</li>
+        <li><em>Continue.dev</em> — <code>https://continue.dev</code> — open-source VS Code / JetBrains assistant with inline completions, chat, and a custom model provider system. Strong documentation and plugin ecosystem.</li>
+        <li><em>Roo Code</em> — <code>https://github.com/RooVetGit/Roo-Code</code> — a Cline fork with additional custom modes, enhanced MCP support, and a focus on team-configurable personas. Search "Roo Code VS Code" for current canonical URL.</li>
+        <li><em>"AI Coding Assistants Compared"</em> — periodic comparison reviews published on the Sourcegraph and E2B blogs; useful for tracking how the landscape shifts between Cline, Continue, Kilo, and Cursor. Search: "AI coding assistant comparison 2025"</li>
+        <li><em>OpenHands (formerly OpenDevin)</em> — <code>https://github.com/All-Hands-AI/OpenHands</code> — fully autonomous agent platform with a web UI; good reference architecture for understanding headless agent deployment patterns.</li>
+      </ul>
+
+      <h3>Community Resources</h3>
+      <ul>
+        <li><em>Claude Code community Discord</em> — the primary real-time community for Claude Code users; covers skills, hooks, MCP servers, and workflow patterns. Access via the invite link in the official Claude Code docs.</li>
+        <li><em>r/ClaudeAI and r/ChatGPTCoding</em> — Reddit communities with case studies, tool comparisons, and workflow showcases. Signal-to-noise varies; sort by "top / past month" for highest-quality threads.</li>
+        <li><em>MCP server registry</em> — <code>https://modelcontextprotocol.io/servers</code> — the curated index of community-maintained MCP servers; browse before building to avoid reinventing existing integrations.</li>
+        <li><em>Latent Space podcast</em> — <code>https://www.latent.space</code> — in-depth technical interviews on AI engineering; episodes on coding agents, eval frameworks, and agentic infrastructure are consistently high quality.</li>
+        <li><em>Simon Willison's blog</em> — <code>https://simonwillison.net</code> — detailed, practical writing on LLM tooling, prompt engineering, and AI-assisted development workflows from a practitioner perspective.</li>
+      </ul>
+
+      <h2>If you liked this guide</h2>
+      <p>This guide builds directly on the foundational v1 guide and sits alongside a series of deep-dive networking guides in the same collection. If you want to go deeper or explore adjacent topics, start here:</p>
+
+      <div class="card-grid">
+
+        <div class="tool-card">
+          <h4>Gen AI: Zero to Hero</h4>
+          <p>The foundational guide this one builds on. Covers prompt engineering, model selection, RAG, fine-tuning, and production deployment patterns — everything you need before tackling the architect-level material in this guide.</p>
+          <p><a href="gen-ai-zero-to-hero-guide.html">Open Gen AI: Zero to Hero &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>SRv6 Complete Guide</h4>
+          <p>Deep dive into Segment Routing over IPv6 — architecture, data-plane programming, traffic engineering, and service chaining.</p>
+          <p><a href="srv6-complete-guide.html">Open SRv6 Guide &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>SRv6 Network Programming</h4>
+          <p>Advanced SRv6 network programming patterns, SID allocation, uSID, and end-to-end service delivery.</p>
+          <p><a href="srv6-network-programming-guide.html">Open SRv6 Network Programming &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>SR-MPLS Complete Guide</h4>
+          <p>Segment Routing with MPLS data plane — IGP extensions, label stack construction, adjacency and prefix SIDs, and traffic engineering integration.</p>
+          <p><a href="sr-mpls-guide.html">Open SR-MPLS Guide &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>MPLS to SRv6 Migration</h4>
+          <p>Practical migration strategies for moving production MPLS networks to SRv6, with co-existence patterns and rollback planning.</p>
+          <p><a href="mpls-to-srv6-migration-guide.html">Open Migration Guide &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>SR-TE Policy Guide</h4>
+          <p>Segment Routing Traffic Engineering policies — candidate paths, preference, binding SIDs, ODN, and controller-driven TE at scale.</p>
+          <p><a href="sr-te-policy-guide.html">Open SR-TE Guide &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>BGP EVPN Guide</h4>
+          <p>BGP EVPN fundamentals through advanced multi-homing, VXLAN integration, and data-center fabric deployment patterns.</p>
+          <p><a href="bgp-evpn-guide.html">Open BGP EVPN Guide &rarr;</a></p>
+        </div>
+
+        <div class="tool-card">
+          <h4>DC Fabric Design Guide</h4>
+          <p>Data center fabric architecture — spine-leaf topologies, underlay/overlay design, multi-pod, and operational considerations for large-scale deployments.</p>
+          <p><a href="dc-fabric-design-guide.html">Open DC Fabric Guide &rarr;</a></p>
+        </div>
+
+      </div>
+
+    </section>
+
   </main>
 </div>
 
