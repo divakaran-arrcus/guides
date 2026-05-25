@@ -2007,6 +2007,409 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       </div>
     </section>
 
+    <section id="ch7-plan" class="section">
+      <h1>7. Plan-Driven Execution</h1>
+      <p class="lede">What you'll learn: what a plan is (and how it differs from a spec), how to write one your agent can execute, when to review vs replan, and how to apply the rhythm to gitlog-report.</p>
+
+      <h2>7.1 What "plan" means here — different from spec</h2>
+      <p>In everyday speech, "spec" and "plan" are near-synonyms. In agentic development they are completely distinct artifacts with different audiences, different lifecycles, and different purposes — and confusing them is one of the most reliable ways to produce a chaotic codebase.</p>
+      <p>A <strong>spec</strong> answers the question <em>what</em>. It is a durable contract: acceptance criteria, interface definitions, edge cases. It lives in version control alongside the code, changes rarely (only when requirements change), and is written for humans and agents alike to reference indefinitely. The spec is the source of truth about intent.</p>
+      <p>A <strong>plan</strong> answers the question <em>how</em>. It is a transient execution guide: ordered tasks, files to touch, code steps, commit points. It lives for the duration of one implementation session (or one sprint). Once the feature is merged, the plan is either archived or deleted — it has done its job. The plan is the source of truth about sequence.</p>
+      <p>The practical consequence: <em>never modify the spec to satisfy a plan.</em> If your plan conflicts with the spec, the plan is wrong. Replan. Never edit the spec mid-session unless the requirements themselves have changed (a rare, deliberate decision requiring stakeholder sign-off).</p>
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin:1.2rem 0;">
+        <thead>
+          <tr style="background:var(--surface);">
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Dimension</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Spec</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Plan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Question answered</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">What to build</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">How to build it</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Lifecycle</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Durable — survives the session</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Transient — one session or sprint</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Audience</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Humans + agents (forever)</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Agent executing this run</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Changes when</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Requirements change</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Approach changes (freely)</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">If it conflicts with the other</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Spec wins — plan must adapt</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>7.2 Brainstorm → spec → plan → execute — the four-step rhythm</h2>
+      <p>Structured agentic development follows a four-step rhythm. Each step produces an artifact that the next step consumes. Skipping a step is possible — sometimes correct — but you should skip intentionally, not accidentally.</p>
+
+      <div style="display:flex; align-items:stretch; justify-content:center; gap:0; margin:1.8rem 0; flex-wrap:wrap;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px 0 0 8px; padding:1.2rem 1.4rem; text-align:center; min-width:130px;">
+          <div style="font-size:1.5rem;">💡</div>
+          <div style="font-weight:700; color:var(--accent); font-size:1rem; margin-top:0.3rem;">BRAINSTORM</div>
+          <div style="font-size:0.76rem; color:var(--muted); margin-top:0.3rem;">Explore the problem space.<br>What are we actually solving?</div>
+          <div style="font-size:0.72rem; color:var(--muted); margin-top:0.5rem; font-style:italic;">Skill: superpowers:brainstorming</div>
+        </div>
+        <div style="display:flex; align-items:center; background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 0.5rem; color:var(--accent); font-size:1.4rem; font-weight:700;">→</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-left:none; padding:1.2rem 1.4rem; text-align:center; min-width:130px;">
+          <div style="font-size:1.5rem;">📄</div>
+          <div style="font-weight:700; color:var(--accent); font-size:1rem; margin-top:0.3rem;">SPEC</div>
+          <div style="font-size:0.76rem; color:var(--muted); margin-top:0.3rem;">What to build.<br>Acceptance criteria. Interface.</div>
+          <div style="font-size:0.72rem; color:var(--muted); margin-top:0.5rem; font-style:italic;">Ch 6 · OpenSpec · SpecKit</div>
+        </div>
+        <div style="display:flex; align-items:center; background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 0.5rem; color:var(--accent); font-size:1.4rem; font-weight:700;">→</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-left:none; padding:1.2rem 1.4rem; text-align:center; min-width:130px;">
+          <div style="font-size:1.5rem;">🗺️</div>
+          <div style="font-weight:700; color:var(--accent); font-size:1rem; margin-top:0.3rem;">PLAN</div>
+          <div style="font-size:0.76rem; color:var(--muted); margin-top:0.3rem;">How to build it.<br>Ordered tasks. Files. Commits.</div>
+          <div style="font-size:0.72rem; color:var(--muted); margin-top:0.5rem; font-style:italic;">superpowers:writing-plans</div>
+        </div>
+        <div style="display:flex; align-items:center; background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:0 0.5rem; color:var(--accent); font-size:1.4rem; font-weight:700;">→</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-left:none; border-radius:0 8px 8px 0; padding:1.2rem 1.4rem; text-align:center; min-width:130px;">
+          <div style="font-size:1.5rem;">⚡</div>
+          <div style="font-weight:700; color:var(--accent); font-size:1rem; margin-top:0.3rem;">EXECUTE</div>
+          <div style="font-size:0.76rem; color:var(--muted); margin-top:0.3rem;">Agent follows plan.<br>Commits at each task boundary.</div>
+          <div style="font-size:0.72rem; color:var(--muted); margin-top:0.5rem; font-style:italic;">superpowers:executing-plans</div>
+        </div>
+      </div>
+
+      <p><strong>Brainstorm</strong> — open-ended exploration with the agent. You are not writing code. You are pressure-testing assumptions, surfacing unknowns, and reaching clarity about what you actually want. Invest 5–15 minutes here; it repays itself in avoided spec rewrites. Use the <code>superpowers:brainstorming</code> skill.</p>
+      <p><strong>Spec</strong> — formalise the output of brainstorm into a durable contract. This is Ch 6 territory. The spec is written (or reviewed) before a single line of implementation is touched. It may be a Markdown file checked into the repo, an OpenSpec proposal, or a SpecKit <code>/specify</code> output.</p>
+      <p><strong>Plan</strong> — take the spec and decompose it into a numbered sequence of tasks the agent can execute one by one. The plan is the subject of this chapter. Use the <code>superpowers:writing-plans</code> skill or Claude plan mode.</p>
+      <p><strong>Execute</strong> — the agent follows the plan task by task, committing after each one. You review diffs at commit boundaries. If the plan becomes wrong mid-execution, you replan (see 7.7). Use the <code>superpowers:executing-plans</code> skill.</p>
+
+      <h2>7.3 Anatomy of a good plan file</h2>
+      <p>A plan file is a Markdown document (typically <code>PLAN.md</code> or <code>specs/&lt;feature&gt;/plan.md</code>) with a predictable structure. The <code>superpowers:writing-plans</code> skill produces this format automatically; the checklist below tells you what to look for when reviewing a plan the agent drafted.</p>
+      <p>Good plans share five structural properties:</p>
+      <ol>
+        <li><strong>Numbered tasks</strong> — each task is a discrete unit of work with a single, verifiable outcome. If a task can't be described in one sentence, split it.</li>
+        <li><strong>Files-touched per task</strong> — every task names the files it will create, modify, or delete. This prevents surprise scope creep and makes review tractable.</li>
+        <li><strong>Code or command blocks within each task</strong> — the agent should not need to invent the approach mid-execution. Key commands, function signatures, or scaffolding snippets live inside the task so the agent stays on the planned path.</li>
+        <li><strong>Commit cadence</strong> — each task (or logical group of tasks) ends with a <code>git commit</code>. Atomic commits mean atomic rollback. Never let the agent execute more than one logical change before committing.</li>
+        <li><strong>Verification step</strong> — every task ends with a check: run the tests, grep for the expected output, or confirm the file exists. The agent should not mark a task complete without running its own verification.</li>
+      </ol>
+      <pre style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem 1.6rem; font-size:0.82rem; overflow-x:auto;">
+# PLAN: gitlog-report
+
+## Task 1 — Scaffold project structure
+**Files:** pyproject.toml, src/gitlog_report/__init__.py, src/gitlog_report/cli.py
+**Steps:**
+1. Create `pyproject.toml` with entry-point `gitlog-report = "gitlog_report.cli:main"`
+2. Create empty `__init__.py`
+3. Create `cli.py` stub: `def main(): pass`
+**Verify:** `pip install -e . && gitlog-report --help` exits 0
+**Commit:** `feat(scaffold): initialise gitlog-report package`
+
+## Task 2 — Argument parser
+**Files:** src/gitlog_report/cli.py
+**Steps:**
+1. Add `argparse.ArgumentParser` with --path, --format, --since, --until, --include-merges
+**Verify:** `gitlog-report --help` lists all five flags
+**Commit:** `feat(cli): add argument parser`
+...</pre>
+      <p>Notice the pattern: each task is bounded, verifiable, and ends with a commit. An agent following this plan cannot accidentally do too much in one step — the commit boundary enforces a natural pause where you can review the diff.</p>
+      <p>Reference: the <code>superpowers:writing-plans</code> skill generates plan files in this format from a spec. Invoke it with: <code>/writing-plans</code> or trigger via the Skill tool.</p>
+
+      <h2>7.4 Plan mode in Claude Code (vs Kilo Architect — important asymmetry)</h2>
+      <p>Claude Code has a dedicated <strong>plan mode</strong> that lets the agent think through an implementation before touching any files. Understanding its constraints — and how it differs from Kilo Architect's planning model — is essential for choosing the right tool.</p>
+
+      <p><strong>Entering plan mode in Claude Code</strong></p>
+      <ul>
+        <li>Cycle through modes with <kbd>Shift+Tab</kbd> until the mode indicator shows <em>Plan</em></li>
+        <li>Or type <code>/plan</code> at the prompt</li>
+        <li>The mode persists for the session; the agent will not exit it until you approve</li>
+      </ul>
+
+      <p><strong>The approval gate</strong> — the agent must invoke the <code>ExitPlanMode</code> tool to leave plan mode. That tool requires your explicit confirmation. This means the agent cannot silently slip from planning to execution. You always see the full plan and approve before a single file is touched.</p>
+
+      <p><strong>Tool permissions in plan mode:</strong></p>
+      <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1rem 0;">
+        <thead>
+          <tr style="background:var(--surface);">
+            <th style="padding:0.5rem 0.9rem; text-align:left; border:1px solid var(--border);">Tool</th>
+            <th style="padding:0.5rem 0.9rem; text-align:left; border:1px solid var(--border);">Allowed in plan mode?</th>
+            <th style="padding:0.5rem 0.9rem; text-align:left; border:1px solid var(--border);">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);"><code>Read</code>, <code>Grep</code>, <code>Glob</code></td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#4caf50; font-weight:600;">Allowed</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">Read-only — needed to understand the codebase</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);"><code>WebFetch</code></td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#4caf50; font-weight:600;">Allowed</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">Read-only — needed to research APIs and docs</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);"><code>Edit</code>, <code>Write</code></td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#f44336; font-weight:600;">Blocked</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">No file writes until plan is approved</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);"><code>Bash</code></td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#f44336; font-weight:600;">Blocked</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">No shell execution — prevents side effects</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">MCP tools (file-modifying)</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#f44336; font-weight:600;">Blocked</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">All side-effecting tools suspended</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);"><code>ExitPlanMode</code></td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border); color:#ff9800; font-weight:600;">Gated</td>
+            <td style="padding:0.5rem 0.9rem; border:1px solid var(--border);">Requires your explicit approval to execute</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <aside class="tool-alt">
+        <strong>Claude Code plan mode vs Kilo Architect — a critical asymmetry</strong>
+        <p>These two tools both "plan" but they work very differently:</p>
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin:0.8rem 0;">
+          <thead>
+            <tr style="background:rgba(255,255,255,0.05);">
+              <th style="padding:0.5rem 0.8rem; text-align:left; border:1px solid var(--border);">Aspect</th>
+              <th style="padding:0.5rem 0.8rem; text-align:left; border:1px solid var(--border);">Claude Code plan mode</th>
+              <th style="padding:0.5rem 0.8rem; text-align:left; border:1px solid var(--border);">Kilo Architect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">File writes during planning</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border); color:#f44336; font-weight:600;">Forbidden</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border); color:#4caf50; font-weight:600;">Allowed — Architect writes files</td>
+            </tr>
+            <tr style="background:rgba(255,255,255,0.03);">
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Plan output format</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Conversational response (in chat)</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Written directly to <code>PLAN.md</code> on disk</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Role separation</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Same agent — mode switch</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Separate orchestrator (Architect) + executor (Code)</td>
+            </tr>
+            <tr style="background:rgba(255,255,255,0.03);">
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">When to use</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Quick interactive planning in Claude Code</td>
+              <td style="padding:0.5rem 0.8rem; border:1px solid var(--border);">Kilo-native projects; plan-as-artifact workflows</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>Practical implication:</strong> in Claude Code plan mode, the plan lives in the conversation. If you want the plan as a committed file — so it's reviewable and resumable — you must ask the agent to write it out after plan mode ends. In Kilo Architect, the plan <em>is</em> a file from the start. Choose accordingly, or use the <code>superpowers:writing-plans</code> skill (which always writes a file, regardless of which agent you're in).</p>
+      </aside>
+
+      <h2>7.5 Plan files as artifacts — committable, reviewable</h2>
+      <p>A plan that exists only in conversation history has two problems: it disappears when the session ends, and it can't be reviewed by a teammate. Treating your plan as a committed artifact — a Markdown file in the repo — solves both.</p>
+      <p><strong>Three benefits of committing your plan file:</strong></p>
+      <ol>
+        <li><strong>Reviewability</strong> — a PR containing <code>PLAN.md</code> alongside the spec lets a reviewer verify that the planned approach actually satisfies the spec criteria before a single line of implementation is written. This is the cheapest code review possible.</li>
+        <li><strong>Resumability</strong> — if you close the session mid-execution, the next session starts with: "Read PLAN.md and continue from Task N." No context reconstruction. No guessing what was done.</li>
+        <li><strong>Auditability</strong> — the git log records <em>when</em> the plan changed and <em>why</em>. If a post-mortom asks "did we have a plan for this?", the answer is in the history.</li>
+      </ol>
+      <p>Typical file paths: <code>PLAN.md</code> at repo root for small features; <code>specs/&lt;feature&gt;/plan.md</code> alongside the spec for larger work; <code>.claude/PLAN.md</code> for plans that are agent-internal and shouldn't appear in the main repo tree.</p>
+      <p>Commit message convention: <code>plan(&lt;feature&gt;): draft execution plan</code>. This makes the plan easy to find in <code>git log --oneline</code> without grep.</p>
+
+      <h2>7.6 Reviewing your agent's plan before it acts</h2>
+      <p>Whether the plan comes from Claude plan mode, Kilo Architect, or the <code>superpowers:writing-plans</code> skill, you should review it before execution begins. A five-point check catches the most common failure modes:</p>
+      <ol>
+        <li><strong>Right files?</strong> Every task names the files it will touch. Verify each file actually exists (for modifications) or makes sense to create at that path (for new files). Watch for files that are never mentioned — a plan that modifies <code>cli.py</code> but never touches the corresponding test file is almost certainly incomplete.</li>
+        <li><strong>Right order?</strong> Task N should not depend on something that Task N+2 creates. Read the dependency chain forward: if step 3 imports a module that step 5 creates, the plan will fail at step 3. The agent can get this wrong.</li>
+        <li><strong>Complete code in steps?</strong> Key function signatures, command invocations, and config snippets should appear in the task body — not be delegated to the agent's judgment at execution time. Vague instructions like "implement the parser" are plans waiting to go wrong. Specific instructions like "implement <code>parse_git_log(path: str) -&gt; list[Commit]</code> in <code>parser.py</code>" are plans that execute predictably.</li>
+        <li><strong>No placeholders?</strong> Scan for <code>TODO</code>, <code>...</code>, <code>&lt;fill in&gt;</code>, <code>as appropriate</code>. Placeholders in a plan become agent hallucinations during execution. Fill them in now or mark the task as requiring human input before the agent reaches it.</li>
+        <li><strong>Verification steps?</strong> Every task should have a concrete check: a test command to run, an output to grep for, a file to confirm exists. "Verify the feature works" is not a verification step. "Run <code>pytest tests/test_parser.py -v</code> and confirm all 4 tests pass" is.</li>
+      </ol>
+      <p>The five-point check takes two to five minutes. It reliably prevents sessions that go sideways at step 3 and require a full replan. Pay the two minutes.</p>
+
+      <h2>7.7 Mid-plan replanning when reality changes</h2>
+      <p>Even a well-reviewed plan will sometimes collide with reality. The codebase was in a different state than expected. A dependency has a breaking API change. The chosen approach reveals a design flaw that wasn't visible from the spec. When this happens, you have two options — amend or abandon — and the choice depends on how far the collision propagates.</p>
+      <p><strong>Amend</strong> when the reality change is local: the current task and at most one successor need to change, but the overall structure and commit plan remain valid. Update the affected tasks in the plan file, commit the updated plan with a message like <code>plan(gitlog-report): amend task 3 — use argparse subcommands</code>, then continue. The agent re-reads the updated plan.</p>
+      <p><strong>Abandon and replan</strong> when the collision is structural: the approach chosen in the plan cannot satisfy the spec without touching more than two or three tasks, or the planned file structure is wrong. Stop execution, reset to the last clean commit, write a new plan, review it, then re-execute. Sunk cost reasoning ("we're already 60% done") is the enemy here. A bad 60% is more expensive to fix than a clean restart.</p>
+      <p><strong>Signs you need a full replan:</strong></p>
+      <ul>
+        <li>The agent has started improvising — adding files not in the plan, skipping tasks, or reordering steps without telling you.</li>
+        <li>The current task has grown past its planned scope and is pulling in two or three others.</li>
+        <li>The git diff is much larger than expected for the current task.</li>
+        <li>A test introduced in an earlier task is now failing because of the current task's changes (integration conflict).</li>
+      </ul>
+      <p>When in doubt, <code>git diff HEAD~1</code> and count the files changed. If it's more than the plan said, you're already off-plan.</p>
+
+      <h2>7.8 Plan templates and patterns</h2>
+      <p>Most plans fall into one of four structural patterns. Recognising the pattern lets you get to a draft plan faster — either by prompting the agent with the pattern name, or by instantiating the template yourself.</p>
+      <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
+        <thead>
+          <tr style="background:var(--surface);">
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Pattern</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Typical task sequence</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Watch for</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><strong>Bug fix</strong></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Reproduce → write failing test → fix → verify → commit</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Fix scope creep — fix only the bug, not the surrounding code</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><strong>Feature add</strong></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Scaffold → types/interfaces → core logic → CLI/API surface → tests → docs → commit</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Tests written after logic (TDD inverts this — see Ch 8)</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><strong>Refactor</strong></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Characterise tests → extract → move → update callers → verify → commit</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">No behaviour change — any test failure is a bug in the refactor</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><strong>Migration</strong></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Shim old API → introduce new → migrate callers one-by-one → remove shim → verify → commit</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Never remove the shim until all callers are migrated</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The <code>superpowers:writing-plans</code> skill accepts a pattern argument (<code>--pattern bug-fix | feature | refactor | migration</code>) and generates a template-populated plan. You still fill in the specifics — file names, function signatures, test commands — but the skeleton is correct.</p>
+
+      <h2>7.9 When to skip the plan (yes, sometimes)</h2>
+      <p>Planning has a real cost: it takes time, it requires a spec to exist first, and it can feel like bureaucratic overhead on changes that are obviously small. The rule is: <strong>plan when the agent could go wrong; skip when it can't.</strong></p>
+      <p>Safe to skip: a single-file typo or doc fix; renaming a variable with a find-and-replace; adding one line to a config file; trivially mechanical changes where the diff will obviously be correct. For these, just give the agent a direct instruction and review the diff before committing.</p>
+      <p>Safe to skip (sometimes): exploratory or throwaway work where you're not committing the output — prototyping an approach, generating a draft to read and discard, investigating a bug by trial and error. Plans impose commit structure; explorations don't benefit from that structure.</p>
+      <p>Not safe to skip: any change that touches more than two files; any change that involves a new abstraction or interface; any change where a wrong approach would require undoing more than 20 lines; any change that a teammate will review. For these, the two-minute plan review (7.6) is not overhead — it is the review.</p>
+      <p>The test: <em>if the agent goes wrong, how long does recovery take?</em> If the answer is more than five minutes, write a plan.</p>
+
+      <h2>7.10 Plans across sessions — handoff and resume</h2>
+      <p>Agentic sessions are bounded by context windows, working hours, and attention. A feature that takes four hours of elapsed time will probably span multiple sessions. The plan file is the mechanism that makes multi-session work coherent.</p>
+      <p><strong>Handoff protocol:</strong> before closing a session mid-plan, the agent should update the plan file to mark completed tasks (e.g., prefix with <code>[x]</code>) and annotate the current task with a "stopped here" note including the last commit SHA. Commit this updated plan file. The commit message: <code>plan(gitlog-report): checkpoint after task 3 — resume at task 4</code>.</p>
+      <p><strong>Resume protocol:</strong> open a new session, inject the spec and the updated plan file at the start of the context. Prompt: <em>"Read PLAN.md. Tasks 1–3 are complete (see commit abc1234). Continue from Task 4."</em> The agent reconstructs its working state from the plan + git log, not from conversation history. This is reliable across model updates, team members, and days-long gaps.</p>
+      <p><strong>Team handoff:</strong> if a different engineer (or agent) picks up mid-plan, the same protocol applies. The plan file encodes intent; the git log encodes what was done; together they are a complete handoff document. No "what was I doing?" conversation needed.</p>
+      <p>The <code>superpowers:executing-plans</code> skill handles checkpoint and resume automatically when invoked with <code>--resume</code>. For manual workflows, the pattern above is reliable and requires no tooling beyond git.</p>
+
+      <h2>7.11 Mini-walkthrough: write the gitlog-report plan</h2>
+
+      <div class="walkthrough">
+        <h3>Mini-walkthrough &middot; gitlog-report — write the plan</h3>
+        <p><strong>Where we are:</strong> Ch 6.11 produced the gitlog-report spec with seven acceptance criteria. We now decompose those criteria into a numbered plan an agent can execute task by task. Each task follows TDD order: write the test → run it (confirm it fails) → implement → verify → commit.</p>
+
+        <p><strong>Acceptance criteria from Ch 6.11 spec (our input):</strong></p>
+        <ul>
+          <li>Reads git log from CWD or <code>--path &lt;dir&gt;</code></li>
+          <li>Per-author: commit count, days active, commits/day, lines added, lines removed</li>
+          <li>Top 5 most-touched files per author (by line-change delta)</li>
+          <li>JSON output (default); Markdown report via <code>--format md</code></li>
+          <li><code>--since</code> / <code>--until</code> date range filters (ISO 8601)</li>
+          <li>Empty repository: zero-row output, exit code 0</li>
+          <li>Merge commits: counted in total, lines excluded by default; opt-in via <code>--include-merges</code></li>
+        </ul>
+
+        <p><strong>The plan — 6 tasks:</strong></p>
+
+        <pre style="background:#1a1a2e; border:1px solid var(--border); border-radius:8px; padding:1.2rem 1.6rem; font-size:0.82rem; line-height:1.6; overflow-x:auto;">
+# PLAN: gitlog-report
+# Spec: specs/gitlog-report/spec.md
+# Pattern: feature-add (TDD order)
+
+## [1] Scaffold — package + CLI entry point
+Files: pyproject.toml, src/gitlog_report/__init__.py,
+       src/gitlog_report/cli.py, tests/__init__.py
+Steps:
+  1. Create pyproject.toml with [project.scripts] entry point
+  2. Create package stub files
+  3. Write test: test_cli_help_exits_0 — assert subprocess returns 0
+  4. Run test (confirm it fails — ImportError or ModuleNotFoundError)
+  5. Implement cli.py stub: argparse with --path, --format,
+     --since, --until, --include-merges
+  6. Run test (confirm it passes)
+Verify: pytest tests/test_cli.py::test_cli_help_exits_0 passes
+Commit: feat(scaffold): initialise gitlog-report package
+
+## [2] Git log parser — ingest &amp; model
+Files: src/gitlog_report/parser.py, tests/test_parser.py,
+       tests/fixtures/sample.log
+Steps:
+  1. Define Commit datatype: sha, author, email, date, files, lines+/-
+  2. Write tests: parse 3-commit fixture log; assert field values;
+     merge commit detected; binary file excluded
+  3. Run tests (all fail — parser not implemented)
+  4. Implement parse_git_log(path: str) -&gt; list[Commit]
+     using git log --numstat --no-merges (default)
+  5. Run tests (all pass)
+Verify: pytest tests/test_parser.py -v — 4 tests pass
+Commit: feat(parser): parse git log into Commit records
+
+## [3] Aggregation — per-author statistics
+Files: src/gitlog_report/aggregate.py, tests/test_aggregate.py
+Steps:
+  1. Write tests: aggregate 3-author fixture; assert commit counts,
+     days-active, commits/day (float), lines+/-, top-5 files
+  2. Run tests (all fail)
+  3. Implement aggregate(commits: list[Commit]) -&gt; list[AuthorStats]
+     AuthorStats: author, email, commits, days_active, commits_per_day,
+                  lines_added, lines_removed, top_files[5]
+  4. Run tests (all pass)
+Verify: pytest tests/test_aggregate.py -v — all tests pass
+Commit: feat(aggregate): compute per-author contribution stats
+
+## [4] Output formatters — JSON and Markdown
+Files: src/gitlog_report/formatters.py, tests/test_formatters.py
+Steps:
+  1. Write tests: format_json(stats) returns valid JSON matching schema;
+     format_md(stats) returns Markdown table with correct headers
+  2. Run tests (all fail)
+  3. Implement format_json + format_md
+  4. Run tests (all pass)
+Verify: pytest tests/test_formatters.py -v — all tests pass
+Commit: feat(formatters): JSON and Markdown output formatters
+
+## [5] Date filtering + edge cases
+Files: src/gitlog_report/parser.py (update), tests/test_parser.py (extend)
+Steps:
+  1. Write tests: --since/--until filter by ISO date; empty repo returns [];
+     --include-merges includes merge commit line counts
+  2. Run tests (fail — filter logic not implemented)
+  3. Add date range args to parse_git_log; pass --after/--before to git log
+  4. Handle unborn HEAD: catch CalledProcessError, return []
+  5. Run tests (all pass)
+Verify: pytest tests/test_parser.py -v — all tests pass (including new 3)
+Commit: feat(parser): date filtering and empty-repo edge case
+
+## [6] CLI integration + end-to-end test
+Files: src/gitlog_report/cli.py (complete), tests/test_e2e.py
+Steps:
+  1. Wire main(): parse args → parse_git_log → aggregate → format → print
+  2. Write e2e test: run gitlog-report on this repo's own .git;
+     assert output is valid JSON with at least one author entry
+  3. Run e2e test (may fail — integration issues)
+  4. Fix any integration issues
+  5. Run full suite: pytest tests/ -v
+Verify: all tests pass; gitlog-report --format md produces a Markdown table
+Commit: feat(cli): complete CLI integration — gitlog-report ready</pre>
+
+        <p><strong>How to invoke the plan agent:</strong> with the plan file committed, start a new session and prompt: <em>"Read specs/gitlog-report/spec.md and PLAN.md. Execute the plan task by task, committing after each task. Ask before proceeding past any task that fails its verify step."</em></p>
+        <p><strong>Next chapter:</strong> we execute Tasks 1–2 using Test-Driven Development — writing the failing test first, then watching the agent make it pass. → Ch 8: Test-Driven Development with Agents.</p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch6-spec')">← Ch 6. Spec-Driven Development</a>
+        <a onclick="go('ch8-tdd')">→ Ch 8. Test-Driven Development with Agents</a>
+        <a onclick="go('ch11-parallel')">→ Ch 11. Multi-Agent &amp; Parallel</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
