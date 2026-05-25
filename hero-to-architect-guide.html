@@ -4342,6 +4342,258 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       </div>
     </section>
 
+    <section id="ch15-superpowers" class="section">
+      <h1>15. The Superpowers Methodology — Claude Code Skills, Gemini CLI Skills &amp; Kilo Code Modes</h1>
+      <p class="lede">What you'll learn: why methodology bundles exist, the portable patterns Superpowers encodes, the canonical Claude Code plugin, how to adapt to Kilo Code (modes/rules) and Gemini CLI (skills), and how to ship your own methodology bundle for your team.</p>
+
+      <h2>15.1 What Superpowers is — a methodology bundle, not a tool</h2>
+      <p>Every experienced developer has a workflow: a set of habits and checkpoints they apply to every non-trivial task — think before you code, write the test first, get a second opinion before merging. The problem with agentic coding is that the agent has no habits. Left unprompted, it will skip steps that humans would never skip: writing code before understanding requirements, merging without verification, implementing without planning. <strong>A methodology bundle is a collection of encoded workflows that teaches the agent your habits.</strong> It is not a tool in the traditional sense — it does not add capabilities — it shapes how the agent uses the capabilities it already has.</p>
+
+      <p>Superpowers is the canonical methodology bundle for Claude Code. It encodes a specific, opinionated way of working: every creative task starts with brainstorming; every multi-step task gets a written plan before a single file changes; every implementation follows test-driven discipline; every completion goes through a verification gate; every significant change goes through a code review loop. These habits are not invented for the bundle — they are the habits that experienced software engineers apply anyway. Superpowers makes them automatic for the agent.</p>
+
+      <p>The critical framing is <em>tool-agnostic at heart</em>. The methodology — the pattern of brainstorm → spec → plan → execute → TDD → verify — is not Claude-specific. The same sequence of behaviors can be encoded as Kilo Code custom modes, as Gemini CLI skills, or as a structured session-opening prompt. Superpowers is the canonical, most fully-featured implementation, but the pattern transfers. Teams that understand this can carry the methodology across tool changes, model upgrades, and organizational standardization efforts without losing their workflow investment.</p>
+
+      <h2>15.2 The Superpowers methodology — portable patterns</h2>
+      <p>The methodology's spine is a linear sequence that keeps the agent honest at each phase transition. The six stages are: <strong>(1) Brainstorm</strong> — before touching code or writing specs, explore the problem space, surface hidden requirements, and consider multiple approaches. <strong>(2) Spec</strong> — write down what you are building in enough detail that a collaborator could implement it without asking questions. <strong>(3) Plan</strong> — decompose the spec into an ordered list of concrete steps, identifying dependencies and risks before any file changes occur. <strong>(4) Execute</strong> — implement the plan, step by step, with human checkpoints at phase boundaries. <strong>(5) TDD</strong> — write tests that demonstrate the implementation is correct, not after the fact but as part of the execution phase. <strong>(6) Verify</strong> — confirm that the thing you built matches the thing you specified, using the agent's own verification skills before declaring done.</p>
+
+      <p>Each stage has a corresponding skill in the Superpowers library. The skills are not strictly sequential in all workflows — a small bugfix might start at Execute and skip Brainstorm and Spec entirely. The methodology is a <em>default sequence</em> that the agent applies when the task complexity warrants it, with lighter-weight shortcuts for simpler work. The key insight is that the methodology encodes the <em>decision about which stages to apply</em>, not just the execution of each stage. This is what separates a methodology bundle from a collection of isolated prompts.</p>
+
+      <p>The portable pattern is the phase-gate model: before moving from one stage to the next, produce an artifact (a brainstorm document, a spec file, a plan file, a test suite) that the human can review and approve. Artifacts are checkpoints. This is the mechanism that keeps the agent from sprinting ahead while the human loses track of what is being built. Regardless of which tool you use to implement this, the artifact-gate structure is what makes the methodology meaningful in practice.</p>
+
+      <h2>15.3 The library tour — what each skill enforces</h2>
+      <p>The Superpowers library covers the full development lifecycle. Each skill is a named, installable unit of methodology. Here is the canonical library in order:</p>
+
+      <ul>
+        <li><strong>brainstorming</strong> — Forces exploration before implementation. Invokes structured divergent thinking (multiple approaches, hidden requirements, risks) before the agent produces any artifact. The mandatory pre-step for any creative work.</li>
+        <li><strong>writing-plans</strong> — Takes a spec or requirements description and produces a written, numbered implementation plan. No code is written during this skill. The plan is an artifact for human review.</li>
+        <li><strong>executing-plans</strong> — Works through an approved plan step by step, checking off items and pausing at defined review points. Keeps execution aligned to the plan rather than improvising.</li>
+        <li><strong>subagent-driven-development</strong> — Dispatches independent plan tasks to parallel subagents, collecting results back into the main session. The parallelism skill for decomposable plans.</li>
+        <li><strong>test-driven-development</strong> — Enforces the red-green-refactor cycle: write a failing test, make it pass with minimal implementation, then refactor. The agent is blocked from writing implementation before tests.</li>
+        <li><strong>systematic-debugging</strong> — Structures debugging as a hypothesis cycle: form a hypothesis about root cause, write a minimal reproducer, verify, fix, confirm fix. Prevents random trial-and-error code changes.</li>
+        <li><strong>verification-before-completion</strong> — Before declaring a task done, the agent runs a structured verification checklist: tests pass, no regressions, output matches spec, edge cases considered.</li>
+        <li><strong>requesting-code-review</strong> — Prepares a structured review request: summarizes the change, highlights design decisions, identifies areas of uncertainty, and formats for a human or agent reviewer.</li>
+        <li><strong>receiving-code-review</strong> — Processes incoming review feedback systematically: acknowledges each finding, classifies it (agree/disagree/needs-clarification), and produces a response plan before making any changes.</li>
+        <li><strong>finishing-a-development-branch</strong> — The branch-close checklist: all tests green, branch rebased or merged cleanly, PR description written, review addressed, merge-ready signal sent.</li>
+        <li><strong>writing-skills</strong> — The meta-skill. Guides the creation of new skills following the Superpowers format: name, description (for retrieval), body (agent instructions), references. The bootstrapping skill for methodology extension.</li>
+      </ul>
+
+      <p>The library is not exhaustive by design — it covers the critical phase transitions that agents most commonly skip. Teams extend it with domain-specific skills (deployment workflows, incident response runbooks, database migration procedures) using the same format.</p>
+
+      <h2>15.4 Three implementations, one idea — Claude / Gemini / Kilo</h2>
+      <p>The Superpowers methodology has three concrete implementations, each optimized for its host tool. <strong>Claude Code skills (canonical)</strong>: skills are SKILL.md files discovered automatically from <code>~/.claude/skills/</code> and plugin directories. They appear in <code>system-reminder</code> context at session start and are invoked via the <code>Skill</code> tool. Auto-invocation via <code>SessionStart</code> hooks means the agent can apply skills without explicit user instruction — the methodology fires automatically when task patterns match. This is the most seamless implementation because the harness does the wiring.</p>
+
+      <p><strong>Gemini CLI skills (explicit)</strong>: the same SKILL.md format works in Gemini CLI, but activation is explicit via the <code>activate_skill</code> tool rather than automatic. Skills listed in GEMINI.md give the agent awareness of what's available; the agent then decides when to call <code>activate_skill</code>. This pull model is slightly more manual but has one advantage: it is transparent. Every skill activation is a visible agent action in the conversation log. Gemini CLI shines here when you want audit trails of which methodology steps were applied.</p>
+
+      <p><strong>Kilo Code modes/rules (mode-selected)</strong>: Kilo Code encodes methodology as custom modes. Each Superpowers skill maps to a custom mode whose system prompt contains the skill body. The user (or an Orchestrator mode) selects the appropriate mode for each phase. Kilo Code's advantage is model selection per mode — you can route <code>brainstorming</code> mode to a reasoning-heavy model and <code>executing-plans</code> mode to a faster, cheaper model. The tradeoff is that mode transitions require explicit user action; there is no auto-invocation equivalent. Kilo Code is the best implementation for teams that want fine-grained model routing as part of their methodology.</p>
+
+      <h2>15.5 The Claude Code plugin — installation and auto-invocation</h2>
+      <p>The canonical installation path for Superpowers in Claude Code is the plugin marketplace. Run <code>/plugin marketplace add obra/superpowers-marketplace</code> at the Claude Code prompt to browse and install available skill bundles. To view installed plugins and confirm the installation was successful, run <code>/plugin</code>. After installation, skills are available immediately in the current session and all subsequent sessions. The plugin manager handles versioning and updates — you can check for updates by revisiting the plugin command.</p>
+
+      <p>The auto-invocation mechanism is the <code>using-superpowers</code> meta-skill, which is wired to the <code>SessionStart</code> lifecycle hook. When Claude Code starts a new session, the harness fires the <code>SessionStart</code> hook, which triggers <code>using-superpowers</code>. This meta-skill's job is to orient the agent: it reminds the agent that the Superpowers methodology is active, enumerates the available skills and their trigger conditions, and sets the behavioral defaults for the session. The result is that the methodology is "on" from the first message, without the user needing to invoke anything explicitly.</p>
+
+      <p>The <code>using-superpowers</code> meta-skill also handles a subtle problem: skill discovery is passive (the skills appear in context), but behavioral adoption requires active orientation. Without the meta-skill, an agent might have all the skills loaded but still skip the brainstorming phase because nothing prompted it to apply the methodology. The <code>SessionStart</code> hook-driven orientation solves this by making the methodology's presence explicit at the start of every session, turning passive availability into active behavioral defaults.</p>
+
+      <h2>15.6 The Claude Code skill machinery — format, discovery, Skill tool</h2>
+      <p>A Claude Code skill is a directory containing a <code>SKILL.md</code> file (and optionally supporting scripts or configuration). The SKILL.md format has a <strong>frontmatter YAML block</strong> at the top followed by a <strong>Markdown body</strong>. The frontmatter declares at minimum: <code>name</code> (the kebab-case identifier), <code>description</code> (the when-to-invoke text used for retrieval), and optionally <code>trigger</code> (conditions or slash-command bindings that auto-invoke the skill). The Markdown body is the agent's instruction set — what to do when this skill is active, in whatever level of detail the skill requires.</p>
+
+      <p>Discovery works through a path hierarchy. Claude Code scans <code>~/.claude/skills/</code> for user-level skills, plugin directories for installed plugin skills, and project-level <code>.claude/skills/</code> for project-local skills. All discovered skills are surfaced in the <code>system-reminder</code> context block that appears in the agent's context at session start and periodically during the session. The agent sees skill names and descriptions, which is what enables it to invoke the right skill for the right task.</p>
+
+      <p>Invocation uses the <code>Skill</code> tool. When the agent decides a task matches a skill's description, it calls <code>Skill</code> with the skill name and optional arguments. The tool loads the full SKILL.md body into the agent's active context and executes the skill's instructions. From the user's perspective, skill invocation is transparent — you see the agent's actions, not the tool call that loaded the skill. Understanding this machinery matters when you are writing skills or debugging why a skill is not firing: the description must be specific enough that the agent recognizes it as relevant, but not so narrow that it only fires in obvious cases.</p>
+
+      <h2>15.7 Rigid vs flexible skills — when to enforce, when to suggest</h2>
+      <p>Not all skills should behave the same way. Some workflows have hard sequencing requirements where skipping a step produces bad outcomes — test-driven development is the canonical example: if you write implementation before tests, you are not doing TDD, period. Other workflows are more like checklists that improve quality but where deviating on a specific task is sometimes correct — a code review checklist might be skippable for a one-line typo fix. The skill itself signals which category it belongs to through the language of its body.</p>
+
+      <p><strong>Rigid skills</strong> use imperative, blocking language: "You MUST write the failing test before writing any implementation code. Do not proceed to implementation until you have a red test." This language tells the agent that deviation is not appropriate, and the agent will typically respect it. Rigid skills are appropriate for methodology steps where the discipline is the value — if you allow shortcuts, the methodology degrades to nothing. Use rigid enforcement for TDD, for verification gates, and for any step where "I'll do it later" is a broken promise.</p>
+
+      <p><strong>Flexible skills</strong> use advisory language: "Consider structuring your approach as... If the task is small enough to skip planning, use your judgment." These skills provide a scaffold the agent can adapt. They are appropriate for tasks where the pattern has value at scale but where mechanical enforcement would be counterproductive for small tasks. The practical rule: if a senior engineer would be annoyed at being forced to follow the full procedure for a trivial task, the skill should be flexible. If skipping the procedure is how technical debt accumulates, the skill should be rigid.</p>
+
+      <h2>15.8 Anatomy of a great skill</h2>
+      <p>A well-written skill has four elements working together. <strong>Name (kebab-case)</strong>: the identifier must be memorable and self-describing. <code>systematic-debugging</code> is better than <code>debug-helper</code> because it communicates the approach, not just the domain. Names are used in inter-skill references and slash commands, so they should be stable once published. <strong>Description (for retrieval)</strong>: this is the most performance-critical field. The agent reads descriptions to decide whether a skill is relevant. A good description answers: "when should I invoke this skill?" It should include the trigger conditions — "Use when you encounter a bug or unexpected behavior and need to diagnose root cause" — not just a noun description of what the skill does.</p>
+
+      <p><strong>Body (agent instructions)</strong>: the meat of the skill. Write it as instructions to the agent, not documentation for humans. Use numbered steps for sequences the agent should follow, use imperative language for requirements, and use inline examples for anything where the agent might otherwise guess wrong. Avoid vague instructions like "be thorough" — instead say "check the last three commits for related changes before proposing a fix." The body should be long enough to be unambiguous and short enough that the agent can hold it in working context while executing.</p>
+
+      <p><strong>References (linked sub-skills via <code>[[name]]</code>)</strong>: skills can call other skills. The <code>[[skill-name]]</code> syntax in a skill body creates a reference that the Claude Code harness can resolve — when the agent reaches that reference, it can invoke the named skill. This is how skill composition works: a high-level workflow skill might reference <code>[[writing-plans]]</code>, <code>[[test-driven-development]]</code>, and <code>[[verification-before-completion]]</code> in sequence, delegating the detailed methodology for each phase to the corresponding specialist skill. References should be used deliberately — every reference is a potential invocation, and over-referencing creates an agent that is always switching context instead of doing work.</p>
+
+      <h2>15.9 Adapting to Kilo Code — custom modes and rules</h2>
+      <p>Kilo Code's custom mode system is the natural host for Superpowers skills in a Kilo Code workflow. A custom mode has a name, a model selection, and a system prompt — map the skill body directly to the system prompt. The mode's model selection is where Kilo Code adds unique value: you can route <code>brainstorming</code> to a reasoning-capable model (Claude Opus, Gemini Pro) and <code>executing-plans</code> to a speed-optimized model (Claude Haiku, Gemini Flash), matching the model to the cognitive demands of each phase.</p>
+
+      <p>Here is a concrete example — adapting the <code>systematic-debugging</code> skill to a Kilo Code custom mode. In Kilo Code's custom mode configuration (typically in <code>.kilocode/modes/</code> as a YAML or JSON file):</p>
+
+      <pre><code># .kilocode/modes/systematic-debugging.yaml
+name: "Systematic Debugging"
+slug: systematic-debugging
+model: claude-opus-4-5           # reasoning-heavy: root cause analysis benefits from depth
+roleDefinition: |
+  You are a systematic debugger. When diagnosing bugs, you follow the
+  hypothesis cycle: (1) read the failing output and form ONE specific
+  hypothesis about root cause — not a list, one hypothesis; (2) write
+  the minimal reproducer that would confirm or deny that hypothesis;
+  (3) run it; (4) if confirmed, fix the specific root cause; if denied,
+  form a new hypothesis and repeat. You do not make random changes.
+  You do not fix symptoms. You trace to root cause every time.
+customInstructions: |
+  Before proposing any fix, state your current hypothesis explicitly
+  in the format: "Hypothesis: [root cause]. Evidence: [what led me here]."</code></pre>
+
+      <p>Kilo Code rules add a complementary layer. Where modes define behavior per-conversation, rules define behavior across all modes — for example, a rule that "always run tests after any file edit" applies regardless of which mode is active. Use rules for the invariants of your methodology (never commit to main, always verify before declaring done) and modes for the phase-specific behaviors (how to brainstorm, how to debug, how to write plans). Together, modes plus rules give you the full Superpowers methodology in a Kilo Code deployment.</p>
+
+      <h2>15.10 Adapting to Gemini CLI — GEMINI.md and activate_skill</h2>
+      <p>Gemini CLI's skill system uses the same SKILL.md format, but the integration requires explicit wiring via GEMINI.md. The first step is registering the skills so the agent knows they exist. In your project GEMINI.md (or global <code>~/.gemini/GEMINI.md</code>), add a section that lists your methodology skills with short descriptions:</p>
+
+      <pre><code>## Available Methodology Skills
+The following skills are available for this project. Activate them with
+activate_skill when the task matches.
+
+- **brainstorming** — activate before any creative feature work
+- **writing-plans** — activate when given a spec to decompose into a plan
+- **systematic-debugging** — activate when diagnosing a bug or unexpected behavior
+- **verification-before-completion** — activate before declaring any task done
+- **test-driven-development** — activate for any new implementation task</code></pre>
+
+      <p>When a task matches, the agent calls <code>activate_skill("systematic-debugging")</code> (or the appropriate skill name), which loads the full SKILL.md body into the active context. From that point, the skill's instructions govern the agent's behavior for the current task. The explicit activation shows up in the conversation log, which is useful for auditing: you can see exactly which methodology steps were applied to which tasks.</p>
+
+      <p>For teams that want a closer approximation of Claude Code's auto-invocation, the workaround is a session-opening instruction in GEMINI.md: "At the start of every session, activate the <code>using-superpowers</code> skill to orient yourself to this project's methodology." This is a soft instruction rather than a hard hook, but in practice the model follows it reliably. An alternative is to use Gemini CLI's session-start hook (if supported in your version) to inject an orientation message programmatically. <em>Verify hook support in your Gemini CLI version before depending on this.</em></p>
+
+      <h2>15.11 What you give up outside Claude Code</h2>
+      <p>Auto-invocation via <code>SessionStart</code> hook is the primary feature lost outside Claude Code. In Claude Code, the methodology is <em>on by default</em> — the <code>using-superpowers</code> meta-skill fires at session start without any user action, and skills in the system-reminder context are available without explicit activation. In Gemini CLI and Kilo Code, the methodology is <em>opt-in per task</em>. This is not a fatal flaw, but it is a meaningful difference in practice: auto-invocation creates a floor for methodology compliance that opt-in activation does not.</p>
+
+      <p>The practical consequence is drift. In a team using Gemini CLI, an agent under time pressure will skip the <code>activate_skill("brainstorming")</code> call before diving into implementation, because nothing prevents it. In Claude Code, the <code>brainstorming</code> skill is in the system-reminder context and the agent's orientation to the methodology makes skipping it feel like a deliberate override rather than a silent omission. Teams migrating from Claude Code to Gemini CLI often report that their methodology compliance degrades unless they add explicit enforcement via GEMINI.md instructions.</p>
+
+      <p>Three workarounds for non-Claude Code deployments: <strong>(1) Explicit mode selection (Kilo Code)</strong> — require that the user selects the appropriate mode at task start, making methodology application a visible user action. <strong>(2) Explicit <code>activate_skill</code> calls (Gemini CLI)</strong> — add GEMINI.md instructions that name the specific skills to activate for each task type, making the default behavior skill-activation rather than skip. <strong>(3) Session-start prompt listing the methodology</strong> — in GEMINI.md or at session open, enumerate the phases and tell the agent to announce which phase it is in before starting each step. This is the lowest-fidelity workaround but requires zero additional tooling.</p>
+
+      <h2>15.12 Writing your first skill</h2>
+      <p>Start with a daily friction point — a workflow you correct the agent on repeatedly. A common first skill for many teams is "always read the existing implementation before answering questions about it" or "always check the latest API docs before using an unfamiliar method." Here is a concrete example: a skill that enforces committing at the end of every completed task, because agents frequently leave work uncommitted when a session ends.</p>
+
+      <p>Create the skill directory and file: <code>mkdir -p ~/.claude/skills/commit-on-complete && touch ~/.claude/skills/commit-on-complete/SKILL.md</code>. Then write the SKILL.md:</p>
+
+      <pre><code>---
+name: commit-on-complete
+description: >
+  Use when a task is declared complete. Ensures all work is committed to
+  git before closing out the task. Invoke before any "task done" declaration.
+---
+
+# Commit on Complete
+
+Before declaring a task complete, you MUST:
+
+1. Run `git status` to identify all modified and untracked files related
+   to this task.
+2. Stage the relevant files explicitly (never use `git add .` — stage by
+   file or directory to avoid committing unrelated changes or secrets).
+3. Write a commit message following the project's commit convention.
+   If no convention is visible, use conventional commits:
+   `type(scope): short description`.
+4. Commit and confirm the commit was created with `git log --oneline -1`.
+5. Only then declare the task complete.
+
+Do NOT skip this if the changes seem small. Every completed task ends
+with a commit.</code></pre>
+
+      <p>Restart Claude Code (or open a new session) and the skill appears in your system-reminder context. Test it by completing a small code change — the agent should now run through the commit checklist before saying "done." The first skill you write is usually the most revealing: the process of encoding the workflow as agent instructions forces you to articulate exactly what the agent should do, which often reveals that your mental model of the workflow was fuzzier than you realized. Refine the SKILL.md based on what you observe, and after two or three sessions you will have a skill that reliably enforces the behavior.</p>
+
+      <h2>15.13 Skill and mode composition — chaining methodology</h2>
+      <p>Skills become more powerful when composed. In Claude Code, a high-level workflow skill can orchestrate an entire development cycle by referencing specialist skills in sequence via <code>[[skill-name]]</code> syntax. For example, a <code>feature-dev</code> skill might encode: invoke <code>[[brainstorming]]</code> to explore the problem space, then invoke <code>[[writing-plans]]</code> to produce the implementation plan, then invoke <code>[[executing-plans]]</code> to work through it, then invoke <code>[[verification-before-completion]]</code> before declaring done. The user invokes one skill; the methodology handles the phase sequencing automatically.</p>
+
+      <p>The <code>Skill</code> tool is the mechanism for this composition. When the agent encounters a <code>[[skill-name]]</code> reference in its current skill, it can call the <code>Skill</code> tool to load the referenced skill into context. The referenced skill then runs within the same conversation, with its own instructions layered on top of the parent skill's instructions. This is not inheritance — both sets of instructions are active simultaneously, which means there is a risk of conflict if skills are not written with composition in mind. Good composed skills are aware of each other: the high-level skill sets the task context and delegates the how to the specialist skill, rather than both trying to specify behavior at the same level of detail.</p>
+
+      <p>In Kilo Code, composition works through the Orchestrator mode. An Orchestrator-mode conversation routes tasks to specialist modes: "This task requires brainstorming first — switching to Brainstorming mode, then Planning mode, then Execution mode." This is more explicit than Claude Code's transparent skill invocation, but it gives the user full visibility into which methodology phase is active. For teams that want methodology transparency as a feature (not a bug), Kilo Code's explicit mode-switching is the right implementation. The tradeoff is friction: every phase transition requires a user action or an Orchestrator decision rather than happening silently within a single conversation.</p>
+
+      <h2>15.14 Testing skills — does it fire?</h2>
+      <p>The most common failure mode for new skills is a description that does not trigger. The agent makes skill invocation decisions based on description matching — if the description does not match the task as the agent describes it to itself, the skill sits idle. The diagnostic: after writing a skill, ask the agent to describe the task you intend the skill to handle, then compare that description to your skill's description field. If there is no lexical or semantic overlap, the skill will not fire. Fix by rewriting the description to use the same vocabulary the agent uses when it encounters the task type.</p>
+
+      <p>The second failure mode is an overruling skill — a skill so broadly described that it fires for tasks it should not handle, adding overhead to simple tasks and causing the agent to over-apply methodology. The test: deliberately give the agent a trivial task (a one-word variable rename, a comment typo fix) and watch whether your skill fires. If it does, narrow the description with specificity indicators: "Use when the task involves multiple files or requires design decisions" rather than "Use for coding tasks." The description is a classifier, not a label — write it with classification precision in mind.</p>
+
+      <p>A third failure mode is a skill that fires but is then silently overridden by user instructions or other context. This surfaces as the agent acknowledging the skill ("I'll follow the systematic-debugging approach") and then immediately reverting to its default behavior. The fix is usually language strength in the skill body — replace advisory phrasing with imperative requirements, and add explicit checkpoints ("Do not proceed to step 2 until you have stated your hypothesis aloud"). Testing with adversarial prompts ("just quickly fix it, skip the debugging steps") reveals whether your skill's instructions hold up under pressure. A well-written skill should survive the user's impatience.</p>
+
+      <h2>15.15 Hands-on: ship a methodology bundle for your team</h2>
+      <div class="walkthrough">
+        <h3>Walkthrough · Ship a methodology bundle for your team</h3>
+
+        <p>This walkthrough encodes one workflow — the PR creation flow — as a Claude Code skill, a Kilo Code mode, and a Gemini CLI session-start prompt. By the end you will have a distributable methodology bundle that any teammate can install regardless of their tool choice.</p>
+
+        <p><strong>Step 1: Define the workflow artifact.</strong> Before encoding anything, write the workflow as plain English. The PR creation flow for most teams looks like: (1) confirm all tests pass and there are no uncommitted changes; (2) write a PR description that summarizes the change, the motivation, and any testing notes; (3) identify the right reviewers; (4) create the PR and post a brief summary to the team channel. This is the ground truth that all three implementations will encode. Write it in a file called <code>pr-creation-workflow.md</code> — you will reference it throughout the steps.</p>
+
+        <p><strong>Step 2: Claude Code skill.</strong> Create <code>~/.claude/skills/create-pr/SKILL.md</code>:</p>
+
+        <pre><code>---
+name: create-pr
+description: >
+  Use when creating a pull request or when the user asks to "open a PR",
+  "submit for review", or "create a pull request". Enforces the team's
+  PR creation checklist before opening the PR.
+---
+
+# Create PR
+
+Before creating a pull request, follow this checklist in order:
+
+1. **Tests green**: run the full test suite. If any test fails, stop and
+   fix the failure — do not create a PR with a red suite.
+2. **Clean state**: run `git status`. All task-related changes must be
+   committed. If there are uncommitted changes, commit them with an
+   appropriate message before proceeding.
+3. **PR description**: write a description that covers:
+   - What changed (2-3 sentences)
+   - Why it changed (motivation, linked issue if any)
+   - How to test it (the reviewer's testing steps)
+4. **Reviewer selection**: identify 1-2 appropriate reviewers from recent
+   `git log` authors on the affected files.
+5. **Create the PR**: use `gh pr create` with the description and reviewers.
+6. **Team notification**: post a one-sentence summary to the team Slack
+   channel if the change is significant (more than 10 lines changed).
+
+Do not skip any step, even for small PRs.</code></pre>
+
+        <p><strong>Step 3: Kilo Code mode.</strong> Create <code>.kilocode/modes/create-pr.yaml</code> in your project repository:</p>
+
+        <pre><code>name: "Create PR"
+slug: create-pr
+model: claude-sonnet-4-5
+roleDefinition: |
+  You are the team's PR creation assistant. Your job is to ensure
+  every pull request meets the team's quality bar before it is opened.
+  You enforce a strict checklist: tests green, clean git state, complete
+  description, appropriate reviewers, PR created, team notified.
+customInstructions: |
+  Follow the PR creation checklist exactly. At each step, show the
+  output of the verification command (test run, git status, etc.) before
+  proceeding to the next step. If any step fails, stop and explain what
+  needs to be fixed before the PR can be created.</code></pre>
+
+        <p><strong>Step 4: Gemini CLI session-start prompt.</strong> Add to your project's <code>GEMINI.md</code>:</p>
+
+        <pre><code>## PR Creation Methodology
+When creating a pull request (any time the user says "create a PR",
+"open a PR", or "submit for review"), follow this sequence without
+skipping steps:
+
+1. Run the full test suite and confirm it is green.
+2. Run `git status` and commit any uncommitted task-related changes.
+3. Write a PR description: what changed, why, how to test.
+4. Identify reviewers from recent `git log` on affected files.
+5. Create the PR with `gh pr create`.
+6. Post a summary to the team Slack channel if the change is significant.
+
+If you have the `create-pr` skill available, activate it with
+activate_skill("create-pr") before starting.</code></pre>
+
+        <p><strong>Step 5: Package and distribute.</strong> Put all three files in a repository directory <code>methodology/</code>. Add a <code>README.md</code> with installation instructions for each tool. Publish to your team's internal GitHub. For Claude Code, teammates run <code>/plugin</code> to point to the skill directory (or manually copy the skill to <code>~/.claude/skills/</code>). For Kilo Code, teammates copy the mode YAML to their project's <code>.kilocode/modes/</code>. For Gemini CLI, teammates paste the GEMINI.md section into their project's <code>GEMINI.md</code>. The same workflow, enforced consistently, regardless of which tool each person on the team uses.</p>
+
+        <p><strong>What you've built.</strong> A tool-agnostic methodology bundle that encodes one workflow as three first-class artifacts. The pattern scales: apply it to your deployment workflow, your incident response runbook, your database migration procedure. After five or six workflows, you have a complete team methodology that survives tool changes and onboards new teammates automatically — they install the bundle, and the agent already knows how your team works.</p>
+      </div>
+
+      <h2>15.16 See also</h2>
+      <div class="see-also">
+        <a onclick="go('ch7-plan')">← Ch 7. Plan-Driven Execution</a>
+        <a onclick="go('ch10-review')">← Ch 10. Safety, Review &amp; Verification</a>
+        <a onclick="go('ch11-parallel')">← Ch 11. Multi-Agent &amp; Parallel</a>
+        <a onclick="go('ch13-claude')">← Ch 13. Claude Code Deep Dive</a>
+        <a onclick="go('ch14-gemini')">← Ch 14. Gemini CLI Deep Dive</a>
+        <a onclick="go('ch16-mcp')">→ Ch 16. MCP Servers</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
