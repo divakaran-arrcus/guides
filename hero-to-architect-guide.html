@@ -2410,6 +2410,356 @@ Commit: feat(cli): complete CLI integration — gitlog-report ready</pre>
       </div>
     </section>
 
+    <section id="ch8-tdd" class="section">
+      <h1>8. Test-Driven Development with Agents</h1>
+      <p class="lede">What you'll learn: why TDD becomes more important (not less) with agents, how the red-green-refactor cycle works as a control rod, the test types that survive agent edits, and how to write the gitlog-report tests before the implementation.</p>
+
+      <h2>8.1 TDD with agents — does it still make sense? (yes, more than ever)</h2>
+      <p>A common reaction to AI-assisted coding is: <em>"The agent writes code so fast, do I really need to slow down with tests?"</em> The answer is the opposite of what that reaction implies. TDD matters <strong>more</strong> with agents, not less. Here is why.</p>
+      <p>When you write code by hand you have a mental model of what the code does — you can feel when something is off. Agents don't have that sensory feedback loop. They generate code that looks convincing, compiles, and passes a cursory read. Without a failing test to refute them, they can claim "done" while the behaviour is still wrong — and they will sound confident doing it.</p>
+      <p>Tests are the only objective signal an agent can't fake. They either pass or they don't. When you give an agent a failing test and the instruction "make this pass without modifying the test," you have created an unambiguous success criterion. The agent iterates against that criterion. Without it, the agent optimises for your approval, which is a much noisier signal.</p>
+      <p>Three concrete problems TDD prevents in agentic work:</p>
+      <ul>
+        <li><strong>Silent regressions:</strong> Agent edits file A to fix a bug; test suite immediately tells you file B broke. Without tests you discover this at demo time.</li>
+        <li><strong>Scope creep by accident:</strong> Agents occasionally rewrite more than you asked for. Tests catch when "fixing" one function altered the contract of another.</li>
+        <li><strong>Confident wrong answers:</strong> Agents produce fluent, plausible outputs. Tests are the blunt instrument that says "no, the output was wrong" regardless of how fluent it sounded.</li>
+      </ul>
+      <p>The discipline is: <em>before you ask the agent to implement anything, you — or the agent under your direction — must write a failing test that encodes the acceptance criterion.</em> The test is a compressed, executable version of the spec (see Ch 6). Implementation is the activity of making it pass.</p>
+
+      <h2>8.2 Red → green → refactor as a control rod</h2>
+      <p>The classic TDD cycle is <strong>red → green → refactor</strong>. With agents this cycle becomes a <em>control rod</em> — the mechanism that prevents the system from going critical.</p>
+
+      <div style="display:flex; align-items:stretch; justify-content:center; gap:0; margin:1.8rem 0; flex-wrap:wrap;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px 0 0 8px; padding:1.2rem 1.6rem; min-width:160px; text-align:center;">
+          <div style="font-size:2rem; margin-bottom:0.4rem;">🔴</div>
+          <div style="font-weight:700; color:#e55; margin-bottom:0.4rem;">RED</div>
+          <div style="font-size:0.82rem; color:var(--muted);">Write a failing test.<br>Run it. Confirm red.<br><em>You own this step.</em></div>
+        </div>
+        <div style="display:flex; align-items:center; padding:0 0.3rem; color:var(--muted); font-size:1.4rem;">→</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-left:none; padding:1.2rem 1.6rem; min-width:160px; text-align:center;">
+          <div style="font-size:2rem; margin-bottom:0.4rem;">🟢</div>
+          <div style="font-weight:700; color:#5a5; margin-bottom:0.4rem;">GREEN</div>
+          <div style="font-size:0.82rem; color:var(--muted);">Tell agent: make this<br>test pass; don't touch<br>the test file.</div>
+        </div>
+        <div style="display:flex; align-items:center; padding:0 0.3rem; color:var(--muted); font-size:1.4rem;">→</div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-left:none; border-radius:0 8px 8px 0; padding:1.2rem 1.6rem; min-width:160px; text-align:center;">
+          <div style="font-size:2rem; margin-bottom:0.4rem;">🔵</div>
+          <div style="font-weight:700; color:#55a; margin-bottom:0.4rem;">REFACTOR</div>
+          <div style="font-size:0.82rem; color:var(--muted);">Agent cleans up.<br>Suite stays green.<br>You approve the diff.</div>
+        </div>
+      </div>
+
+      <p><strong>How each step works with an agent:</strong></p>
+      <p><strong>Red:</strong> You write (or review) the failing test. This is a human responsibility. The test encodes <em>your</em> interpretation of the spec. If the agent writes the test for you without you verifying it against the spec, you risk the agent testing the wrong thing — and making it pass — which produces false confidence. At minimum, you must read and approve every test that enters the suite.</p>
+      <p><strong>Green:</strong> Hand the failing test to the agent with a constrained prompt: <em>"Make <code>test_date_filter</code> pass. Do not modify <code>tests/test_gitlog.py</code>. Show me the diff before writing it."</em> The agent iterates. You watch the test output. Green means done — nothing more.</p>
+      <p><strong>Refactor:</strong> Once green, the agent may refactor for clarity, performance, or structure. Your job here is to confirm the suite stays green after each refactor step. Never let the agent refactor on a red suite — that way lies a codebase where nothing works and no one knows why.</p>
+      <p>The control-rod metaphor is apt: the test suite absorbs energy from the agent's generative capacity and releases it in controlled, verifiable increments. Remove the tests (or let the agent update them freely) and the reaction goes uncontrolled.</p>
+
+      <h2>8.3 Writing the failing test first — yourself, or with the agent</h2>
+      <p>The gold standard is <strong>you write the test</strong>. You have read the spec (Ch 6), you understand the acceptance criteria, and you translate one criterion into one test function. The test is small, has a single assertion, and has a name that reads like a sentence: <code>test_date_filter_excludes_commits_before_start_date</code>.</p>
+      <p>The silver standard is <strong>you ask the agent to draft the test, then you verify it against the spec</strong>. Ask: <em>"Read specs/gitlog-report/spec.md. Write failing pytest tests for the acceptance criteria in §3. Do not write any implementation. Return only the test file."</em> Then read every test against the spec line by line. Delete any test that is not traceable to a specific acceptance criterion.</p>
+      <p>The "test what the spec says" rule (see Ch 6): a test that does not correspond to a named acceptance criterion is speculative. Speculative tests often encode the agent's assumptions, not yours. They pass when the agent writes implementation code that satisfies its own assumptions — creating a closed loop that excludes your intent entirely.</p>
+      <p>Checklist before adding any test:</p>
+      <ul>
+        <li>Can I point to the exact line in the spec this test covers?</li>
+        <li>Does the test name match the acceptance criterion in plain language?</li>
+        <li>Does the test fail right now (against no implementation or a stub)?</li>
+        <li>Does the test have exactly one reason to fail?</li>
+      </ul>
+      <p>If any answer is "no" or "I'm not sure," revise the test before adding it to the suite.</p>
+
+      <h2>8.4 The "stop until green" discipline</h2>
+      <p>This is a simple rule with profound consequences: <strong>do not move to the next task while any test in the suite is red.</strong></p>
+      <p>Agents will routinely try to move on. The pattern looks like: "Test X is failing but that's because we haven't implemented feature Y yet — let me implement Y first and come back to X." This is almost always wrong. A failing test means the current task is incomplete. Moving on builds a stack of incomplete tasks that interact in ways that become progressively harder to untangle.</p>
+      <p>The correct response to a red test is:</p>
+      <ol>
+        <li>Stop. Do not write new features.</li>
+        <li>Understand why the test is red. Read the error output literally.</li>
+        <li>If the test is wrong (tests the wrong thing), fix the test and document why.</li>
+        <li>If the implementation is wrong, fix the implementation.</li>
+        <li>Run the full suite. Confirm all-green before proceeding.</li>
+      </ol>
+      <p>Applied to agents: when you see an agent producing output and your test runner shows red, interrupt. Paste the test failure into the agent's context. Ask: <em>"This test is still failing. Do not add new code. Fix only what is needed to make this test pass."</em> The constraint "do not add new code" prevents the agent from burying the failure under additional complexity.</p>
+      <p>The "stop until green" discipline also applies to refactoring: never ask an agent to refactor code while tests are red. A red-plus-refactor session produces a diff where bug and cleanup are entangled, making review and bisection nearly impossible.</p>
+
+      <h2>8.5 Golden tests — fixed, hand-curated truth</h2>
+      <p>A <strong>golden test</strong> is a test with a hand-curated, fixed input and a hand-verified, fixed expected output. No generated fixtures. No dynamic comparisons. The expected value is typed in by a human who checked it against the spec and confirmed it is correct.</p>
+      <p>Golden tests are the most durable test type in an agentic codebase. Because both input and expected output are fixed strings (or structures), no agent refactor can accidentally make them pass on wrong output. If the output changes — for any reason — the test fails.</p>
+      <p>Example for gitlog-report (two authors, three commits):</p>
+      <pre><code>GOLDEN_GIT_LOG = """
+abc1234 Alice 2024-01-15 Add parser module
+def5678 Bob   2024-01-16 Fix edge case in parser
+ghi9012 Alice 2024-01-17 Add CLI entry point
+"""
+
+GOLDEN_EXPECTED = {
+    "Alice": {"commits": 2, "files_changed": 0, "insertions": 0, "deletions": 0},
+    "Bob":   {"commits": 1, "files_changed": 0, "insertions": 0, "deletions": 0},
+}
+
+def test_golden_multi_author():
+    result = parse_gitlog(GOLDEN_GIT_LOG)
+    assert result == GOLDEN_EXPECTED</code></pre>
+      <p>Rules for golden tests:</p>
+      <ul>
+        <li>The expected value is always a literal — never computed at test time.</li>
+        <li>When the expected output legitimately changes (because a requirement changed), update the golden value manually and commit with a message explaining why.</li>
+        <li>Never let an agent update a golden value without your explicit review. Treat any agent-proposed change to a golden value as a requirement change, not a test fix.</li>
+      </ul>
+      <p>Golden tests are especially powerful for parsing, formatting, and report-generation tasks — exactly the kind of work gitlog-report does.</p>
+
+      <h2>8.6 Snapshot tests and their dangers with agents</h2>
+      <p>Snapshot tests (as offered by Jest, pytest-snapshot, and similar tools) automatically capture the output of a function and save it as a file. On subsequent runs, the test compares current output to the saved snapshot and fails only if they differ. When they differ, you run a "snapshot update" command and the new output becomes the new truth.</p>
+      <p>This convenience is a trap in agentic development. <strong>Agents will happily update snapshots to match wrong output.</strong> The pattern is: agent introduces a regression → test fails → agent runs snapshot update → test passes → agent reports success → you merge broken code.</p>
+      <p>The snapshot update command is the problem. It inverts the relationship between test and truth: instead of the expected output being fixed and the implementation being wrong, the expected output becomes wrong and the test silently accepts it.</p>
+      <p>How to treat snapshot tests in an agentic codebase:</p>
+      <ul>
+        <li><strong>Flag snapshot update as a reviewed action.</strong> Any commit that touches a <code>__snapshots__</code> directory or <code>.snap</code> file must be reviewed by a human who verifies the new snapshot is correct.</li>
+        <li><strong>Prefer golden tests</strong> (§8.5) for any output that can be hand-curated.</li>
+        <li><strong>If you use snapshots,</strong> add a CI lint rule that fails if snapshot files are modified without a corresponding label/tag indicating human review.</li>
+        <li><strong>Never run <code>--updateSnapshot</code></strong> (or equivalent) in an automated agent loop. That flag must require explicit human invocation.</li>
+      </ul>
+      <p>Snapshots are not inherently bad — they catch unexpected changes. They are bad when the mechanism for accepting changes is automated or undiscriminated. In agentic contexts, assume the agent will find and use the update path unless you explicitly prevent it.</p>
+
+      <h2>8.7 Anti-mocking discipline — integration over isolation</h2>
+      <p>The classic argument for mocks is speed and isolation: unit tests should not touch the network, the filesystem, or the database. This is sound advice for human-written tests operating in a CI environment with shared resources. It is partially wrong for agentic codebases.</p>
+      <p>The problem with mocks in agent-written tests is that <strong>agents mock the thing they just wrote</strong>. If the agent writes <code>GitLogParser</code> and then writes a test for it using a mock of <code>GitLogParser</code>, the test is testing the mock, not the parser. It passes trivially. The real parser can be completely broken.</p>
+      <p>The anti-mocking discipline: <strong>prefer integration tests against real dependencies</strong> wherever those dependencies are cheap to run locally.</p>
+      <ul>
+        <li>Use a real temporary directory instead of mocking the filesystem.</li>
+        <li>Use a real in-memory SQLite database instead of mocking your ORM.</li>
+        <li>Use a real subprocess call to <code>git log</code> on a temp repo instead of mocking the git output.</li>
+        <li>Use real HTTP fixtures (recorded once, replayed) instead of mocking <code>requests</code>.</li>
+      </ul>
+      <p>Integration tests are slower but they test the actual contract. An agent that breaks the real <code>git log</code> interaction will be caught by an integration test and will not be caught by a mock-based unit test.</p>
+      <p>The exceptions: external services with rate limits, expensive third-party APIs, non-deterministic services. For these, record real responses once (using a tool like <code>vcrpy</code> or <code>msw</code>) and replay them. This is fundamentally different from hand-writing mocks — the recorded response is real truth, not agent-constructed fiction.</p>
+
+      <h2>8.8 Eval loops — tests for the prompt, not just the code</h2>
+      <p>When your system includes an LLM call — a prompt that asks the model to extract, classify, summarise, or decide — the code around it may be correct while the <em>prompt itself</em> is producing wrong outputs. Unit tests on the code will not catch this. You need an <strong>eval loop</strong>: a test that runs the actual prompt against a fixed set of inputs and checks the outputs against fixed expected values.</p>
+      <p>An eval loop has the same structure as a golden test (§8.5), except the "function under test" is a prompt-plus-model call rather than a pure function:</p>
+      <pre><code>EVAL_CASES = [
+    {
+        "input": "Extract the author name from: 'abc123 Alice 2024-01-15 Fix bug'",
+        "expected": "Alice",
+    },
+    {
+        "input": "Extract the author name from: 'def456 Bob Smith 2024-02-01 Add feature'",
+        "expected": "Bob Smith",
+    },
+]
+
+def test_author_extraction_eval():
+    for case in EVAL_CASES:
+        result = call_llm(AUTHOR_EXTRACTION_PROMPT, case["input"])
+        assert result.strip() == case["expected"], (
+            f"Prompt produced wrong output for input: {case['input']!r}"
+        )</code></pre>
+      <p>Eval loops catch:</p>
+      <ul>
+        <li>Prompt regressions when the prompt template is edited.</li>
+        <li>Model drift when you upgrade to a new model version.</li>
+        <li>Edge cases the prompt handles inconsistently (multi-word names, special characters, empty input).</li>
+      </ul>
+      <p>Eval loops are expensive (they make real LLM calls) so run them on a slow path: pre-commit on prompt file changes, or nightly CI, not on every unit test run. The key is that they exist and are non-negotiable gates before shipping a prompt change.</p>
+      <p>For agents writing prompt-heavy features, the eval loop is the spec equivalent for the prompt layer. Require it before any prompt change is merged.</p>
+
+      <h2>8.9 Coverage as a verification signal</h2>
+      <p>Line coverage tells you which lines of code were executed by at least one test. It is a useful signal but an unreliable metric for quality. The failure mode is coverage theatre: 100% line coverage with tests that make no meaningful assertions. Every line runs; nothing is verified.</p>
+      <p>Coverage is a <em>necessary</em> condition for confidence, not a <em>sufficient</em> one. A line with 0% coverage is definitely untested. A line with 100% coverage might still be untested in any meaningful sense.</p>
+      <p>How to use coverage correctly in an agentic codebase:</p>
+      <ul>
+        <li><strong>Use coverage to find gaps, not to prove quality.</strong> A module at 40% coverage has obvious gaps to address. A module at 100% coverage needs its tests read — not celebrated.</li>
+        <li><strong>Use branch coverage, not just line coverage.</strong> Branch coverage catches untested conditional paths. Agents often write code with multiple branches and test only the happy path.</li>
+        <li><strong>Set a floor, not a ceiling.</strong> Require, say, 80% branch coverage as a CI gate. Don't optimise for 100% — that incentivises coverage theatre.</li>
+        <li><strong>Mutation testing is the honest metric.</strong> Tools like <code>mutmut</code> (Python) or <code>Stryker</code> (JS) introduce small bugs and check whether any test fails. If 100% of mutations survive (no test catches any injected bug), your coverage is theatre regardless of the number.</li>
+      </ul>
+      <p>For agents: never let an agent report "coverage is 95%" as evidence of completeness. Ask instead: "How many of the acceptance criteria from the spec are covered by assertions in the test suite?" That is the number that matters.</p>
+
+      <h2>8.10 When the agent writes bad tests (and how to spot it)</h2>
+      <p>Agents write bad tests. Not from malice — from the same pattern-matching that makes them write good-looking code: they optimise for tests that pass, not for tests that would catch real bugs. Here are the signs to look for:</p>
+
+      <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
+        <thead>
+          <tr style="background:var(--surface);">
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Sign</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">What it looks like</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Why it's bad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Tautological test</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><code>assert result == result</code> or <code>assert len(result) &gt; 0</code></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Always passes; tests nothing</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Tests the mock</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Mock returns X; test asserts X; real function never called</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Implementation can be broken; test will pass</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Asserts implementation detail</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><code>assert parser._internal_cache == {}</code></td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Breaks on every refactor; tests structure not behaviour</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">No assertion</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Test calls function, captures result, ends without assert</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Passes even if function throws wrong output (some frameworks)</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Happy-path only</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">10 tests, all with valid well-formed inputs</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Edge cases (empty input, malformed data) completely untested</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Spec-untraceable test</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Test covers behaviour not in the spec</td>
+            <td style="padding:0.6rem 1pm; border:1px solid var(--border);">Agent inventing requirements; may conflict with real spec</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Soft assertion</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);"><code>assert "Alice" in str(result)</code> instead of exact match</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Passes even when result is malformed; hides bugs in structure</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>How to catch bad tests systematically:</p>
+      <ol>
+        <li><strong>Run the test suite against a known-broken implementation.</strong> Introduce a deliberate bug (delete a function body, return a wrong value) and run the tests. Any test that still passes is either testing the wrong thing or is tautological.</li>
+        <li><strong>Read assertions literally.</strong> For every <code>assert</code> statement, ask: "What would make this assertion false?" If the answer is "almost nothing," the assertion is weak.</li>
+        <li><strong>Count the assertions per test.</strong> A test with zero assertions is always a bug. A test with one assertion that asserts a trivially true condition is effectively zero.</li>
+        <li><strong>Run mutation testing periodically</strong> (§8.9). Any surviving mutant is a test gap.</li>
+      </ol>
+
+      <h2>8.11 Mini-walkthrough: write the gitlog-report tests first</h2>
+      <div class="walkthrough">
+        <h3>Mini-walkthrough · gitlog-report — write the failing tests</h3>
+        <p>This walkthrough builds on the acceptance criteria from <strong>Ch 6.11</strong> (spec for gitlog-report) and the task breakdown from <strong>Ch 7.11</strong> (PLAN.md Tasks 1–2: parse git log, aggregate per-author stats). We write the failing tests <em>before</em> any implementation. The agent's job in Ch 9 will be to make them pass.</p>
+        <p>All four tests below are in <code>tests/test_gitlog.py</code>. The module under test is <code>gitlog_report/parser.py</code>, which does not exist yet — that is the point. These tests are the specification in executable form.</p>
+
+        <h4>Setup — temporary git repo fixture</h4>
+        <pre><code>import subprocess, textwrap, os, pytest
+from pathlib import Path
+from gitlog_report.parser import parse_gitlog  # ImportError until Ch 9
+
+@pytest.fixture()
+def tmp_git_repo(tmp_path):
+    """Create a minimal git repo with a known commit history."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=repo, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"], cwd=repo, check=True
+    )
+    return repo
+
+def _make_commit(repo: Path, author: str, date: str, message: str):
+    """Add a dummy file and commit as author on date."""
+    (repo / "file.txt").write_text(message)
+    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+    env = {**os.environ, "GIT_AUTHOR_NAME": author,
+           "GIT_AUTHOR_EMAIL": f"{author.lower().replace(' ', '.')}@example.com",
+           "GIT_AUTHOR_DATE": date,
+           "GIT_COMMITTER_NAME": author,
+           "GIT_COMMITTER_EMAIL": f"{author.lower().replace(' ', '.')}@example.com",
+           "GIT_COMMITTER_DATE": date}
+    subprocess.run(
+        ["git", "commit", "-m", message], cwd=repo, check=True, capture_output=True, env=env
+    )</code></pre>
+
+        <h4>Test 1 — empty repository</h4>
+        <pre><code># Acceptance criterion (Ch 6.11 §3.1):
+#   Given a repo with no commits, the report returns an empty dict.
+
+def test_empty_repo_returns_empty_dict(tmp_git_repo):
+    result = parse_gitlog(tmp_git_repo, start_date=None, end_date=None)
+    assert result == {}, f"Expected empty dict, got {result!r}"</code></pre>
+
+        <h4>Test 2 — single author</h4>
+        <pre><code># Acceptance criterion (Ch 6.11 §3.2):
+#   Given a repo with N commits from one author,
+#   the report lists that author with commit_count == N.
+
+def test_single_author_commit_count(tmp_git_repo):
+    _make_commit(tmp_git_repo, "Alice", "2024-01-10T10:00:00", "first commit")
+    _make_commit(tmp_git_repo, "Alice", "2024-01-11T10:00:00", "second commit")
+    _make_commit(tmp_git_repo, "Alice", "2024-01-12T10:00:00", "third commit")
+
+    result = parse_gitlog(tmp_git_repo, start_date=None, end_date=None)
+
+    assert set(result.keys()) == {"Alice"}
+    assert result["Alice"]["commit_count"] == 3</code></pre>
+
+        <h4>Test 3 — multiple authors</h4>
+        <pre><code># Acceptance criterion (Ch 6.11 §3.3):
+#   Given commits from multiple authors, each author appears
+#   in the report with their own correct commit count.
+
+def test_multi_author_counts(tmp_git_repo):
+    _make_commit(tmp_git_repo, "Alice", "2024-01-10T10:00:00", "alice 1")
+    _make_commit(tmp_git_repo, "Bob",   "2024-01-11T10:00:00", "bob 1")
+    _make_commit(tmp_git_repo, "Alice", "2024-01-12T10:00:00", "alice 2")
+    _make_commit(tmp_git_repo, "Carol", "2024-01-13T10:00:00", "carol 1")
+
+    result = parse_gitlog(tmp_git_repo, start_date=None, end_date=None)
+
+    assert set(result.keys()) == {"Alice", "Bob", "Carol"}
+    assert result["Alice"]["commit_count"] == 2
+    assert result["Bob"]["commit_count"]   == 1
+    assert result["Carol"]["commit_count"] == 1</code></pre>
+
+        <h4>Test 4 — date filter (THE test Ch 9.11 will use to catch the injected bug)</h4>
+        <pre><code># Acceptance criterion (Ch 6.11 §3.4):
+#   Given a start_date, commits before that date are excluded.
+#
+# *** NOTE: This is the test that Ch 9.11 deliberately breaks by injecting
+#     an off-by-one bug into the date comparison (>= vs >).
+#     Watch this test catch the regression. ***
+
+def test_date_filter_excludes_commits_before_start_date(tmp_git_repo):
+    _make_commit(tmp_git_repo, "Alice", "2024-01-05T10:00:00", "before window")  # excluded
+    _make_commit(tmp_git_repo, "Alice", "2024-01-10T10:00:00", "boundary commit")  # included (on boundary)
+    _make_commit(tmp_git_repo, "Alice", "2024-01-15T10:00:00", "after start")    # included
+
+    result = parse_gitlog(
+        tmp_git_repo,
+        start_date="2024-01-10",
+        end_date=None,
+    )
+
+    assert set(result.keys()) == {"Alice"}, (
+        "Alice should appear — she has commits on and after 2024-01-10"
+    )
+    assert result["Alice"]["commit_count"] == 2, (
+        "Expected 2 commits (boundary + after), got "
+        f"{result['Alice']['commit_count']}. "
+        "If this is 3, the start_date filter is not excluding early commits. "
+        "If this is 1, the filter is using strict > instead of >= on the boundary date."
+    )</code></pre>
+
+        <p><strong>Run them now — all four should fail with <code>ImportError</code></strong> (the module doesn't exist yet). That red state is the correct starting point.</p>
+        <pre><code>$ pytest tests/test_gitlog.py -v
+FAILED tests/test_gitlog.py::test_empty_repo_returns_empty_dict - ImportError
+FAILED tests/test_gitlog.py::test_single_author_commit_count - ImportError
+FAILED tests/test_gitlog.py::test_multi_author_counts - ImportError
+FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date - ImportError</code></pre>
+        <p>Four red tests. The suite is ready. In <strong>Ch 9</strong>, we inject a bug into the date-filter implementation and watch <code>test_date_filter_excludes_commits_before_start_date</code> catch it exactly — demonstrating why writing that test first (and writing it precisely on the boundary condition) matters.</p>
+        <p><strong>Next chapter:</strong> we'll inject a bug into the date-filter implementation and watch the date-filter test catch it. → Ch 9: Debugging with Agents.</p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch6-spec')">← Ch 6. Spec-Driven Development</a>
+        <a onclick="go('ch7-plan')">← Ch 7. Plan-Driven Execution</a>
+        <a onclick="go('ch9-debug')">→ Ch 9. Debugging with Agents</a>
+        <a onclick="go('ch10-review')">→ Ch 10. Safety, Review &amp; Verification</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
