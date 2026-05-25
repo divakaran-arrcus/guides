@@ -3040,6 +3040,312 @@ PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_dat
       </div>
     </section>
 
+    <section id="ch10-review" class="section">
+      <h1>10. Safety, Review &amp; Verification</h1>
+      <p class="lede">What you'll learn: the three review layers, when to use which tool (code review, /security-review, /ultrareview), the verification-before-completion discipline, and how to spot agent hallucinations in code.</p>
+
+      <h2>10.1 The three review layers — pre-merge, code, security</h2>
+      <p>Every non-trivial change should pass through three distinct review layers before merge. Each layer has a different scope, different tooling, and catches a different class of defect. Treating them as one combined "review" means each one is done shallowly — you need the distinctions.</p>
+
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; margin:1.4rem 0;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem;">
+          <p style="font-weight:700; color:var(--accent); margin:0 0 0.5rem;">Layer 1 · Pre-merge (you)</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Who:</strong> the author, before anyone else sees it.</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Catches:</strong> obvious blunders, missing tests, incomplete diffs, left-in debug logs, unintended scope creep.</p>
+          <p style="font-size:0.88rem; margin:0;"><strong>How:</strong> read your own diff. <code>git diff --stat</code> and <code>git diff HEAD</code>. Does the changed surface match the ticket?</p>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem;">
+          <p style="font-weight:700; color:var(--accent); margin:0 0 0.5rem;">Layer 2 · Code review (agent or peer)</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Who:</strong> an agent (via <code>/code-review</code>) or a human reviewer.</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Catches:</strong> logic errors, missing edge cases, poor naming, architectural drift, test quality.</p>
+          <p style="font-size:0.88rem; margin:0;"><strong>How:</strong> structured prompt or skill. The reviewer reads intent + implementation and flags mismatches.</p>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem;">
+          <p style="font-weight:700; color:var(--accent); margin:0 0 0.5rem;">Layer 3 · Security review (specialist)</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Who:</strong> <code>/security-review</code> or a security engineer for high-stakes code.</p>
+          <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Catches:</strong> injection vectors, secret leaks, insecure defaults, dangerous API usage.</p>
+          <p style="font-size:0.88rem; margin:0;"><strong>How:</strong> purpose-built scan focused on attack surface, not correctness. Runs independently of code review.</p>
+        </div>
+      </div>
+
+      <p>The most common mistake is collapsing all three into a single "does this look good?" pass. Layer 2 reviewers are not thinking about injection vectors; Layer 3 reviewers are not thinking about naming conventions. Keep the scopes clean.</p>
+
+      <h2>10.2 Code review with agents — beyond rubber-stamping</h2>
+      <p>An agent doing code review is not automatically trustworthy. Without guidance, the agent will trend toward politeness: it will notice obvious issues but hedge, praise structure before raising concerns, and stop after two or three findings even when more exist. The default output is a rubber-stamp with footnotes.</p>
+
+      <p>To get real code review, you need a <strong>skeptic stance prompt</strong>. The difference:</p>
+      <pre><code># Rubber-stamp prompt (don't use)
+"Review this code for me."
+
+# Skeptic stance prompt (use this)
+"You are a senior engineer who is skeptical of AI-generated code.
+Your job is to find bugs, not confirm correctness.
+List every place this code could fail silently, produce wrong output,
+or behave differently under concurrent load.
+Be terse. Be ruthless. Do not praise anything.
+Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
+
+      <p><strong>Reviewing the review (recursion).</strong> The agent's review is itself an artifact that can contain errors. Agents hallucinate findings — flagging non-existent bugs, citing APIs incorrectly, or misreading control flow. Before acting on a finding, verify it manually: read the actual line the agent cited. Does the code actually do what the agent says it does? If the finding cites a function — does that function exist and does it have that signature?</p>
+
+      <p>The <strong>skeptic stance toward the reviewer</strong>: treat every finding as a hypothesis, not a fact. Confirm before you fix.</p>
+
+      <h2>10.3 /security-review deep dive</h2>
+      <p>The <code>/security-review</code> skill in Claude Code runs a security-focused analysis pass on your codebase or diff. It is distinct from code review: it does not comment on architecture or naming — it looks for attack surface.</p>
+
+      <p><strong>What it scans:</strong></p>
+      <ul>
+        <li><strong>Injection patterns</strong> — SQL injection, shell injection (subprocess with untrusted input), template injection, path traversal.</li>
+        <li><strong>Secret leakage</strong> — hardcoded credentials, tokens in source, secrets in log statements.</li>
+        <li><strong>Insecure defaults</strong> — TLS disabled, signature verification skipped, debug flags left on.</li>
+        <li><strong>Dangerous API usage</strong> — <code>eval()</code>, <code>pickle.loads()</code> on untrusted data, <code>os.system()</code> with interpolated input.</li>
+        <li><strong>OWASP-adjacent patterns</strong> — missing authentication checks, direct object references, missing rate limiting.</li>
+      </ul>
+
+      <p><strong>What it misses (calibration required):</strong></p>
+      <ul>
+        <li><strong>Business logic flaws</strong> — "user A can see user B's data" depends on your domain model, not the code shape. The scanner cannot reason about intent.</li>
+        <li><strong>Auth boundary correctness</strong> — it can spot a missing <code>@require_auth</code> decorator but cannot verify your auth model is sound end-to-end.</li>
+        <li><strong>Second-order effects</strong> — data flows across service boundaries, timing attacks, cache poisoning.</li>
+        <li><strong>Configuration-layer vulnerabilities</strong> — IAM policies, firewall rules, Kubernetes RBAC. These live outside the code the scanner reads.</li>
+      </ul>
+
+      <p>Run <code>/security-review</code> before every merge to a main branch. It runs locally, in-terminal, synchronously. Results appear inline.</p>
+
+      <h2>10.4 /ultrareview — multi-agent deep review</h2>
+      <p>The <code>/ultrareview</code> skill is fundamentally different from <code>/code-review</code> or <code>/security-review</code>. Understanding these differences is required before using it.</p>
+
+      <div style="background:var(--surface); border:2px solid var(--accent); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Critical: /ultrareview is cloud-based, paid, and asynchronous</p>
+        <ul style="margin:0; font-size:0.92rem;">
+          <li><strong>Cloud-based:</strong> your code is sent to remote agents running in Anthropic's infrastructure — not locally on your machine.</li>
+          <li><strong>Metered and paid:</strong> each run consumes tokens across multiple agents in parallel. It is not free. Reserve it for high-value changes (pre-production releases, security-sensitive refactors, complex feature additions).</li>
+          <li><strong>Asynchronous:</strong> results do <em>not</em> appear in your terminal. The review is dispatched; findings return to your <strong>inbox</strong>, not the CLI session you launched it from. You will not see output immediately.</li>
+        </ul>
+      </div>
+
+      <p><strong>What /ultrareview does:</strong> it spawns multiple parallel subagents with different review lenses — correctness, performance, security, architecture, test coverage — and synthesises their findings into a structured report. Because multiple independent agents review the same code, it catches things a single-pass review misses: agents disagree, and disagreements surface ambiguities in the code that no single reviewer would flag.</p>
+
+      <p><strong>When to use it:</strong></p>
+      <ul>
+        <li>Before a production release or a release candidate branch merge.</li>
+        <li>When a significant refactor touches security boundaries (auth, payments, data access).</li>
+        <li>When you want a second opinion on a complex design decision before it gets load-bearing.</li>
+      </ul>
+
+      <p><strong>When not to use it:</strong> routine feature work, documentation changes, small bug fixes. The cost and latency are not justified. Use <code>/code-review</code> instead.</p>
+
+      <h2>10.5 Verification-before-completion — running the thing you built</h2>
+      <p>The most common error in AI-assisted development is claiming done without running the thing. An agent can generate code that looks complete, passes a mental model check, and even passes static analysis — and still fail at runtime in the first smoke test. "I've implemented the feature" is a claim about behaviour. Behaviour is only observable by running the code.</p>
+
+      <p>The <code>superpowers:verification-before-completion</code> skill encodes this as a non-negotiable gate. The pattern it enforces:</p>
+
+      <pre><code># Verification-before-completion pattern
+# Do NOT claim done until ALL four steps pass:
+
+1. BUILD   — the project compiles / the imports resolve / no syntax errors
+             (run: python -c "import mymodule" or npm run build)
+
+2. RUN     — the program starts and reaches its main loop without crashing
+             (run: python main.py --help, or start the server, or execute the CLI)
+
+3. SMOKE   — a minimal end-to-end path through the new feature produces
+             the expected output with a real (or realistic) input
+             (not mocked — actual I/O through the new code path)
+
+4. CLAIM   — only after 1, 2, 3 pass can you write "done" or "implemented"</code></pre>
+
+      <p>Invoke the skill with <code>/verification-before-completion</code> in Claude Code. It will ask you to produce evidence for each stage. The agent cannot skip stages. This discipline is especially important after refactoring — it's easy to rename a function, forget one call site, and produce code that passes code review but crashes on first use.</p>
+
+      <p><strong>The evidence rule:</strong> every "done" claim must be backed by at least one piece of concrete evidence — a test run output, a screenshot of the feature working, a copy of the smoke test output. "It should work" is not evidence.</p>
+
+      <h2>10.6 Hallucinations in code — APIs that don't exist, imports that fail</h2>
+      <p>Code hallucination is qualitatively different from text hallucination. In a sentence, a hallucinated fact is detectable by cross-referencing. In code, a hallucinated API looks syntactically identical to a real one. The code is well-formed, passes linting, and reads naturally — until it is run.</p>
+
+      <p><strong>Common hallucination patterns:</strong></p>
+      <ul>
+        <li><strong>Made-up library functions:</strong> <code>pandas.read_sql_smart()</code>, <code>requests.get_cached()</code>, <code>os.path.resolve_relative()</code> — functions that sound like they should exist but don't.</li>
+        <li><strong>Wrong method signatures:</strong> calling a real function with arguments it doesn't accept, or in an order it doesn't expect.</li>
+        <li><strong>Invented module paths:</strong> <code>from django.contrib.auth.utils import check_token</code> where <code>check_token</code> doesn't exist at that path.</li>
+        <li><strong>Version mismatch:</strong> a real API that existed in an older version and was removed or renamed — the agent's training data included it.</li>
+      </ul>
+
+      <p><strong>The Read-then-Edit verification pattern:</strong> before accepting any agent-generated code that uses an API you didn't write yourself, verify the API exists. The pattern:</p>
+
+      <pre><code># Read-then-Edit verification pattern
+# Before: agent generates code using an API
+
+# Step 1: READ — use the Read tool to check the actual source or docs
+#   "Read the actual file at site-packages/requests/api.py and confirm
+#    that get() accepts a `timeout` parameter and its default value."
+
+# Step 2: CONFIRM — does the function/class/method exist at that path?
+#   Does it accept the arguments the agent used?
+#   Is it exported from the module the agent imported it from?
+
+# Step 3: EDIT — only proceed with the generated code once confirmed.
+#   If the API doesn't exist: ask the agent to find the correct one,
+#   or use the real docs to substitute the correct call.
+
+# Do NOT: assume "it looks plausible" means it works.
+# Do NOT: run the code as the first verification step — read first.</code></pre>
+
+      <p>For external libraries: use the <code>WebFetch</code> tool to pull the actual documentation page, not the agent's memory of it. The agent's training data has a cutoff; the library may have changed since then.</p>
+
+      <h2>10.7 The "looks right vs is right" gap</h2>
+      <p>Code can simultaneously satisfy all of the following and still be wrong:</p>
+      <ul>
+        <li>Compiles without errors.</li>
+        <li>Passes a linter at zero warnings.</li>
+        <li>Passes a type checker (mypy, TypeScript, etc.).</li>
+        <li>Is syntactically and stylistically indistinguishable from correct code.</li>
+        <li>Passes a casual code review.</li>
+      </ul>
+
+      <p>The gap between "looks right" and "is right" is where most AI-assisted bugs live. They don't look like bugs. They look like working code that has a subtle behavioural error — an off-by-one on an edge case, a missing <code>await</code>, a silent integer overflow, a dictionary lookup that returns <code>None</code> silently instead of raising.</p>
+
+      <p><strong>The type-checks-pass, tests-fail case</strong> is the most dangerous variant: the type system confirms that types are consistent but cannot verify that the logic is correct. A function typed as <code>(int, int) -&gt; int</code> that returns <code>a * b</code> instead of <code>a + b</code> passes every type check. Only a test that checks the actual output catches it.</p>
+
+      <p>This is why the verification discipline (§10.5) requires a smoke test, not just a build pass. And it's why the TDD discipline from Ch 8 is protective: if you write the test before the implementation, the test codifies what "right" means before "looks right" code can be accepted.</p>
+
+      <p><strong>Practical heuristic:</strong> if a code change is more than 20 lines and has no corresponding test change, the "is right" question is unanswered. Don't merge it without asking why.</p>
+
+      <h2>10.8 Receiving code review gracefully</h2>
+      <p>Receiving code review — whether from an agent or a human — is a skill. The default response to negative feedback is defensive: discount the finding, reframe the code so the finding no longer applies, or implement a surface-level change that satisfies the letter of the review without addressing the concern. All of these responses make code worse.</p>
+
+      <p>The <code>superpowers:receiving-code-review</code> skill provides a structured framework for processing review findings. The core discipline:</p>
+
+      <ol>
+        <li><strong>Assume the reviewer is right until proven otherwise.</strong> Disagreement is a signal that something is unclear — either the code is unclear, or the reviewer misread it. Both outcomes need resolution.</li>
+        <li><strong>Verify findings before implementing.</strong> Performative agreement — implementing a change because the reviewer flagged it, without understanding whether the finding is correct — is dangerous. You can introduce a new bug while "fixing" a non-existent one.</li>
+        <li><strong>Ask for clarification before dismissing.</strong> A finding you don't understand is not a finding you can safely ignore. "I don't see the problem here" is the start of a conversation, not the end of one.</li>
+        <li><strong>Distinguish BLOCKER from MINOR.</strong> Not all findings are equal. A BLOCKER (correctness bug, security hole) must be resolved before merge. A MINOR (naming preference, style suggestion) can be deferred or declined with explanation.</li>
+      </ol>
+
+      <p>The receiving-code-review discipline applies equally to agent reviewers. Don't implement every suggestion the agent makes without reading the finding. Agents make incorrect review comments. Read the finding, check the code it references, and make your own judgment.</p>
+
+      <h2>10.9 Self-review prompts — getting the agent to critique itself</h2>
+      <p>Before requesting external review, you can get the agent to critique its own output. This catches a class of errors the agent is aware of but didn't surface during generation — it knows about edge cases it didn't handle, APIs it wasn't sure about, and assumptions it made.</p>
+
+      <p><strong>High-value self-review prompts:</strong></p>
+
+      <pre><code># Prompt 1: find a bug
+"Find a bug in the code you just wrote.
+Be specific: give the line number and the exact failure condition."
+
+# Prompt 2: list failure modes
+"List the ways this code could produce wrong output.
+Enumerate silently wrong cases — cases where no exception is raised
+but the result is incorrect."
+
+# Prompt 3: find the unhandled inputs
+"What inputs does this code not handle?
+List at least three cases where the input is valid but the code
+will produce an error or incorrect result."
+
+# Prompt 4: find the assumption
+"What assumption does this code make that the caller might violate?
+State the assumption explicitly and suggest how to guard against it."
+
+# Prompt 5: find the missing test
+"What test case is missing from the test suite that, if it existed,
+would fail right now?"</code></pre>
+
+      <p>The key is specificity: vague prompts get vague responses. "Is there anything wrong with this?" elicits reassurance. "Find a bug" forces the agent to search. "What inputs does this not handle?" forces enumeration of failure modes rather than confirmation of success modes.</p>
+
+      <p>Run at least Prompt 2 and Prompt 3 on every non-trivial code generation before accepting the output.</p>
+
+      <h2>10.10 Sign-off gates — what blocks a "done" claim</h2>
+      <p>A "done" claim is a commitment. Before making it, the following gates must pass. This is not a suggestion — each gate catches a real class of defect that the previous gate does not catch.</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 1rem;">Sign-off checklist</p>
+        <ul style="margin:0; font-size:0.92rem; line-height:1.9;">
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Build passes.</strong> <code>npm run build</code> / <code>python -m compileall</code> / <code>go build</code> exits clean. No import errors, no syntax errors.</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Tests pass.</strong> Full test suite green. Not just the new tests — the full suite. No regressions.</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Manual smoke.</strong> You or the agent ran a real end-to-end path through the new behaviour with actual input. Not mocked.</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Security scan clean.</strong> <code>/security-review</code> run, findings reviewed. BLOCKERs resolved or explicitly accepted with documented rationale.</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Code review complete.</strong> Findings reviewed. BLOCKERs and MAJORs resolved. MINORs triaged.</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>No TODOs in diff.</strong> <code>git diff main | grep -i 'TODO\|FIXME\|HACK'</code> is empty (or every hit is intentional and tracked).</li>
+          <li><input type="checkbox" disabled style="margin-right:0.5rem;"> <strong>Reviewer sign-off.</strong> A human (or an /ultrareview pass for high-stakes changes) has approved the change.</li>
+        </ul>
+      </div>
+
+      <p>These gates are sequential, not parallel: if tests fail, the smoke test result is not meaningful (the code you smoked isn't the code that's shipping). If the build doesn't pass, the tests don't reflect reality.</p>
+
+      <h2>10.11 Mini-walkthrough: full review pass</h2>
+      <div class="walkthrough">
+        <h3>Mini-walkthrough · gitlog-report — full review pass</h3>
+        <p>Building on the Ch 9.11 walkthrough: the off-by-one bug in <code>parser.py</code> has been fixed (<code>&gt;</code> → <code>&gt;=</code>). The code is correct. Now we run the full three-layer review before declaring it ready to merge.</p>
+
+        <h4>Review 1 · Inline code review (code-review skill)</h4>
+        <p>Invoke: <code>/code-review</code> with the skeptic stance prompt. The agent reviews <code>parser.py</code> and the test suite.</p>
+        <p><strong>Finding (MAJOR):</strong> missing input validation on the <code>start_date</code> parameter.</p>
+        <pre><code># Finding from code review
+# File: parser.py, function: parse_gitlog()
+# Issue: start_date parameter is used directly in datetime.strptime()
+#        with no validation. If the caller passes "not-a-date" or None,
+#        parse_gitlog() raises an unhandled ValueError with a cryptic
+#        traceback, not a meaningful error.
+#
+# Recommendation: validate the date format at function entry.
+# Add: if start_date and not re.match(r'\d{4}-\d{2}-\d{2}', start_date):
+#          raise ValueError(f"start_date must be YYYY-MM-DD, got: {start_date!r}")
+# Severity: MAJOR — affects all callers passing arbitrary input.</code></pre>
+        <p>Action: fix applied. A <code>ValueError</code> with a clear message is now raised on malformed date input.</p>
+
+        <h4>Review 2 · /security-review (local, synchronous, in-terminal)</h4>
+        <p>Invoke: <code>/security-review</code>. Runs locally in the Claude Code session. Results appear in-terminal immediately.</p>
+        <p><strong>Finding (BLOCKER):</strong> shell injection risk in the <code>subprocess</code> call.</p>
+        <pre><code># Finding from /security-review
+# File: parser.py, line 23
+# Issue: subprocess.run(f"git log {repo_path} --format=...", shell=True)
+#        repo_path is passed in by the caller. If repo_path contains
+#        shell metacharacters (e.g., "; rm -rf ~"), they execute with
+#        the privileges of the calling process.
+#
+# Recommendation: pass arguments as a list, shell=False (the default).
+# Before: subprocess.run(f"git log {repo_path} ...", shell=True)
+# After:  subprocess.run(["git", "log", repo_path, "--format=..."])
+# Severity: BLOCKER — shell injection with caller-controlled input.</code></pre>
+        <p>Action: fix applied. <code>shell=True</code> removed; argument list used instead. This is a real vulnerability class — the code review pass did not flag it because code reviewers are not specifically scanning for shell metacharacter injection.</p>
+
+        <h4>Review 3 · /ultrareview (cloud, async — results go to inbox)</h4>
+        <p>Invoke: <code>/ultrareview</code> on the full diff.</p>
+        <div style="background:var(--surface); border:1px solid var(--accent); border-radius:6px; padding:1rem; margin:0.8rem 0; font-size:0.88rem;">
+          <strong>Note on /ultrareview UX:</strong> this command dispatches the review to remote agents running in the cloud. It is <strong>metered and paid</strong>. After you press enter, the terminal will acknowledge dispatch — but <strong>you will not see results in this session</strong>. The findings return asynchronously to your <strong>inbox</strong>. Check your inbox after a few minutes for the structured report.
+        </div>
+        <p><strong>Finding (returned to inbox, MAJOR):</strong> architectural concern — tight coupling between parsing and date filtering.</p>
+        <pre><code># Finding from /ultrareview (received in inbox)
+# Architectural concern — tight coupling
+# The parse_gitlog() function both parses the raw git log format
+# AND applies the date filter in a single pass. This makes it
+# impossible to test parsing correctness independently from
+# filtering correctness, and impossible to reuse the parser
+# without also binding the caller to the filtering logic.
+#
+# Recommendation: separate concerns.
+#   parse_gitlog(repo_path) → raw commit records (no date filter)
+#   filter_by_date(commits, start_date, end_date) → filtered records
+# This matches the single-responsibility principle and makes
+# both functions independently testable and reusable.
+# Severity: MAJOR — not a blocker for this diff, but a design debt
+#           item to track before the codebase grows further.</code></pre>
+        <p>Action: tracked as a design debt issue. The refactor is non-trivial and out of scope for this fix; it's logged for the next sprint, not merged in the current change.</p>
+
+        <h4>Sign-off</h4>
+        <p>All three reviews complete. BLOCKERs (shell injection) and MAJORs (missing validation) resolved. The architectural concern (tight coupling) is tracked but deferred. Build passes, full test suite green, smoke test confirms the fixed behaviour. Change is ready to merge.</p>
+
+        <p><strong>Next chapter:</strong> we'll polish the reviewed code in parallel with multi-agent workflows. → Ch 11: Multi-Agent &amp; Parallel.</p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch9-debug')">← Ch 9. Debugging with Agents</a>
+        <a onclick="go('ch11-parallel')">→ Ch 11. Multi-Agent &amp; Parallel</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers (verification-before-completion)</a>
+        <a onclick="go('ch17-worked')">→ Ch 17. Worked Example end-to-end</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
