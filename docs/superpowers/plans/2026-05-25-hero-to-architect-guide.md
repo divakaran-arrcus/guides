@@ -67,16 +67,24 @@ Edit `hero-to-architect-guide.html`:
 
 - [ ] **Step 3: Introduce a `--accent` token for the guide-specific accent**
 
-In v1's `:root` CSS variable block, **add a new token** alongside the existing palette:
+v1 has **two** `:root` blocks: a default (dark-mode) one and a `body.light` override block. Add `--accent` to **both**.
+
+In the default `:root` block (find it with `grep -n '^  :root' gen-ai-zero-to-hero-guide.html | head -1`), add:
 
 ```css
 --accent: #c084fc;  /* purple — distinguishes v2 from v1 at a glance */
 ```
 
-Then update two specific rules to use it (do not touch any other `var(--cyan)` or `var(--blue)` usages):
+In the `body.light` override block (find it with `grep -n 'body.light {' gen-ai-zero-to-hero-guide.html` — the override that flips palette tokens for light mode), add a slightly deeper purple for better contrast on light backgrounds:
 
-1. `.sidebar-brand h1` — change `color: var(--cyan);` → `color: var(--accent);` (both the dark and light-mode rules if v1 has both).
-2. `.nav-item.active` — change `border-left: 2px solid var(--blue);` → `border-left: 2px solid var(--accent);` in **both** the dark-mode rule (v1 line ~103) and the light-mode rule (v1 line ~292).
+```css
+--accent: #9333ea;
+```
+
+Then update two specific rules to use the new token (do not touch any other `var(--cyan)` or `var(--blue)` usages):
+
+1. `.sidebar-brand h1` — change `color: var(--cyan);` → `color: var(--accent);` (in both dark and light rules if v1 has both).
+2. `.nav-item.active` — change `border-left: 2px solid var(--blue);` → `border-left: 2px solid var(--accent);` in both rules. Locate them with `grep -nE '\.nav-item\.active' gen-ai-zero-to-hero-guide.html` (expect two hits — dark + light) rather than relying on hardcoded line numbers.
 
 Keep `--cyan` and `--blue` at their v1 values — only `.sidebar-brand h1` and `.nav-item.active` border use the new `--accent`. This way the family resemblance holds and the rest of the guide (code text, `.sec-num`, tables, info-boxes, walkthrough h3, see-also links) retains the v1 cyan tone.
 
@@ -109,9 +117,12 @@ aside.tool-alt::before {
   margin-right: 8px;
 }
 
-/* gitlog-report mini-walkthrough box */
+/* gitlog-report mini-walkthrough box — cyan-to-accent (purple) gradient
+   matches the welcome diagram's cyan/accent identity */
 div.walkthrough {
-  background: linear-gradient(135deg, rgba(34,211,238,0.04), rgba(167,139,250,0.04));
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--cyan) 6%, transparent),
+    color-mix(in srgb, var(--accent) 6%, transparent));
   border: 1px solid var(--border-light);
   border-radius: 10px;
   padding: 18px 22px;
@@ -168,7 +179,15 @@ div.see-also a:hover { text-decoration: underline; }
 
 - [ ] **Step 6: Add empty placeholder `<section>` for welcome so the page renders without errors**
 
-Inside `<main class="content">`:
+First, confirm v1's active-section class name (the snippet below assumes `section active`):
+
+```bash
+grep -oE 'class="[^"]*active[^"]*"' /Users/divakaran/arrcus_workspace/guides/gen-ai-zero-to-hero-guide.html | sort -u
+```
+
+Expected: `class="section active"`. If v1 uses a different convention (e.g., `is-active`, `current`), use that instead.
+
+Then insert inside `<main class="content">` (preserve the `active` class so the section is visible on first load):
 
 ```html
 <section id="welcome" class="section active">
@@ -278,7 +297,7 @@ Have the spec open in the other pane. The welcome section copies the comparison 
 
 - [ ] **Step 1: Replace scaffold `welcome` section with full content**
 
-Replace the placeholder `<section id="welcome">` with a complete welcome section covering:
+Replace the placeholder `<section id="welcome">` with a complete welcome section. **Preserve `class="section active"` on the new section** so it remains visible on first load. Cover:
 - **Who this is for** — developers picking up Claude Code, Kilo Code, or Gemini CLI; assumes v1 read
 - **What's different from v1** — depth over breadth; methodology over taxonomy; reference + training, not just training
 - **How to read it** — linear training path vs. dip-in reference; the three layers
@@ -414,7 +433,7 @@ Content briefs:
 - [ ] **Step 3: Fill 2.5–2.8 (managing the budget)**
 
 Content briefs:
-- **2.5** — Auto-compaction in Claude Code, similar in Kilo/Gemini. What gets summarized (older turns), what stays (recent, pinned).
+- **2.5** — Compaction mechanisms differ per tool: Claude Code has automatic compaction near the context limit plus a manual `/compact` slash command; Gemini CLI uses `/compress`; Kilo Code's condensing behavior is built into its session manager (mechanism and command name evolve — **verify the exact compaction surface for each tool before writing**, don't assume symmetry). Common across all: older turns get summarized, recent turns and pinned content stay.
 - **2.6** — Long sessions: keep them alive by pinning key files, clearing irrelevant tool output, using sub-agents to offload investigation.
 - **2.7** — `/clear` vs continue. Decision: new topic = clear; same task with stale context = clear; mid-task = continue. Mini decision tree. **Note: `/clear` exists in Claude Code and Gemini CLI; Kilo Code's equivalent is the "New Task" button in the side panel, not a slash command.**
 - **2.8** — Reading the budget: `/cost` (per-turn spend) and `/context` (budget view) in Claude Code; `ccusage` (third-party npm monitor) for richer historical reporting; Gemini CLI shows token counts in its footer; Kilo Code shows them in the chat panel. **Verify exact commands against current docs before writing — these surfaces shift.**
@@ -496,9 +515,9 @@ Note: this chapter has 14 subsections (vs 11 for Ch 1–3). Expect more time.
 Briefs:
 - **4.1** — May 2026 landscape: Claude 4.7 Opus/Sonnet/Haiku, GPT-5 + 5-mini, Gemini 3 Pro/Flash, open-weight (Llama, Qwen, DeepSeek). 1-line capability/cost snapshot per family.
 - **4.2** — Three dials: capability, cost, latency. The "fast and cheap or smart and slow" pick.
-- **4.3** — Claude family per-use guide. Opus = architect/deep code; Sonnet = daily coder; Haiku = volume tasks. Pricing per million tokens.
-- **4.4** — GPT family per-use guide.
-- **4.5** — Gemini family per-use guide. Highlight free-tier mechanics.
+- **4.3** — Claude family per-use guide. Opus = architect/deep code; Sonnet = daily coder; Haiku = volume tasks. Pricing per million tokens — note that Opus 4.7's 1M context tier has different pricing from its 200K tier. **Verify current pricing against `docs.claude.com` at write-time.**
+- **4.4** — GPT family per-use guide. **Verify current pricing and model lineup against `platform.openai.com` at write-time.**
+- **4.5** — Gemini family per-use guide. Highlight free-tier mechanics. **Verify current free-tier limits and paid pricing against `ai.google.dev` at write-time.**
 - **4.6** — Local: Ollama / LM Studio. Latency win, capability cost. When it makes sense (privacy, cost, offline).
 
 - [ ] **Step 3: Fill 4.7–4.10 (advanced cost levers)**
@@ -507,7 +526,7 @@ Briefs:
 - **4.7** — Kilo Code BYO routing: per-mode model picks (*example, not Kilo's shipped default*: Architect=Opus, Code=Sonnet, Ask=Haiku/Gemini Flash). Show the custom-modes config snippet — **verify exact filename and schema against current Kilo docs** (the canonical path has historically been `.kilocode/` workspace or `.roomodes`; pin the current name before writing).
 - **4.8** — Thinking mode: extended thinking budget, when it pays for itself, when it's waste. Examples.
 - **4.9** — Prompt caching as a lever: keep system prompts stable, append rather than insert, monitor cache hit rate.
-- **4.10** — Batch API for async (Claude Message Batches, OpenAI Batch). 50% discount, 24h SLA. When to use.
+- **4.10** — Batch API for async (Claude Message Batches, OpenAI Batch, similar from Google). Historical pattern has been ~50% discount on input/output, ~24h SLA — **verify current discount and SLA against each provider's batch docs before writing**, terms have shifted. When to use vs. real-time.
 
 - [ ] **Step 4: Fill 4.11–4.14 (mental model + hands-on)**
 
@@ -544,14 +563,14 @@ Briefs:
 - **5.1** — Two idioms. IDE-resident (lives in your editor, visual). Terminal-resident (lives in your shell, scriptable). Tradeoffs in one paragraph each.
 - **5.2** — The three primaries today: Kilo Code (IDE), Claude Code (terminal), Gemini CLI (terminal). One-line positioning each.
 - **5.3** — Kilo Code: what it is + first run. Install from VS Code marketplace, sign-in/BYO key, first prompt. Screenshot or ASCII representation of the modes panel.
-- **5.4** — Claude Code: what it is + first run. `npm install -g @anthropic-ai/claude-code` (or current install method), `claude login`, first prompt in `~/some-project`.
+- **5.4** — Claude Code: what it is + first run. `npm install -g @anthropic-ai/claude-code` then `claude login`, run first prompt in `~/some-project`. **Verify the install command against `docs.claude.com/claude-code` before writing** — Claude Code has shifted between npm and native binary distribution methods historically.
 - **5.5** — Gemini CLI: what it is + first run. Install via `npm install -g @google/gemini-cli` (or `npx @google/gemini-cli` for one-off) — **verify package name against `https://github.com/google-gemini/gemini-cli` before writing**, this has shifted historically. Show authentication choices: personal Google account (free tier — currently 1M context, ~1000 req/day; verify current numbers) vs API key (Gemini API) vs Vertex AI. Run first prompt in `~/some-project`.
 
 - [ ] **Step 3: Fill 5.6–5.8 (IDE vs terminal, multiple tools)**
 
 Briefs:
 - **5.6** — IDE strengths: visual diffs, inline edits, tab context. Terminal strengths: scriptable, headless, CI, multi-session.
-- **5.7** — Claude Code vs Gemini CLI: feature parity matrix, free-tier vs paid, model defaults, plugin ecosystems.
+- **5.7** — Claude Code vs Gemini CLI: feature parity matrix, model defaults, plugin/extension ecosystems. **Call out the billing asymmetry up front:** Claude Code is subscription (Pro/Max plan) or API-key billed — there is no Gemini-CLI-style free tier with a personal Google account. Gemini CLI's free tier (1M context, ~1000 req/day with a personal Google account — verify current limits) is genuinely "free for personal use."
 - **5.8** — Working in multiple at once — common pairing (Kilo Code for editing + Claude Code for running review/security checks). When this helps.
 
 - [ ] **Step 4: Fill 5.9 (IDE alternatives card grid)**
@@ -596,7 +615,7 @@ Briefs:
 - **6.1** — Why specs matter when agents code fast: drift is cheap, drift recovery is expensive.
 - **6.2** — The contract: spec describes behavior, tests enforce it. Agent reads spec → writes implementation → tests verify. Show triangle diagram.
 - **6.3** — OpenSpec model: an `openspec/` workspace at repo root containing `openspec/specs/` (canonical), `openspec/changes/<id>/proposal.md` + `openspec/changes/<id>/specs/` (delta), and `openspec/changes/archive/` after accept. **Verify exact layout against current OpenSpec docs before writing** — repo structure has shifted historically (similar freshness check pattern as Ch 14).
-- **6.4** — OpenSpec walk-through. Change *creation* is done by the AI assistant via a slash command (e.g. `/opsx:propose add-csv-export` — **verify the current slash command in the OpenSpec README**), which writes the proposal file under `openspec/changes/<id>/`. CLI surface is for lifecycle only: `openspec list`, `openspec show <id>`, `openspec validate`, `openspec archive <id>`. Show the proposal file, the delta spec under `openspec/changes/<id>/specs/`, and how the agent reads both during implementation. **Verify all command names and file paths against current docs at `https://github.com/Fission-AI/OpenSpec` before writing.**
+- **6.4** — OpenSpec walk-through using `gitlog-report` as the example (consistent with the running example introduced fully in 6.11). Change *creation* is done by the AI assistant via a slash command (e.g. `/opsx:propose add-gitlog-report` — **verify the current slash command in the OpenSpec README**), which writes the proposal file under `openspec/changes/add-gitlog-report/`. CLI surface is for lifecycle only: `openspec list`, `openspec show <id>`, `openspec validate`, `openspec archive <id>`. Show the proposal file, the delta spec under `openspec/changes/add-gitlog-report/specs/`, and how the agent reads both during implementation. **Verify all command names and file paths against current docs at `https://github.com/Fission-AI/OpenSpec` before writing.**
 
 - [ ] **Step 3: Fill 6.5–6.8 (SpecKit + comparison)**
 
@@ -699,7 +718,7 @@ Briefs:
 Briefs:
 - **8.9** — Coverage as a verification signal — but a noisy one. 100% line coverage with no behavior tests is theatre.
 - **8.10** — When the agent writes bad tests: tests that pass on broken code, tests that test the mock rather than the system. Signs.
-- **8.11** — Mini-walkthrough: write the gitlog-report tests first. Show 3–4 test cases (empty repo, single author, multi-author, date filter). Cumulative.
+- **8.11** — Mini-walkthrough: write the gitlog-report tests first — tests covering the acceptance criteria from the **6.11 spec**, structured along the task breakdown in the **7.11 plan**. Show 3–4 test cases (empty repo, single author, multi-author, date filter). Cumulative — the date-filter test is the one 9.11 will use to catch the injected bug.
 
 - [ ] **Step 5: See-also + render + commit**
 
@@ -775,7 +794,7 @@ Briefs:
 Briefs:
 - **10.9** — Self-review prompts: "list the ways this could be wrong"; "find a bug in this"; "what does this not handle". Show patterns.
 - **10.10** — Sign-off gates: what blocks "done". Build passes; tests pass; manual smoke; security clean; reviewer happy.
-- **10.11** — Mini-walkthrough: full review pass on gitlog-report. Run code review (inline subagent), run `/security-review` (local, synchronous), then dispatch `/ultrareview` (cloud, async — note the wait + inbox-results UX). Show one finding from each.
+- **10.11** — Mini-walkthrough: full review pass on the **debugged code from 9.11**. Run code review (inline subagent), run `/security-review` (local, synchronous), then dispatch `/ultrareview` (cloud, async — note the wait + inbox-results UX). Show one finding from each. Cumulative — the reviewed code from this step is what 11.11 will polish in parallel.
 
 - [ ] **Step 5: See-also + render + commit**
 
@@ -1206,7 +1225,7 @@ Command reference (verify current commands), proposal file template, delta spec 
 
 - [ ] **Step 8: Superpowers skill library at-a-glance**
 
-Tight one-liner per skill (cheat-sheet form — Ch 15.3 has the full library tour, this is just a quick-reference table). Cross-link the section heading to `#ch15-superpowers`. Skills: brainstorming, writing-plans, executing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion, receiving-code-review, requesting-code-review, finishing-a-development-branch, writing-skills.
+Tight one-liner per skill (cheat-sheet form — Ch 15.3 has the full library tour, this is just a quick-reference table). Cross-link the section heading to `#ch15-superpowers`. Use the same skill order as Ch 15.3 to avoid reader confusion when cross-referencing. Skills: brainstorming, writing-plans, executing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion, requesting-code-review, receiving-code-review, finishing-a-development-branch, writing-skills.
 
 - [ ] **Step 9: Render and verify**
 
@@ -1236,7 +1255,11 @@ git commit -am "docs(hero-to-architect): add Reference — Cheat Sheets"
 
 Entries (one paragraph each):
 
-`activate_skill` · `Agent` tool · agent loop · auto-approve · BYO model · blast radius · cache hit rate · CLAUDE.md · Cline · Continue.dev · Context Bank · context compaction · custom mode · extensions (Gemini) · fast mode · GEMINI.md · golden test · headless mode · hooks · HTTP/SSE transport · idempotency · Junie · Kilo custom modes (verify filename) · `/loop` · MCP · MCP inspector · MCP registry · MCP resource · MCP tool · memory file · OpenSpec · Orchestrator mode · output style · plan mode · plugin · prompt cache · `/schedule` · `ScheduleWakeup` · SessionStart hook · skill · slash command · SpecKit · spec-driven dev · stdio transport · sub-agent · Superpowers · thinking mode · tool-alt · verification-before-completion · Vertex AI · worktree · YOLO mode.
+Sort case-insensitively, treating a leading `/` as if absent for ordering. Pre-sorted seed list:
+
+`activate_skill` · `Agent` tool · agent loop · auto-approve · blast radius · BYO model · cache hit rate · CLAUDE.md · Cline · Context Bank · context compaction · Continue.dev · custom mode · extensions (Gemini) · fast mode · GEMINI.md · golden test · headless mode · hooks · HTTP/SSE transport · idempotency · Junie · Kilo custom modes (verify filename) · `/loop` · MCP · MCP inspector · MCP registry · MCP resource · MCP tool · memory file · OpenSpec · Orchestrator mode · output style · plan mode · plugin · prompt cache · `/schedule` · `ScheduleWakeup` · SessionStart hook · skill · slash command · SpecKit · spec-driven dev · stdio transport · sub-agent · Superpowers · thinking mode · verification-before-completion · Vertex AI · worktree · YOLO mode.
+
+*(Removed: `tool-alt` — that's a CSS class, not a methodology term readers will search for.)*
 
 For each entry: 1–3 sentences + a "→ Ch X" link to where it's covered in depth.
 
