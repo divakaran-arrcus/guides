@@ -510,8 +510,161 @@
   <main class="main">
 
     <section id="welcome" class="section active">
-      <h1>Gen AI for Developers: Hero to Architect</h1>
-      <p>Scaffold pending content.</p>
+      <div class="sec-title">Gen AI for Developers: Hero to Architect</div>
+      <p class="sec-sub">Part 2 of a series — depth over breadth, methodology over taxonomy</p>
+
+      <div class="card">
+        <h2>Who This Is For</h2>
+        <p>You've read v1 (or you have equivalent breadth: you understand tokens, context windows, RAG basics, and what an LLM actually is). Now you're picking up an agentic coding tool — <strong>Claude Code</strong>, <strong>Kilo Code</strong>, or <strong>Gemini CLI</strong> — and you want to wield it well, not just survive it.</p>
+        <p>This guide is for developers at that exact inflection point: past the "what is this" stage, not yet at the "I work this way automatically" stage. The goal is to close that gap.</p>
+        <div class="info green"><strong>Assumes v1.</strong> If you haven't read the Zero to Hero guide yet, start there. This guide builds on that mental model without re-explaining it.</div>
+      </div>
+
+      <div class="card">
+        <h2>What's Different from v1</h2>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th></th>
+              <th>v1 — Zero to Hero</th>
+              <th>v2 — Hero to Architect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Reader</strong></td>
+              <td>New to AI</td>
+              <td>Picking up agentic coding tools</td>
+            </tr>
+            <tr>
+              <td><strong>Treatment</strong></td>
+              <td>Breadth — what is this</td>
+              <td>Depth — how do I work this way</td>
+            </tr>
+            <tr>
+              <td><strong>Section length</strong></td>
+              <td>Short, many</td>
+              <td>Deep, fewer</td>
+            </tr>
+            <tr>
+              <td><strong>Tools</strong></td>
+              <td>Claude Code intro</td>
+              <td>Kilo Code + Claude Code + Gemini CLI deep dives + methodology layer</td>
+            </tr>
+            <tr>
+              <td><strong>Style</strong></td>
+              <td>Foundational</td>
+              <td>Practitioner + reference</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>The short version: v1 teaches you the map; v2 teaches you how to drive.</p>
+      </div>
+
+      <div class="card">
+        <h2>How to Read It</h2>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Linear training path — first time through</div></div>
+          <p>Part 1 → Part 2 → Part 3 → Part 4. Each part builds on the previous. Part 4's worked example (<code>gitlog-report</code>) is most rewarding if you've absorbed the methodology in Part 2 first.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Dip-in reference — day-to-day use</div></div>
+          <p>Once you're working this way, Part 5 (Reference) is your home base. Decision matrices, cheat sheets, and the glossary are all designed for fast lookup, not linear reading.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">The three layers</div></div>
+          <p><strong>Foundations</strong> (Ch 1–5) — the mental model: agent loop, context, tools, model selection, surface choice. <strong>Methodology</strong> (Ch 6–11) — how you actually work: spec, plan, TDD, debug, review, parallel. <strong>Mastery</strong> (Ch 12–16) — the tools that make it real: Kilo Code, Claude Code, Gemini CLI, Superpowers, MCP.</p>
+        </div>
+        <div class="info purple"><strong>See The Map</strong> (next section) for a visual overview of how everything connects.</div>
+      </div>
+
+      <div class="card">
+        <h2>Prerequisites</h2>
+        <ul>
+          <li><strong>v1 mental model</strong> — tokens, context windows, LLM basics, RAG concept, what an agent is. You don't need to have memorized it; you need to have internalized the shape of it.</li>
+          <li><strong>Basic git and CLI fluency</strong> — you can clone a repo, run commands in a terminal, and read a diff without stress.</li>
+          <li><strong>Comfort installing tools</strong> — you can follow a README to install a CLI tool, set an API key, or add a VS Code extension without needing step-by-step hand-holding.</li>
+          <li><strong>No specific language required</strong> — the worked example uses Python, but the methodology applies to any stack. Adapt freely.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="map" class="section">
+      <div class="sec-title">The Map</div>
+      <p class="sec-sub">Three layers, one worked example, and how to navigate as a reference</p>
+
+      <div class="card">
+        <h2>The Three Layers</h2>
+        <p>The guide is organized as three concentric layers of competence. You can enter at any layer, but the learning path goes top to bottom.</p>
+
+        <div style="display: flex; flex-direction: column; gap: 0; margin: 20px 0; border-radius: 10px; overflow: hidden;">
+          <div style="background: linear-gradient(135deg, var(--cyan), var(--accent)); padding: 20px 24px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.7); margin-bottom: 6px;">Layer 3 — Mastery (Ch 12–16)</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;">The Power Layer</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.85);">Kilo Code, Claude Code, and Gemini CLI deep dives. Superpowers &amp; skills authoring. MCP servers — using and building. The tools that make the methodology real.</div>
+          </div>
+          <div style="background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.2); border-top: none; padding: 20px 24px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--cyan); margin-bottom: 6px;">Layer 2 — Methodology (Ch 6–11)</div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;">How You Actually Work</div>
+            <div style="font-size: 13px; color: var(--text-dim);">Spec-driven dev (OpenSpec &amp; SpecKit). Plan-driven execution. TDD with agents. Debugging with agents. Safety, review &amp; verification. Multi-agent &amp; parallel workflows.</div>
+          </div>
+          <div style="background: rgba(192,132,252,0.08); border: 1px solid rgba(192,132,252,0.15); border-top: none; border-radius: 0 0 10px 10px; padding: 20px 24px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 6px;">Layer 1 — Foundations (Ch 1–5)</div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;">The Mental Model</div>
+            <div style="font-size: 13px; color: var(--text-dim);">The agentic coding loop. Context as working memory. Tools, side effects &amp; the agent's world. Model selection &amp; cost engineering. IDE vs. terminal — choosing your surface.</div>
+          </div>
+        </div>
+        <p>Reading order follows the layers bottom-up: Foundations first, then Methodology, then Mastery. The Reference section (Part 5) floats above all three — use it at any point.</p>
+      </div>
+
+      <div class="card">
+        <h2>The Worked Example: <code>gitlog-report</code></h2>
+        <p><code>gitlog-report</code> is a small CLI that ingests <code>git log</code> output and produces a per-author activity summary — commits/day, lines changed, top files touched. Bounded scope, clear acceptance criteria, runs anywhere.</p>
+        <p>It threads through the methodology chapters as 1-page mini-walkthroughs, then gets the full end-to-end treatment in Ch 17:</p>
+        <table class="tbl">
+          <thead>
+            <tr><th>Chapter</th><th>What happens to gitlog-report</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Ch 6</strong> — Spec-Driven Dev</td><td>Write the spec (OpenSpec + SpecKit side-by-side)</td></tr>
+            <tr><td><strong>Ch 7</strong> — Plan-Driven Execution</td><td>Write the plan</td></tr>
+            <tr><td><strong>Ch 8</strong> — TDD with Agents</td><td>Write the failing tests</td></tr>
+            <tr><td><strong>Ch 9</strong> — Debugging</td><td>Inject a bug, debug it</td></tr>
+            <tr><td><strong>Ch 10</strong> — Safety &amp; Review</td><td>Full review pass (<code>/security-review</code>, <code>/ultrareview</code>)</td></tr>
+            <tr><td><strong>Ch 11</strong> — Multi-Agent &amp; Parallel</td><td>Feature + tests + docs polish via subagents</td></tr>
+            <tr><td><strong>Ch 17</strong> — Worked Example</td><td>Full end-to-end pipeline: Kilo Code (Pass 1), Claude Code (Pass 2), Gemini CLI (Pass 3)</td></tr>
+          </tbody>
+        </table>
+        <p>Each mini-walkthrough is self-contained — you can read it without having done the previous ones. But if you follow the thread Ch 6 → 11 → 17, it reads as one continuous story.</p>
+      </div>
+
+      <div class="card">
+        <h2>Using This Guide as Reference</h2>
+        <p>Once you're working day-to-day with agentic tools, the sidebar is your entry point. Key reference anchors:</p>
+        <ul>
+          <li><strong>Which tool for this task?</strong> → Reference / Decision Frameworks</li>
+          <li><strong>Which model?</strong> → Reference / Decision Frameworks</li>
+          <li><strong>Kilo Code commands and modes?</strong> → Reference / Cheat Sheets</li>
+          <li><strong>Claude Code slash commands and skills?</strong> → Reference / Cheat Sheets</li>
+          <li><strong>Gemini CLI slash commands and extensions?</strong> → Reference / Cheat Sheets</li>
+          <li><strong>What does [term] mean?</strong> → Reference / Glossary A–Z</li>
+          <li><strong>Deep dive on a specific tool or technique?</strong> → Chapters 12–16 directly</li>
+        </ul>
+        <div class="info"><strong>Search tip:</strong> Use Ctrl/Cmd+F to search within the current section. To find a topic across the whole guide, use the sidebar to navigate to Part 5 Reference first — the cheat sheets and decision matrices are designed for fast scanning.</div>
+      </div>
+
+      <div class="card">
+        <h2>Framing Rules</h2>
+        <p>These rules apply throughout every chapter. Understanding them up front prevents confusion when you notice patterns in how examples and tool coverage are presented:</p>
+        <div class="info purple">
+          <p><strong>1. Concept-first, then tool-specific.</strong> Every concept gets a tool-agnostic mental-model treatment first, then implementation in the tools that have it.</p>
+          <p><strong>2. Kilo Code primary in IDE contexts; Claude Code primary in terminal contexts; Gemini CLI as the free-tier-friendly terminal alternative.</strong> Avoids three-way fragmentation in every example.</p>
+          <p><strong>3. Antigravity stays as a callout</strong> in Ch 5.9 and the decision matrix — no deep dive.</p>
+          <p><strong>4. Every chapter ends with a "see also" cross-link grid</strong> to related chapters elsewhere in the guide.</p>
+          <p><strong>5. The CLI worked example (<code>gitlog-report</code>) threads through Ch 6–11</strong> as 1-page mini-walkthroughs at the end of each methodology chapter, then gets the full end-to-end treatment in Ch 17.</p>
+          <p><strong>6. "Kilo Code primary, Claude/Gemini as alt" callouts</strong> appear next to any tool-specific example.</p>
+        </div>
+      </div>
     </section>
 
   </main>
