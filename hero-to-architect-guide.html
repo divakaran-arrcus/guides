@@ -131,6 +131,14 @@
 
   .sec-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
 
+  .lede {
+    font-size: 16px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 24px;
+    line-height: 1.75;
+  }
+
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -811,13 +819,13 @@
             <tbody>
               <tr>
                 <td><strong>Plan</strong></td>
-                <td><code>/plan</code> or Plan Mode (Shift+Tab toggles in terminal)</td>
+                <td><code>/plan</code> slash command, or cycle to Plan with Shift+Tab</td>
                 <td>Architect mode — reasons, produces plan, does not execute</td>
                 <td>No dedicated plan mode; use <code>/chat</code> for text-only turns</td>
               </tr>
               <tr>
                 <td><strong>Auto</strong></td>
-                <td>Default mode with auto-accept on (Shift+Tab) or <code>--dangerously-skip-permissions</code></td>
+                <td>auto-accept-edits toggle (cycle to it with Shift+Tab) or <code>--dangerously-skip-permissions</code> flag</td>
                 <td>Code mode with auto-approve enabled</td>
                 <td><code>--yolo</code> flag; skips all permission prompts</td>
               </tr>
