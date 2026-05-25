@@ -938,6 +938,176 @@
       </div>
     </section>
 
+    <section id="ch2-context" class="section">
+      <h1>2. Context as Working Memory</h1>
+      <p class="lede">What you'll learn: how the context window actually works as the agent's RAM — token economy, prompt caching, compaction, memory systems, and the anti-patterns that waste both.</p>
+
+      <h2>2.1 The context window, in plain terms</h2>
+      <p>Every model has a finite context window — a block of token slots that holds everything the model can "see" at inference time: your system prompt, the conversation history, tool schemas, tool outputs, and the assistant's own prior responses. Think of it as RAM. The CPU (the model) can only operate on what fits in RAM right now; anything outside it is simply invisible.</p>
+      <p>Current window sizes (as of mid-2025): Claude Sonnet 4.6 and Opus 4.7 both offer a 200K-token default context with a 1M-token extended tier available on request; Gemini 2.5 Pro supports 1M tokens natively; GPT-4o and o3 top out around 128K tokens. Bigger windows don't mean free — everything in the window costs input tokens on every turn, even content that hasn't changed.</p>
+      <p>"In context" is binary: content is either inside the window or it isn't. There is no partial awareness, no fuzzy retrieval unless you build a RAG layer on top. When the window fills, either content is dropped (truncation), summarized (compaction), or the session ends.</p>
+
+      <h2>2.2 What actually costs tokens (it's not what you think)</h2>
+      <p>Developers routinely underestimate how much of their context is consumed by infrastructure rather than their actual problem. The biggest surprises:</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Source</th><th>Typical size</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>System prompt</td><td>500–8 000 tokens</td><td>CLAUDE.md auto-load can be large; tool descriptions compound this</td></tr>
+          <tr><td>Tool schemas (all registered tools)</td><td>2 000–15 000 tokens</td><td>Each function definition with full JSON schema; Claude Code with MCP servers can spike high</td></tr>
+          <tr><td>Prior tool results (stdout dumps)</td><td>500–50 000+ tokens</td><td>Full grep output, test logs, build traces — easy to bloat here</td></tr>
+          <tr><td>Conversation history</td><td>Grows linearly</td><td>Every past turn is re-sent on each new turn</td></tr>
+          <tr><td>Files read via Read tool</td><td>Varies widely</td><td>A 500-line file ≈ 3 000–4 000 tokens; reading 10 files compounds fast</td></tr>
+          <tr><td>Cache miss on system prompt</td><td>Full system-prompt cost × 1.25</td><td>First turn after a schema change pays a write premium (see 2.3)</td></tr>
+        </tbody>
+      </table>
+      <p>The practical implication: on a long task in Claude Code, tool output and read-file content often dominate the context — not your messages. Tools that return verbose JSON or full file contents on every call are the biggest budget leaks.</p>
+
+      <h2>2.3 The token economy — input vs output vs cached</h2>
+      <p>Providers charge differently for three token categories: uncached input, cached input, and output. Cache reads are typically ~10× cheaper than uncached input; cache writes cost ~1.25× the base input rate on Anthropic (the write premium amortizes over subsequent cache hits). Output tokens are the most expensive category — often 3–5× the per-token input rate.</p>
+
+      <div class="info">
+        <strong>Steady-state cost formula (per turn, after cache is warm):</strong>
+        <pre><code>cost = (uncached_in × P_input)
+     + (cached_in  × P_input × 0.1)   // cache read: ~10× cheaper
+     + (output     × P_output)         // output: most expensive</code></pre>
+
+        <strong>First-write cost formula (cache cold or invalidated):</strong>
+        <pre><code>cost = (cacheable_prefix × P_input × 1.25)  // write premium on Anthropic
+     + (uncached_remainder × P_input)
+     + (output × P_output)</code></pre>
+
+        <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2025: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a similar implicit caching model with 4× cache-write premium and 0.25× read; OpenAI prompt caching for GPT-4o is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
+      </div>
+
+      <p>The strategic takeaway: maximize the fraction of each turn that lands in <em>cached input</em>. The steady-state formula shows cache reads are cheap; the first-write formula shows that invalidating the cache (by editing an early message or the system prompt) resets the clock and pays the write premium again.</p>
+
+      <h2>2.4 Prompt caching — how it works, when it kicks in, what breaks it</h2>
+      <p>Anthropic's prompt caching is prefix-based: the model caches the longest matching prefix of the input that was seen in a recent prior request (TTL: 5 minutes for standard, up to 1 hour with explicit cache-control headers). The cache key is the exact byte sequence of the prefix — any edit to the system prompt, any added tool schema, or any changed message <em>before</em> the cached region invalidates it entirely.</p>
+      <p>Patterns that maximize cache hits:</p>
+      <ul>
+        <li><strong>Freeze the system prompt.</strong> Put stable content (persona, project conventions) at the top; put session-variable content (file paths, current branch) at the bottom or pass it as user messages.</li>
+        <li><strong>Keep tool schemas stable.</strong> Don't register tools dynamically mid-session. A changed schema invalidates the entire prefix up to that point.</li>
+        <li><strong>Use explicit cache-control breakpoints</strong> (Anthropic API: <code>"cache_control": {"type": "ephemeral"}</code>) to mark where the cacheable prefix ends. This tells the API exactly how much to cache rather than relying on automatic prefix matching.</li>
+        <li><strong>Avoid prepending new content.</strong> Inserting new tool results early in the message list — rather than appending — breaks the prefix for everything that follows.</li>
+      </ul>
+      <p>Claude Code handles cache breakpoints automatically — it marks the system prompt and loaded files as cacheable. You benefit without configuring anything; what you can do is avoid actions that bust the cache: editing CLAUDE.md mid-session, changing MCP server config, or using <code>/clear</code> when continuation would have preserved the warm cache.</p>
+
+      <h2>2.5 Context compaction — what gets summarized, what gets thrown out</h2>
+      <p>When the context fills, each tool has its own compaction mechanism:</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Tool</th><th>Auto-compact trigger</th><th>Manual command</th><th>What's preserved</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>~80–90% context usage</td><td><code>/compact</code></td><td>Recent turns, pinned files, CLAUDE.md; older turns summarized</td></tr>
+          <tr><td>Gemini CLI</td><td>Near window limit</td><td><code>/compress</code></td><td>Recent turns, starred context; older turns summarized</td></tr>
+          <tr><td>Kilo Code</td><td>Built into session manager (automatic)</td><td>No slash command; managed transparently</td><td>Active file context and recent task state; older tool output dropped</td></tr>
+        </tbody>
+      </table>
+      <p>Compaction is lossy. The summarization step condenses many tokens into fewer, but nuance is lost — specific function signatures, exact error messages, intermediate reasoning. If you need to preserve something precisely across a compaction boundary, write it to a file or add it to your memory file (CLAUDE.md, GEMINI.md, etc.) before the compact runs.</p>
+      <p>After <code>/compact</code> in Claude Code, the session continues with a synthesized summary in place of the raw history. The model receives this as a user message prefixed with the compaction notice; your next turn can reference everything in the summary, but can't see the verbatim prior tool calls.</p>
+
+      <h2>2.6 The cost of long sessions (and how to keep one going)</h2>
+      <p>Long sessions degrade in two ways: context fills with stale tool output, and cache invalidations compound. The result is both slower (more tokens to process) and more expensive (cache misses, output re-explaining stale state). A 4-hour Claude Code session on a complex codebase can hit 500K+ input tokens per turn late in the session.</p>
+      <p>Techniques to extend session quality:</p>
+      <ul>
+        <li><strong>Pin key files early.</strong> Use <code>/add</code> or ask the agent to re-read critical files at the start of a new sub-task — they'll be near the front of the window and more likely to survive compaction.</li>
+        <li><strong>Clear irrelevant tool output.</strong> If a large grep result or test log was useful but is now stale, ask the agent to note the key finding and discard the raw output. This keeps the window lean.</li>
+        <li><strong>Spawn sub-agents for investigation.</strong> Use Claude Code's sub-agent mode (or Kilo Code's task delegation) for exploratory tasks (reading 20 files to answer a question). The sub-agent's context is separate; only the result lands in your main session.</li>
+        <li><strong>Break naturally at task boundaries.</strong> Commit, note what's next, then <code>/clear</code>. Restart with a concise re-briefing. This costs a cache-write premium but avoids context bloat compounding across unrelated tasks.</li>
+      </ul>
+
+      <h2>2.7 When to start fresh vs continue — the /clear question</h2>
+      <p>The decision of whether to clear context is not just economic — it affects the model's reasoning quality. Stale context that contradicts the current state of the codebase can cause the model to make decisions based on outdated information.</p>
+
+      <div class="info">
+        <strong>Decision tree: clear vs continue</strong>
+        <pre><code>New topic / unrelated task?          → /clear (or New Task)
+Same task, but context is stale?     → /clear, re-brief concisely
+Mid-task, active files in context?   → Continue (preserve cache)
+After compaction, still on-task?     → Continue (summary is good enough)
+Long session, model confusing state? → /clear, re-brief</code></pre>
+      </div>
+
+      <p>Tool-specific clear commands:</p>
+      <ul>
+        <li><strong>Claude Code:</strong> <code>/clear</code> — wipes the conversation history, preserves CLAUDE.md and tool config.</li>
+        <li><strong>Gemini CLI:</strong> <code>/clear</code> — same behavior, wipes conversation.</li>
+        <li><strong>Kilo Code:</strong> No <code>/clear</code> slash command. Use the <strong>New Task</strong> button in the side panel to start a fresh session. Alternatively, close and reopen the Kilo Code chat panel.</li>
+      </ul>
+
+      <h2>2.8 Reading the budget</h2>
+      <p>Each tool surfaces token usage differently. Knowing how to read your spend in real time is essential for detecting runaway context growth early.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Tool</th><th>Command / location</th><th>What you see</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>/cost</code></td><td>Per-turn spend: input, output, cached tokens + USD cost</td></tr>
+          <tr><td>Claude Code</td><td><code>/context</code></td><td>Budget view: tokens used vs window size, % full</td></tr>
+          <tr><td>Claude Code (external)</td><td><code>ccusage</code> (npm: <code>npx ccusage</code>)</td><td>Historical usage dashboard: daily/session spend, model breakdown — third-party tool, not bundled</td></tr>
+          <tr><td>Gemini CLI</td><td>Footer bar (always visible)</td><td>Running token count for the current session displayed in the terminal footer</td></tr>
+          <tr><td>Kilo Code</td><td>Chat panel (top or bottom)</td><td>Token counter and estimated cost shown inline in the Kilo Code chat UI</td></tr>
+        </tbody>
+      </table>
+      <p>Use <code>/cost</code> after any turn where you suspect a large tool result landed in context. If the cached-input fraction is dropping (more uncached input per turn), that's a signal the cache prefix has been invalidated — investigate what changed.</p>
+
+      <h2>2.9 Memory systems vs context — CLAUDE.md, GEMINI.md, Kilo rules</h2>
+      <p>Memory files are <em>not</em> in the context window until referenced. They are loaded at session start (or on demand) and inserted as part of the system prompt or early context. They persist across <code>/clear</code>; raw conversation history does not. This is the key architectural distinction: use memory files for durable project knowledge, and context for task-specific working state.</p>
+
+      <aside class="tool-alt">
+        <strong>Memory file conventions across tools</strong>
+        <table class="tbl">
+          <thead>
+            <tr><th>Tool</th><th>File / location</th><th>Loaded when</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>CLAUDE.md</code> (project root and <code>~/.claude/CLAUDE.md</code> for global)</td><td>Auto-loaded at every session start; also loads parent-directory CLAUDE.md files up the tree</td></tr>
+            <tr><td>Gemini CLI</td><td><code>GEMINI.md</code> (project root) and <code>~/.gemini/GEMINI.md</code> for global</td><td>Auto-loaded at session start; same directory-walk behavior as Claude Code</td></tr>
+            <tr><td>Kilo Code</td><td><code>.kilocode/rules/</code> directory (one or more <code>.md</code> files)</td><td>Loaded at session start; rules files are concatenated into the system prompt</td></tr>
+          </tbody>
+        </table>
+      </aside>
+
+      <p>What to put in memory files: project conventions (language, framework, code style), key architectural decisions, file layout, personas and output format rules. What NOT to put: current task state, specific file contents (load them on demand instead), or anything that changes per-task. Memory files that grow large burn system-prompt tokens on every session — keep them lean and focused.</p>
+
+      <h2>2.10 Context anti-patterns</h2>
+      <p>These are the patterns most responsible for context bloat, cache busting, and degraded session quality:</p>
+      <ul>
+        <li><strong>Paste-the-whole-file.</strong> You paste a 500-line module when you have a question about one function. Use <code>grep</code> or the Read tool with line ranges instead. Five targeted lines cost 30 tokens; the full file costs 3 500.</li>
+        <li><strong>Paste-and-pray.</strong> You dump a full stack trace, log file, or JSON blob and ask the model to "figure out what's wrong." The model reads it, but now it's permanently in the context. Use <code>grep</code>, <code>head</code>, or a summarizing sub-agent to extract the signal first.</li>
+        <li><strong>Log dump accumulation.</strong> Running tests 10 times without clearing test output. Each run appends several KB of logs. After 10 runs you have 50 K tokens of mostly-identical output. Clear between runs or capture only the diff.</li>
+        <li><strong>Mid-session schema changes.</strong> Registering a new MCP server or changing tool config mid-session invalidates the prefix cache for the entire session. Make tool config changes before starting a session.</li>
+        <li><strong>Abandoning sub-agents for context efficiency.</strong> Running deep investigation (reading 20 files to answer an architectural question) in the main session when a sub-agent could do the same work with isolated context, returning only the answer.</li>
+        <li><strong>Editing early messages.</strong> Retroactively editing a user message or system prompt mid-session. This breaks the cache prefix and forces a full re-encode of all subsequent content.</li>
+      </ul>
+
+      <h2>2.11 Hands-on: measure your token usage on a real task</h2>
+      <p>This exercise builds intuition for where your tokens actually go. Do it once on a non-trivial task and you'll have a mental model that lasts.</p>
+      <div class="info green">
+        <strong>Exercise: token budget awareness</strong>
+        <ol>
+          <li>Open a fresh Claude Code session on an existing project (<code>/clear</code> if needed).</li>
+          <li>Ask it to: "Find all functions in this repo that take more than 4 arguments. List file, function name, arg count."</li>
+          <li>After the response, run <code>/cost</code>. Note: input tokens, cached input tokens, output tokens, total USD.</li>
+          <li>Now run the same prompt again without clearing. Run <code>/cost</code> again. Compare: the second turn should show a much higher cached-input fraction (the system prompt and tool schemas are now cached).</li>
+          <li>Ask a follow-up: "Show me the full contents of the three worst offenders." Run <code>/cost</code> again. Note the jump in input tokens from the file reads.</li>
+          <li>Run <code>/compact</code>. Run <code>/cost</code> after the next turn — note the drop in total input tokens and the cache-miss cost of the compaction summary entering as new content.</li>
+          <li>Check <code>/context</code> before and after <code>/compact</code> to see the window usage drop.</li>
+        </ol>
+        <strong>What to look for:</strong> the ratio of cached vs uncached input; the spike when files are read; the post-compaction cache reset. If you have <code>ccusage</code> installed (<code>npm i -g ccusage</code>), run it after the session for a per-model cost breakdown.
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch4-models')">→ Ch 4. Model Selection &amp; Cost Engineering (caching deep dive)</a>
+        <a onclick="go('ch13-claude')">→ Ch 13. Claude Code Deep Dive (CLAUDE.md)</a>
+        <a onclick="go('ch14-gemini')">→ Ch 14. Gemini CLI Deep Dive (GEMINI.md)</a>
+        <a onclick="go('ch12-kilo')">→ Ch 12. Kilo Code Deep Dive (rules)</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
