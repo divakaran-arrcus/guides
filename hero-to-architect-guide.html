@@ -4172,6 +4172,176 @@ EOF</code></pre>
       </div>
     </section>
 
+    <section id="ch14-gemini" class="section">
+      <h1>14. Gemini CLI Deep Dive</h1>
+      <p class="lede">What you'll learn: Gemini CLI's architecture, the free-tier story, GEMINI.md, extensions, MCP integration, how 1M context changes the calculus, and how to configure Gemini CLI for daily work.</p>
+
+      <h2>14.1 Architecture — terminal, open-source, Google-backed</h2>
+      <p>Gemini CLI is Google's official command-line interface for the Gemini family of models. Released as open-source under the Apache 2.0 license, it is a Node.js application that runs in any terminal and gives the Gemini model bidirectional access to your local filesystem, shell environment, and the wider internet via built-in search tools. The open-source nature means the entire agent loop — tool dispatch, context management, hook invocation — is auditable and forkable in a way that proprietary CLI tools are not. You can read exactly what gets sent to the model and patch behavior without waiting for an upstream release.</p>
+
+      <p>In architectural shape, Gemini CLI is close kin to Claude Code: both are terminal-first, both use a REPL-style conversation loop, both discover project-level instruction files automatically, and both expose extension points for adding tools and skills. The meaningful differences surface in defaults and emphasis. Gemini CLI ships with <strong>GoogleSearch</strong> and <strong>WebFetch</strong> as first-class built-in tools — web retrieval is not an add-on. It also defaults to a dramatically larger context window (1M tokens on supported models) and routes to Gemini models rather than Claude. Think of them as two implementations of the same architectural pattern, optimized for different model families.</p>
+
+      <p>Being Google-backed means Gemini CLI benefits from tight integration with Google's infrastructure: Vertex AI for enterprise deployments, Google account authentication for personal use, and a free tier that is genuinely generous by industry standards. The Google affiliation also means roadmap pacing tracks Gemini model releases closely — when a new Gemini model ships, CLI support typically follows quickly. <em>As with any rapidly evolving tool, verify the current release cadence and version in the <a href="https://github.com/google-gemini/gemini-cli" target="_blank">official GitHub repository</a> before depending on specific behavior.</em></p>
+
+      <h2>14.2 The model story — Gemini 3 Pro/Flash, free-tier economics</h2>
+      <p>Gemini CLI defaults to Gemini models and surfaces model routing through <code>settings.json</code>. As of mid-2025 the primary workhorses are <strong>Gemini Pro</strong> (the reasoning-heavy, higher-latency option suited for complex multi-step tasks) and <strong>Gemini Flash</strong> (the speed-optimized, lower-cost option suited for fast iteration and high-volume tasks). Model names evolve with each generation — the pattern <code>gemini-{version}-pro</code> and <code>gemini-{version}-flash</code> has been stable, but <em>verify current model identifiers in the Gemini API documentation before hardcoding them in configuration files.</em></p>
+
+      <p>Beyond the defaults, Gemini CLI supports routing to alternative models via OpenAI-compatible API endpoints. If you have a self-hosted model or a third-party inference provider that speaks the OpenAI chat completions format, you can point Gemini CLI at it through the <code>openai_compat</code> model provider configuration. This makes Gemini CLI a general-purpose agentic shell, not a Gemini-only tool. You can also configure direct Gemini API access for models not yet surfaced through the default routing.</p>
+
+      <p>The model selection decision in practice: use Flash for exploratory work, quick edits, and anything where latency matters. Use Pro for code generation tasks that require multi-file reasoning, architectural design discussions, or long planning sessions where an extra few seconds of model latency is irrelevant compared to the quality difference. With a 1M context window available on both variants, the choice is almost never about "fitting the context" — it's about the quality-latency tradeoff for the specific task.</p>
+
+      <h2>14.3 Authentication paths — personal Google, API key, Vertex AI</h2>
+      <p>Gemini CLI supports three authentication paths serving different use cases. <strong>Personal Google account</strong> authentication is the entry point for individual developers: you log in with your Google account via OAuth and get access to the free tier. As of mid-2025, the personal free tier provides approximately 1M context tokens per request and around 1,000 requests per day — <em>these numbers are subject to change; verify current limits at <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank">ai.google.dev/gemini-api/docs/rate-limits</a></em>. This is a genuinely usable daily-driver tier, not a preview teaser, and it is the reason Gemini CLI has low friction for new users.</p>
+
+      <p><strong>API key authentication</strong> is the step up from free-tier personal use. You generate an API key at <a href="https://aistudio.google.com" target="_blank">Google AI Studio</a>, set it in your environment (<code>GEMINI_API_KEY</code>), and gain access to higher rate limits and pay-as-you-go pricing. API key auth is the right choice when you need reliable, higher-volume access for personal projects or small teams, without the full enterprise setup. It also enables programmatic use in CI pipelines and scripts where OAuth browser flows are not possible.</p>
+
+      <p><strong>Vertex AI authentication</strong> is the enterprise path. Here Gemini CLI uses Google Cloud Application Default Credentials (ADC) — typically via <code>gcloud auth application-default login</code> — and routes requests through your organization's Google Cloud project. Vertex AI gives you VPC-SC controls, data residency guarantees, audit logging, and the ability to use private model endpoints. This is the correct auth path for any production or compliance-sensitive deployment. The configuration lives in <code>settings.json</code> under the <code>vertexai</code> key; exact schema should be verified against current documentation as the Vertex AI integration has expanded significantly since initial launch.</p>
+
+      <h2>14.4 GEMINI.md — global, project, subdirectory scope</h2>
+      <p>GEMINI.md is Gemini CLI's instruction-injection mechanism, directly analogous to Claude Code's CLAUDE.md. At session start, Gemini CLI discovers and loads GEMINI.md files from three scope levels, merging them into the active context. Understanding which scope to use is the first configuration decision every team should make deliberately rather than accidentally.</p>
+
+      <p><strong>Global (<code>~/.gemini/GEMINI.md</code>):</strong> Applies to every Gemini CLI session on this machine. This is the right place for personal preferences — your communication style preferences, always-on constraints, personal tooling context, and any facts about you the agent should always know. Like a personal dotfile, changes here affect every project immediately. A minimal but effective global GEMINI.md might contain: your name and role, your preferred explanation depth, your go-to languages, and any firm constraints you never want the agent to violate ("never push directly to main").</p>
+
+      <p><strong>Project root (<code>&lt;project&gt;/GEMINI.md</code>):</strong> The most important scope for team workflows. This file describes the project to the agent: tech stack, architecture overview, testing conventions, CI pipeline, code style rules, common commands, and known gotchas. Commit it to the repository so all teammates get consistent agent behavior. A good project GEMINI.md eliminates the need to re-explain context at the start of every session. <strong>Subdirectory (<code>&lt;project&gt;/src/payments/GEMINI.md</code>):</strong> Applies only within that directory tree. Use it for modules with unusual conventions, security-sensitive areas, or domain-specific glossaries. All three levels stack — the agent sees global + project root + subdirectory simultaneously. Here is a minimal example:</p>
+
+      <pre><code># GEMINI.md — payments service
+## Stack
+Node.js 20, Postgres 15, Stripe SDK v12.
+
+## Constraints
+- Never log card numbers or CVV values, even in debug output.
+- All DB queries must go through the query builder in src/db/index.ts.
+- Tests live in __tests__/ alongside source files.
+
+## Commands
+- npm test — run unit tests
+- npm run migrate -- --env staging — apply pending migrations</code></pre>
+
+      <aside class="tool-alt">
+        <strong>GEMINI.md vs CLAUDE.md — structural equivalence:</strong> The two files serve identical purposes and share the same three-scope hierarchy (global / project / subdirectory). The practical difference is tooling: <code>/init</code> in Claude Code generates a CLAUDE.md by analyzing your codebase; Gemini CLI has its own equivalent scaffolding command (<em>verify current command name</em>). If you work across both tools, maintaining parallel GEMINI.md and CLAUDE.md files with shared content is a common pattern — some teams symlink them or use a shared source of truth with a generation step.
+      </aside>
+
+      <h2>14.5 Slash commands — built-in and custom</h2>
+      <p>Gemini CLI exposes a slash command interface in the REPL. Type <code>/</code> at the prompt to see the current list. Known built-in commands include: <code>/help</code> — list all commands; <code>/clear</code> — reset the conversation context; <code>/chat</code> — manage named conversation sessions (save, resume, list); <code>/compress</code> — summarize and compress the conversation history to reduce token usage while preserving key state; <code>/memory</code> — manage the MemoryTool's stored facts; <code>/tools</code> — list available tools and their status; <code>/stats</code> — display token usage for the current session; and <code>/quit</code> (or <code>/exit</code>) — end the session. <em>The complete and authoritative list is in <code>/help</code> — these commands evolve frequently, and names or behaviors may differ in your installed version.</em></p>
+
+      <p>Custom slash commands can be added through GEMINI.md and extensions. The mechanism mirrors Claude Code's approach: you define a command in a skill or extension manifest and it becomes available as a slash command in the session. This allows teams to surface domain-specific workflows as first-class commands — for example, a <code>/deploy-preview</code> command that runs your staging deployment workflow, or a <code>/lint-fix</code> command that runs your full linting pipeline and applies safe auto-fixes.</p>
+
+      <h2>14.6 Skills — activate_skill and on-demand loading</h2>
+      <p>Gemini CLI has a skills system, but its activation model differs from Claude Code's. In Claude Code, skills are discovered at session start from the filesystem and loaded proactively — available skills appear in the <code>system-reminder</code> context and can be invoked immediately. In Gemini CLI, the primary activation path is the <code>activate_skill</code> tool: the agent calls this tool with a skill name or path, which loads the skill's SKILL.md into context and makes its capabilities available. This is an <strong>explicit pull model</strong> rather than an implicit push model.</p>
+
+      <p>The practical implication is session initialization: in Claude Code, you often rely on the harness to auto-inject available skills. In Gemini CLI, the agent needs to know what skills exist (typically via GEMINI.md listing them) and then activate the relevant ones for a task. A common pattern is to list available skills in your project GEMINI.md with short descriptions, so the model can recognize when a task maps to a skill and call <code>activate_skill</code> appropriately. Some teams make this more explicit by writing activation instructions directly in GEMINI.md: "For deployment tasks, activate the <code>deploy</code> skill first."</p>
+
+      <p>Skill authoring for Gemini CLI follows the same SKILL.md convention. A skill is a directory containing a SKILL.md (instructions for the agent on what the skill does, when to activate it, and how to use it) plus any supporting scripts or configuration. The key difference from Claude Code skills is that Gemini CLI skills don't automatically expose slash commands or appear in system reminders — they rely on the <code>activate_skill</code> invocation path. This makes the activation more explicit but requires slightly more deliberate configuration in GEMINI.md to wire up well.</p>
+
+      <h2>14.7 Extensions — install, discover, share</h2>
+      <p>Extensions are Gemini CLI's primary mechanism for adding tools, capabilities, and integrations beyond the built-ins. An extension is a directory with a manifest file (typically <code>gemini-extension.json</code>) that declares the extension's name, description, tools it provides, and any GEMINI.md content to inject. Extensions can provide MCP servers, custom tools implemented as shell commands, additional slash commands, or skill bundles.</p>
+
+      <p>Installation from a remote Git repository uses a command in the form <code>gemini extensions install --source &lt;git-url&gt;</code>; for a local extension directory the flag is <code>--path &lt;local-path&gt;</code>. <em>Verify the exact flag names and command syntax with <code>gemini extensions --help</code>, as the CLI's extension management commands have changed across versions and the flags above may not match your installed version exactly.</em> Installed extensions are tracked in your global Gemini CLI configuration and activated in all sessions unless scoped otherwise.</p>
+
+      <p>Discovering community extensions currently happens through GitHub search and word of mouth — there is no centralized extension registry analogous to VS Code's marketplace, though Google has indicated a more structured discovery mechanism is planned. Sharing an extension is as simple as publishing the extension directory to a public Git repository: the <code>--source</code> install path accepts any valid git URL, including GitHub, GitLab, or self-hosted repositories. For internal team extensions, private repositories work fine as long as the installing user has read access and appropriate SSH keys or tokens configured.</p>
+
+      <h2>14.8 Hooks — lifecycle events</h2>
+      <p>Gemini CLI supports lifecycle hooks that let you inject behavior at key points in the agent loop. Hooks are shell commands (or scripts) configured in <code>settings.json</code> under the <code>hooks</code> key. They fire at defined lifecycle events and receive context about the current state via environment variables or stdin. This makes hooks the right place for concerns like logging, notification, safety gates, and environmental setup that should happen consistently regardless of the conversation content.</p>
+
+      <p>Known lifecycle events include pre- and post-tool execution hooks (fire before/after any tool call), session start/end hooks, and command hooks that fire around specific slash commands. <em>The complete list of supported hook events is narrower than Claude Code's hook system and has grown incrementally — verify the current supported events in the <a href="https://github.com/google-gemini/gemini-cli" target="_blank">official repository</a> before writing hooks that depend on specific event types.</em> A practical minimum viable hook setup: a post-session hook that appends a summary to a daily log file, and a pre-shell-command hook that echoes the command to stderr for human review in high-trust environments.</p>
+
+      <p>Unlike Claude Code's hooks, which are integrated into the Claude Code harness and can trigger skills, Gemini CLI hooks are currently more limited to shell-command invocations. The asymmetry is worth noting: if you are migrating a Claude Code workflow that relies heavily on hooks triggering complex skill orchestration, you may need to rebuild that logic differently in Gemini CLI — typically by encoding the orchestration in the agent's instructions rather than in hook scripts.</p>
+
+      <h2>14.9 Built-in tools — Read, Write, Shell, GoogleSearch, WebFetch, MemoryTool</h2>
+      <p><strong>Read</strong> gives the agent access to your local filesystem for reading files and directories. It respects the permissions model configured in <code>settings.json</code> and will prompt for confirmation on paths outside the project root unless permissions have been pre-approved. This is the workhorse tool for any code-understanding or analysis task.</p>
+
+      <p><strong>Write</strong> allows the agent to create or overwrite files. Like Read, it is subject to the permissions model and will prompt by default for writes to sensitive paths. Write is used for code generation, configuration file creation, and any output the agent produces that should persist beyond the session.</p>
+
+      <p><strong>Shell</strong> executes arbitrary shell commands in the local environment. This is the most powerful and the most dangerous built-in tool — it gives the agent the ability to run tests, install packages, invoke build systems, and perform any action your user account can perform. The permissions model and the <code>--yolo</code> flag (see 14.11) both affect how Shell invocations are confirmed.</p>
+
+      <p><strong>GoogleSearch</strong> is a first-class built-in, not an optional add-on. The agent can invoke Google Search directly to retrieve current information, resolve documentation questions, check package versions, or look up error messages. The results are returned as structured summaries with source URLs, not raw HTML. Having search as a built-in fundamentally changes how you prompt the agent — you can ask questions that require current information without needing to pre-populate context.</p>
+
+      <p><strong>WebFetch</strong> retrieves the full content of a specific URL and returns it as text for the agent to reason over. Use it when GoogleSearch returns a URL you want the agent to read in full — a documentation page, a GitHub issue, a PR diff, or a specification. WebFetch and GoogleSearch together give Gemini CLI a web-retrieval capability that is genuinely useful without external MCP servers.</p>
+
+      <p><strong>MemoryTool</strong> provides a key-value persistence layer across sessions. The agent can store facts, decisions, and state using MemoryTool, and they will be available in future sessions. This is how Gemini CLI achieves cross-session memory without relying purely on GEMINI.md. MemoryTool is inspectable and editable via the <code>/memory</code> slash command, making it easy to audit and correct what the agent has stored. See 14.12 for how MemoryTool and GEMINI.md work together as a complete memory system.</p>
+
+      <h2>14.10 MCP integration in Gemini CLI</h2>
+      <p>Gemini CLI supports the Model Context Protocol (MCP), allowing it to connect to external MCP servers and use the tools, resources, and prompts they expose. MCP servers are registered in <code>settings.json</code> under the <code>mcpServers</code> key, using the same JSON structure that is becoming the de facto standard across CLI tools. Each server entry specifies a name, transport type (<code>stdio</code> or <code>sse</code>), the command to launch the server (for stdio), and any environment variables it needs.</p>
+
+      <p>Once registered, MCP tools appear in the agent's tool list alongside built-ins and are callable by name. The agent discovers available MCP tools at session start via the standard MCP <code>tools/list</code> call, and then invokes them using <code>tools/call</code>. From the agent's perspective, MCP tools are indistinguishable from built-in tools — the routing is transparent. This means you can extend Gemini CLI with any MCP server: databases, cloud APIs, internal tooling, observability systems, or specialized code analysis tools.</p>
+
+      <p>Differences from Claude Code's MCP support: Gemini CLI's MCP integration is evolving and may not yet support the full MCP specification surface — in particular, MCP Resources (server-side context documents) and MCP Prompts (server-defined prompt templates) may have more limited support than MCP Tools. <em>Verify current MCP feature coverage in the Gemini CLI release notes before depending on Resource or Prompt features.</em> Claude Code's MCP integration, having been in production longer, has broader resource and prompt support at this writing.</p>
+
+      <h2>14.11 Settings — settings.json, permissions, --yolo</h2>
+      <p>Gemini CLI configuration lives in <code>~/.gemini/settings.json</code> (global) and optionally <code>&lt;project&gt;/.gemini/settings.json</code> (project-scoped). The settings file controls: model selection, authentication configuration, permissions for tool use, MCP server registrations, hook definitions, and UI preferences. The project-scoped settings file is useful for teams that want to standardize tool permissions or MCP server registrations per project without requiring each developer to configure them manually.</p>
+
+      <p>The <strong>permissions</strong> system gates tool invocations that could have side effects. By default, Write, Shell, and MCP tool calls prompt for confirmation. You can pre-approve specific paths, commands, or tool names in the permissions configuration to reduce friction for common operations. The permissions model is intentionally conservative — the default is to ask, not to assume — which means the first time you set up a project you should expect permission prompts, and the right response is to add patterns to your permissions config rather than clicking through repeatedly.</p>
+
+      <p>The <strong><code>--yolo</code> flag</strong> is frequently misunderstood. It is a <strong>per-invocation flag</strong> that auto-approves all tool calls for that single <code>gemini</code> command run — it is not a persistent mode toggle and does not modify <code>settings.json</code>. Use it for scripted, non-interactive invocations where you trust the task completely and do not want prompt interrupts: CI pipelines, batch processing scripts, automated one-shots. Do not use it interactively as a way to skip confirmations during exploratory work, where the prompts exist precisely to catch unintended side effects. The asymmetry to internalize: <code>--yolo</code> is a scripting convenience, not a workflow setting.</p>
+
+      <h2>14.12 Memory and context tools</h2>
+      <p>Gemini CLI uses two complementary mechanisms for state persistence: <strong>MemoryTool</strong> for dynamic, session-updated facts, and <strong>GEMINI.md</strong> for stable, human-curated context. Together they cover the two ends of the memory spectrum. GEMINI.md is what you know before the agent starts working — project conventions, constraints, background context. MemoryTool is what the agent learns during work — user preferences revealed over time, decisions made, corrections applied, workflow patterns observed.</p>
+
+      <p>MemoryTool stores data as named key-value entries that persist in the Gemini CLI memory store (typically a local file in <code>~/.gemini/</code>). The agent can read, write, and delete entries via the MemoryTool API. Entries are loaded into context at session start, so facts stored in one session are available in the next without any manual copy-paste. The <code>/memory</code> slash command lists current stored entries, lets you edit them, and lets you delete stale or incorrect entries. This human-in-the-loop inspection is important: do not treat MemoryTool as an opaque black box — review it periodically and remove entries that are outdated or wrong.</p>
+
+      <p>A practical memory hygiene pattern: at the end of a significant work session, ask the agent to summarize what it learned that should be remembered, review the proposed entries, approve or edit them, and let MemoryTool store the result. This intentional "close session" step prevents MemoryTool from accumulating a growing pile of stale facts. For facts that should survive a full MemoryTool reset (e.g., fundamental project constraints), move them to GEMINI.md rather than relying on MemoryTool persistence.</p>
+
+      <h2>14.13 Working with the 1M context window</h2>
+      <p>A 1M-token context window is not just a quantitative improvement — it changes the qualitative nature of how you work with the agent. The scarcity model that governs most AI-assisted work (carefully curate what you include, summarize aggressively, rotate files in and out) largely dissolves. You can load entire repositories, full conversation histories, comprehensive documentation sets, and long-running task state without hitting limits. This should change your prompting approach: instead of pre-filtering context for the agent, load broadly and let the model's attention mechanism do the filtering.</p>
+
+      <p><strong>Patterns that work well:</strong> Load the full repository at the start of a session when working on a non-trivial codebase. Keep the full conversation history in context across a long multi-step task rather than compressing. Include full specification documents and API references directly, rather than summarized excerpts. Ask the model to reason about the full test suite when debugging a regression — not just the failing test. The 1M window makes "just load the whole thing" a viable strategy for most real-world codebases.</p>
+
+      <p><strong>Anti-patterns to avoid:</strong> The most common mistake is treating the 1M window as a dumping ground — loading everything available just because you can. Irrelevant context still costs tokens and can dilute attention on what matters. The second anti-pattern is using the large window to avoid writing good GEMINI.md — foundational project context should be in GEMINI.md and loaded efficiently on every session, not reconstructed by loading thousands of files each time. The third is forgetting that long contexts increase latency: a nearly-full 1M context window will produce noticeably slower responses than a focused 10K context, even on Flash. Load broadly, but load intentionally.</p>
+
+      <h2>14.14 Hands-on: configure Gemini CLI for your daily workflow</h2>
+      <p>This walkthrough takes you from a fresh Gemini CLI installation to a configured daily-driver setup. Complete it once and you will have a working foundation to iterate on.</p>
+
+      <div class="walkthrough">
+        <h3>Walkthrough · Configure Gemini CLI for your daily workflow</h3>
+
+        <p><strong>1. Install Gemini CLI.</strong> Gemini CLI requires Node.js 18 or later. Install globally via npm:</p>
+        <pre><code>npm install -g @google/gemini-cli</code></pre>
+        <p>Verify the installation: <code>gemini --version</code>. <em>Check the <a href="https://github.com/google-gemini/gemini-cli" target="_blank">GitHub repository</a> for the current package name and minimum Node version, as these may have changed.</em></p>
+
+        <p><strong>2. Authenticate with your personal Google account.</strong> The simplest starting point:</p>
+        <pre><code>gemini auth login</code></pre>
+        <p>This opens a browser window for OAuth authentication. After approving access, your credentials are cached locally. <em>Verify the exact subcommand — it may be <code>gemini auth</code> or a direct <code>gemini login</code> depending on the version.</em> Confirm you're authenticated: <code>gemini auth status</code> (or equivalent). You are now on the free tier.</p>
+
+        <p><strong>3. Create your global GEMINI.md.</strong> Create the directory and file:</p>
+        <pre><code>mkdir -p ~/.gemini
+# Edit ~/.gemini/GEMINI.md with your preferred editor</code></pre>
+        <p>Add at minimum: your name and role, your preferred programming languages, 3–5 always-on constraints, and a line listing where your projects live. This file is loaded on every session — keep it focused and under 500 lines.</p>
+
+        <p><strong>4. Create a project GEMINI.md.</strong> Navigate to a project you work in regularly:</p>
+        <pre><code>cd ~/projects/your-project
+# Create GEMINI.md describing the project stack and conventions</code></pre>
+        <p>Run <code>gemini</code> in the project directory and ask the agent: "Analyze this project and help me write a GEMINI.md that captures the key context you would want for future sessions." Review and edit the output. Commit the result to the repository.</p>
+
+        <p><strong>5. Install an extension.</strong> Find an extension you want (e.g., a community tool from GitHub):</p>
+        <pre><code>gemini extensions install --source https://github.com/example/gemini-ext-name</code></pre>
+        <p><em>Verify the exact flag syntax with <code>gemini extensions --help</code>.</em> After installation, restart your session and confirm the extension's tools appear in <code>/tools</code>.</p>
+
+        <p><strong>6. Register an MCP server.</strong> Open or create <code>~/.gemini/settings.json</code> and add an MCP server. Example for a filesystem MCP server:</p>
+        <pre><code>{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allow"],
+      "transport": "stdio"
+    }
+  }
+}</code></pre>
+        <p>Start a new Gemini CLI session and verify the MCP tools appear: ask the agent "What tools do you have available?" and look for tools from the registered server.</p>
+
+        <p><strong>7. Validate your setup.</strong> In a Gemini CLI session in your project directory, run through a quick smoke test: ask the agent to explain the project's main entry point (tests Read), create a scratch file (tests Write), run your project's test command (tests Shell), look up a dependency's changelog (tests GoogleSearch + WebFetch). If all five tools work without unexpected permission errors, your daily-driver config is operational.</p>
+      </div>
+
+      <h2>14.15 See also</h2>
+      <p>Three threads from earlier chapters lead here, and three lead onward.</p>
+      <div class="see-also">
+        <a onclick="go('ch2-context')">← Ch 2. Context as Working Memory</a>
+        <a onclick="go('ch4-models')">← Ch 4. Model Selection &amp; Cost (free tier)</a>
+        <a onclick="go('ch13-claude')">← Ch 13. Claude Code Deep Dive</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers in Gemini CLI</a>
+        <a onclick="go('ch16-mcp')">→ Ch 16. MCP Servers</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
