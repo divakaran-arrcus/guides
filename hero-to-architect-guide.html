@@ -3625,6 +3625,277 @@ git push --force-with-lease origin polish/json</code></pre>
       </div>
     </section>
 
+    <section id="ch12-kilo" class="section">
+      <h1>12. Kilo Code Deep Dive</h1>
+      <p class="lede">What you'll learn: Kilo Code's architecture, the five modes and why they exist, BYO-model routing, custom rules, MCP integration, and how to configure Kilo for your daily workflow.</p>
+
+      <h2>12.1 Architecture — VS Code extension, Cline/Roo lineage</h2>
+      <p>Kilo Code is an open-source VS Code extension that embeds an AI coding agent directly into the IDE. It descends from the Cline (formerly Claude Dev) project and shares significant lineage with Roo Code — both are open-source forks of the same codebase that diverged in different directions. Kilo Code's particular emphasis is on <strong>multi-model routing, structured modes, and team configuration</strong>: it was explicitly designed for professional workflows where different tasks warrant different models and different capability surfaces.</p>
+
+      <p>Architecturally, Kilo Code runs as a VS Code webview extension. When activated, it registers a sidebar panel, a set of VS Code commands, and a background Node.js process that manages model API calls. The extension communicates with the VS Code editor APIs to read files, run terminal commands, apply diffs, and interact with the broader workspace. Unlike some AI tools that operate purely through a chat interface, Kilo Code has bidirectional access to the VS Code environment: it can read the active editor selection, open new tabs, trigger tasks, and observe terminal output — all within the same session context.</p>
+
+      <p>The open-source nature of Kilo Code matters practically: the configuration schemas, mode definitions, and routing rules are human-readable JSON and YAML files committed to your repository. This means AI configuration is version-controlled alongside your code — team members get consistent behavior by checking out the same config. <em>Verify the extension's current GitHub repository for the latest architecture details, as the extension structure evolves across releases.</em></p>
+
+      <h2>12.2 The five modes — Architect / Code / Ask / Debug / Orchestrator</h2>
+      <p><strong>Architect mode</strong> is for planning and high-level design. In Architect mode, Kilo Code can read files and write specification documents, but it is constrained from making arbitrary code edits or running shell commands. You use it when you want to produce a technical spec, review architecture, or produce a structured plan for subsequent execution. The model used in Architect mode is typically the most capable and expensive — it is doing reasoning-heavy work where quality matters more than speed.</p>
+
+      <p><strong>Code mode</strong> is the general coding workhorse. It has full file read/write access and terminal execution. This is the default mode for implementation tasks — writing functions, fixing bugs, running tests. Code mode is where most of your token spend occurs. Routing a fast, capable model (e.g., Claude Sonnet) here balances quality and cost.</p>
+
+      <p><strong>Ask mode</strong> is strictly read-only. It can read files and answer questions, but it cannot write, edit, or execute. Ask mode is ideal for code Q&amp;A, understanding an unfamiliar codebase, or checking your mental model of a system — tasks where you want an answer, not a change. Because it cannot write, it cannot make mistakes that need reverting. A smaller, faster model works well here; the cost savings on high-volume Q&amp;A sessions are significant.</p>
+
+      <p><strong>Debug mode</strong> is specialized for root-cause analysis. It has access to read files, read terminal output, and run diagnostic commands (e.g., running tests to collect failure messages), but its prompting is tuned toward systematic hypothesis testing rather than broad implementation. Debug mode is what you reach for when you have a specific failing test or error and want targeted diagnosis without rewriting half the module.</p>
+
+      <p><strong>Orchestrator mode</strong> is the multi-agent coordinator. It decomposes a high-level task, dispatches subagents in other modes (called "boomerang tasks" in Kilo Code's terminology), and integrates their results. Orchestrator mode does not write code directly — it delegates to Code, Debug, or Architect subagents. This mode is covered in depth in Ch 11.8 and is the subject of the parallel workflows walkthrough.</p>
+
+      <h2>12.3 Why modes exist — constraint as feature</h2>
+      <p>The instinct when encountering modes is to see them as restrictions. The correct mental model is the opposite: <strong>modes are footgun prevention</strong>. When you ask a question in Ask mode, you have a guarantee — not a hope — that the AI cannot accidentally modify a file. That guarantee changes how you interact with it. You can freely explore a live production codebase without a mental safety tax. You do not need to mentally track whether this particular question might trigger a tool call that rewrites something.</p>
+
+      <p>The same principle applies to Architect mode. If you're doing architectural planning, you want the model to think broadly and boldly — proposing structure, questioning assumptions, suggesting refactors. But you don't want it to start implementing that refactor mid-thought. Architect mode's write constraint keeps it in the design space. The constraint is not a limitation; it enforces the conceptual boundary between designing and building, which is a real boundary that matters for quality.</p>
+
+      <p>Modes also have a second effect: they shape the system prompt the model receives. Architect mode's system prompt primes the model to think in terms of structure, tradeoffs, and specifications. Code mode's system prompt primes it for implementation correctness and test coverage. Debug mode's system prompt primes it for evidence-gathering and hypothesis testing. You're not just changing what tools are available — you're changing what kind of agent you're working with. The combination of constrained tools and mode-specific prompting means mode switching is a meaningful state transition, not just a label change.</p>
+
+      <h2>12.4 Picking a model per mode — BYO providers</h2>
+      <p>Kilo Code's "Bring Your Own model" architecture lets you configure any combination of supported providers — Anthropic, OpenAI, Google Gemini, AWS Bedrock, Azure OpenAI, OpenRouter, and local models via Ollama — and route different modes to different models. This is where significant cost optimization lives: use a frontier model for Architect, a fast capable model for Code, and a cheap/fast model for Ask.</p>
+
+      <p>Mode-to-model routing is configured in Kilo Code's custom modes file. <em>Verify the exact file path and schema against the current Kilo Code documentation — historically this has been <code>.kilocode/modes.json</code> or a <code>.roomodes</code> file at the workspace root, and the schema evolves across versions.</em> A representative configuration at the time of writing:</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example: per-mode model routing (<code>.kilocode/modes.json</code> — verify path &amp; schema against current docs)</p>
+        <pre style="margin:0; font-size:0.88rem;"><code>{
+  "modes": {
+    "architect": {
+      "model": "claude-opus-4-5",
+      "provider": "anthropic",
+      "maxTokens": 8192
+    },
+    "code": {
+      "model": "claude-sonnet-4-5",
+      "provider": "anthropic",
+      "maxTokens": 8192
+    },
+    "ask": {
+      "model": "gemini-flash-2.0",
+      "provider": "google",
+      "maxTokens": 4096
+    },
+    "debug": {
+      "model": "claude-sonnet-4-5",
+      "provider": "anthropic",
+      "maxTokens": 8192
+    },
+    "orchestrator": {
+      "model": "claude-opus-4-5",
+      "provider": "anthropic",
+      "maxTokens": 16384
+    }
+  }
+}</code></pre>
+        <p style="font-size:0.85rem; margin:0.8rem 0 0; color:var(--text-muted);"><em>Schema details (field names, nesting, provider identifiers) change across Kilo Code versions. Always check the official docs before committing this config.</em></p>
+      </div>
+
+      <p>The provider-level API keys are stored in VS Code's secure credential store (not in the config file), so the committed <code>modes.json</code> is safe to check in. Each team member provides their own keys via the Kilo Code settings panel; the routing logic itself is shared configuration. This split — shared routing in version control, per-person credentials in secure storage — is the right pattern for team environments.</p>
+
+      <h2>12.5 Custom modes — defining your own</h2>
+      <p>Beyond the five built-in modes, Kilo Code lets you define custom modes with their own name, system prompt, tool permissions, and model assignment. A custom "Reviewer" mode, for example, might have read-only file access (like Ask), a system prompt tuned for finding bugs and suggesting improvements, and route to a different model than the default Ask config. Custom modes are defined in the same modes config file as built-in mode overrides.</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example: custom "Reviewer" mode (<em>verify schema against current Kilo Code docs</em>)</p>
+        <pre style="margin:0; font-size:0.88rem;"><code>{
+  "customModes": [
+    {
+      "slug": "reviewer",
+      "name": "Reviewer",
+      "model": "claude-opus-4-5",
+      "provider": "anthropic",
+      "roleDefinition": "You are a senior code reviewer. Your job is to identify bugs, security issues, performance problems, and design violations in the provided code. You do NOT write code or suggest rewrites — you identify and explain problems only.",
+      "groups": ["read"],
+      "toolPermissions": {
+        "readFile": true,
+        "writeFile": false,
+        "executeCommand": false,
+        "browser": false
+      }
+    }
+  ]
+}</code></pre>
+      </div>
+
+      <p>The <code>groups</code> field controls which tool categories are available. Common groups include <code>read</code> (file reads), <code>edit</code> (file writes), <code>command</code> (terminal execution), and <code>browser</code> (web access). The <code>roleDefinition</code> string becomes the mode's system prompt. You can define as many custom modes as your workflow needs — a "SecurityAuditor" mode with no writes, a "Documenter" mode that writes only Markdown, a "Migrator" mode with access to your migration toolchain. <em>Verify the <code>groups</code> values and <code>toolPermissions</code> schema against the current Kilo Code documentation — these identifiers may differ between versions.</em></p>
+
+      <p>Custom modes are particularly powerful for onboarding: a "NewbieHelper" mode with an explanatory system prompt and no write access gives junior developers a safe exploration surface without the risk of accidental modifications. The mode definition lives in version control, so the whole team benefits automatically.</p>
+
+      <h2>12.6 Custom rules — per-project and global</h2>
+      <p>Kilo Code supports two levels of custom rules: <strong>per-project rules</strong> and <strong>global rules</strong>. Per-project rules live inside the repository — historically in a <code>.kilocode/rules/</code> directory (verify the exact path against current docs, as it may also be <code>.clinerules</code> or similar). Global rules live in the user's home configuration directory and apply to every Kilo Code session regardless of which project is open.</p>
+
+      <p><strong>Per-project rules</strong> are the right place for: coding conventions (naming, formatting, file organization), framework-specific patterns (e.g., "always use the Result type for error handling, never throw"), testing requirements ("every public function must have a corresponding unit test"), and security invariants ("never log PII, never hardcode credentials"). Because they live in the repository, they're automatically applied for every team member. When a new developer joins, they get the same AI behavior everyone else has — no manual configuration step needed.</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example per-project rule files (<code>.kilocode/rules/</code> — verify path against current docs)</p>
+        <pre style="margin:0; font-size:0.88rem;"><code>.kilocode/rules/
+  coding-style.md      # Naming conventions, file structure, import order
+  testing.md           # Unit test requirements, coverage expectations
+  security.md          # No PII logging, no hardcoded secrets, SQL parameterization
+  git-conventions.md   # Commit message format, branch naming, PR size limits</code></pre>
+      </div>
+
+      <p><strong>Global rules</strong> are the right place for: your personal preferences across all projects (preferred response style, verbosity level, how you like diffs presented), authentication or workspace patterns that are consistent across your work, and developer identity information (e.g., "My name is Alice; sign all generated commit messages accordingly"). Global rules are not committed to any repository — they live in your user profile and apply universally. The split ensures team-shared conventions are in the repo, while personal preferences stay personal.</p>
+
+      <p>Rules are evaluated at the start of each task in that mode. Kilo Code injects the applicable rules into the system prompt as additional context. The order of precedence (when both global and per-project rules are present) is: per-project rules take priority for any conflict, with global rules filling in the rest. <em>Verify the exact rule file format, directory structure, and precedence behavior against current Kilo Code documentation.</em></p>
+
+      <h2>12.7 Settings deep dive — auto-approve, terminal, MCP, telemetry</h2>
+      <p><strong>Auto-approve toggles.</strong> Kilo Code's settings panel (accessible via the Kilo Code sidebar gear icon or VS Code settings under <code>kilocode.*</code>) provides fine-grained auto-approval controls per tool category. You can configure: auto-approve file reads always, auto-approve file writes only within specific directories (e.g., <code>src/</code> but not <code>.env</code> or <code>secrets/</code>), require approval for all terminal commands, and auto-approve terminal commands that match a specific allowlist of safe patterns. The key insight: auto-approve is not binary. Configuring directory-scoped write approval and command-specific approval means you get the speed of automation for low-risk operations while retaining human gates for high-risk ones. <em>The exact settings keys and UI location should be verified against the current Kilo Code release notes, as these have moved between versions.</em></p>
+
+      <p><strong>Terminal integration.</strong> Kilo Code can run commands in a VS Code integrated terminal, observe their output, and use that output to inform subsequent decisions. Settings control: which shell is used (<code>bash</code>, <code>zsh</code>, <code>fish</code>, or the VS Code default), whether terminal sessions are reused across tasks or fresh per-task, and the timeout for long-running commands. For development workflows involving test runners or build systems that produce large output, the terminal output capture settings matter — you can configure a maximum output length to prevent runaway context consumption on verbose build logs.</p>
+
+      <p><strong>MCP server registration.</strong> Model Context Protocol (MCP) servers are registered in Kilo Code's settings as a JSON array under the MCP configuration section (see 12.9 for a full example). Settings also control whether MCP tools are auto-approved per server or require manual confirmation per-call — useful when a server exposes a mix of safe read operations and destructive write operations.</p>
+
+      <p><strong>Telemetry.</strong> Kilo Code, like most AI extensions, includes optional telemetry. By default it collects usage statistics (mode switches, model selections, task durations) to improve the product. This can be disabled entirely via the <code>kilocode.telemetry.enabled</code> setting (verify the exact key name). For enterprise environments where data governance matters, telemetry should be reviewed and disabled if required by policy. Kilo Code's open-source codebase means you can audit exactly what telemetry is collected before enabling it — a significant advantage over closed-source tools.</p>
+
+      <h2>12.8 Memory and Context Bank</h2>
+      <p>By default, Kilo Code does not persist memory across sessions — each new task starts fresh, with no knowledge of prior conversations or decisions. The <strong>Context Bank</strong> (also referenced as Memory Bank in some Kilo Code versions — verify current terminology) is the mechanism for explicitly persisting information across sessions. It works by writing structured files to a designated location in your project (historically <code>.kilocode/memory/</code> or <code>memory-bank/</code> at the project root) that Kilo Code reads at the start of each new session.</p>
+
+      <p>The Context Bank is organized around a set of standard files that capture different kinds of persistent knowledge. Common entries include: <code>projectbrief.md</code> (high-level project description and goals), <code>activecontext.md</code> (current task state, recent decisions, open questions), <code>progress.md</code> (what's done, what's in progress, what's blocked), and <code>systempatterns.md</code> (architectural decisions and conventions). Kilo Code agents in supported modes read these files before beginning work, so they arrive with project context rather than starting blind. When significant decisions are made during a session, the agent can update the Context Bank files to ensure the next session inherits that knowledge.</p>
+
+      <p>The practical implication: for long-lived projects, the Context Bank is the difference between an AI that needs re-orientation every session and one that operates with continuity. Maintaining it is low-overhead — the agent can update it as part of its end-of-task cleanup. For one-off tasks or short projects, the Context Bank overhead is not worth the setup cost; it pays off on projects that span multiple sessions over days or weeks. <em>Verify the exact file names, directory location, and update mechanisms against current Kilo Code documentation, as this feature has evolved significantly across versions.</em></p>
+
+      <h2>12.9 MCP integration in Kilo</h2>
+      <p>Model Context Protocol (MCP) integration in Kilo Code follows the same MCP standard described in Ch 16, but the registration mechanism is specific to Kilo Code's settings. MCP servers are registered via the Kilo Code settings panel or directly in the VS Code <code>settings.json</code>. Once registered, an MCP server's tools become available to modes that have the <code>mcp</code> tool group enabled. <em>Verify the exact settings structure against current Kilo Code docs.</em></p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example: registering an MCP server in Kilo Code settings (<em>verify schema against current docs</em>)</p>
+        <pre style="margin:0; font-size:0.88rem;"><code>// In VS Code settings.json (or Kilo Code's MCP config section):
+{
+  "kilocode.mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+      "env": {}
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${env:GITHUB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "DATABASE_URL": "${env:DATABASE_URL}"
+      }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <p>Each registered MCP server starts as a subprocess when Kilo Code loads and remains running for the duration of the VS Code session. The server's exposed tools appear in the Kilo Code tool list and can be called from any mode with MCP access enabled. You can configure per-server auto-approval: for a read-only filesystem server you might auto-approve all calls; for a server that writes to a database, require per-call confirmation. Tool calls to MCP servers count against your context window just like any other tool call — large responses from database or filesystem servers can consume substantial tokens, so scoping queries carefully matters for cost management.</p>
+
+      <p>MCP servers can also be scoped to specific modes via mode tool permissions. A "DatabaseDebug" custom mode might have access to the Postgres MCP server while Code mode does not — preventing accidental database modifications during routine coding. This is the composability advantage of the modes-plus-MCP architecture: capability access is defined declaratively per mode, not negotiated per-task.</p>
+
+      <h2>12.10 Commit message and PR features</h2>
+      <p>Kilo Code includes automated commit message generation and PR description generation as built-in features. After a Code mode task that modifies files, Kilo Code can inspect the diff and generate a structured commit message following conventional commit format (feat, fix, docs, refactor, etc.). The quality of generated commit messages depends on the model used in Code mode — more capable models produce more accurate and contextually appropriate messages. You can configure commit message templates in the per-project rules to enforce a specific format (e.g., requiring issue numbers, ticket IDs, or specific scoping).</p>
+
+      <p>PR description generation works similarly: Kilo Code can analyze a branch diff versus the base branch, read the associated commits, and produce a structured PR description covering the change summary, motivation, testing notes, and reviewer checklist. This integrates with VS Code's GitHub extension to pre-populate the PR creation dialog. For teams with PR description standards, encoding them as per-project rules ensures Kilo Code generates descriptions that match the template.</p>
+
+      <p><em>The exact UI locations and commands for commit message and PR generation (e.g., slash commands, context menu items, or sidebar buttons) vary between Kilo Code versions — verify the current interface in the extension's changelog or documentation before building team workflows around specific UI interactions.</em></p>
+
+      <h2>12.11 Cost dashboard and tracking</h2>
+      <p>Kilo Code maintains a per-session cost tracker that reports token consumption and estimated dollar cost for each task. The cost display appears in the sidebar panel after each task completes, broken down by input tokens, output tokens, cache hits (if the provider supports prompt caching), and total cost at the model's current pricing. This makes cost visible at the task level rather than as a surprise on the monthly bill — you can see immediately whether a particular task or mode is consuming disproportionate resources.</p>
+
+      <p>To identify cost hotspots, examine the per-task breakdown over a few days of usage. Common patterns: Orchestrator mode tasks tend to have high orchestrator-turn costs because they read all subagent outputs into a single context; Ask mode Q&amp;A sessions are frequently the highest-volume but should be low-cost if routed to a fast/cheap model (this is the main reason to use a cheaper model in Ask mode — the volume is high); large file reads in Code mode (e.g., reading a 3000-line file to make a 5-line change) are a common optimization target. If you see a mode consistently consuming more than expected, check whether the file reads injected by rules files are large, whether MCP server responses are verbose, or whether the system prompt for that mode is disproportionately long.</p>
+
+      <p>Kilo Code also supports per-provider budget limits — you can set a daily or per-task token cap that triggers a warning or hard stop before exceeding the threshold. <em>Verify the exact budget/cap configuration path and behavior against current Kilo Code documentation, as this feature has evolved across versions.</em> For team environments, the cost tracking data is exportable for allocation and chargeback purposes.</p>
+
+      <h2>12.12 Working with multi-repo and monorepo setups</h2>
+      <p>VS Code supports multi-root workspaces (a <code>.code-workspace</code> file that references multiple folders), and Kilo Code respects this structure. In a multi-root workspace, Kilo Code loads per-project rules from each workspace folder independently — the rules in <code>packages/api/.kilocode/rules/</code> apply when the agent is working in the API package, and the rules in <code>packages/frontend/.kilocode/rules/</code> apply when working in the frontend package. This enables per-package conventions in a monorepo without a single unwieldy global rules file.</p>
+
+      <p>For monorepo setups, the Context Bank placement matters: a project-level Context Bank at the workspace root captures cross-package architectural decisions, while package-level context can capture package-specific state. A recommended structure: <code>.kilocode/memory/projectbrief.md</code> at the root describes the overall system, and individual packages maintain their own <code>activecontext.md</code> if they're in active development. The orchestrator mode can read both levels to maintain a coherent cross-package view when dispatching subagents to different packages.</p>
+
+      <p>A practical multi-repo pattern: use a VS Code workspace file that references all related repositories. Kilo Code operates across all of them in a single session. When you ask Code mode to "make the API changes needed to support this new frontend feature," it can read both repositories' codebases and write to both. This cross-repo capability is an advantage over CLI-based tools that are inherently single-repo-scoped. <em>Verify multi-root workspace behavior against current Kilo Code documentation — file access and rules resolution across workspace roots may have version-specific edge cases.</em></p>
+
+      <h2>12.13 Power-user shortcuts</h2>
+      <p><strong>Mode quick-switch.</strong> The most used shortcut: Kilo Code registers a VS Code command for switching modes directly from the keyboard. The default keybinding (verify in current docs — it may be <code>Ctrl+Shift+M</code> / <code>Cmd+Shift+M</code> or accessible via the command palette as "Kilo Code: Switch Mode") opens a quick-pick menu of available modes. Assigning a dedicated keybinding via VS Code's keyboard shortcuts editor (<code>keybindings.json</code>) to the mode-switch command makes the Architect→Code→Ask cycle a muscle memory operation.</p>
+
+      <p><strong>At-mentions and context injection.</strong> In the Kilo Code chat input, <code>@</code> prefixes inject context: <code>@file:path/to/file.ts</code> injects a file's contents, <code>@folder:src/</code> injects a directory listing, <code>@git:diff</code> injects the current git diff, and <code>@problems</code> injects the VS Code Problems panel contents (compile errors, linter warnings). Combining these in a single message — "@file:src/auth.ts @problems fix the TypeScript error on line 42" — gives the model precise context without it needing to explore the filesystem. This dramatically reduces the number of tool call turns and associated latency.</p>
+
+      <p><strong>Task continuity and resume.</strong> Kilo Code tracks task history in the sidebar panel. You can click a previous task to resume it — re-loading the task's context and continuing from where it left off. This is useful for long-running tasks interrupted mid-session. The resume functionality respects the Context Bank if enabled, merging session state with persisted memory for a coherent continuation. <em>Specific shortcut keys, @-mention syntax details, and resume behavior should be verified against the current Kilo Code documentation as these have changed between major versions.</em></p>
+
+      <h2>12.14 Hands-on: configure Kilo Code for your daily workflow</h2>
+      <p>This walkthrough takes you from a fresh Kilo Code install to a fully configured daily driver. Follow each step sequentially; steps 4–6 can be done in any order once step 3 is complete.</p>
+
+      <div class="walkthrough">
+        <h3>Walkthrough · Configure Kilo Code for your daily workflow</h3>
+
+        <ol>
+          <li>
+            <strong>Install the extension.</strong> Open VS Code, go to Extensions (<code>Ctrl+Shift+X</code> / <code>Cmd+Shift+X</code>), search "Kilo Code," install the official extension by Kilo Code (verify the publisher name in the VS Code Marketplace — there are similarly-named extensions). After install, the Kilo Code sidebar icon appears in the activity bar. Click it to open the main panel.
+          </li>
+
+          <li>
+            <strong>Add your API keys.</strong> Click the Settings icon (gear) in the Kilo Code panel. Under "API Providers," add keys for the providers you plan to use. At minimum, add your Anthropic API key for Claude models. If you plan to use Google Gemini for Ask mode (as in the 12.4 example), add your Google AI Studio API key. Keys are stored in VS Code's credential store — they are not written to any file in your workspace.
+          </li>
+
+          <li>
+            <strong>Create the Kilo Code config directory in your project.</strong>
+            <pre><code>mkdir -p .kilocode/rules
+touch .kilocode/rules/coding-style.md
+touch .kilocode/rules/testing.md
+touch .kilocode/rules/security.md</code></pre>
+            Populate each rules file with your project's conventions. Start minimal — 5–10 bullet points per file. Rules files are injected into every relevant task's context, so bloated rules files waste tokens on every request.
+          </li>
+
+          <li>
+            <strong>Set up mode-to-model routing.</strong> Create <code>.kilocode/modes.json</code> (verify the exact filename against current docs). Use the template from 12.4 as a starting point, substituting your preferred models per mode. Commit this file to your repository — teammates will inherit your routing config automatically.
+          </li>
+
+          <li>
+            <strong>Enable the Context Bank.</strong> Create the memory directory:
+            <pre><code>mkdir -p .kilocode/memory
+touch .kilocode/memory/projectbrief.md
+touch .kilocode/memory/activecontext.md
+touch .kilocode/memory/progress.md
+touch .kilocode/memory/systempatterns.md</code></pre>
+            Write a 2–3 paragraph <code>projectbrief.md</code> describing what your project is, its tech stack, and key constraints. The other files start empty and grow as sessions proceed. <em>Verify the exact directory name and file set against current Kilo Code documentation.</em>
+          </li>
+
+          <li>
+            <strong>Register an MCP server (optional but recommended).</strong> If you use GitHub, add the GitHub MCP server per the 12.9 example. If you have a local database, add the appropriate database MCP server. Restart VS Code after editing the MCP config to pick up the new server registration.
+          </li>
+
+          <li>
+            <strong>Configure auto-approve for your risk tolerance.</strong> In Kilo Code settings, enable auto-approve for file reads and writes within <code>src/</code> and <code>tests/</code>. Require approval for terminal commands. This gives you speed on the low-risk operations you'll accept hundreds of per day, and a gate on the higher-risk ones.
+          </li>
+
+          <li>
+            <strong>Commit the config.</strong>
+            <pre><code>git add .kilocode/
+git commit -m "chore: add Kilo Code project config (modes, rules, memory scaffold)"</code></pre>
+            From this point, the project has a version-controlled AI configuration. Any teammate cloning the repo gets the same modes, rules, and memory structure. They provide only their own API keys.
+          </li>
+        </ol>
+
+        <p><strong>Daily usage pattern:</strong></p>
+        <ul>
+          <li><strong>Morning:</strong> Switch to Ask mode. Review overnight CI failures, read relevant code sections, understand the day's starting state. No accidental writes.</li>
+          <li><strong>Planning:</strong> Switch to Architect mode. Describe the feature or refactor for the day. Get a structured plan and spec document.</li>
+          <li><strong>Implementation:</strong> Switch to Code mode. Work through the spec produced by Architect. Auto-approve writes within <code>src/</code>.</li>
+          <li><strong>Debugging:</strong> If tests fail, switch to Debug mode. Provide the error output and let Debug mode run targeted diagnostics without rewriting unrelated code.</li>
+          <li><strong>End of day:</strong> Ask Code mode to update <code>.kilocode/memory/activecontext.md</code> and <code>progress.md</code> with today's decisions and current state. Tomorrow's session starts with context.</li>
+        </ul>
+
+        <p><em>This pattern eliminates context re-establishment overhead. The most expensive part of an AI coding workflow is repeatedly explaining the same background context. The Context Bank, per-project rules, and consistent mode routing solve this at the infrastructure level — you invest in the config once and amortize it across every subsequent session.</em></p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch5-surface')">← Ch 5. IDE vs Terminal</a>
+        <a onclick="go('ch4-models')">← Ch 4. Model Selection &amp; Cost</a>
+        <a onclick="go('ch13-claude')">→ Ch 13. Claude Code Deep Dive</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers (Kilo Code modes/rules adaptation)</a>
+        <a onclick="go('ch16-mcp')">→ Ch 16. MCP Servers</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
