@@ -1397,6 +1397,234 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
     </section>
 
+    <section id="ch5-surface" class="section">
+      <h1>5. IDE vs Terminal: Choosing Your Surface</h1>
+      <p class="lede">What you'll learn: install and run the three primary agentic coding tools (Kilo Code, Claude Code, Gemini CLI), understand where each fits, place the wider field (Cursor, Aider, etc.) in context, and choose deliberately for the task in front of you.</p>
+
+      <h2>5.1 The dominant idioms — IDE-resident vs terminal-resident</h2>
+      <p>Agentic coding tools cluster into two idioms based on where they live in your workflow. <strong>IDE-resident tools</strong> embed directly inside your editor — VS Code, Cursor, Windsurf, JetBrains. They see the file tree, the open editor tabs, inline diagnostics, and the selection you've highlighted. The interaction model is visual: proposed changes appear as inline diffs you accept or reject, context is injected automatically from the current file or workspace, and the feedback loop runs at the speed of a keypress. For developers who already live inside an IDE all day, the cognitive overhead is nearly zero.</p>
+      <p><strong>Terminal-resident tools</strong> live in your shell. They are invoked like any other CLI program, they read context from the working directory and flags you pass, and their output streams to stdout. This makes them composable: you can pipe them, script them, run them in CI, invoke them headlessly from a Makefile, or orchestrate multiple agents across repos without ever opening a GUI. The interaction model is conversational and scriptable rather than visual and point-and-click.</p>
+      <p>Neither idiom is strictly superior. IDE-resident tools reduce friction for single-file or single-project edits where visual diff review matters. Terminal-resident tools win on automation, reproducibility, and anything that needs to run without a human in the loop. Most professional engineers end up using at least one from each column, picking the right surface for each class of task.</p>
+
+      <h2>5.2 The three primary tools — Kilo Code, Claude Code, Gemini CLI</h2>
+      <p>This guide focuses on three tools that together represent the dominant paradigms at the time of writing. <strong>Kilo Code</strong> is an open-source VS Code extension that brings agentic, model-agnostic AI assistance directly into the IDE — the IDE-resident primary. <strong>Claude Code</strong> is Anthropic's official CLI agent that runs in the terminal, reads your local codebase, and executes multi-step tasks autonomously — the terminal-resident primary from the Claude ecosystem. <strong>Gemini CLI</strong> is Google's open-source terminal agent backed by the Gemini model family, with a notable free tier via personal Google account — the terminal-resident primary from the Gemini ecosystem.</p>
+      <p>These three were chosen not because competing tools are inferior, but because together they give you direct experience of both idioms, two distinct terminal-agent philosophies, two billing models, and two underlying model families. After working through the hands-on sections in this chapter and the deep-dives in Part 3, you will have enough first-hand context to evaluate any new tool that emerges against familiar reference points.</p>
+
+      <h2>5.3 Kilo Code — what it is + first run</h2>
+      <p>Kilo Code is a fork of Cline (formerly Claude Dev), maintained as a standalone open-source project. It installs as a VS Code extension, supports any model provider through API keys (Anthropic, OpenAI, Google, AWS Bedrock, Azure, local Ollama, and others), and exposes multiple interaction modes — <em>Code</em> for autonomous file edits, <em>Architect</em> for planning and reasoning, <em>Ask</em> for Q&amp;A without writes, and <em>Debug</em> for targeted diagnostics. The multi-model routing capability is the key differentiator: you can configure cheaper, faster models for Ask mode and reserve more capable models for Code and Architect.</p>
+      <p>To install, open VS Code, go to Extensions (Ctrl+Shift+X / Cmd+Shift+X), search for <strong>Kilo Code</strong>, and click Install. On first launch a setup panel appears where you choose your provider and paste your API key — or use BYO key if you already have one. Once configured, open the Kilo Code panel from the sidebar activity bar.</p>
+      <p>First prompt: open any project, click into the Kilo Code panel, select <strong>Code</strong> mode, and type <em>"Add a brief docstring to every function in this file that is missing one."</em> Kilo Code reads the active file, proposes a diff, and waits for your approval. Watch the mode selector and the token counter in the status bar — these are the first signals for developing cost intuition.</p>
+      <pre>
+┌──────────────────────────────────────────┐
+│  Kilo Code  ▼ Code  │ Architect │ Ask │ Debug │
+├──────────────────────────────────────────┤
+│  Context: main.py (active) + workspace   │
+│  Provider: Anthropic · claude-sonnet-4-5 │
+│  [Send message...]                       │
+└──────────────────────────────────────────┘
+      </pre>
+      <p>Detailed Kilo Code configuration, mode-routing strategies, and provider selection are covered in Ch 12.</p>
+
+      <h2>5.4 Claude Code — what it is + first run</h2>
+      <p>Claude Code is Anthropic's official agentic CLI, designed to operate autonomously in the terminal — reading files, writing code, running shell commands, searching the web, and executing multi-step plans with minimal hand-holding. It understands your entire local codebase, not just the file currently open, which makes it particularly powerful for cross-cutting tasks like refactors, security reviews, and dependency upgrades. It also exposes a rich hooks system and a Model Context Protocol (MCP) integration layer that lets you attach external tools and data sources.</p>
+      <p>Install instructions can shift between releases (npm package vs native binary distributions have both appeared in the official docs). Always verify the current canonical installation method at <strong><code>docs.claude.com/claude-code</code></strong> before running any command you copy from a guide. At the time of writing the npm route is:</p>
+      <pre>
+npm install -g @anthropic-ai/claude-code
+claude login
+      </pre>
+      <p><code>claude login</code> opens a browser OAuth flow that ties the CLI to your Anthropic account. First prompt in a project directory: <code>cd my-project &amp;&amp; claude</code>, then type <em>"Summarise this codebase in three paragraphs."</em> Claude Code reads the tree, samples key files, and responds. From there, try <em>"Find all places where we call the external API without retry logic."</em> — a task that would be tedious to do manually but runs in seconds. Claude Code billing, Pro/Max plan details, and full feature coverage are in Ch 13.</p>
+
+      <h2>5.5 Gemini CLI — what it is + first run</h2>
+      <p>Gemini CLI is Google's open-source terminal agent, backed by the Gemini model family and featuring a 1 million token context window. Its headline differentiator is the free tier available to anyone with a personal Google account: as of the time of writing, this provides approximately 1,000 requests per day at no charge — but always verify current limits at the official repository and Google AI Studio, as free-tier quotas are subject to change. The CLI is open-source and available at <strong><code>github.com/google-gemini/gemini-cli</code></strong> — check the repository for the current canonical package name and install method before running any command from a guide, as these have changed across releases.</p>
+      <p>At the time of writing, the npm route is:</p>
+      <pre>
+npm install -g @google/gemini-cli
+# or without a global install:
+npx @google/gemini-cli
+      </pre>
+      <p>Authentication has three modes. <strong>Personal Google account</strong>: run <code>gemini</code>, choose the personal login option, and complete the browser OAuth flow — this gives you the free tier. <strong>API key</strong>: obtain a key from Google AI Studio (<code>aistudio.google.com</code>), set <code>GEMINI_API_KEY</code>, and run. <strong>Vertex AI</strong>: for enterprise deployments with GCP credentials and data residency requirements. First prompt: in any directory, type <em>"List the top three security concerns in this codebase."</em> The 1M context window means Gemini CLI can ingest very large repos without chunking. Full feature coverage is in Ch 14.</p>
+
+      <h2>5.6 IDE strengths vs terminal strengths</h2>
+      <p>IDE-resident tools shine when the feedback loop is visual and iterative. Inline diff review — where each proposed change appears highlighted in the exact line it modifies — is genuinely faster than reading a patch in the terminal when you are editing a single file or a small cluster of related files. IDE tools also benefit from zero context-setup cost: the tool already knows which file you have open, what your cursor is on, and what the compiler is currently complaining about. For developers new to agentic coding, the IDE surface reduces the learning curve because the interaction feels like pair programming rather than CLI operations.</p>
+      <p>Terminal-resident tools have a different set of strengths that compound over time. They are scriptable: you can drive them from shell scripts, Makefiles, GitHub Actions, or any orchestration layer without a GUI. They compose with existing Unix tooling — pipe output to <code>grep</code>, chain them with <code>&&</code>, background them with <code>&amp;</code>. They run headlessly in CI pipelines, enabling automated code review, security scanning, or documentation generation on every pull request. They also tend to give the user more explicit control over context, which matters for large codebases where automated context injection can bloat token costs.</p>
+      <p>A practical heuristic: reach for the IDE tool when you are actively editing and want to stay in flow; reach for the terminal tool when you want to automate, batch, run in CI, or operate across multiple repositories at once.</p>
+
+      <h2>5.7 Claude Code vs Gemini CLI — the terminal-vs-terminal choice</h2>
+      <p>Both Claude Code and Gemini CLI are terminal-resident agentic coding tools, and they overlap significantly in capability. Both can read your codebase, write code, run shell commands, and execute multi-step tasks. The practical differences come down to model family, context window, billing model, and ecosystem integration.</p>
+      <p>Claude Code is backed by Anthropic's Claude model family (Opus, Sonnet, Haiku). It has a strong reputation for following nuanced instructions precisely and for producing clean, idiomatic code. It integrates tightly with Anthropic's MCP ecosystem and exposes a powerful hooks system. <strong>Billing is not free: Claude Code requires either an Anthropic Pro or Max subscription, or an API key billed per token.</strong> There is no genuine free tier for production use.</p>
+      <p>Gemini CLI is backed by Google's Gemini model family and offers a 1 million token context window — significantly larger than Claude's current limits — which is a material advantage for tasks that require ingesting entire large codebases at once. <strong>The billing asymmetry is real and significant: Gemini CLI provides a genuine free tier via personal Google account, with approximately 1,000 requests per day at no charge (verify current limits at the official repo and AI Studio).</strong> For learners, side projects, and low-volume automation, this makes Gemini CLI the lower-friction entry point. For teams with existing Anthropic contracts or strong Claude-model preferences, Claude Code will often be the natural choice.</p>
+
+      <h2>5.8 Working in multiple tools at once</h2>
+      <p>Nothing prevents you from running more than one agentic tool on the same codebase simultaneously, and in practice many professional engineers do. The most common pairing is <strong>Kilo Code for active editing + Claude Code (or Gemini CLI) for review and security scanning</strong>. The workflow looks like this: Kilo Code makes a batch of changes in the IDE, you commit or stash them, and then you invoke Claude Code from the terminal with a prompt like <em>"Review the changes I just made for security issues, off-by-one errors, and missing error handling."</em> The terminal agent reads the diff independently and surfaces concerns that the in-IDE tool missed — because it is operating from a fresh, unanchored perspective rather than the same context frame that generated the code.</p>
+      <p>Another useful pairing is <strong>Claude Code for implementation + Gemini CLI for a second opinion on architecture</strong>. Because both are terminal-resident, you can run them sequentially in the same shell session, feeding the output of one as context to the other. This is not a workflow most tutorials teach, but it is one of the highest-leverage habits an agentic engineer can develop: using model diversity as a quality gate rather than relying on a single model's blind spots.</p>
+      <p>The main caveat when running multiple tools simultaneously is write conflicts. Establish a clear ownership rule: one tool writes, others read-only review. Never let two agents write to the same files concurrently without a coordination layer.</p>
+
+      <h2>5.9 The wider field — IDE-resident alternatives</h2>
+      <p>Kilo Code is this guide's primary IDE-resident tool, but the IDE-resident category is crowded and rapidly evolving. The six tools below are the most-referenced alternatives at the time of writing. Each has a genuine user community and a distinct value proposition. This guide does not deep-dive them — the intent here is to give you enough orientation to evaluate them against the primary tools and your own workflow.</p>
+
+      <div class="card-grid">
+        <div class="tool-card">
+          <h4>Cursor</h4>
+          <p><strong>What it is:</strong> A VS Code fork with AI features baked into the editor at a deep level — not an extension, but a purpose-built IDE. Offers tab-completion, inline edits, an Agent mode that runs multi-step tasks, and its own codebase indexing layer.</p>
+          <p><strong>Who it's for:</strong> Developers who want the tightest possible AI–editor integration and are willing to use a distinct application rather than an extension inside an existing VS Code install.</p>
+          <p><strong>Key strength:</strong> Deep editor-level integration means AI suggestions appear faster and with richer context than most extension-based tools. The Composer/Agent mode can make sweeping multi-file changes with a single prompt.</p>
+          <p><strong>Why not deep here:</strong> Cursor is a commercial product with its own subscription pricing and model routing. It diverges from upstream VS Code and extension compatibility can vary. This guide focuses on Kilo Code for its open-source, BYO-key model-agnostic approach.</p>
+          <div class="tool-meta">→ docs at <code>cursor.com/docs</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Windsurf</h4>
+          <p><strong>What it is:</strong> An AI-native IDE from Codeium, built as a VS Code fork with a proprietary "Cascade" agentic engine that emphasises deep codebase understanding and multi-step autonomous edits.</p>
+          <p><strong>Who it's for:</strong> Teams and individuals who want a polished, out-of-box AI IDE experience with Codeium's model hosting rather than BYO API keys.</p>
+          <p><strong>Key strength:</strong> Cascade's context engine indexes the full codebase and maintains a persistent understanding of code relationships, reducing the need to manually inject context for large refactors.</p>
+          <p><strong>Why not deep here:</strong> Like Cursor, it is a distinct fork rather than an extension, and its Cascade model is proprietary. This guide favours open, model-agnostic tooling for maximum flexibility.</p>
+          <div class="tool-meta">→ docs at <code>codeium.com/windsurf</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Antigravity</h4>
+          <p><strong>What it is:</strong> A newer entrant in the AI IDE space positioning itself around autonomous, long-horizon coding tasks with a focus on multi-agent orchestration within the editor environment.</p>
+          <p><strong>Who it's for:</strong> Engineers interested in multi-agent workflows directly inside the IDE, particularly for complex features that benefit from decomposition into parallel sub-tasks.</p>
+          <p><strong>Key strength:</strong> Early emphasis on multi-agent coordination distinguishes it from single-agent IDE tools; designed from the ground up for agentic rather than assistive use.</p>
+          <p><strong>Why not deep here:</strong> Still establishing its production track record at the time of writing. Covered here for awareness; verify current state at their official documentation.</p>
+          <div class="tool-meta">→ docs at <code>antigravity.dev</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Cline / Roo Code</h4>
+          <p><strong>What it is:</strong> Cline (formerly Claude Dev) is the upstream open-source VS Code extension from which Kilo Code was forked. Roo Code is a community fork of Cline with additional features. Both remain active and maintain similar capabilities to Kilo Code.</p>
+          <p><strong>Who it's for:</strong> Developers who prefer the upstream Cline codebase, or the Roo Code variant's specific additions, over Kilo Code's fork. Feature sets are closely related.</p>
+          <p><strong>Key strength:</strong> Broad model support, active community, and (for Cline) the reference implementation that downstream forks track.</p>
+          <p><strong>Why not deep here:</strong> Kilo Code was chosen as this guide's primary because of its active maintenance and feature differentiation; the core concepts transfer directly to Cline and Roo Code.</p>
+          <div class="tool-meta">→ docs at <code>github.com/cline/cline</code> and <code>roocode.com</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Continue.dev</h4>
+          <p><strong>What it is:</strong> An open-source VS Code and JetBrains extension that acts as an AI coding assistant with a strong emphasis on configurability — you define your own context providers, slash commands, and model routing in a local config file.</p>
+          <p><strong>Who it's for:</strong> Developers and teams who want fine-grained control over what context is sent to the model, and who want a tool that integrates with internal documentation and custom data sources.</p>
+          <p><strong>Key strength:</strong> Highly customisable context pipeline. Supports local models via Ollama, making it the strongest choice for air-gapped or data-sensitive environments.</p>
+          <p><strong>Why not deep here:</strong> Its strengths are in context configuration rather than autonomous agentic tasks. This guide focuses on the agentic end of the spectrum.</p>
+          <div class="tool-meta">→ docs at <code>docs.continue.dev</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>JetBrains AI Assistant / Junie</h4>
+          <p><strong>What it is:</strong> JetBrains AI Assistant is the built-in AI layer across the JetBrains IDE family (IntelliJ, PyCharm, GoLand, etc.). Junie is JetBrains' agentic coding agent, available as part of the AI Assistant subscription.</p>
+          <p><strong>Who it's for:</strong> Developers already working in JetBrains IDEs who want AI assistance without switching editors. Particularly relevant for Java/Kotlin, Python, and Go shops standardised on JetBrains tooling.</p>
+          <p><strong>Key strength:</strong> Deep JetBrains IDE integration — understands project structure, run configurations, debugger state, and the JetBrains refactoring engine in ways that VS Code extensions cannot match for JB-centric workflows.</p>
+          <p><strong>Why not deep here:</strong> This guide is VS Code-centric. JetBrains tooling is the correct choice for JetBrains users; the concepts transfer.</p>
+          <div class="tool-meta">→ docs at <code>jetbrains.com/ai</code></div>
+        </div>
+      </div>
+
+      <h2>5.10 The wider field — terminal-resident alternatives</h2>
+      <p>Claude Code and Gemini CLI are the two primary terminal-resident agents in this guide, but the terminal ecosystem has other well-established tools worth knowing. The three below have meaningful user bases and distinct philosophies.</p>
+
+      <div class="card-grid">
+        <div class="tool-card">
+          <h4>Aider</h4>
+          <p><strong>What it is:</strong> One of the earliest and most mature open-source terminal-resident AI coding tools. Aider integrates tightly with git — it reads your repo, proposes changes as diffs, and commits them automatically. Supports a wide range of models via LiteLLM.</p>
+          <p><strong>Who it's for:</strong> Developers who want a stable, battle-tested, open-source terminal agent with strong git integration and broad model support. Popular in the self-hosted and open-source model community.</p>
+          <p><strong>Key strength:</strong> Git-native workflow: changes are proposed as clean diffs and committed with sensible messages, making the agent's history first-class in your repo history.</p>
+          <p><strong>Why not deep here:</strong> Aider's interaction model is more diff-centric than conversational. Claude Code and Gemini CLI offer broader agentic capabilities (shell execution, web search, MCP integration) that this guide emphasises.</p>
+          <div class="tool-meta">→ docs at <code>aider.chat</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>GitHub Copilot CLI / Spark / Workspace</h4>
+          <p><strong>What it is:</strong> GitHub's family of AI developer tools. Copilot CLI brings AI to the terminal for shell command generation and explanation. Copilot Workspace is a cloud-based agentic environment for issue-to-PR workflows. Spark is GitHub's natural-language app-building experiment.</p>
+          <p><strong>Who it's for:</strong> Teams already on GitHub with Copilot Business or Enterprise subscriptions; Copilot CLI specifically suits developers who want quick shell command assistance without leaving the terminal.</p>
+          <p><strong>Key strength:</strong> Deep GitHub integration — Copilot Workspace can read an issue, plan a fix, and open a draft PR with changes, all within the GitHub UI. The tightest AI integration for GitHub-native workflows.</p>
+          <p><strong>Why not deep here:</strong> The GitHub Copilot family is a commercial product tightly coupled to GitHub. This guide focuses on tools that work locally and independently of a specific platform host.</p>
+          <div class="tool-meta">→ docs at <code>docs.github.com/copilot</code></div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Codex CLI</h4>
+          <p><strong>What it is:</strong> OpenAI's open-source terminal agent, backed by the GPT-4o model family. Codex CLI runs in a sandboxed environment with configurable approval modes — from full auto to manual approval for every action. Written in TypeScript and available via npm.</p>
+          <p><strong>Who it's for:</strong> Developers in the OpenAI ecosystem, or anyone who wants an open-source terminal agent with sandbox-first safety controls and GPT-4o model access.</p>
+          <p><strong>Key strength:</strong> Strong safety story: the sandboxed execution model and granular approval modes make it well-suited for environments where you want tight control over what the agent can do.</p>
+          <p><strong>Why not deep here:</strong> This guide is structured around the Anthropic and Google ecosystems. Codex CLI's concepts map directly — the mental models transfer once you have hands-on experience with Claude Code or Gemini CLI.</p>
+          <div class="tool-meta">→ docs at <code>github.com/openai/codex</code></div>
+        </div>
+      </div>
+
+      <h2>5.11 Choosing the surface for the task — a decision matrix</h2>
+      <p>No single tool wins every category. The table below maps common task types to the three primary tools, using a three-value scale: <strong>Best</strong> (optimal choice for this task type), <strong>Good</strong> (works well, minor tradeoffs), and <strong>Avoid</strong> (possible but not the right fit). Use it as a starting point — your own workflow, model preferences, and existing subscriptions will shift the cells.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Task type</th>
+            <th>Kilo Code (IDE)</th>
+            <th>Claude Code (terminal)</th>
+            <th>Gemini CLI (terminal)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Quick single-file edit</td>
+            <td><strong>Best</strong> — inline diff, instant context</td>
+            <td>Good — works, more ceremony</td>
+            <td>Good — works, more ceremony</td>
+          </tr>
+          <tr>
+            <td>Multi-file refactor</td>
+            <td>Good — can do it, diff review in IDE</td>
+            <td><strong>Best</strong> — autonomous multi-step, shell access</td>
+            <td><strong>Best</strong> — large context window helps here</td>
+          </tr>
+          <tr>
+            <td>Security review</td>
+            <td>Good — Ask mode without writes</td>
+            <td><strong>Best</strong> — precise instruction-following, read-only mode</td>
+            <td>Good — capable; smaller model nuance than Claude</td>
+          </tr>
+          <tr>
+            <td>Exploratory build (greenfield)</td>
+            <td>Good — Architect mode useful</td>
+            <td><strong>Best</strong> — conversational planning + execution</td>
+            <td>Good — strong reasoning, free tier is low-friction</td>
+          </tr>
+          <tr>
+            <td>CI / headless automation</td>
+            <td>Avoid — requires GUI</td>
+            <td><strong>Best</strong> — designed for headless use</td>
+            <td><strong>Best</strong> — CLI-first, scriptable</td>
+          </tr>
+          <tr>
+            <td>Doc writing / README generation</td>
+            <td>Good — Ask or Code mode</td>
+            <td>Good — strong prose, prompt once and iterate</td>
+            <td><strong>Best</strong> — 1M context; ingest full repo for accurate docs</td>
+          </tr>
+          <tr>
+            <td>Zero-budget / free-tier use</td>
+            <td>Good — BYO free-tier API key</td>
+            <td>Avoid — no free tier without API key</td>
+            <td><strong>Best</strong> — genuine free tier via personal Google account</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>5.12 Hands-on: same task in two of three, compare</h2>
+      <p>The goal of this exercise is to develop <em>felt intuition</em> about tool differences — not just read about them. Pick one of the following tasks and run it in two of the three primary tools. Record what you observe: how long it took, what context was required, how the output differed, and what the interaction felt like.</p>
+      <p><strong>Suggested task A (IDE vs terminal):</strong> Open a small project (your own, or clone a simple open-source repo). In <strong>Kilo Code</strong>, use Code mode to prompt: <em>"Add input validation to every public function that currently has none."</em> Accept or reject the diffs as you review them. Then, without resetting the code, run <strong>Claude Code</strong> or <strong>Gemini CLI</strong> in the same directory with: <em>"Review the recent changes for missing edge cases or error conditions."</em> Note how the terminal agent sees the same code, what it surfaces, and how the feedback loop feels different.</p>
+      <p><strong>Suggested task B (terminal vs terminal):</strong> In any project directory, run <strong>Claude Code</strong>: <em>"List the top five architectural concerns in this codebase with a short rationale for each."</em> Then run <strong>Gemini CLI</strong> with the identical prompt. Compare the two outputs side by side. Note differences in style, depth, what each missed, and how the 1M context window affects Gemini's ability to reference specific file locations. There is no single correct answer — the comparison itself is the learning.</p>
+      <p>After both runs, write a two-sentence note to yourself about which tool you would reach for first for this class of task and why. That note, accumulated over several exercises, becomes your personal decision matrix — more accurate than any generic table.</p>
+
+      <h2>5.13 Where next: pointers into Part 3 deep-dives</h2>
+      <p>This chapter gave you a working install, a first run, and a framework for choosing between surfaces. From here, Part 3 unpacks each of the three primary tools at full depth: configuration, advanced modes, MCP integrations, billing optimisation, and real-world workflow patterns. The deep-dives are designed to be read after this chapter and in any order — you do not need to read all three before moving on to Part 4.</p>
+      <p>If you are going to read only one, choose based on the tool you just found yourself reaching for most naturally in the 5.12 hands-on. That preference — even if provisional — is the right signal to follow. The mental models from any one deep-dive will accelerate your reading of the others because the underlying concepts (context management, token budgeting, model routing, MCP) are shared across all three tools.</p>
+
+      <div class="see-also">
+        <a onclick="go('ch12-kilo')">→ Ch 12. Kilo Code Deep Dive (modes &amp; routing)</a>
+        <a onclick="go('ch13-claude')">→ Ch 13. Claude Code Deep Dive (autonomous workflows)</a>
+        <a onclick="go('ch14-gemini')">→ Ch 14. Gemini CLI Deep Dive (free tier &amp; 1M context)</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
