@@ -1108,6 +1108,162 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
     </section>
 
+    <section id="ch3-tools" class="section">
+      <h1>3. Tools, Side Effects &amp; the Agent's World</h1>
+      <p class="lede">What you'll learn: how tool calls extend an agent's capabilities, the blast-radius spectrum from grep to <code>rm -rf</code>, permission models, sandboxes, and how to design an allowlist that lets the agent move fast without breaking things.</p>
+
+      <h2>3.1 What is a "tool" to an agent</h2>
+      <p>From the model's perspective, a tool is a JSON-schema-described function it may choose to invoke. The runtime — Claude Code, Kilo Code, Gemini CLI — intercepts the model's tool-call output, executes the function, and injects the result back into context as a tool-result message. The model never runs code itself; it emits structured intent, and the harness acts on it.</p>
+      <p>Every tool has three required fields in the Anthropic Messages API shape:</p>
+      <pre><code>{
+  "name": "read_file",
+  "description": "Read the full text of a file at the given path. Returns file contents as a string.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute path to the file to read"
+      }
+    },
+    "required": ["file_path"]
+  }
+}</code></pre>
+      <p>The <code>description</code> is not metadata — it is a natural-language instruction to the model about when and how to invoke the tool. A weak description means the model misuses the tool or skips it entirely. The <code>input_schema</code> is a JSON Schema object; the model's input will be validated against it before execution. This matters: a schema that accepts a string where an array is needed creates ambiguous behavior at the boundary.</p>
+
+      <h2>3.2 Built-ins you'll use daily — Read, Edit, Write, Bash, Grep, Glob</h2>
+      <p><strong>Read</strong> loads a file into context. Prefer it over a Bash <code>cat</code> because the harness tracks which files have been read — both for permission enforcement and to provide line-number prefixes that make Edit diffs unambiguous. Always read before editing.</p>
+      <p><strong>Edit</strong> makes a targeted string replacement in a file. It validates that the old string exists exactly once before applying the change. This is the right tool for surgical modifications: changing a function signature, fixing a bug, updating a constant. Because it sends only the diff, it is far cheaper in tokens than Write for large files.</p>
+      <p><strong>Write</strong> creates or completely overwrites a file. Use it when you are producing a new file from scratch or when a complete rewrite is genuinely cheaper than a sequence of Edits. It requires a Read first on existing files — the harness will refuse otherwise, protecting you from clobbering unread state.</p>
+      <p><strong>Bash</strong> runs an arbitrary shell command. It is the most powerful and the most dangerous built-in. Prefer narrow, read-only Bash invocations (grep, find, git log) during exploration, and reserve write/destructive commands for explicit intent. The harness can be configured to require per-call approval for Bash while auto-approving Read/Edit.</p>
+      <p><strong>Grep</strong> searches file contents by pattern. It is faster than <code>Bash grep</code> for simple cases because the harness can short-circuit it without spawning a shell. Use it when you want the first occurrence in a large codebase — the tool returns matches with file paths and line numbers ready for a follow-up Read.</p>
+      <p><strong>Glob</strong> lists files matching a pattern. Use it to discover structure — <code>**/*.ts</code>, <code>src/**/index.{ts,tsx}</code> — before deciding which files to read. It is strictly non-mutating and can always be auto-approved.</p>
+
+      <h2>3.3 How agents pick which tool to call</h2>
+      <p>The model selects a tool by weighing three signals: the tool's description (the primary signal), the shape of the input schema (does the data I have fit?), and the prior turn context (what has already been read, what partial state exists). A model that has just done a Read on a file will prefer Edit over Write for the same file because the context signal says "partial knowledge" matches Edit's stated contract.</p>
+      <p>This selection is not rule-based lookup — it is inference. The practical implication: if your tool description says "use this for X" and the model keeps using it for Y, the description is wrong or the schema is too permissive. Descriptions that include explicit anti-patterns ("do not use this if the file is larger than 100 lines") are not pedantry — they are steering prompts baked into the tool manifest. This becomes critical when you build your own MCP tools (Chapter 16): bad descriptions cause agent thrash that wastes tokens and time.</p>
+      <p>Prior turn context also influences tool ordering. If the agent is mid-plan and has already called Bash to clone a repo, it will sequence subsequent calls assuming the working directory is now inside the repo. This is why agent sessions with long tool-call chains become increasingly context-sensitive — the model's implicit state model grows with each tool result.</p>
+
+      <h2>3.4 Blast radius — reversible vs hard-to-reverse actions</h2>
+      <p>Not all tool calls are equal. A Glob that finds nothing has zero side effects; a Bash that pipes to <code>psql</code> in production has potentially irreversible ones. Before granting auto-approval to any tool, place it on the blast-radius spectrum.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Tool / Command</th><th>Reversible?</th><th>Blast Radius</th><th>Auto-approve default</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Glob, Grep, Read</td><td>Always</td><td>Zero — read-only</td><td>Yes</td></tr>
+          <tr><td>Edit (tracked file)</td><td>Yes — <code>git checkout</code></td><td>Low — single file</td><td>Yes, with git safety net</td></tr>
+          <tr><td>Write (new file)</td><td>Yes — <code>git rm</code></td><td>Low</td><td>Yes, with git safety net</td></tr>
+          <tr><td>Bash — build/test</td><td>Mostly</td><td>Low–Medium (temp artifacts)</td><td>Allowed by pattern allowlist</td></tr>
+          <tr><td>Bash — git commit/push</td><td>Push: hard to undo</td><td>Medium — shared history</td><td>Ask per call</td></tr>
+          <tr><td>Bash — package install</td><td>Partial</td><td>Medium — lockfile, node_modules</td><td>Ask per call</td></tr>
+          <tr><td>Bash — DB migration</td><td>Depends on down-migration</td><td>High — schema state</td><td>Never auto in production</td></tr>
+          <tr><td>Bash — <code>rm -rf</code></td><td>No (outside git)</td><td>High–Critical</td><td>Never</td></tr>
+          <tr><td>Bash — cloud API (deploy, delete)</td><td>Often no</td><td>Critical</td><td>Never</td></tr>
+        </tbody>
+      </table>
+      <p>The design principle: auto-approve the entire read tier and the edit tier when git is the safety net. Require confirmation for anything that writes outside the working tree, modifies shared state, or is not undoable with a standard git workflow. See Chapter 10 for a full verification checklist before any high-blast-radius operation lands.</p>
+
+      <h2>3.5 Idempotency, retries, and the side-effect problem</h2>
+      <p>Idempotency means running the same operation twice produces the same result as running it once. Most file edits are idempotent only if they are pure replacements. A Bash script that appends to a config file, runs <code>npm install</code>, or applies a database migration is not idempotent by default. If the agent retries — because a network timeout made the first attempt ambiguous — you can end up with duplicate entries, doubled dependencies, or failed migrations that refuse to re-run.</p>
+      <p>Patterns that help: wrap install steps with existence checks (<code>if ! command -v foo; then install foo; fi</code>), use <code>CREATE TABLE IF NOT EXISTS</code> in migrations, and use declarative config formats (Terraform, Helm values) rather than imperative scripts where possible. For Bash tools you expose to an agent, document idempotency guarantees in the tool description — the model will then reason about whether a retry is safe.</p>
+      <p>The retry problem is compounded in multi-step plans. An agent that executes steps 1–5 successfully, then fails at step 6, may restart from step 1 if context is lost. Without idempotency, steps 1–5 produce errors or duplicate state. This is why checkpointing (commit after each logical unit of work) is not just a workflow nicety — it is a correctness requirement when side effects are involved.</p>
+
+      <h2>3.6 The permission model — ask, allow, allow-edits, plan-only</h2>
+      <p>Permission tiers across the three major harnesses follow a common taxonomy despite different UI surfaces. At the coarsest level: <strong>plan-only</strong> (the agent proposes but never executes — pure planning mode); <strong>ask per call</strong> (every tool invocation requires interactive approval); <strong>allow by category</strong> (read-only always allowed, destructive always requires approval, everything else configured); and <strong>full auto</strong> (all tool calls execute without interruption).</p>
+      <p>Claude Code implements this through its <code>settings.json</code> allowlist and a per-session <code>--dangerously-skip-permissions</code> flag. Its default is ask-per-call for new tool patterns, which is the safest starting point. Kilo Code surfaces the same tiers as per-category checkboxes in the extension settings UI — read operations, write operations, and execute operations each have their own toggle, which you enable project-by-project without touching a config file.</p>
+      <p>Gemini CLI takes a different approach: it ships two one-shot launch flags, <code>--yolo</code> and its shorthand <code>-y</code>, which disable all permission prompts for the duration of that single CLI invocation. This is a <em>flag at launch time</em>, not a persisted mode toggle or a per-category setting. The asymmetry matters: there is no Gemini equivalent of Claude Code's per-pattern allowlist that carries across sessions — you either commit to --yolo at startup or you get prompts. Choose carefully based on the risk profile of the session.</p>
+
+      <h2>3.7 Per-project allowlists — .claude/settings.json, Kilo permission rules</h2>
+      <p>Claude Code resolves permissions in a layered hierarchy: global user settings, then per-project <code>.claude/settings.json</code>, then per-session overrides. The project file is the right place for team-shared rules — commit it to the repo so everyone on the project gets the same tool permissions automatically.</p>
+      <p>A minimal allowlist for a TypeScript project that wants read/edit auto-approved and all Bash requiring a pattern match:</p>
+      <pre><code>{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(npm run test)",
+      "Bash(npm run build)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status)"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push*)"
+    ]
+  }
+}</code></pre>
+      <p>Kilo Code does not use a file-based allowlist. Its permission rules live in VS Code extension settings (the Kilo Code settings panel), and they are stored in VS Code's <code>settings.json</code> at the workspace or user level. Rules are configured via checkboxes per operation category — not by writing permission strings. This means Kilo rules are not automatically shareable via git commit; they must be distributed through workspace settings or documented separately. The checkbox UI is more approachable for individuals, but it lacks Claude Code's granular pattern-matching for specific Bash commands.</p>
+
+      <aside class="tool-alt">
+        <strong>Per-tool config conventions across harnesses</strong>
+        <table class="tbl" style="margin-top:10px;">
+          <thead>
+            <tr><th>Harness</th><th>Config surface</th><th>Granularity</th><th>Version-controllable?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>.claude/settings.json</code> (project) or <code>~/.claude/settings.json</code> (user)</td><td>Per tool + per Bash pattern (glob-style)</td><td>Yes — commit the project file</td></tr>
+            <tr><td>Kilo Code</td><td>VS Code extension settings UI (checkboxes)</td><td>Per category: read / write / execute</td><td>Via workspace settings.json, not auto-committed</td></tr>
+            <tr><td>Gemini CLI</td><td><code>--yolo</code> / <code>-y</code> flag at launch</td><td>All-or-nothing per session</td><td>N/A — flag, not persisted config</td></tr>
+          </tbody>
+        </table>
+      </aside>
+
+      <h2>3.8 Auto-mode — when to use, when to fear</h2>
+      <p>Auto-mode (full tool auto-approval) is the right choice for: isolated environments where blast radius is bounded by the sandbox (see 3.9), read-heavy exploration tasks where the worst outcome is a few extra file reads, and CI pipelines where there is no human in the loop anyway. The speed gain is real — interactive approval breaks the model's flow and introduces latency that fragments multi-step plans.</p>
+      <p>Auto-mode is dangerous for: any tool family that writes outside the working tree, operations on shared or production infrastructure, and sessions that include network-write tools (API calls, deployments, database writes). The failure mode is not that the model makes a wrong choice once — it is that a single bad tool call in a 20-step plan can leave a mess that is expensive to unwind. The model cannot feel regret; it keeps going.</p>
+      <p>Rules of thumb by tool family: Read/Grep/Glob are always safe for auto. Edit/Write are safe for auto when git is the safety net and the session is short enough that you will review the diff before committing. Bash is safe for auto only when the allowed patterns are tightly scoped — test runners, linters, read-only git commands. Network-write tools (MCP servers that POST to external APIs) should never be auto in anything resembling production.</p>
+
+      <h2>3.9 The sandbox — container, devcontainer, VM, bare metal</h2>
+      <p>The sandbox spectrum runs from bare metal (highest capability, highest blast radius) through devcontainer/Docker (filesystem and process isolation, shared network by default) through a full VM (network isolation, snapshotable) to ephemeral container per session (maximum safety, highest cost in setup time). Each step up the isolation ladder reduces blast radius but also reduces the agent's ability to reach things it might need — local databases, test infrastructure, hardware interfaces.</p>
+      <p>For most development work, a devcontainer is the sweet spot: the agent gets a real filesystem, a real shell, and the project's full toolchain, but it cannot write to your host filesystem or persist side effects across container teardown. VS Code and Cursor ship devcontainer support out of the box; Claude Code can be run inside a devcontainer manually or via a pre-configured Docker image. The cost is a 10–30 second startup penalty per session and the occasional "the tool I need isn't installed in the container" friction.</p>
+      <p>Ephemeral containers (spin up, run, destroy) are the right choice for high-blast-radius automation — think CI agents that run against feature branches. A fresh container per session guarantees no state leaks between runs. The downside is that the agent cannot benefit from warm caches, installed dependencies, or prior build artifacts unless those are baked into the base image. Design your base image around the agent's typical tool requirements, not around developer convenience.</p>
+
+      <h2>3.10 Tool-call observability — what just happened on disk?</h2>
+      <p>Claude Code exposes tool-call events via <code>--output-format=stream-json</code>, which emits a newline-delimited JSON stream of every event — tool invocations, tool results, model turns, and cost metadata. This is Claude Code-specific: Gemini CLI does not have an equivalent streaming JSON output flag (it logs to stderr in a human-readable format, and machine-parseable output requires wrapping the CLI or using the API directly); Kilo Code surfaces tool calls in the VS Code output panel as formatted log entries, not as a parseable stream.</p>
+      <p>For day-to-day observability without stream-JSON, git is the most reliable audit trail. Configure the agent to commit after each logical step, and <code>git log --oneline --stat</code> becomes a tool-call summary. For finer granularity, use hooks — Claude Code's <code>hooks</code> config block lets you fire shell commands on tool events (before/after Bash, after Edit, on session stop). A one-line hook that appends to a session log gives you a persistent record without needing to capture the stream.</p>
+      <p>For persistent MCP server tools, observability is a first-class design concern. Each MCP server should log its own inputs and outputs. When debugging an agent that called an MCP tool and produced a wrong result, the question is: did the model call the tool with the right input, or did the tool return the wrong output? Without per-tool logs, you can only infer from context — with them, you can pinpoint in seconds. Build logging into every MCP server you write (Chapter 16 returns to this).</p>
+
+      <h2>3.11 Hands-on: design a tool allowlist for a real project</h2>
+      <p>Take a Node.js API project with a PostgreSQL database. The agent should be able to read and edit source files freely, run tests and lints, and read git history — but should never push to remote, run migrations without approval, or call any cloud CLI. Here is the <code>.claude/settings.json</code> allowlist for that project:</p>
+      <pre><code>{
+  "permissions": {
+    "allow": [
+      "Read", "Edit", "Write", "Glob", "Grep",
+      "Bash(npm run test*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run build*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status)",
+      "Bash(git add*)",
+      "Bash(git commit*)"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(git rebase*)",
+      "Bash(npm run migrate*)",
+      "Bash(psql*)",
+      "Bash(aws*)",
+      "Bash(gcloud*)",
+      "Bash(rm -rf*)"
+    ]
+  }
+}</code></pre>
+      <p>To apply the same logic in Kilo Code: open Kilo Code settings → Permissions → enable "Read files" and "Edit/Write files" auto-approve; leave "Execute commands" as ask-per-call. Then in the system prompt rules field, add: "Never run git push, psql, npm run migrate, or any cloud CLI command without explicit user confirmation." Because Kilo's category granularity is coarser than Claude Code's pattern matching, the system prompt becomes the second enforcement layer for specific Bash commands.</p>
+      <p>Test your allowlist before trusting it: run the agent on a throwaway branch, watch the approval prompts it triggers, and refine. A good allowlist produces zero prompts for the 80% of operations that are routine and exactly one prompt for the 20% that carry real risk. If you are getting prompts on every file read, the allowlist is too tight; if the agent is pushing to remote without asking, it is too loose.</p>
+
+      <div class="see-also">
+        <a onclick="go('ch10-review')">→ Ch 10. Safety, Review &amp; Verification</a>
+        <a onclick="go('ch11-parallel')">→ Ch 11. Multi-Agent &amp; Parallel (worktrees)</a>
+        <a onclick="go('ch16-mcp')">→ Ch 16. MCP Servers — Using and Building</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
