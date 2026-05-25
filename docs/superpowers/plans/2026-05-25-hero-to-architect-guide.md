@@ -37,6 +37,8 @@ No other files. Embedded CSS + JS in the HTML file (matches the rest of the repo
 
 **Content brief per subsection (used inside steps):** `<subsection-number> <title>` — 2–4 paragraphs covering: [concepts], [examples/snippets if applicable], [callout pattern if applicable: "Kilo primary, Claude/Gemini alt" / "Gotcha" / "Mini-walkthrough: gitlog-report"]. The brief lists what content to include; the writer produces the prose.
 
+**Commit message convention:** structural / scaffolding tasks (Task 1 scaffold, Task 2 sidebar) use `feat(hero-to-architect): …`. Content tasks (Task 3 onward — front matter, chapters, reference pages) use `docs(hero-to-architect): …`. Fix-up commits use `fix(hero-to-architect): …`.
+
 **Tool callout component:** wherever a chapter shows a tool-specific example, wrap the primary tool in main content and place the alt-tool equivalent inside a `<aside class="tool-alt">` box. CSS class to be added in Task 1.
 
 **Mini-walkthrough component (Ch 6–11 only):** at the end of the chapter (before "See also"), add a `<div class="walkthrough">` containing 3–5 short bullets showing how this chapter's methodology was applied to `gitlog-report`. Cumulative — each chapter's walkthrough builds on the previous.
@@ -63,13 +65,24 @@ Edit `hero-to-architect-guide.html`:
 - Sidebar `<h1>` → `Hero to Architect`
 - Sidebar tagline `<p>` → `Companion guide — agentic coding mastery`
 
-- [ ] **Step 3: Shift accent color so reader can tell at a glance which guide they're in**
+- [ ] **Step 3: Introduce a `--accent` token for the guide-specific accent**
 
-In `:root` CSS variable block, change the primary accent from v1's `--cyan: #22d3ee` to a distinct value (e.g., `--cyan: #c084fc` — a purple-leaning accent), and adjust the sidebar brand color and `.nav-item.active` border-left color to use it. Keep the rest of the palette identical so the family resemblance holds.
+In v1's `:root` CSS variable block, **add a new token** alongside the existing palette:
+
+```css
+--accent: #c084fc;  /* purple — distinguishes v2 from v1 at a glance */
+```
+
+Then update two specific rules to use it (do not touch any other `var(--cyan)` or `var(--blue)` usages):
+
+1. `.sidebar-brand h1` — change `color: var(--cyan);` → `color: var(--accent);` (both the dark and light-mode rules if v1 has both).
+2. `.nav-item.active` — change `border-left: 2px solid var(--blue);` → `border-left: 2px solid var(--accent);` in **both** the dark-mode rule (v1 line ~103) and the light-mode rule (v1 line ~292).
+
+Keep `--cyan` and `--blue` at their v1 values — only `.sidebar-brand h1` and `.nav-item.active` border use the new `--accent`. This way the family resemblance holds and the rest of the guide (code text, `.sec-num`, tables, info-boxes, walkthrough h3, see-also links) retains the v1 cyan tone.
 
 - [ ] **Step 4: Strip v1's sidebar nav-groups and v1's content sections**
 
-Delete all `<div class="nav-group">...</div>` blocks inside `<aside class="sidebar">` and all `<section class="section">...</section>` blocks inside `<main class="content">`. Leave the chrome (sidebar shell, content shell, theme toggle button, footer) intact.
+Delete all `<div class="nav-group">...</div>` blocks inside `<aside class="sidebar">` and all `<section class="section">...</section>` blocks inside `<main class="content">`. Leave the chrome intact: sidebar shell + brand block, content shell, theme toggle button, and the closing `<script>` block at the end of `<body>`.
 
 - [ ] **Step 5: Add new component CSS — `tool-alt` callouts, `walkthrough` boxes, `card-grid`**
 
@@ -242,7 +255,7 @@ Insert inside `<aside class="sidebar">` after `<div class="sidebar-brand">...</d
 
 - [ ] **Step 2: Verify sidebar renders correctly**
 
-Open the file. Verify all 23 nav buttons appear under their group labels. Clicking them won't switch content yet (sections not built), but the active highlight should move.
+Open the file. Verify all 23 nav buttons appear under their group labels. Only the `welcome` section exists at this point; clicking any other nav-item will blank the content area (expected — *not* a regression). The active highlight should still move on click.
 
 - [ ] **Step 3: Commit**
 
@@ -257,6 +270,11 @@ git commit -m "feat(hero-to-architect): build complete sidebar navigation"
 
 **Files:**
 - Modify: `hero-to-architect-guide.html`
+- Read: `docs/superpowers/specs/2026-05-25-hero-to-architect-guide-design.md` §4 (v1-vs-v2 comparison rows) and §5 (framing rules)
+
+- [ ] **Step 0: Preflight — open the spec to §4 and §5 before writing**
+
+Have the spec open in the other pane. The welcome section copies the comparison rows from §4 and the framing rules from §5 verbatim (or near-verbatim); do not paraphrase from memory.
 
 - [ ] **Step 1: Replace scaffold `welcome` section with full content**
 
@@ -280,9 +298,9 @@ Insert after `welcome`:
 ```
 
 Content covers:
-- The three layers visually (Foundations → Methodology → Mastery) — use a styled vertical diagram with the cyan/purple gradient
+- The three layers visually (Foundations → Methodology → Mastery) — use a styled vertical diagram with a `var(--cyan)` to `var(--accent)` gradient (cyan-to-purple)
 - Where the worked example threads through (Ch 6–11 + Ch 17)
-- How to use as reference (Part 5 entry points)
+- How to use as reference (Reference section entry points)
 - Framing rules from spec §5 in a callout box
 
 - [ ] **Step 3: Verify rendering**
@@ -337,9 +355,9 @@ Content briefs:
 - [ ] **Step 3: Fill subsections 1.5–1.7 (the "controlling it" cluster)**
 
 Content briefs:
-- **1.5** — Temperature dial, when to bump for creativity (rare in coding). Note Claude Code/Gemini CLI defaults. Also non-determinism beyond temperature: tool-call ordering, race conditions in parallel tools.
+- **1.5** — Temperature dial, when to bump for creativity (rare in coding). **Note that Claude Code and Gemini CLI don't expose temperature to end-users at the CLI surface — it's fixed/invisible there. The dial matters when calling the underlying APIs directly.** Also non-determinism beyond temperature: tool-call ordering, race conditions in parallel tools.
 - **1.6** — Stop conditions: explicit Stop tool, max turns, user interrupt. Human-in-loop patterns. Plan-then-confirm gates.
-- **1.7** — Three operating modes: Plan (think first, no actions), Auto (just go), Interactive (ask before risky tools). Compare across Claude Code (plan mode), Kilo Code (Architect mode), Gemini CLI (slash command equivalents).
+- **1.7** — A pedagogical three-mode taxonomy (our framing, not a shared standard): Plan (think first, no actions), Auto (just go), Interactive (ask before risky tools). Map back to each tool's actual naming: Claude Code uses Default + Plan mode + a shift-tab "auto-accept edits" toggle; Kilo Code uses Architect / Code / Ask / Debug; Gemini CLI uses slash commands and the `--yolo` flag. **Explicitly tell the reader that the three-mode framing is ours — the tools don't share these labels.**
 
 - [ ] **Step 4: Fill subsections 1.8–1.11 (the "what breaks" + hands-on)**
 
@@ -388,9 +406,9 @@ Same pattern as Task 4 Step 1. Subsection titles from spec §8 Ch 2.
 - [ ] **Step 2: Fill 2.1–2.4 (the token economy)**
 
 Content briefs:
-- **2.1** — Context window as a working RAM. Numbers: 200K Claude, 1M Gemini, 200K GPT-5. What "in context" actually means.
+- **2.1** — Context window as a working RAM. Numbers: 200K default Claude (Sonnet/Opus), Claude Opus 4.7 also offers a 1M context tier; 1M Gemini; 200K GPT-5 (verify all numbers against current docs). What "in context" actually means.
 - **2.2** — Surprising token costs: system prompts, tool schemas, prior tool results, cached system prompts on cache miss. Show a screenshot/diagram of token breakdown.
-- **2.3** — Input/output/cached token math. Cache hits ~10x cheaper. Show formula: cost = input_uncached*X + input_cached*X/10 + output*Y.
+- **2.3** — Input/output/cached token math. Cache *reads* are ~0.1× the base input cost (often quoted as "10x cheaper"), but cache *writes* cost ~1.25× the base input cost on Anthropic — so amortization matters. Show two formulas: the simplified steady-state hit cost (`input_uncached*X + input_cached*X/10 + output*Y`) and the full first-write cost that includes the write premium. Note that the multipliers vary by provider; cite current Anthropic/OpenAI/Google docs.
 - **2.4** — Caching mechanics: prefix-based, breaks on edits to system or earlier messages. Patterns that maximize cache hits.
 
 - [ ] **Step 3: Fill 2.5–2.8 (managing the budget)**
@@ -398,13 +416,13 @@ Content briefs:
 Content briefs:
 - **2.5** — Auto-compaction in Claude Code, similar in Kilo/Gemini. What gets summarized (older turns), what stays (recent, pinned).
 - **2.6** — Long sessions: keep them alive by pinning key files, clearing irrelevant tool output, using sub-agents to offload investigation.
-- **2.7** — `/clear` vs continue. Decision: new topic = clear; same task with stale context = clear; mid-task = continue. Mini decision tree.
-- **2.8** — Reading the budget: `ccusage` for Claude Code, `/usage` slash command, `/tokens` in some tools. Mid-session checks.
+- **2.7** — `/clear` vs continue. Decision: new topic = clear; same task with stale context = clear; mid-task = continue. Mini decision tree. **Note: `/clear` exists in Claude Code and Gemini CLI; Kilo Code's equivalent is the "New Task" button in the side panel, not a slash command.**
+- **2.8** — Reading the budget: `/cost` (per-turn spend) and `/context` (budget view) in Claude Code; `ccusage` (third-party npm monitor) for richer historical reporting; Gemini CLI shows token counts in its footer; Kilo Code shows them in the chat panel. **Verify exact commands against current docs before writing — these surfaces shift.**
 
 - [ ] **Step 4: Fill 2.9–2.11 (memory + anti-patterns + hands-on)**
 
 Content briefs:
-- **2.9** — Memory systems live *outside* context until referenced. CLAUDE.md (auto-loaded per project), GEMINI.md (same idea), `.kilocoderules` (Kilo equivalent). Show a 3-col side-by-side.
+- **2.9** — Memory systems live *outside* context until referenced. CLAUDE.md (auto-loaded per project), GEMINI.md (same idea), Kilo Code's rules file (likely `.kilocode/rules/` directory — **verify exact path against current Kilo docs before writing**). Show a 3-col side-by-side.
 - **2.10** — Anti-patterns: pasting whole files when grep would do; paste-and-pray; log dumps. Concrete examples.
 - **2.11** — Hands-on: open a fresh session, run a real task, watch token usage. Snapshot before/after `/compact`.
 
@@ -441,7 +459,7 @@ Briefs:
 
 Briefs:
 - **3.5** — Idempotency: rerunning the same Bash isn't always safe. Show migration/install examples. Retries.
-- **3.6** — Permission tiers: ask-per-call, allowlist, allow-edits, plan-only. Compare Claude Code defaults vs Kilo auto-approve checkboxes vs Gemini YOLO mode.
+- **3.6** — Permission tiers: ask-per-call, allowlist, allow-edits, plan-only. Compare Claude Code defaults vs Kilo Code's per-category auto-approve checkboxes vs Gemini CLI's `--yolo` / `-y` *flag* (a one-shot launch flag, not a UI mode toggle — call out this asymmetry explicitly).
 - **3.7** — Per-project allowlists. Show `.claude/settings.json` with permissions block, and Kilo's equivalent permission rules. Tool-alt callout.
 - **3.8** — Auto-mode pros (speed) vs cons (blast). Rules of thumb for when each tool family belongs auto.
 
@@ -449,7 +467,7 @@ Briefs:
 
 Briefs:
 - **3.9** — Sandbox spectrum: bare metal → devcontainer → VM → ephemeral container. Cost/safety tradeoffs.
-- **3.10** — Observability: tool-call logs, git diff snapshots, hooks, `--output-format=stream-json`. Where to look when something unexpected lands.
+- **3.10** — Observability: tool-call logs, git diff snapshots, hooks, `--output-format=stream-json` (Claude Code specific — Gemini CLI and Kilo Code use different observability surfaces; note the divergence). Where to look when something unexpected lands.
 - **3.11** — Hands-on: design a `.claude/settings.json` allowlist for a real project (your repo). Apply same logic to a Kilo rule.
 
 - [ ] **Step 5: See-also (→ Ch 11 worktrees, → Ch 16 MCP)**
@@ -486,7 +504,7 @@ Briefs:
 - [ ] **Step 3: Fill 4.7–4.10 (advanced cost levers)**
 
 Briefs:
-- **4.7** — Kilo Code BYO routing: per-mode model picks (Architect=Opus, Code=Sonnet, Ask=Haiku/Gemini Flash). Show `.kilocodemodes` snippet.
+- **4.7** — Kilo Code BYO routing: per-mode model picks (*example, not Kilo's shipped default*: Architect=Opus, Code=Sonnet, Ask=Haiku/Gemini Flash). Show the custom-modes config snippet — **verify exact filename and schema against current Kilo docs** (the canonical path has historically been `.kilocode/` workspace or `.roomodes`; pin the current name before writing).
 - **4.8** — Thinking mode: extended thinking budget, when it pays for itself, when it's waste. Examples.
 - **4.9** — Prompt caching as a lever: keep system prompts stable, append rather than insert, monitor cache hit rate.
 - **4.10** — Batch API for async (Claude Message Batches, OpenAI Batch). 50% discount, 24h SLA. When to use.
@@ -494,7 +512,7 @@ Briefs:
 - [ ] **Step 4: Fill 4.11–4.14 (mental model + hands-on)**
 
 Briefs:
-- **4.11** — Effective context: nominal 200K/1M ≠ usable. Quality degrades past ~50% fill. Lost-in-the-middle.
+- **4.11** — Effective context: nominal 200K/1M ≠ usable. Rule of thumb (model-dependent, evolving): quality often degrades past 50–70% fill — the older "lost-in-the-middle" effect. Gemini 3 Pro's 1M is notably stronger at long-range recall than 2024-era frontier; cite a current needle-in-haystack benchmark rather than asserting a flat percentage.
 - **4.12** — Cost-per-feature mental model. Per feature: input × turns × tokens. Example budget: a CRUD endpoint ≈ $X.
 - **4.13** — Decision tree: task type → model. Flowchart.
 - **4.14** — Hands-on: take your last week's work, estimate token spend, redo with model routing — show savings.
@@ -527,7 +545,7 @@ Briefs:
 - **5.2** — The three primaries today: Kilo Code (IDE), Claude Code (terminal), Gemini CLI (terminal). One-line positioning each.
 - **5.3** — Kilo Code: what it is + first run. Install from VS Code marketplace, sign-in/BYO key, first prompt. Screenshot or ASCII representation of the modes panel.
 - **5.4** — Claude Code: what it is + first run. `npm install -g @anthropic-ai/claude-code` (or current install method), `claude login`, first prompt in `~/some-project`.
-- **5.5** — Gemini CLI: what it is + first run. Install command, personal Google account vs API key, first prompt. Note 1M context, free-tier limits.
+- **5.5** — Gemini CLI: what it is + first run. Install via `npm install -g @google/gemini-cli` (or `npx @google/gemini-cli` for one-off) — **verify package name against `https://github.com/google-gemini/gemini-cli` before writing**, this has shifted historically. Show authentication choices: personal Google account (free tier — currently 1M context, ~1000 req/day; verify current numbers) vs API key (Gemini API) vs Vertex AI. Run first prompt in `~/some-project`.
 
 - [ ] **Step 3: Fill 5.6–5.8 (IDE vs terminal, multiple tools)**
 
@@ -544,12 +562,12 @@ Use `<div class="card-grid">` with one `<div class="tool-card">` per tool. Six c
 
 Same card-grid pattern. Three cards: Aider, GitHub Copilot CLI/Spark/Workspace, Codex CLI.
 
-- [ ] **Step 6: Fill 5.11–5.13 (decision matrix + hands-on)**
+- [ ] **Step 6: Fill 5.11–5.13 (decision matrix + hands-on + where next)**
 
 Briefs:
 - **5.11** — Decision matrix table: rows are task types (quick edit, multi-file refactor, security review, exploratory build, CI script, doc writing), columns are tools. Cells indicate best/good/avoid.
 - **5.12** — Hands-on: pick a small task you'd do today. Run it in two of the three primary tools. Note what felt different.
-- **5.13** — See-also (→ Ch 12 Kilo deep dive, → Ch 13 Claude deep dive, → Ch 14 Gemini deep dive).
+- **5.13** — **Where next: pointers into Part 3 deep-dives.** One short paragraph of framing prose: "now that you've picked your surface(s), the deep-dives in Part 3 unpack each tool's full feature surface." Then a see-also grid (→ Ch 12 Kilo deep dive, → Ch 13 Claude deep dive, → Ch 14 Gemini deep dive). This counts as the 13th subsection — distinct from the chapter-level "See also" grid added in Step 7.
 
 - [ ] **Step 7: Render and verify**
 
@@ -577,13 +595,13 @@ First methodology chapter — introduces the gitlog-report mini-walkthrough patt
 Briefs:
 - **6.1** — Why specs matter when agents code fast: drift is cheap, drift recovery is expensive.
 - **6.2** — The contract: spec describes behavior, tests enforce it. Agent reads spec → writes implementation → tests verify. Show triangle diagram.
-- **6.3** — OpenSpec model: `specs/` (canonical), `changes/<id>/proposal.md`, `changes/<id>/specs/` (delta), archive on accept.
-- **6.4** — OpenSpec walk-through. Show `openspec change add-csv-export` (or whatever the actual CLI is), the proposal file, the delta spec, and how the agent reads both during implementation.
+- **6.3** — OpenSpec model: an `openspec/` workspace at repo root containing `openspec/specs/` (canonical), `openspec/changes/<id>/proposal.md` + `openspec/changes/<id>/specs/` (delta), and `openspec/changes/archive/` after accept. **Verify exact layout against current OpenSpec docs before writing** — repo structure has shifted historically (similar freshness check pattern as Ch 14).
+- **6.4** — OpenSpec walk-through. Change *creation* is done by the AI assistant via a slash command (e.g. `/opsx:propose add-csv-export` — **verify the current slash command in the OpenSpec README**), which writes the proposal file under `openspec/changes/<id>/`. CLI surface is for lifecycle only: `openspec list`, `openspec show <id>`, `openspec validate`, `openspec archive <id>`. Show the proposal file, the delta spec under `openspec/changes/<id>/specs/`, and how the agent reads both during implementation. **Verify all command names and file paths against current docs at `https://github.com/Fission-AI/OpenSpec` before writing.**
 
 - [ ] **Step 3: Fill 6.5–6.8 (SpecKit + comparison)**
 
 Briefs:
-- **6.5** — SpecKit model: slash commands `/specify`, `/plan`, `/tasks`, `/implement`. Where each file lands.
+- **6.5** — SpecKit model: slash commands `/specify`, `/plan`, `/tasks`, `/implement`. Each command writes to a feature-scoped directory — list the actual artifacts (likely `spec.md`, `plan.md`, `tasks.md` inside `.specify/specs/<feature>/` or `specs/<NNN-feature>/` depending on version). **Verify the exact directory pattern and file names against current SpecKit docs before writing** — these have shifted historically.
 - **6.6** — SpecKit walk-through. Same example as 6.4 in SpecKit terms. Show file output of each slash command.
 - **6.7** — Side-by-side comparison table (8–10 rows): philosophy, file structure, change tracking, slash commands, archive model, multi-tool support, etc.
 - **6.8** — Decision matrix: which fits when. OpenSpec = manual + git-native + tool-agnostic; SpecKit = guided + slash-command-driven + Claude/Gemini-first.
@@ -628,7 +646,7 @@ Briefs:
 - **7.1** — Plan ≠ spec. Spec = what the system does (durable). Plan = how we'll build it (transient). Different audiences, different lifecycles.
 - **7.2** — The four-step rhythm: brainstorm (explore) → spec (commit to what) → plan (commit to how) → execute. Diagram.
 - **7.3** — Good plan anatomy: numbered tasks, files-touched per task, code blocks for each step, commit cadence. Reference superpowers:writing-plans skill.
-- **7.4** — Plan mode in Claude Code: how to enter, what's restricted, the approval gate. Compare to Kilo Architect mode.
+- **7.4** — Plan mode in Claude Code: how to enter (shift-tab cycling or `/plan`), the approval gate (`ExitPlanMode` tool required to proceed), and what's restricted: `Edit`, `Write`, `Bash` and other side-effecting tools blocked; `Read`, `Grep`, `Glob`, `WebFetch` allowed. Compare to Kilo Architect mode — **important asymmetry: Kilo Architect plans *and writes files* (it's a write-capable orchestrator); Claude plan mode forbids any writes.** Spell this out so the reader doesn't equate them.
 
 - [ ] **Step 3: Fill 7.5–7.8 (workflows)**
 
@@ -718,8 +736,8 @@ Briefs:
 
 Briefs:
 - **9.9** — Debugging the agent, not the code. When the prompt is the bug.
-- **9.10** — `/debug` slash command in Claude Code; Debug mode in Kilo. Patterns and limits.
-- **9.11** — Mini-walkthrough: inject a bug into gitlog-report (e.g., off-by-one in date filter), debug it. Cumulative.
+- **9.10** — The `superpowers:systematic-debugging` skill in Claude Code (no built-in `/debug` slash command — verify against current Claude Code commands); Debug mode in Kilo Code. Patterns and limits.
+- **9.11** — Mini-walkthrough: inject an off-by-one bug into gitlog-report's date filter. The **date-filter test from 8.11 catches it** — that's the failing test that drives the debug loop. Walk the agent through reproduce → isolate → root cause → fix → verify. Cumulative.
 
 - [ ] **Step 5: See-also + render + commit**
 
@@ -742,7 +760,7 @@ Briefs:
 - **10.1** — Three review layers: pre-merge (you), code review (agent), security review (specialized agent or human). Each catches different things.
 - **10.2** — Code review with agents: beyond rubber-stamping. Reviewing the agent's review.
 - **10.3** — `/security-review` slash command (Claude Code): what it scans, what it misses. Calibration.
-- **10.4** — `/ultrareview`: multi-agent deep review — different agents look for different categories. Use for important changes.
+- **10.4** — `/ultrareview`: multi-agent deep review — different agents look for different categories. **Important context to call out: it runs in the cloud, is metered/paid, and is asynchronous (results return to inbox, not the terminal).** Use for important changes only.
 
 - [ ] **Step 3: Fill 10.5–10.8 (verification + hallucinations)**
 
@@ -757,7 +775,7 @@ Briefs:
 Briefs:
 - **10.9** — Self-review prompts: "list the ways this could be wrong"; "find a bug in this"; "what does this not handle". Show patterns.
 - **10.10** — Sign-off gates: what blocks "done". Build passes; tests pass; manual smoke; security clean; reviewer happy.
-- **10.11** — Mini-walkthrough: full review pass on gitlog-report. Run code review, run /security-review, run /ultrareview. Show one finding each.
+- **10.11** — Mini-walkthrough: full review pass on gitlog-report. Run code review (inline subagent), run `/security-review` (local, synchronous), then dispatch `/ultrareview` (cloud, async — note the wait + inbox-results UX). Show one finding from each.
 
 - [ ] **Step 5: See-also + render + commit**
 
@@ -778,7 +796,7 @@ git commit -am "docs(hero-to-architect): write Ch 10 — Safety, Review & Verifi
 
 Briefs:
 - **11.1** — When one agent isn't enough: independent investigation, large context that would dilute main session, specialized roles.
-- **11.2** — Subagents in Claude Code: Agent tool, specialized types (Explore, Plan, code-reviewer, etc.). What each is for.
+- **11.2** — Subagents in Claude Code: the `Agent` tool, specialized types (typically lowercase identifiers — e.g., `general-purpose`, `code-reviewer`, `Explore` for read-only search, `Plan` for architectural design — **verify exact identifiers and casing against current Claude Code docs**). What each is for.
 - **11.3** — Dispatching parallel subagents: rules of thumb — only when truly independent. Wire-up via single message with multiple Agent tool calls.
 - **11.4** — Worktrees for isolation: `git worktree add`. Each parallel agent works in its own tree, no shared state.
 
@@ -795,7 +813,7 @@ Briefs:
 Briefs:
 - **11.9** — When parallel hurts: shared state, races (two agents editing same file), context fragmentation (each agent has half the picture).
 - **11.10** — Token math: N parallel agents × M turns × tokens each. Multi-agent ≠ free — it's amortized only if work is genuinely parallel.
-- **11.11** — Mini-walkthrough: gitlog-report — parallel subagents write feature, tests, and README docs concurrently in 3 worktrees. Cumulative.
+- **11.11** — Mini-walkthrough: gitlog-report polish pass. Building on Ch 10's reviewed code, dispatch 3 parallel subagents in 3 worktrees: (a) feature extension (e.g., add `--json` output flag), (b) additional test coverage (edge cases for date filters, large repos), (c) README + usage docs. Cumulative — does not re-implement Ch 7–8 work. Reference the `superpowers:dispatching-parallel-agents` and `superpowers:using-git-worktrees` skills.
 
 - [ ] **Step 5: See-also + render + commit**
 
@@ -874,7 +892,7 @@ Briefs:
 Briefs:
 - **13.5** — Plugins and the plugin marketplace. Installing, listing, removing. Plugin = bundle of skills/commands/hooks.
 - **13.6** — Hooks lifecycle: `SessionStart`, `PreToolUse`, `PostToolUse`, `Stop`, etc. Use cases per event. Example hook in `settings.json`.
-- **13.7** — Sub-agents: the `Agent` tool, specialized types (general-purpose, Explore, Plan, code-reviewer, etc.). When to use which.
+- **13.7** — Sub-agents: the `Agent` tool, specialized types (`general-purpose`, `Explore`, `Plan`, `code-reviewer`, etc. — **verify exact identifiers and casing against current Claude Code docs**). When to use which.
 - **13.8** — Plan mode workflow: enter, plan, approve, execute. The approval gate.
 
 - [ ] **Step 4: Fill 13.9–13.12 (personalization)**
@@ -923,7 +941,7 @@ Briefs:
 Briefs:
 - **14.5** — Slash commands: built-ins (verify current list) and how to add custom.
 - **14.6** — Skills in Gemini CLI: how `activate_skill` works, skill metadata loaded at session start, activation on demand. Mirror to Claude Code skills.
-- **14.7** — Extensions: install (`gemini extensions install <repo>`), discover, share. The plugin equivalent.
+- **14.7** — Extensions: install (likely `gemini extensions install --source <git-url>` for remote or `--path` for local — **verify exact flag syntax against current Gemini CLI docs before writing**), discover, share. The plugin equivalent.
 - **14.8** — Hooks: lifecycle events supported by Gemini CLI (verify current list — likely narrower than Claude Code).
 
 - [ ] **Step 4: Fill 14.9–14.12 (tools + MCP + settings)**
@@ -971,7 +989,7 @@ Briefs:
 - [ ] **Step 3: Fill 15.5–15.8 (Claude Code primary)**
 
 Briefs:
-- **15.5** — The Claude Code plugin: installation via `/plugin install superpowers`, the `using-superpowers` meta-skill auto-invoked via `SessionStart` hook.
+- **15.5** — The Claude Code plugin: installation via the `/plugin marketplace add obra/superpowers-marketplace` → `/plugin` interactive flow (**verify exact commands against current Claude Code docs**), then the `using-superpowers` meta-skill auto-invokes via the `SessionStart` hook on every session.
 - **15.6** — The Claude Code skill machinery: format (frontmatter + body), the `Skill` tool, skill discovery from `~/.claude/skills/` and plugin dirs.
 - **15.7** — Rigid vs flexible skills: when to enforce (TDD, debugging), when to suggest (patterns). The skill itself signals this.
 - **15.8** — Anatomy of a great skill: name (kebab-case), description (when to use), body (instructions for the agent), references (linked sub-skills).
@@ -1021,7 +1039,7 @@ Briefs:
 Briefs:
 - **16.5** — Adding an MCP server to Kilo Code and Claude Code. Show settings snippet for each (stdio config).
 - **16.6** — Authoring your own MCP server. Language picks: Python (`mcp` SDK) or TypeScript (`@modelcontextprotocol/sdk`). Pros/cons.
-- **16.7** — Server skeleton: handlers for list_tools, call_tool, list_resources, read_resource. Show Python code skeleton.
+- **16.7** — Server skeleton: handlers for `list_tools`, `call_tool`, `list_resources`, `read_resource`. Show a Python code skeleton as the canonical example (the hands-on at 16.14 also uses Python). Acknowledge the TypeScript equivalent has the same handler shape via `@modelcontextprotocol/sdk` — link to the official TS quick-start rather than duplicating the snippet.
 - **16.8** — Designing tools agents use well: clear descriptions, narrow parameters, idempotent where possible. Anti-pattern: kitchen-sink tools.
 
 - [ ] **Step 4: Fill 16.9–16.12 (authoring deep)**
@@ -1188,7 +1206,7 @@ Command reference (verify current commands), proposal file template, delta spec 
 
 - [ ] **Step 8: Superpowers skill library at-a-glance**
 
-Bulleted list of the core skills with one-line descriptions: brainstorming, writing-plans, executing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion, receiving-code-review, requesting-code-review, finishing-a-development-branch, writing-skills.
+Tight one-liner per skill (cheat-sheet form — Ch 15.3 has the full library tour, this is just a quick-reference table). Cross-link the section heading to `#ch15-superpowers`. Skills: brainstorming, writing-plans, executing-plans, subagent-driven-development, test-driven-development, systematic-debugging, verification-before-completion, receiving-code-review, requesting-code-review, finishing-a-development-branch, writing-skills.
 
 - [ ] **Step 9: Render and verify**
 
@@ -1218,7 +1236,7 @@ git commit -am "docs(hero-to-architect): add Reference — Cheat Sheets"
 
 Entries (one paragraph each):
 
-`activate_skill` · agent loop · auto-approve · BYO model · blast radius · cache hit rate · CLAUDE.md · Cline · Continue.dev · context compaction · custom mode · extensions (Gemini) · fast mode · GEMINI.md · golden test · hooks · idempotency · Junie · `.kilocodemodes` · `/loop` · MCP · MCP resource · MCP tool · memory file · OpenSpec · Orchestrator mode · output style · plan mode · plugin · prompt cache · `/schedule` · `ScheduleWakeup` · skill · slash command · SpecKit · spec-driven dev · sub-agent · Superpowers · thinking mode · tool-alt · verification-before-completion · worktree · YOLO mode.
+`activate_skill` · `Agent` tool · agent loop · auto-approve · BYO model · blast radius · cache hit rate · CLAUDE.md · Cline · Continue.dev · Context Bank · context compaction · custom mode · extensions (Gemini) · fast mode · GEMINI.md · golden test · headless mode · hooks · HTTP/SSE transport · idempotency · Junie · Kilo custom modes (verify filename) · `/loop` · MCP · MCP inspector · MCP registry · MCP resource · MCP tool · memory file · OpenSpec · Orchestrator mode · output style · plan mode · plugin · prompt cache · `/schedule` · `ScheduleWakeup` · SessionStart hook · skill · slash command · SpecKit · spec-driven dev · stdio transport · sub-agent · Superpowers · thinking mode · tool-alt · verification-before-completion · Vertex AI · worktree · YOLO mode.
 
 For each entry: 1–3 sentences + a "→ Ch X" link to where it's covered in depth.
 
@@ -1274,23 +1292,26 @@ git commit -am "docs(hero-to-architect): add Reference — Further Reading"
 **Files:**
 - Modify: `hero-to-architect-guide.html`
 
-- [ ] **Step 1: Run a grep for all `onclick="go(...)"` calls**
+- [ ] **Step 1: List all referenced ids (sidebar + see-also links)**
 
 ```bash
-grep -oE "go\('[a-z0-9-]+'\)" /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html | sort -u
+grep -oE "go\('[a-z0-9-]+'\)" /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html \
+  | sed -E "s/go\('([a-z0-9-]+)'\)/\1/" | sort -u > /tmp/refs.txt
+cat /tmp/refs.txt
 ```
 
-Expected: every id referenced should also appear as a `<section id="...">`.
+Expected: every id referenced should also appear as a `<section id="...">` (next step).
 
-- [ ] **Step 2: Cross-check id vs section presence**
+- [ ] **Step 2: Cross-check refs against actual `<section id>` targets**
 
 ```bash
-grep -oE "id=\"[a-z0-9-]+\"" /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html | sort -u > /tmp/ids.txt
-grep -oE "go\('[a-z0-9-]+'\)" /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html | sed -E "s/go\('([a-z0-9-]+)'\)/id=\"\1\"/" | sort -u > /tmp/refs.txt
-diff /tmp/ids.txt /tmp/refs.txt
+grep -oE '<section[^>]*id="[a-z0-9-]+"' /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html \
+  | sed -E 's/.*id="([^"]+)"/\1/' | sort -u > /tmp/section-ids.txt
+comm -23 /tmp/refs.txt /tmp/section-ids.txt   # refs with no matching section = orphan link
+comm -13 /tmp/refs.txt /tmp/section-ids.txt   # sections with no incoming link (acceptable for some, e.g. welcome)
 ```
 
-Expected: differences should be only sidebar/nav-related ids (not section ids). Fix any orphans or dangling links.
+Expected: the first `comm` (orphans) must be empty. The second `comm` may contain some sections (e.g., front-matter); only worry about chapters/reference pages with no incoming links.
 
 - [ ] **Step 3: Verify each chapter's "See also" grid**
 
@@ -1323,7 +1344,7 @@ Resize browser to ~480px. Check: sidebar collapse behavior (matches v1?), card g
 
 - [ ] **Step 4: Console check**
 
-Open dev tools. Walk through 3 random chapters. Verify zero JS errors.
+Load the page in a fresh tab. Open DevTools → Console. Click 3 random sidebar entries spanning different Parts. Confirm `console.error` count remains 0 throughout. If any warnings appear, decide whether to fix or accept.
 
 - [ ] **Step 5: Fix and commit (if needed)**
 
@@ -1346,9 +1367,13 @@ In README.md, add to the Guides table:
 | Gen AI: Hero to Architect | [hero-to-architect-guide.html](hero-to-architect-guide.html) | Advanced companion to Zero to Hero — agentic coding loop, context engineering, OpenSpec, SpecKit, Superpowers, Kilo Code, Claude Code, Gemini CLI, MCP, multi-agent workflows, and an end-to-end worked example shipping a CLI tool in three tools |
 ```
 
-- [ ] **Step 2: Add row to `IDEAS.md`**
+- [ ] **Step 2: Update `IDEAS.md` if the guide is listed there**
 
-Mark "Gen AI Advanced (Hero to Architect)" as Done (or remove if it wasn't there — depends on whether it was added during brainstorming).
+```bash
+grep -l "Hero to Architect" /Users/divakaran/arrcus_workspace/guides/IDEAS.md && echo "FOUND — edit the row's Status column to 'Done'" || echo "NOT LISTED — skip"
+```
+
+If found, change that row's Status to `Done`. If not listed, no action needed.
 
 - [ ] **Step 3: Verify README renders correctly**
 
