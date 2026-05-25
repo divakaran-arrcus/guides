@@ -3896,6 +3896,277 @@ git commit -m "chore: add Kilo Code project config (modes, rules, memory scaffol
       </div>
     </section>
 
+    <section id="ch13-claude" class="section">
+      <h1>13. Claude Code Deep Dive</h1>
+      <p class="lede">What you'll learn: Claude Code's architecture, CLAUDE.md and memory, slash commands, skills, plugins, hooks, sub-agents, plan mode, output styles, fast mode, scheduling primitives, settings, and how to configure Claude Code for your daily workflow.</p>
+
+      <h2>13.1 Architecture — terminal, headless, IDE extensions</h2>
+      <p>Claude Code is Anthropic's official CLI for Claude. At its core it is a Node.js process that runs in your terminal and gives Claude bidirectional access to your filesystem, shell, and development environment. Unlike IDE-embedded AI tools, Claude Code is <strong>surface-agnostic by default</strong>: it runs anywhere a terminal runs — local laptops, remote SSH sessions, CI containers, Docker environments. The terminal surface means there is no VS Code dependency; you interact through a REPL-style prompt that accepts natural language requests, slash commands, and multi-turn conversations.</p>
+
+      <p><strong>Headless mode</strong> (sometimes called non-interactive or scripted mode) allows Claude Code to be driven programmatically — via shell scripts, CI pipelines, or other orchestration systems — without a human at the keyboard. In headless mode Claude Code reads instructions from stdin or command-line flags, executes the task, and exits. This makes it a first-class participant in automated workflows: you can invoke it from a GitHub Actions step, a pre-commit hook, or a cron job and get structured output back. The <code>--output-format json</code> flag (or equivalent; <em>verify the current flag name in <code>claude --help</code></em>) produces machine-parseable results.</p>
+
+      <p><strong>IDE extensions</strong> are available for VS Code and JetBrains IDEs. These extensions embed the Claude Code REPL inside the IDE's sidebar or panel, providing the same capabilities as the terminal client but with direct access to the open editor context: the active file, selected text, diagnostic errors, and diff views. The underlying agent is identical — the extensions are thin shells that pass editor context into the same CLI runtime. <em>Verify which IDE extension versions are currently shipping and stable, as the JetBrains extension in particular has lagged behind the VS Code release cadence historically.</em></p>
+
+      <h2>13.2 CLAUDE.md — global, project, subdirectory scope</h2>
+      <p>CLAUDE.md is Claude Code's instruction-injection mechanism. Unlike a system prompt that you pass at invocation time, CLAUDE.md files are discovered automatically based on where you are in the filesystem. Claude Code reads them at session start and incorporates their contents into its context. There are three distinct scopes, and all three are active simultaneously when they exist.</p>
+
+      <p><strong>Global (<code>~/.claude/CLAUDE.md</code>):</strong> Applies to every Claude Code session on this machine, regardless of project. This is the right place for personal preferences that span all projects: your preferred language style, response format preferences, always-on constraints ("never commit with --no-verify"), personal skill registrations, and identity context the agent should always have. Think of it as your personal system prompt layer. Changes here affect every project immediately — treat it like a dotfile.</p>
+
+      <p><strong>Project root (<code>&lt;project&gt;/CLAUDE.md</code>):</strong> Applies when Claude Code is run inside that project directory or any subdirectory. This is where project-specific guidance lives: the tech stack, architectural constraints, testing conventions, CI pipeline details, code style rules specific to this repo, and any context about the codebase the agent should always have loaded. Committing this file to the repository ensures every teammate gets the same agent behavior. This is the most important CLAUDE.md for team workflows.</p>
+
+      <p><strong>Subdirectory (<code>&lt;project&gt;/src/payments/CLAUDE.md</code>):</strong> Applies only when Claude Code's working context is within that subdirectory. Use this for modules with unusual conventions, security-sensitive areas that need extra constraints ("never log PII in this module"), or subsystems where a domain-specific glossary helps. Subdirectory CLAUDE.md files stack on top of the project root and global files — all three merge into the active instruction set. This granularity is particularly useful in monorepos where different packages have different conventions.</p>
+
+      <aside class="tool-alt">
+        <strong>Claude Code vs Kilo Code — memory and instruction injection:</strong>
+        Claude Code uses <code>CLAUDE.md</code> files at three scope levels (global <code>~/.claude/</code>, project root, subdirectory). Kilo Code uses <code>.kilocode/rules/</code> — a directory of Markdown rule files that are loaded per-mode or globally. Both approaches store instructions as plain text files that are version-controlled alongside the project. The key difference: Kilo Code's rules system supports <strong>per-mode targeting</strong> (a rule file can apply only in Code mode, not in Ask mode), while Claude Code's CLAUDE.md is always-active within its scope. If you need per-capability gating, Kilo Code's rules model is more expressive; if you want a single coherent instruction document per scope level, CLAUDE.md's simplicity wins.
+      </aside>
+
+      <h2>13.3 Slash commands — built-in and custom</h2>
+      <p>Slash commands are Claude Code's in-session control surface. Type <code>/</code> at the prompt to see the full list. Built-in commands include: <code>/clear</code> — reset the conversation context to an empty state; <code>/compact</code> — summarize the current conversation and replace the history with a compact representation, reducing token usage while preserving essential state; <code>/init</code> — scaffold a new CLAUDE.md for the current project by analyzing the codebase; <code>/review</code> — trigger a code review skill on the current diff or specified files; <code>/security-review</code> — run a security-focused review; <code>/config</code> — open settings; <code>/help</code> — list all available commands. <em>The full list evolves across releases; <code>/help</code> is the canonical source.</em></p>
+
+      <p>Other notable built-ins include <code>/ultrareview</code> (deep review with multiple passes, if installed as a skill), <code>/schedule</code> (create or manage scheduled remote agents), <code>/loop</code> (run a command on a dynamic interval), <code>/plugin</code> (plugin management), and model-specific commands. Several slash commands are actually thin wrappers around skills — invoking <code>/review</code> triggers the <code>code-review</code> skill via the Skill tool internally.</p>
+
+      <p><strong>Custom commands</strong> live in <code>~/.claude/commands/</code> (global, available in all sessions) or <code>&lt;project&gt;/.claude/commands/</code> (project-scoped). Each custom command is a Markdown file whose filename becomes the command name: <code>~/.claude/commands/standup.md</code> becomes <code>/standup</code>. The file body is a prompt template that Claude executes when the command is invoked. You can reference <code>$ARGUMENTS</code> in the template to pass positional arguments from the command invocation. Custom commands are the fastest way to codify a recurring workflow — daily standup generation, PR description drafting, changelog updates — into a single keyable action.</p>
+
+      <h2>13.4 Skills — what they are, how they activate</h2>
+      <p>Skills are Claude Code's reusable capability units — structured prompting packages that encode a complex, multi-step workflow into a named, invocable artifact. A skill lives in <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code>. The file has two parts: a YAML frontmatter block that declares metadata, and a Markdown body that contains the actual instructions Claude follows when the skill executes.</p>
+
+      <p>A representative SKILL.md structure:</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">SKILL.md structure (<code>~/.claude/skills/my-skill/SKILL.md</code>)</p>
+        <pre style="margin:0; font-size:0.88rem;"><code>---
+name: my-skill
+description: "One-line description shown in skill list"
+version: 1.0
+author: your-name
+tags: [review, quality]
+---
+
+# My Skill
+
+When this skill is invoked, do the following:
+
+1. Read the current git diff with `git diff HEAD`.
+2. Analyze each changed file for ...
+3. Produce a structured report in the following format: ...</code></pre>
+      </div>
+
+      <p>Skills activate via two mechanisms. First, they are discoverable as slash commands: if <code>~/.claude/skills/code-review/SKILL.md</code> exists, you can type <code>/code-review</code> and Claude will invoke it. Second, they can be invoked programmatically via the <code>Skill</code> tool — other skills or orchestrating agents can call <code>Skill({ skill: "code-review", args: "..." })</code> to chain skill executions. Auto-discovery means that skills registered in <code>~/.claude/skills/</code> appear automatically in <code>/help</code> output and in the skill list shown in the system reminder. You do not need to register them anywhere else — dropping a valid SKILL.md file into the directory is sufficient for activation.</p>
+
+      <h2>13.5 Plugins and the plugin marketplace</h2>
+      <p>Plugins are distribution bundles that package multiple skills, custom commands, and hooks into a single installable unit. Where skills are individual capabilities, a plugin is a coherent capability set — for example, a "Jira workflow" plugin might include an Atlassian MCP integration, a <code>/triage-issue</code> skill, a <code>/generate-status-report</code> skill, and a hook that auto-attaches Jira context at session start.</p>
+
+      <p>The plugin marketplace is Claude Code's ecosystem for sharing and discovering these bundles. To install a plugin, the workflow is a two-step process: first, use <code>/plugin marketplace add &lt;plugin-name&gt;</code> to search the marketplace and stage the plugin for installation; then run <code>/plugin</code> (the interactive plugin management flow) to confirm, configure, and activate it. <em>Verify this flow against current Claude Code documentation — the plugin system is evolving and the exact command sequence may differ in newer releases.</em> Installed plugins are tracked in your Claude Code settings and their components (skills, commands, hooks) are registered automatically.</p>
+
+      <p>You can also install plugins from local paths or git URLs for custom or private plugins. The plugin manifest format defines what gets installed and where — skills land in <code>~/.claude/skills/</code>, commands in <code>~/.claude/commands/</code>, and hooks are merged into <code>~/.claude/settings.json</code>. For teams, packaging your shared Claude Code configuration as a plugin and hosting it on an internal registry is a powerful way to give everyone consistent capabilities with a single install step.</p>
+
+      <h2>13.6 Hooks — lifecycle and use cases</h2>
+      <p>Hooks are shell commands or scripts that Claude Code executes at defined points in the session lifecycle. They are configured in <code>.claude/settings.json</code> (project-level) or <code>~/.claude/settings.json</code> (global). The primary hook lifecycle events are: <code>SessionStart</code> — fires when a new Claude Code session begins; <code>PreToolUse</code> — fires before any tool call, with the tool name and parameters available as environment variables; <code>PostToolUse</code> — fires after a tool call completes; <code>Stop</code> — fires when the session ends or <code>/clear</code> is run.</p>
+
+      <p>Use cases for hooks span a wide range: injecting dynamic context at session start (e.g., running <code>git status</code> and appending its output to the session), enforcing constraints before tool use (e.g., blocking <code>Bash</code> calls that contain <code>rm -rf /</code>), logging all tool calls to an audit file, sending a Slack notification when a long-running task completes, or updating a MEMORY.md file after each session ends. Hooks execute with the same permissions as the Claude Code process — they can read/write files, call APIs, and run arbitrary shell commands.</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example hooks configuration in <code>.claude/settings.json</code></p>
+        <pre style="margin:0; font-size:0.88rem;"><code>{
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "git log --oneline -5 2>/dev/null || true",
+        "description": "Show recent commits at session start"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": { "tool": "Bash" },
+        "command": "echo \"[$(date -u +%H:%M:%S)] Bash call completed\" >> ~/.claude/audit.log",
+        "description": "Audit log for Bash tool use"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "~/.claude/scripts/update-session-notes.sh",
+        "description": "Update session notes on exit"
+      }
+    ]
+  }
+}</code></pre>
+      </div>
+
+      <h2>13.7 Sub-agents — the Agent tool</h2>
+      <p>Claude Code supports multi-agent architectures through the <code>Agent</code> tool, which allows the orchestrating Claude instance to spawn specialized sub-agents as separate, isolated sessions. Each sub-agent has its own context window, its own tool access, and executes a specific task in parallel or sequentially. The orchestrator receives the sub-agent's output when it completes and can use it to drive the next step of a larger workflow. This is the mechanism behind parallel code review, concurrent test generation, and any pattern where you want multiple specialized perspectives on the same problem simultaneously.</p>
+
+      <p>Claude Code exposes several sub-agent types. <em>Note: the exact identifiers, names, and capability sets of sub-agent types are version-specific — always verify against current Claude Code documentation before relying on a specific type name in production workflows.</em> At the time of writing, sub-agent types include general-purpose agents, exploration-focused agents that are optimized for read-heavy codebase analysis, planning agents that focus on structured decomposition, and code-reviewer agents tuned for quality analysis. The <code>TaskCreate</code>, <code>TaskGet</code>, <code>TaskList</code>, and <code>TaskStop</code> tools provide programmatic sub-agent lifecycle management within skills and hooks.</p>
+
+      <p>The key design principle for sub-agent use is <strong>task isolation</strong>: each sub-agent should receive a self-contained task brief with all the context it needs embedded in its initial prompt. Sub-agents do not share memory with the orchestrator or with each other — any shared state must be passed explicitly through the task description and result. For large parallel workloads (e.g., reviewing 20 files concurrently), this isolation is a feature: sub-agents cannot interfere with each other's reasoning. The orchestrator's job is decomposition, dispatch, and synthesis of results.</p>
+
+      <h2>13.8 Plan mode workflow</h2>
+      <p>Plan mode is Claude Code's approval-gate mechanism for complex, potentially destructive operations. When you enter plan mode, Claude reads your request, analyzes the codebase, and produces a structured execution plan — a list of proposed actions (file writes, shell commands, API calls) with rationale — but does not execute any of them. You review the plan, request modifications if needed, and then explicitly approve execution. This separates the reasoning step from the action step, giving you a review checkpoint before irreversible changes happen.</p>
+
+      <p>To enter plan mode, cycle through modes using <strong>Shift-Tab</strong> at the Claude Code prompt until "Plan" mode is shown, or prefix your message with an explicit plan request. In plan mode, Claude outputs a structured plan in Markdown format describing each proposed action. When you are satisfied with the plan, approve it — the <code>ExitPlanMode</code> mechanism signals to Claude that it should proceed to execution. Claude then executes the approved plan, tool by tool, with normal tool-use confirmation flows active.</p>
+
+      <p>Plan mode is most valuable for: multi-file refactors where you want to see the full scope before any file is touched; database migrations or infrastructure changes where partial execution is worse than no execution; onboarding to an unfamiliar codebase where you want to understand what Claude is about to do before it does it; and any task where you have a strong prior about the correct approach and want to verify Claude's plan matches it. The cost of plan mode is one extra round-trip to the model; the benefit is a review gate that prevents costly rollbacks.</p>
+
+      <h2>13.9 Output styles</h2>
+      <p>Claude Code's output style system lets you tune the tone, structure, and verbosity of Claude's responses without modifying CLAUDE.md. Styles are named presets — examples include concise, verbose, technical, explanatory, and bullet-heavy formats — that adjust how Claude structures its text output. This is distinct from capability changes (which modes and tools are active); output styles affect presentation only.</p>
+
+      <p>Styles can be set at the session level via the <code>/config</code> command or through settings. You can also define custom styles in your CLAUDE.md by describing the desired output format explicitly ("always use numbered lists for multi-step instructions, never use more than 2 levels of nesting, keep code blocks short and focused"). In practice, most advanced users find that a well-written CLAUDE.md output format section is more precise than a named style preset — you can specify exactly the formatting contract you want rather than choosing from a fixed menu. The styles system is most useful for quick, temporary changes within a session.</p>
+
+      <h2>13.10 Fast mode — when and why</h2>
+      <p>Fast mode trades reasoning depth for latency. When fast mode is active, Claude Code uses a faster response configuration — typically this means using a faster model variant or reducing the thinking budget — producing responses more quickly at the cost of some depth in complex reasoning tasks. Fast mode is not a different model selection in the sense of manually switching to Haiku; it is a tunable configuration within a session that adjusts the latency/quality tradeoff along a continuous axis. <em>The exact implementation of fast mode — whether it swaps models, reduces context, or adjusts sampling — is subject to change; consult current documentation for the precise behavior.</em></p>
+
+      <p>When to use fast mode: interactive Q&amp;A where you need rapid back-and-forth and the questions are not deeply complex; exploration tasks where you are orienting in a new codebase and want quick directional answers rather than exhaustive analysis; high-volume routine tasks (linting explanation, simple one-liner generation) where the full reasoning budget is overkill. When to avoid fast mode: plan generation, architectural analysis, security review, complex debugging where missing a subtlety has real cost. The practical heuristic: if you would be comfortable asking a junior developer with the context who answers quickly, fast mode is fine; if you want senior-level depth, use standard mode.</p>
+
+      <h2>13.11 ScheduleWakeup, /loop, /schedule</h2>
+      <p>Claude Code provides three distinct scheduling primitives that overlap in purpose but differ in mechanism and scope. Understanding which to use requires understanding what each actually does. <strong>ScheduleWakeup</strong> is a tool (callable within skills and agent workflows) that schedules Claude Code to wake and execute a task at a specific future time — a one-shot delayed execution. It is the programmatic primitive: a skill can call <code>ScheduleWakeup</code> to schedule follow-up work (e.g., "check if this CI job passed in 10 minutes"). It operates within the current machine's session lifecycle.</p>
+
+      <p><strong>/loop</strong> is a dynamic interval runner. It takes a prompt or slash command and an interval specification and repeatedly executes that command at the given cadence within a running Claude Code session. Unlike ScheduleWakeup, /loop is interactive — you run it in a live session and it keeps running until you stop it. Use /loop for monitoring tasks where you want to watch a metric, poll a status endpoint, or repeatedly run a check while you are actively working. The interval can be model-paced (Claude decides when enough time has passed) or fixed-clock. It does not persist across session restarts.</p>
+
+      <p><strong>/schedule</strong> is the persistent, cross-session scheduler. It creates "remote agents" — cron-like scheduled tasks that run on a schedule, survive session restarts, and execute even when you are not at the keyboard. You configure them with a cron expression or natural language schedule. /schedule is the right primitive for daily standup generation, nightly report emails, weekly code quality scans, or any task that should run reliably on a calendar-based cadence. The three primitives form a hierarchy: /schedule for persistent recurring jobs, /loop for in-session monitoring, ScheduleWakeup for programmatic one-shot delays.</p>
+
+      <h2>13.12 Settings and permissions — .claude/settings.json</h2>
+      <p>Claude Code's settings are controlled through two JSON files: <code>~/.claude/settings.json</code> (global, applies to all projects) and <code>&lt;project&gt;/.claude/settings.json</code> (project-scoped, committed to the repo). The project settings override global settings where they conflict. The settings schema covers three major areas: permissions (what tools and shell commands Claude can run without prompting), environment variables injected into shell tool calls, and hooks.</p>
+
+      <p>The permissions system uses allowlists and denylists. The allowlist defines patterns of tool calls that Claude can execute without asking for confirmation — for example, allowing all <code>Bash</code> calls matching <code>git *</code>, or allowing <code>Read</code> on any file under <code>src/</code>. The denylist defines patterns that are always blocked regardless of what Claude or the user requests. This architecture means you can grant broad automation for safe operations (git, test runners, linters) while maintaining strict confirmation requirements for destructive operations (production deployments, database mutations).</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Example <code>.claude/settings.json</code></p>
+        <pre style="margin:0; font-size:0.88rem;"><code>{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm test *)",
+      "Bash(npm run lint *)",
+      "Read(**)",
+      "Edit(src/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(* production *)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development",
+    "LOG_LEVEL": "debug"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "echo 'Project: MyApp | Branch: '$(git branch --show-current)",
+        "description": "Show project context at session start"
+      }
+    ]
+  }
+}</code></pre>
+      </div>
+
+      <h2>13.13 Memory system — auto-memory, MEMORY.md</h2>
+      <p>Claude Code's memory system provides structured persistence across sessions. The core component is a <code>MEMORY.md</code> index file (typically at <code>~/.claude/MEMORY.md</code>) that acts as a table of contents for individual memory files. Each memory is a separate Markdown file with a typed header. The memory system supports four types: <strong>user memories</strong> capture personal preferences, communication style, and workflow patterns the agent has learned about you; <strong>feedback memories</strong> record corrections you have given ("don't add trailing commas to JSON", "always use single quotes in Python") so Claude does not repeat mistakes; <strong>project memories</strong> capture project-specific knowledge that was discovered mid-session (e.g., "the <code>payments</code> module uses a non-standard event emitter pattern"); <strong>reference memories</strong> store factual information you have explicitly asked Claude to remember (API keys, team member names, recurring context).</p>
+
+      <p><strong>Auto-memory</strong> is the mechanism by which Claude Code proactively creates memory entries without being explicitly asked. When Claude notices it has learned something durable — a correction you gave, a pattern it should remember, a project fact that took several messages to establish — it can automatically write a new memory file and update the MEMORY.md index. The auto-memory system is triggered by signals in the conversation: explicit "remember this" instructions, corrections to Claude's behavior, and discovery of facts that are likely to recur. At session start, Claude reads MEMORY.md and loads relevant memory files as additional context, giving it continuity across sessions.</p>
+
+      <p>The memory system architecture (separate files + index) is intentional: it allows selective loading rather than dumping all memories into every context window. As memory volume grows, Claude can selectively load only the memories relevant to the current task. <em>The exact implementation of auto-memory, the MEMORY.md schema, and the loading strategy are subject to change across Claude Code versions — treat this as an architectural description rather than a specification.</em> You can also manually create and edit memory files; they are plain Markdown and fully human-readable.</p>
+
+      <h2>13.14 Hands-on: configure Claude Code for your daily workflow</h2>
+      <p>This walkthrough takes you from a fresh Claude Code installation to a fully configured daily workflow in six steps. Each step is independently valuable — you can stop after any step and have a meaningfully improved setup.</p>
+
+      <ol>
+        <li>
+          <strong>Create your global CLAUDE.md.</strong>
+          <pre><code>mkdir -p ~/.claude
+cat > ~/.claude/CLAUDE.md << 'EOF'
+# Global Claude Instructions
+
+## Identity context
+- My name is [Your Name]. I'm a [role] working primarily in [language/stack].
+- My email is [email].
+
+## Response preferences
+- Be concise. Skip preamble. Lead with the answer.
+- Use numbered lists for multi-step processes.
+- When in doubt, ask one clarifying question rather than guessing.
+
+## Constraints (always active)
+- Never use `git push --force` without explicit confirmation.
+- Never commit secrets or credentials.
+- Always run tests before declaring a task complete.
+EOF</code></pre>
+          This file will be active in every Claude Code session from this point forward. Edit it whenever you notice a preference that should be universal.
+        </li>
+
+        <li>
+          <strong>Initialize your project CLAUDE.md.</strong> Navigate to your project root and run:
+          <pre><code>cd /path/to/your-project
+claude /init</code></pre>
+          The <code>/init</code> command analyzes your codebase (package.json, directory structure, README, test files) and generates a starter CLAUDE.md. Review it, remove anything inaccurate, and add your project's specific conventions. Commit it: <code>git add CLAUDE.md &amp;&amp; git commit -m "chore: add Claude Code project config"</code>.
+        </li>
+
+        <li>
+          <strong>Configure project permissions.</strong> Create <code>.claude/settings.json</code> in the project root:
+          <pre><code>mkdir -p .claude
+cat > .claude/settings.json << 'EOF'
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm test *)",
+      "Bash(npm run *)",
+      "Read(**)",
+      "Edit(src/**)",
+      "Edit(tests/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)"
+    ]
+  }
+}
+EOF</code></pre>
+          This eliminates confirmation prompts for safe operations while keeping hard blocks on destructive commands. Commit alongside CLAUDE.md.
+        </li>
+
+        <li>
+          <strong>Write a custom slash command.</strong> Create a <code>standup</code> command:
+          <pre><code>mkdir -p ~/.claude/commands
+cat > ~/.claude/commands/standup.md << 'EOF'
+Generate a standup update for today.
+
+1. Run `git log --oneline --since="yesterday" --author="$(git config user.email)"` to see yesterday's commits.
+2. Check if there are any open PRs: `gh pr list --author "@me" --state open` (skip if gh is not available).
+3. Produce a standup update in this format:
+   **Yesterday:** [bullet points from commits]
+   **Today:** [ask me what I plan to work on if not obvious from context]
+   **Blockers:** [any blockers visible from PR comments or open issues, or "None"]
+EOF</code></pre>
+          Now <code>/standup</code> is available in every session. Test it: open Claude Code and type <code>/standup</code>.
+        </li>
+
+        <li>
+          <strong>Install a plugin from the marketplace.</strong> Open Claude Code and run:
+          <pre><code>/plugin marketplace add superpowers</code></pre>
+          Then complete the interactive installation:
+          <pre><code>/plugin</code></pre>
+          Follow the prompts to confirm and activate. After installation, <code>/help</code> will show the new skills and commands the plugin registered. <em>Verify the superpowers plugin name against the current marketplace — plugin identifiers may differ from skill names.</em>
+        </li>
+
+        <li>
+          <strong>Verify everything is wired up.</strong> Start a fresh Claude Code session in your project:
+          <pre><code>claude</code></pre>
+          Check that: (a) Claude greets you with awareness of the project (from CLAUDE.md); (b) <code>/standup</code> appears in <code>/help</code>; (c) a <code>git status</code> Bash call does not prompt for confirmation (allowlisted); (d) attempting a <code>rm -rf /tmp/test</code> Bash call prompts for confirmation or is blocked (depending on your deny rules). If any of these fail, review the settings and CLAUDE.md for typos or scope mismatches.
+        </li>
+      </ol>
+
+      <p><strong>Daily rhythm with this setup:</strong> Start each session with <code>/standup</code> to orient. Use plan mode (Shift-Tab) for any task touching more than two files. Use <code>/schedule</code> to set up nightly code quality scans. When Claude makes a mistake, correct it explicitly and let auto-memory capture the correction — it will not repeat that mistake tomorrow. The investment in this config compounds: every session is faster than the last because the agent accumulates accurate context about how you work.</p>
+
+      <div class="see-also">
+        <a onclick="go('ch12-kilo')">← Ch 12. Kilo Code Deep Dive</a>
+        <a onclick="go('ch14-gemini')">→ Ch 14. Gemini CLI Deep Dive</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers (the canonical skill plugin)</a>
+        <a onclick="go('ch16-mcp')">→ Ch 16. MCP Servers</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
