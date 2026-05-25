@@ -4630,7 +4630,7 @@ activate_skill("create-pr") before starting.</code></pre>
       <h2>16.3 Transport — stdio vs HTTP/SSE</h2>
       <p>MCP supports two transport mechanisms that determine how the client and server communicate. The choice has significant operational implications.</p>
       <table class="tbl">
-        <thead><tr><th>Property</th><th>stdio (subprocess)</th><th>HTTP / SSE (remote)</th></tr></thead>
+        <thead><tr><th>Property</th><th>stdio (subprocess)</th><th>Streamable HTTP (remote)</th></tr></thead>
         <tbody>
           <tr><td><strong>Mechanism</strong></td><td>Client spawns the server as a local subprocess; communicates over stdin/stdout JSON-RPC.</td><td>Server runs as a persistent HTTP process; client connects via Server-Sent Events for streaming + HTTP POST for calls.</td></tr>
           <tr><td><strong>Setup complexity</strong></td><td>Minimal — just a command and args in your settings JSON.</td><td>Higher — requires a running service, URL, optional auth headers.</td></tr>
@@ -4774,7 +4774,7 @@ if __name__ == "__main__":
 import os
 import sqlite3
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
@@ -4845,7 +4845,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     conn = get_db()
     try:
         if name == "add_note":
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(timezone.utc).isoformat()
             cur = conn.execute(
                 "INSERT INTO notes (title, body, created_at) VALUES (?, ?, ?)",
                 (arguments["title"], arguments["body"], now)
