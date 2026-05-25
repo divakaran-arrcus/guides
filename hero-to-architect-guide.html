@@ -1419,7 +1419,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
 │  Kilo Code  ▼ Code  │ Architect │ Ask │ Debug │
 ├──────────────────────────────────────────┤
 │  Context: main.py (active) + workspace   │
-│  Provider: Anthropic · claude-sonnet-4-5 │
+│  Provider: Anthropic · claude-sonnet-4-6 │
 │  [Send message...]                       │
 └──────────────────────────────────────────┘
       </pre>
@@ -3664,27 +3664,27 @@ git push --force-with-lease origin polish/json</code></pre>
         <pre style="margin:0; font-size:0.88rem;"><code>{
   "modes": {
     "architect": {
-      "model": "claude-opus-4-5",
+      "model": "claude-opus-4-7",
       "provider": "anthropic",
       "maxTokens": 8192
     },
     "code": {
-      "model": "claude-sonnet-4-5",
+      "model": "claude-sonnet-4-6",
       "provider": "anthropic",
       "maxTokens": 8192
     },
     "ask": {
-      "model": "gemini-flash-2.0",
+      "model": "gemini-2.0-flash",
       "provider": "google",
       "maxTokens": 4096
     },
     "debug": {
-      "model": "claude-sonnet-4-5",
+      "model": "claude-sonnet-4-6",
       "provider": "anthropic",
       "maxTokens": 8192
     },
     "orchestrator": {
-      "model": "claude-opus-4-5",
+      "model": "claude-opus-4-7",
       "provider": "anthropic",
       "maxTokens": 16384
     }
@@ -3705,7 +3705,7 @@ git push --force-with-lease origin polish/json</code></pre>
     {
       "slug": "reviewer",
       "name": "Reviewer",
-      "model": "claude-opus-4-5",
+      "model": "claude-opus-4-7",
       "provider": "anthropic",
       "roleDefinition": "You are a senior code reviewer. Your job is to identify bugs, security issues, performance problems, and design violations in the provided code. You do NOT write code or suggest rewrites — you identify and explain problems only.",
       "groups": ["read"],
