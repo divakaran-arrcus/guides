@@ -5274,6 +5274,356 @@ gh pr merge --squash</code></pre>
       </div>
     </section>
 
+    <section id="ref-decisions" class="section">
+      <h1>Decision Frameworks</h1>
+      <p class="lede">Choose-the-right-thing matrices distilled from the rest of the guide. Each links back to the chapter that explains the underlying reasoning.</p>
+
+      <!-- Matrix 1: Which tool -->
+      <h2>Which tool?</h2>
+      <p class="see-also" style="margin-bottom:0.75rem;">
+        <a onclick="go('ch5-surface')">Ch 5. IDE vs Terminal</a>
+        <a onclick="go('ch12-kilo')">Ch 12. Kilo Code</a>
+        <a onclick="go('ch13-claude')">Ch 13. Claude Code</a>
+        <a onclick="go('ch14-gemini')">Ch 14. Gemini CLI</a>
+      </p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Surface</th>
+            <th>Free tier?</th>
+            <th>MCP support</th>
+            <th>Plugin / extension ecosystem</th>
+            <th>Best for</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Kilo Code</strong></td>
+            <td>IDE (VS Code)</td>
+            <td>No (pay-as-you-go)</td>
+            <td>Yes</td>
+            <td>VS Code marketplace</td>
+            <td>Tight edit-test loop inside an open project; mode-switching (Architect → Code → Debug)</td>
+          </tr>
+          <tr>
+            <td><strong>Claude Code</strong></td>
+            <td>Terminal</td>
+            <td>No</td>
+            <td>Yes (first-class)</td>
+            <td>Skills, slash commands</td>
+            <td>Whole-repo operations, multi-agent dispatch, scripted pipelines</td>
+          </tr>
+          <tr>
+            <td><strong>Gemini CLI</strong></td>
+            <td>Terminal</td>
+            <td>Yes (1M-ctx free tier)</td>
+            <td>Yes</td>
+            <td>MCP extensions</td>
+            <td>Large-context tasks, cost-sensitive teams, reading massive codebases in one pass</td>
+          </tr>
+          <tr>
+            <td><strong>Antigravity</strong></td>
+            <td>Terminal / CI</td>
+            <td>No</td>
+            <td>Via config</td>
+            <td>Plugin API</td>
+            <td>Autonomous long-running agents; minimal human-in-the-loop workflows</td>
+          </tr>
+          <tr>
+            <td><strong>Cursor</strong></td>
+            <td>IDE (standalone)</td>
+            <td>Yes (limited)</td>
+            <td>Partial</td>
+            <td>Cursor extensions</td>
+            <td>Tab-completion-heavy workflows; teams already invested in Cursor muscle memory</td>
+          </tr>
+          <tr>
+            <td><strong>Aider</strong></td>
+            <td>Terminal</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Minimal</td>
+            <td>Lightweight git-aware edits from the command line; scripted one-shot changes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Matrix 2: Which model for which task -->
+      <h2>Which model for which task?</h2>
+      <p class="see-also" style="margin-bottom:0.75rem;">
+        <a onclick="go('ch4-models')">Ch 4. Model Selection &amp; Cost Engineering</a>
+      </p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Task type</th>
+            <th>Recommended primary model</th>
+            <th>Thinking mode</th>
+            <th>Caching note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Quick edit (single file, trivial change)</td>
+            <td>Haiku / Flash</td>
+            <td>No</td>
+            <td>Not worth it; prompt is small</td>
+          </tr>
+          <tr>
+            <td>Multi-file refactor</td>
+            <td>Sonnet / Pro</td>
+            <td>No</td>
+            <td>Cache the repo skeleton if re-running repeatedly</td>
+          </tr>
+          <tr>
+            <td>Deep architecture / design</td>
+            <td>Opus / Ultra</td>
+            <td>Yes</td>
+            <td>Cache the spec + existing arch docs</td>
+          </tr>
+          <tr>
+            <td>Code review</td>
+            <td>Sonnet / Pro</td>
+            <td>No (unless security scope)</td>
+            <td>Cache diff if reviewing in multiple passes</td>
+          </tr>
+          <tr>
+            <td>Security scan</td>
+            <td>Opus / Ultra</td>
+            <td>Yes</td>
+            <td>Cache codebase; re-run on changed files only</td>
+          </tr>
+          <tr>
+            <td>Doc writing</td>
+            <td>Sonnet / Pro</td>
+            <td>No</td>
+            <td>Cache existing docs for consistency</td>
+          </tr>
+          <tr>
+            <td>Agentic loop driver</td>
+            <td>Sonnet / Pro</td>
+            <td>No (thinking reserved for sub-tasks)</td>
+            <td>Cache the plan + tool definitions across turns</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Matrix 3: Which mode/skill for which task -->
+      <h2>Which mode / skill for which task?</h2>
+      <p class="see-also" style="margin-bottom:0.75rem;">
+        <a onclick="go('ch12-kilo')">Ch 12. Kilo Code</a>
+        <a onclick="go('ch13-claude')">Ch 13. Claude Code</a>
+        <a onclick="go('ch14-gemini')">Ch 14. Gemini CLI</a>
+        <a onclick="go('ch15-superpowers')">Ch 15. Superpowers &amp; Skills</a>
+      </p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Task type</th>
+            <th>Kilo Code mode</th>
+            <th>Claude Code skill</th>
+            <th>Gemini CLI skill</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Brainstorming</td>
+            <td>Architect</td>
+            <td><code>/brainstorming</code></td>
+            <td>Default (no special mode)</td>
+          </tr>
+          <tr>
+            <td>Planning</td>
+            <td>Architect</td>
+            <td><code>/writing-plans</code></td>
+            <td>Default + <code>@file</code> context</td>
+          </tr>
+          <tr>
+            <td>Implementing</td>
+            <td>Code</td>
+            <td><code>/feature-dev</code></td>
+            <td>Default or <code>/edit</code></td>
+          </tr>
+          <tr>
+            <td>Debugging</td>
+            <td>Debug</td>
+            <td><code>/systematic-debugging</code></td>
+            <td>Default + <code>--yolo</code> for automated fix loops</td>
+          </tr>
+          <tr>
+            <td>Reviewing</td>
+            <td>Code (with review prompt)</td>
+            <td><code>/code-review</code> or <code>/super-review</code></td>
+            <td>Default + large context window for full diff</td>
+          </tr>
+          <tr>
+            <td>Documentation</td>
+            <td>Code or Architect</td>
+            <td><code>/guide-builder</code></td>
+            <td>Default</td>
+          </tr>
+          <tr>
+            <td>Exploration / understanding</td>
+            <td>Architect (read-only)</td>
+            <td><code>/init</code> then ask</td>
+            <td>Default (drop entire codebase into context)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Matrix 4: OpenSpec vs SpecKit -->
+      <h2>OpenSpec vs SpecKit</h2>
+      <p class="see-also" style="margin-bottom:0.75rem;">
+        <a onclick="go('ch6-spec')">Ch 6. Spec-Driven Dev (OpenSpec &amp; SpecKit)</a>
+      </p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>OpenSpec</th>
+            <th>SpecKit</th>
+            <th>When to pick</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Workflow style</td>
+            <td>Git-native; specs live in the repo alongside code</td>
+            <td>Structured CLI with a defined lifecycle (draft → accept → archive)</td>
+            <td>OpenSpec if your team is already git-centric; SpecKit if you want guardrails</td>
+          </tr>
+          <tr>
+            <td>Change tracking</td>
+            <td>Git history is the audit trail</td>
+            <td>Explicit change objects with status transitions</td>
+            <td>SpecKit if you need formal approval gates or audit logs</td>
+          </tr>
+          <tr>
+            <td>File structure</td>
+            <td>Flat markdown files; author-defined layout</td>
+            <td>Enforced directory layout (<code>specs/</code>, <code>changes/</code>, <code>archive/</code>)</td>
+            <td>SpecKit for multi-author teams; OpenSpec for solo or small teams</td>
+          </tr>
+          <tr>
+            <td>Tool support</td>
+            <td>Any editor; no special tooling needed</td>
+            <td>Requires SpecKit CLI installed</td>
+            <td>OpenSpec if you want zero dependencies</td>
+          </tr>
+          <tr>
+            <td>Learning curve</td>
+            <td>Near zero</td>
+            <td>30–60 min to learn lifecycle commands</td>
+            <td>OpenSpec to start; migrate to SpecKit when the team grows</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Decision charts -->
+      <h2>When to plan vs skip</h2>
+      <p>Planning costs time upfront but prevents expensive mid-task course corrections. Skip planning only when the task is genuinely trivial. Use this tree:</p>
+      <div class="info" style="font-family: monospace; white-space: pre; line-height: 1.7; font-size: 0.9rem;">
+Is the task trivial? (single file, &lt; 5 lines, zero risk)
+├── YES → Skip planning. Prompt directly.
+└── NO
+    ├── Is it multi-step? (touches &gt; 1 file or &gt; 1 concern)
+    │   ├── YES → Write a plan. (/writing-plans or PLAN.md)
+    │   └── NO (single step but non-trivial)
+    │       └── Use a structured prompt; no formal PLAN.md needed.
+    └── Is it risky? (touches auth, data loss, public API, config)
+        └── YES (regardless of step count) → Write a plan + review gate.</div>
+
+      <h2>When to parallelize vs serialize</h2>
+      <p>Parallel dispatch cuts wall-clock time but creates merge complexity. Use this checklist before splitting work across agents. All three conditions must be true to parallelize safely.</p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Question</th>
+            <th>If NO → serialize</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Independent?</td>
+            <td>Do the sub-tasks touch different files / modules with no shared state?</td>
+            <td>One task feeds the next — serialize in plan order.</td>
+          </tr>
+          <tr>
+            <td>Non-cumulative context?</td>
+            <td>Does each sub-task need only its own context, not the output of the others?</td>
+            <td>Task B reads Task A's output — serialize A then B.</td>
+          </tr>
+          <tr>
+            <td>More than 3 tasks?</td>
+            <td>Are there at least 3 independent tasks to justify dispatch overhead?</td>
+            <td>For 1–2 tasks, serialize is simpler and nearly as fast.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="see-also"><a onclick="go('ch11-parallel')">Ch 11. Multi-Agent &amp; Parallel</a></p>
+
+      <h2>When to engage thinking mode</h2>
+      <p>Thinking mode roughly doubles token cost and latency. Reserve it for decisions where the extra reasoning genuinely changes the outcome. Routine tasks rarely benefit.</p>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Use thinking mode?</th>
+            <th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Architecture choice (DB schema, API design, dependency graph)</td>
+            <td>Yes</td>
+            <td>High-stakes; wrong decision is costly to reverse.</td>
+          </tr>
+          <tr>
+            <td>Security review / threat modelling</td>
+            <td>Yes</td>
+            <td>Requires multi-hop reasoning across attack surfaces.</td>
+          </tr>
+          <tr>
+            <td>Debugging a hard non-obvious failure</td>
+            <td>Yes (if stuck after 2 normal turns)</td>
+            <td>Extended reasoning surfaces non-obvious root causes.</td>
+          </tr>
+          <tr>
+            <td>Writing a spec or plan</td>
+            <td>Optional (Opus without thinking often sufficient)</td>
+            <td>Benefit is marginal unless spec is unusually complex.</td>
+          </tr>
+          <tr>
+            <td>Routine code edit or formatting</td>
+            <td>No</td>
+            <td>No benefit; wastes tokens and latency.</td>
+          </tr>
+          <tr>
+            <td>Doc writing</td>
+            <td>No</td>
+            <td>Fluency task, not reasoning task.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="see-also"><a onclick="go('ch4-models')">Ch 4. Model Selection &amp; Cost Engineering</a></p>
+
+      <h2>See also</h2>
+      <div class="see-also">
+        <a onclick="go('ch4-models')">Ch 4. Model Selection &amp; Cost Engineering</a>
+        <a onclick="go('ch5-surface')">Ch 5. IDE vs Terminal</a>
+        <a onclick="go('ch6-spec')">Ch 6. Spec-Driven Dev</a>
+        <a onclick="go('ch7-plan')">Ch 7. Plan-Driven Execution</a>
+        <a onclick="go('ch11-parallel')">Ch 11. Multi-Agent &amp; Parallel</a>
+        <a onclick="go('ch12-kilo')">Ch 12. Kilo Code Deep Dive</a>
+        <a onclick="go('ch13-claude')">Ch 13. Claude Code Deep Dive</a>
+        <a onclick="go('ch14-gemini')">Ch 14. Gemini CLI Deep Dive</a>
+        <a onclick="go('ch15-superpowers')">Ch 15. Superpowers &amp; Skills</a>
+        <a onclick="go('ch17-worked')">Ch 17. Worked Example</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
