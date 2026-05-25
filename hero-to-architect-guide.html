@@ -2760,6 +2760,286 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
       </div>
     </section>
 
+    <section id="ch9-debug" class="section">
+      <h1>9. Debugging with Agents</h1>
+      <p class="lede">What you'll learn: the systematic debugging loop with an agent, why agents fix bugs wrong without it, evidence patterns, and how to debug the gitlog-report off-by-one bug step by step.</p>
+
+      <h2>9.1 The systematic debugging loop</h2>
+      <p>Debugging with an agent without a framework is a gamble. The agent will pattern-match to the most plausible-looking cause, propose a fix, and report success — even when the root cause is untouched. To prevent this, Claude Code provides the <code>superpowers:systematic-debugging</code> skill, which enforces a 5-stage loop before any fix is written.</p>
+      <p>The 5-stage cycle:</p>
+      <ol>
+        <li><strong>Reproduce</strong> — confirm the bug is deterministically triggerable. No reproduction, no debugging.</li>
+        <li><strong>Isolate</strong> — narrow from "the system is broken" to "this specific input to this specific function produces this specific wrong output."</li>
+        <li><strong>Root cause</strong> — identify the exact line, condition, or invariant violation that causes the wrong output. Not the symptom — the cause.</li>
+        <li><strong>Fix</strong> — apply the minimal change that corrects the root cause. Not the symptom.</li>
+        <li><strong>Verify</strong> — rerun the failing test (green), then rerun the entire suite (no regressions).</li>
+      </ol>
+      <p>The skill enforces this order. You cannot skip to stage 4 (Fix) without the agent having produced evidence at stages 2 and 3. This constraint is deliberate: it prevents the most common agent failure mode — applying a patch that silences the symptom while leaving the root cause in place.</p>
+      <p>To invoke: in Claude Code, type <code>/systematic-debugging</code> (via the skill). Describe the bug. The agent will ask you to complete each stage before advancing. Resist the urge to skip ahead.</p>
+
+      <h2>9.2 Reproduce → isolate → root cause → fix → verify</h2>
+      <p><strong>Reproduce reliably first.</strong> If you cannot reproduce the bug on demand, your fix is a hope. A fix applied to an unreproducible bug may appear to work — the bug simply didn't trigger — and will resurface later under conditions you didn't anticipate.</p>
+      <p>The <strong>reproduction recipe</strong> pattern: before touching any code, write down (or have the agent write down) the exact steps that reliably produce the failure:</p>
+      <pre><code># Reproduction recipe — write this before any fix attempt
+# Bug: date_filter includes boundary commit when it should not
+# Preconditions: gitlog_report/parser.py at commit abc1234
+# Steps:
+#   1. Create tmp git repo with commits on 2024-01-05, 2024-01-10, 2024-01-15
+#   2. Run parse_gitlog(repo, start_date="2024-01-10", end_date=None)
+#   3. Assert result["Alice"]["commit_count"] == 2
+# Expected: 2 (commits on 2024-01-10 and 2024-01-15)
+# Actual:   1 (commit on 2024-01-10 excluded)
+# Confirmed on: Python 3.11, pytest 7.4</code></pre>
+      <p>With the recipe written, you have pinned the bug in space and time. Any fix that doesn't make the recipe produce the expected result hasn't fixed the bug.</p>
+      <p>The stages are not decorative. <strong>Isolate</strong> means producing a minimal failing case — the smallest input that still triggers the bug. Agents will skip this and jump to the full system. Don't let them. A minimal case eliminates false suspects and makes the root cause obvious. <strong>Root cause</strong> means reading the actual code and stating a falsifiable hypothesis: "The bug is on line 47 of <code>parser.py</code> — the condition uses <code>&gt;</code> instead of <code>&gt;=</code>." <strong>Verify</strong> means running the full suite, not just the test that was red. Fixes that introduce regressions are fixes that traded one bug for another.</p>
+
+      <h2>9.3 Bugs the agent will fix wrong (and why)</h2>
+      <p>Agents don't maliciously produce wrong fixes. They pattern-match to common resolutions and optimise for making the immediate test pass. Here are the recurring failure modes:</p>
+
+      <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
+        <thead>
+          <tr style="background:var(--surface);">
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Bad fix type</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">What it looks like</th>
+            <th style="padding:0.6rem 1rem; text-align:left; border:1px solid var(--border);">Why it's wrong</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Cargo-cult fix</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Copies a pattern from a similar file without understanding why</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Fix is coincidental; root cause is unchanged; bug re-emerges on next edge case</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Surface-symptom patch</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Wraps the buggy function in a try/except or adds a special-case check for the known-bad input</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Root cause survives; next input that triggers it won't be caught by the special case</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Test mutation</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Changes the assertion in the failing test to match the wrong output</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">The test now passes, but the spec is violated; the bug is hidden behind a lying test</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Over-generalisation</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Rewrites a 5-line function into a 40-line one to "handle all edge cases"</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Introduces new surface area; makes future bugs harder to isolate</td>
+          </tr>
+          <tr>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Wrong layer fix</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Fixes the calling code instead of the function that produced the wrong value</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Every caller now needs the same fix; root cause is still in the shared function</td>
+          </tr>
+          <tr style="background:var(--surface);">
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Snapshot update</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Runs <code>--updateSnapshot</code> to "fix" the failing test</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Makes wrong output into the new expected value; the bug is now the spec (see §8.6)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The tell for all of these: the agent says "fixed" and the immediately-failing test goes green — but you haven't seen the agent read and reason about the function body. Push back: "Show me which line was wrong and why. Do not show me the diff yet."</p>
+
+      <h2>9.4 Root cause vs patch — keeping the agent honest</h2>
+      <p>A <strong>patch</strong> silences the symptom. A <strong>root cause fix</strong> corrects the invariant that was violated. The test may go green in both cases. Only one of them has actually fixed the bug.</p>
+      <p>The technique for forcing root cause work is the <strong>"why?" cascade</strong>. After the agent names a cause, ask "why?" until you reach an invariant — a property of the system that should always hold but was violated:</p>
+      <pre><code>Agent: "The count is 1 instead of 2 because the boundary commit is excluded."
+You:   "Why is it excluded?"
+Agent: "Because the date comparison uses > instead of >=."
+You:   "Why does it use > ?"
+Agent: "The initial implementation assumed exclusive lower bound."
+You:   "What is the correct invariant?"
+Agent: "start_date is inclusive. Commits on start_date must be included."
+You:   "That is the root cause. Now show me the minimal fix."</code></pre>
+      <p>The cascade stops when the agent can state an invariant — a design decision that was either wrong or correctly specified but incorrectly implemented. Everything above that level in the cascade is symptom, not cause.</p>
+      <p>Signs you have a patch, not a fix: the fix adds a special case, wraps in a try/except, modifies the test, or is larger than 3 lines for a bug the cascade traced to a single operator. A root cause fix for an off-by-one is one character. If the agent's proposed diff is 30 lines, ask: "Is this the root cause fix or a workaround?"</p>
+
+      <h2>9.5 Reading the agent's hypotheses critically</h2>
+      <p>When you paste a bug into an agent, it will generate hypotheses. These are often plausible and frequently wrong. Reading them critically is a skill.</p>
+      <p><strong>What to look for:</strong></p>
+      <ul>
+        <li><strong>Evidence vs. assertion.</strong> "The bug is in <code>parse_date</code>" — did the agent read <code>parse_date</code>? Ask: "Show me the line in parse_date that supports this hypothesis." If the agent can't cite a specific line, it's guessing.</li>
+        <li><strong>Confident tone on uncertain reasoning.</strong> Agents express hypotheses with the same fluency regardless of confidence. A confident-sounding hypothesis with no cited evidence is a signal to verify, not accept.</li>
+        <li><strong>First hypothesis bias.</strong> Agents tend to anchor on their first hypothesis. If you push back once, they adjust. If you push back twice, they often return to the original hypothesis. This is a sign to run the experiment yourself: test the hypothesis by deliberate insertion of a print statement or assertion.</li>
+        <li><strong>Hypothesis count.</strong> An agent that lists 5 possible causes for a single failing test is diffusing responsibility. Ask it to rank them by likelihood and provide evidence for the top one before moving on.</li>
+      </ul>
+      <p>The rule: treat agent hypotheses as test candidates, not conclusions. Each hypothesis is a prediction: "if this is the cause, then changing X should make the test pass." Test the prediction. If it fails, the hypothesis was wrong — regardless of how confident the agent sounded.</p>
+
+      <h2>9.6 Bisecting with the agent's help</h2>
+      <p>When you don't know <em>when</em> a bug was introduced, <code>git bisect</code> is the most reliable tool. Agents can help run and interpret it, but you must stay in control of the process.</p>
+      <p><strong>git bisect workflow with an agent:</strong></p>
+      <pre><code>git bisect start
+git bisect bad                        # current commit is broken
+git bisect good f185e18               # known-good commit
+# git checks out the midpoint commit
+# Ask agent: "Run pytest tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date"
+# If PASS: git bisect good
+# If FAIL: git bisect bad
+# Repeat until git bisect prints the first-bad commit</code></pre>
+      <p>The agent's role is: run the test at each bisect step, report pass/fail, and tell you which <code>git bisect good/bad</code> to issue. Your role is to issue the command and read the final output. Do not let the agent issue <code>git bisect reset</code> or skip steps — it may miss the true first-bad commit.</p>
+      <p><strong>Binary search of inputs</strong> is bisect for data, not commits. When a function fails on large input but passes on small input, cut the input in half, run the test, and recurse into the failing half. Agents can help generate the halved inputs and run the tests, but you must frame the search correctly: "Does the function fail on the first half or the second half of this list?"</p>
+      <p><strong>Narrowing checklist:</strong></p>
+      <ul>
+        <li>Start with the full failing case confirmed.</li>
+        <li>Remove half the variables. Does it still fail?</li>
+        <li>Keep halving until you cannot remove anything without the bug disappearing. What remains is the minimal reproducer.</li>
+        <li>Paste the minimal reproducer back to the agent: "This is the smallest input that produces the bug. Now find the root cause."</li>
+      </ul>
+
+      <h2>9.7 Logs, traces, stack frames — feeding evidence</h2>
+      <p>An agent debugging without evidence is reasoning in a vacuum. The quality of the debug session is directly proportional to the quality of evidence you feed it. Here is what to provide and how.</p>
+      <p><strong>What to paste verbatim:</strong></p>
+      <ul>
+        <li>The full pytest failure output, including the assertion error and the traceback. Do not truncate.</li>
+        <li>The relevant stack frame — the line in your code (not a library) where execution was when the assertion failed.</li>
+        <li>The actual vs. expected values from the assertion message (if present).</li>
+      </ul>
+      <p><strong>What to summarise:</strong></p>
+      <ul>
+        <li>Long log files — paste only the lines around the error (±10 lines of context).</li>
+        <li>Repeated identical stack frames — paste one instance and note "repeated N times."</li>
+        <li>Long configuration files — paste only the section relevant to the failing behaviour.</li>
+      </ul>
+      <p><strong>What to leave out:</strong></p>
+      <ul>
+        <li>Library internals that are not part of your codebase (e.g., deep pytest or stdlib frames).</li>
+        <li>Passing test output — only the failures are evidence of the bug.</li>
+        <li>Unrelated error messages from previous sessions.</li>
+      </ul>
+      <p><strong>Concrete example — good evidence paste:</strong></p>
+      <pre><code>FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
+
+AssertionError: Expected 2 commits (boundary + after), got 1.
+If this is 1, the filter is using strict > instead of >= on the boundary date.
+assert result["Alice"]["commit_count"] == 2
+       → result["Alice"]["commit_count"] is 1
+
+Traceback (most recent call last):
+  File "tests/test_gitlog.py", line 58, in test_date_filter_excludes_commits_before_start_date
+    assert result["Alice"]["commit_count"] == 2, (...)
+AssertionError</code></pre>
+      <p>This evidence tells the agent: what test failed, what the assertion was, what the actual vs. expected values were, and which line in your code triggered it. That is sufficient. More is noise.</p>
+
+      <h2>9.8 When to step in yourself</h2>
+      <p>Agents get stuck. The diagnostic signal is: <strong>3 iterations with no forward progress</strong>. If the agent has proposed 3 different fixes, all of which still fail the same test with the same error, the agent is in a pattern-matching loop with insufficient context. Stepping in is not a failure — it is the correct response.</p>
+      <p><strong>Signs to stop the agent and intervene:</strong></p>
+      <ul>
+        <li>The same test fails with the same error after 3 agent iterations.</li>
+        <li>The agent's proposed diffs are getting larger with each iteration (scope creep under pressure).</li>
+        <li>The agent starts suggesting changes to the test file to "resolve the conflict."</li>
+        <li>The agent reports a fix as successful but doesn't show the passing test output.</li>
+        <li>The agent introduces a new failure while fixing the original one, and then focuses on the new failure instead.</li>
+      </ul>
+      <p><strong>What to do when you step in:</strong></p>
+      <ol>
+        <li>Stop the agent: "Stop. Do not produce any more code."</li>
+        <li>Read the function body yourself. Not the diff — the function as it currently exists.</li>
+        <li>Trace the execution manually: follow the inputs through the code path until you find where the output diverges from what you expect.</li>
+        <li>Identify the exact line. State it to the agent: "The bug is on line 47. The condition is <code>commit_date &gt; start_date</code>. It should be <code>commit_date &gt;= start_date</code>. Make only that change."</li>
+        <li>Verify the result yourself.</li>
+      </ol>
+      <p>The agent is most useful for the exploration and verification phases. The isolation step — reading code and following the execution path — is sometimes faster to do yourself than to explain to an agent in enough detail that it can do it correctly.</p>
+
+      <h2>9.9 Debugging the agent (not the code) — when prompts go bad</h2>
+      <p>Sometimes the bug is not in the code. The bug is in the prompt — the instructions you gave the agent that caused it to generate the wrong code in the first place.</p>
+      <p><strong>Signs that the prompt is the bug:</strong></p>
+      <ul>
+        <li>The agent generates subtly wrong code every time you ask for the same feature, even after multiple corrections.</li>
+        <li>The agent misunderstands a key term you use (e.g., you say "date filter" and the agent consistently interprets it as exclusive lower bound).</li>
+        <li>The agent adds code you didn't ask for, repeatedly.</li>
+        <li>Fixes to the code keep reverting to the buggy pattern in subsequent sessions.</li>
+      </ul>
+      <p>The debugging process for a bad prompt mirrors the systematic loop for code bugs:</p>
+      <ol>
+        <li><strong>Reproduce:</strong> Identify the prompt fragment that consistently produces the wrong output.</li>
+        <li><strong>Isolate:</strong> Remove context from the prompt until you find the minimal fragment that triggers the wrong behaviour.</li>
+        <li><strong>Root cause:</strong> Is the term ambiguous? Is the constraint missing? Is the context contradicting itself?</li>
+        <li><strong>Fix:</strong> Rewrite the ambiguous fragment. Add the missing constraint. Remove the contradiction.</li>
+        <li><strong>Verify:</strong> Run the corrected prompt against the same inputs that produced the bug. Confirm the output is now correct.</li>
+      </ol>
+      <p>Common prompt bugs: under-specified acceptance criteria (the agent fills gaps with assumptions), absent negative constraints ("do not modify the test file" missing), and ambiguous terminology that the agent resolves differently in different sessions. The fix is always the same: make the constraint explicit, not implicit.</p>
+
+      <h2>9.10 The systematic-debugging skill and Kilo Debug mode</h2>
+      <p><strong>Claude Code</strong> has no built-in <code>/debug</code> slash command. Do not look for one — it does not exist. The correct path is the <code>superpowers:systematic-debugging</code> skill. Invoke it via the Skill tool or by typing the skill name in a Claude Code session. The skill enforces the 5-stage cycle (§9.1), requires evidence at each stage, and prevents the agent from advancing to Fix without a stated root cause. It is the structured alternative to ad-hoc debugging.</p>
+      <p><strong>Kilo Code</strong> provides a dedicated <strong>Debug mode</strong> — a constrained diagnostic mode that limits the agent to read-only operations until a root cause is stated. In Debug mode, Kilo Code will not write code, will not modify files, and will not run fix commands. It can run tests, read files, and add print statements for tracing. This constraint is the point: it forces the agent to produce a diagnosis before it is permitted to act. Debug mode is exited explicitly when you approve the root cause statement.</p>
+      <p><strong>Patterns and limits (both tools):</strong></p>
+      <ul>
+        <li>Both tools work best when fed the evidence described in §9.7 — full test output, relevant stack frame, minimal reproducer.</li>
+        <li>Neither tool can read your mind about what "correct" means. You must state the expected behaviour explicitly.</li>
+        <li>The systematic loop is not a guarantee. An agent that cannot find the root cause in 5 iterations should be stopped — not given more iterations. At that point, §9.8 applies: you read the code yourself.</li>
+        <li>For bugs in agentic infrastructure (hooks, skills, the harness itself), the debugging process is the same but the evidence is different: paste hook logs, harness configuration, and the exact command that triggered the wrong behaviour.</li>
+      </ul>
+
+      <h2>9.11 Mini-walkthrough: break it, then debug it</h2>
+      <div class="walkthrough">
+        <h3>Mini-walkthrough · gitlog-report — break it, then debug it</h3>
+        <p>This walkthrough builds directly on <strong>Ch 8.11</strong> — specifically <code>test_date_filter_excludes_commits_before_start_date</code>, which was written to cover the boundary condition on <code>start_date</code>. We inject an off-by-one bug into the <code>date_filter</code> function and walk the agent through all 5 stages of the systematic debugging loop. The test from 8.11 catches the bug exactly because it was written on the boundary case.</p>
+
+        <h4>Step 1 — Inject the bug</h4>
+        <p>In <code>gitlog_report/parser.py</code>, find the date filter condition and change <code>&gt;=</code> to <code>&gt;</code>:</p>
+        <pre><code># BEFORE (correct)
+if commit_date >= start_date:
+    include_commit(commit)
+
+# AFTER (injected bug — off-by-one, boundary commit excluded)
+if commit_date > start_date:
+    include_commit(commit)</code></pre>
+        <p>This is a one-character change. The bug is subtle: it only manifests when a commit's date <em>exactly equals</em> <code>start_date</code> — the boundary case. Without the boundary-focused test from Ch 8.11, this bug would pass all happy-path tests.</p>
+
+        <h4>Step 2 — The failing test</h4>
+        <pre><code>$ pytest tests/test_gitlog.py -v
+
+PASSED  tests/test_gitlog.py::test_empty_repo_returns_empty_dict
+PASSED  tests/test_gitlog.py::test_single_author_commit_count
+PASSED  tests/test_gitlog.py::test_multi_author_counts
+FAILED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
+
+======================== FAILURES ========================
+FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
+
+AssertionError: Expected 2 commits (boundary + after), got 1.
+If this is 1, the filter is using strict > instead of >= on the boundary date.
+assert result["Alice"]["commit_count"] == 2
+       → result["Alice"]["commit_count"] is 1</code></pre>
+        <p>Exactly one test fails. The error message is the one we wrote in Ch 8.11 — self-diagnosing. The agent now has everything it needs to begin the systematic loop.</p>
+
+        <h4>Step 3 — Systematic debugging walkthrough</h4>
+        <p><strong>Stage 1 — Reproduce:</strong> Paste the test output above to the agent. Ask: "Run <code>test_date_filter_excludes_commits_before_start_date</code> and confirm it fails." The agent confirms: failure is deterministic. Reproduction recipe matches. We proceed.</p>
+        <p><strong>Stage 2 — Isolate:</strong> Ask: "Which input triggers the failure?" The agent traces: the boundary commit (date == <code>start_date</code>) is the suspect. A commit dated 2024-01-15 (after) is included; a commit dated 2024-01-05 (before) is excluded; the commit dated 2024-01-10 (on the boundary, the same as <code>start_date</code>) is excluded when it should be included. The minimal failing case is one commit at exactly <code>start_date</code>.</p>
+        <p><strong>Stage 3 — Root cause:</strong> Ask: "Read <code>gitlog_report/parser.py</code>. Find the date comparison. State the exact line and what it does." The agent reads and reports:</p>
+        <pre><code>Line 47: if commit_date > start_date:
+The condition is strict greater-than. Commits whose date equals start_date
+fail this condition and are excluded. The invariant (start_date is inclusive)
+is violated. Root cause: operator should be >= not >.</code></pre>
+        <p><strong>Stage 4 — Fix:</strong> Ask: "Apply the minimal fix. Do not change anything else." The agent changes one character:</p>
+        <pre><code># Line 47 — one-character fix
+- if commit_date > start_date:
++ if commit_date >= start_date:</code></pre>
+        <p><strong>Stage 5 — Verify:</strong> Rerun the failing test first, then the full suite:</p>
+        <pre><code>$ pytest tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date -v
+PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
+
+$ pytest tests/test_gitlog.py -v
+PASSED  tests/test_gitlog.py::test_empty_repo_returns_empty_dict
+PASSED  tests/test_gitlog.py::test_single_author_commit_count
+PASSED  tests/test_gitlog.py::test_multi_author_counts
+PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
+
+4 passed in 0.31s — no regressions</code></pre>
+
+        <h4>Lesson</h4>
+        <p>The test from Ch 8.11 caught the bug <em>exactly</em> because it was written on the boundary condition. The three other tests — empty repo, single author, multi-author — all passed with the injected bug. Only the test that explicitly checked "boundary commit is included" caught the off-by-one. This is why the discipline from §8.3 matters: a test must cover the specific condition it is supposed to protect. A test that only covers the happy path would have let this bug through.</p>
+        <p>The fix was one character. The diagnosis took 5 structured steps. The ratio is correct: most of debugging is finding the root cause, not writing the fix. The systematic loop ensures you don't write a 30-line workaround for a 1-character bug.</p>
+        <p><strong>Next chapter:</strong> we run a full review pass on the debugged code. → Ch 10: Safety, Review &amp; Verification.</p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch8-tdd')">← Ch 8. TDD with Agents</a>
+        <a onclick="go('ch10-review')">→ Ch 10. Safety, Review &amp; Verification</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers (systematic-debugging skill)</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
