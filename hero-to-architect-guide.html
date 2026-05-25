@@ -3494,8 +3494,8 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
 
       <p><strong>Coordination tax exceeding parallelism gain.</strong> For tasks that take 5 minutes sequentially: creating worktrees, crafting 3 well-scoped prompts, dispatching, integrating, and resolving conflicts may take longer. Parallelism wins at scale — large tasks with clear decomposition boundaries. It loses on small tasks and tasks with implicit coupling.</p>
 
-      <div style="background:var(--surface); border:2px solid #c0392b; border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
-        <p style="font-weight:700; color:#c0392b; margin:0 0 0.6rem;">Anti-patterns</p>
+      <div style="background:var(--surface); border:2px solid var(--red); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; color:var(--red); margin:0 0 0.6rem;">Anti-patterns</p>
         <ul style="margin:0; font-size:0.92rem;">
           <li><strong>Shotgun dispatch:</strong> spawning many agents without decomposing — "do the whole refactor in parallel." No clean boundaries → guaranteed conflicts.</li>
           <li><strong>Context-free subagents:</strong> prompts that say "fix the auth module" without providing the module path, relevant interfaces, or constraints. Subagent hallucinates context.</li>
