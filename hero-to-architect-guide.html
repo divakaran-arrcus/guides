@@ -3346,6 +3346,285 @@ would fail right now?"</code></pre>
       </div>
     </section>
 
+    <section id="ch11-parallel" class="section">
+      <h1>11. Multi-Agent &amp; Parallel Workflows</h1>
+      <p class="lede">What you'll learn: when one agent isn't enough, how to dispatch parallel subagents without conflicts, worktree isolation, the agent-of-agents orchestrator pattern, and how to polish gitlog-report in parallel.</p>
+
+      <h2>11.1 When one agent isn't enough</h2>
+      <p>A single agent working sequentially has two fundamental limits: <strong>context window saturation</strong> and <strong>wall-clock time</strong>. When a task has genuinely independent sub-problems, forcing one agent through them sequentially wastes both.</p>
+
+      <p>Three signals that you need more than one agent:</p>
+      <ul>
+        <li><strong>Independent investigation.</strong> You need to research three unrelated APIs simultaneously. Each investigation has no dependency on the others. A single agent would context-switch, losing depth; parallel agents each work the full window on one problem.</li>
+        <li><strong>Large context dilution.</strong> A 200-file codebase plus test suite plus documentation saturates the main session. Farming sub-problems to subagents preserves the orchestrator's context for integration work, not retrieval.</li>
+        <li><strong>Specialized roles.</strong> One agent reads the spec, a second writes the implementation, a third reviews it. Each agent's prompt is tuned for one job. The reviewer agent receives no implementation bias — it read the spec first and forms its own expectations.</li>
+      </ul>
+
+      <p>The cost of going parallel is coordination overhead: you need to decompose cleanly, manage worktrees or shared state explicitly, and integrate results. If the sub-problems are not truly independent, you pay coordination cost without the throughput benefit — worse than sequential. Rule: <strong>only parallelize at clean dependency boundaries</strong>.</p>
+
+      <h2>11.2 Subagents in Claude Code — the Agent tool</h2>
+      <p>Claude Code exposes an internal <strong>Agent tool</strong> that the model can call to spawn subagents within the same session. When the orchestrating agent issues multiple Agent tool calls in a single response, Claude Code dispatches them in parallel — each subagent gets its own context, its own tool access, and runs concurrently.</p>
+
+      <p>The Agent tool accepts a <code>prompt</code> parameter (what the subagent should do) and an optional description. The orchestrator receives each subagent's final output as a tool result and integrates them.</p>
+
+      <p><strong>Subagent type identifiers.</strong> Claude Code also exposes named agent types that map to specialized behaviors. The exact identifiers and their casing are subject to Claude Code version changes — <em>always verify against the current Claude Code documentation before scripting against them</em>. At time of writing, commonly referenced identifiers include:</p>
+      <ul>
+        <li><code>general-purpose</code> — default; reads, writes, runs commands</li>
+        <li><code>code-reviewer</code> — review-focused, no writes</li>
+        <li><code>Explore</code> — read-only codebase exploration</li>
+        <li><code>Plan</code> — spec analysis and decomposition, no execution</li>
+      </ul>
+      <p><em>Note: Verify exact identifiers and casing against current Claude Code docs before use. These may differ between Claude Code versions.</em></p>
+
+      <p>In practice, most parallel work dispatches unnamed subagents via the Agent tool with a well-scoped prompt. Named types are useful when you want Claude Code to enforce role constraints (e.g., a review agent that cannot write files).</p>
+
+      <h2>11.3 Dispatching parallel subagents — rules of thumb</h2>
+      <p>The critical prerequisite: <strong>parallel dispatch is only safe when the subagents' work is genuinely independent</strong>. Two agents editing the same file simultaneously produce a merge conflict at best and silent data corruption at worst.</p>
+
+      <p><strong>How dispatch works in Claude Code:</strong> When you issue a single message with multiple Agent tool calls (or the model decides to dispatch multiple agents in one turn), Claude Code runs them concurrently. Each subagent gets its own context window seeded with the prompt you provide. They do not share context — they cannot "see" each other's in-progress work.</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Rules of thumb for parallel dispatch</p>
+        <ul style="margin:0; font-size:0.92rem;">
+          <li><strong>One file per agent.</strong> Two agents must not write to the same file in the same dispatch batch. If they need to touch overlapping files, sequence them.</li>
+          <li><strong>Independent output paths.</strong> Each agent writes to a different directory, branch, or worktree. The orchestrator integrates after all agents complete.</li>
+          <li><strong>Front-load context in prompts.</strong> Each subagent starts with zero memory of prior conversation. Include all necessary context in the dispatch prompt — do not assume shared state.</li>
+          <li><strong>Limit fanout.</strong> More than 4–5 parallel agents is rarely beneficial and raises coordination cost sharply. Prefer 2–3 well-scoped agents over 8 narrowly-scoped ones.</li>
+          <li><strong>Explicit integration step.</strong> After subagents complete, the orchestrator reads all outputs and synthesizes. This step is not free — budget tokens and turns for it.</li>
+        </ul>
+      </div>
+
+      <p>This parallelism is what happens in real-time when this guide is built: an orchestrator agent dispatches multiple subagents — one per chapter — in a single turn. Each agent writes its section independently. The orchestrator then integrates the outputs.</p>
+
+      <h2>11.4 Worktrees for isolation — git worktree patterns</h2>
+      <p>When parallel agents need to write code (not just read), shared file state is the primary failure mode. The solution is <strong>git worktrees</strong>: one checkout per agent, all pointing at the same underlying repo.</p>
+
+      <pre><code># Create three worktrees for three parallel agents
+git worktree add ../gitlog-feat -b polish/json
+git worktree add ../gitlog-tests -b polish/tests
+git worktree add ../gitlog-docs -b polish/docs</code></pre>
+
+      <p>Each agent is dispatched with an explicit working directory. Agent A works in <code>../gitlog-feat</code>, Agent B in <code>../gitlog-tests</code>, Agent C in <code>../gitlog-docs</code>. No agent ever touches another's tree. When all three complete, you review each branch independently, then merge.</p>
+
+      <p><strong>Lifecycle:</strong></p>
+      <ol>
+        <li>Create worktrees before dispatching agents (<code>git worktree add</code>).</li>
+        <li>Dispatch agents with their worktree path in the prompt.</li>
+        <li>Agents commit to their branch independently.</li>
+        <li>Orchestrator collects, reviews, and merges (or raises PRs).</li>
+        <li>Clean up: <code>git worktree remove ../gitlog-feat</code> after merge.</li>
+      </ol>
+
+      <p>The <code>superpowers:using-git-worktrees</code> skill automates this setup. It handles the worktree creation, branch naming, and teardown — invoke it before dispatching parallel agents on any non-trivial task to ensure clean isolation from the current workspace.</p>
+
+      <h2>11.5 /loop — recurring tasks and polling</h2>
+      <p>The <code>/loop</code> skill runs a prompt or slash command on a recurring interval, or lets the model self-pace between iterations. It is designed for polling external state — CI status, deploy health, rate-limited APIs — without you manually re-issuing the same command.</p>
+
+      <pre><code># Check CI every 5 minutes until green
+/loop 5m "check if CI is passing on the current branch and report status"
+
+# Self-paced loop — model decides when to run again based on output
+/loop /babysit-prs</code></pre>
+
+      <p><strong>When to use <code>/loop</code>:</strong></p>
+      <ul>
+        <li>Polling a deploy pipeline until it completes or fails.</li>
+        <li>Watching a test suite for new failures during active development.</li>
+        <li>Monitoring an external API endpoint for a state change you're waiting on.</li>
+        <li>Running a recurring quality check (lint, typecheck) at a fixed interval during a long coding session.</li>
+      </ul>
+
+      <p><strong>When not to use <code>/loop</code>:</strong> one-shot tasks. <code>/loop</code> is overhead for anything you only need once. Also avoid loops that generate large output per iteration — token consumption compounds quickly with recurring agents.</p>
+
+      <h2>11.6 /schedule — cron-style remote agents</h2>
+      <p>The <code>/schedule</code> skill creates, updates, and lists <strong>remote agent routines</strong> that execute on a cron schedule — they run independently of your local Claude Code session. You close your terminal; they keep running.</p>
+
+      <pre><code># Run a daily standup summary at 9am
+/schedule "every day at 9am, summarize the last 24h of commits across all branches"
+
+# One-time scheduled run
+/schedule "run the security-review skill at 3pm today"</code></pre>
+
+      <p>Under the hood, schedules are registered routines that trigger a remote Claude Code agent at the specified time. The <strong><code>ScheduleWakeup</code> tool</strong> is the underlying mechanism — it registers a wakeup event that fires the agent on schedule. You can inspect and delete schedules via <code>/schedule list</code> and <code>/schedule delete</code>.</p>
+
+      <p><strong>Use cases:</strong> nightly security scans, automated PR summaries, daily dependency checks, recurring test runs on a staging branch, automated standup generation.</p>
+
+      <p><strong>Constraints:</strong> scheduled agents run with the permissions and context available at schedule-creation time. They cannot interactively ask you for clarification. Design scheduled agent prompts to be self-contained and to handle ambiguity gracefully (e.g., "if no new commits, output 'nothing to report' and stop").</p>
+
+      <h2>11.7 Agent-of-agents — the orchestrator pattern</h2>
+      <p>The <strong>orchestrator pattern</strong> is the highest-leverage multi-agent structure: one parent agent decomposes a problem, dispatches subagents in parallel to work independent sub-problems, then integrates their outputs into a unified result.</p>
+
+      <p><strong>Signature pattern:</strong></p>
+      <ol>
+        <li><strong>Decompose.</strong> Parent agent reads the task and identifies N independent sub-problems. Independence check: "Can sub-problem A be solved without knowing the output of sub-problem B?" If yes: parallel. If no: sequential.</li>
+        <li><strong>Dispatch.</strong> Parent agent issues N Agent tool calls in a single turn. Each subagent prompt includes: the sub-problem scope, all necessary context (file paths, relevant code, constraints), the output format expected, and what NOT to do (write to shared files, make network calls outside scope, etc.).</li>
+        <li><strong>Wait.</strong> Claude Code runs all N subagents concurrently. Parent agent is blocked until all complete.</li>
+        <li><strong>Integrate.</strong> Parent agent receives N results. It reconciles conflicts, fills gaps, resolves dependencies between sub-results, and produces the final artifact.</li>
+      </ol>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0; font-size:0.92rem;">
+        <p style="font-weight:700; margin:0 0 0.6rem;">Orchestrator design principles</p>
+        <p style="margin:0 0 0.5rem;"><strong>Orchestrator is the context holder.</strong> The orchestrator's session accumulates all sub-results. It must have enough context budget to receive and process N subagent outputs. If the sub-results are large, summarize in subagent prompts ("return a 200-word summary of your findings, not the full output").</p>
+        <p style="margin:0 0 0.5rem;"><strong>Sub-problems must be expressible as self-contained prompts.</strong> If the decomposition requires inline real-time coordination between subagents (Agent A's output feeds Agent B's input), that is a sequential dependency, not parallel work.</p>
+        <p style="margin:0;"><strong>Integration is work.</strong> Budget a full turn (sometimes several) for integration. The orchestrator reading 3–5 substantial subagent outputs and synthesizing them is not a no-op turn.</p>
+      </div>
+
+      <h2>11.8 Kilo Code Orchestrator mode</h2>
+      <p>Kilo Code (VS Code extension, Chapter 12) implements the orchestrator pattern in IDE-resident form via its <strong>Orchestrator mode</strong>. Rather than manually issuing Agent tool calls, you switch Kilo Code into Orchestrator mode and describe the high-level task — Kilo Code decomposes it, dispatches subagents (called "boomerang tasks" in Kilo Code's terminology), and integrates their results.</p>
+
+      <p><strong>Multi-mode coordination in Kilo Code:</strong></p>
+      <ul>
+        <li><strong>Orchestrator mode</strong> — decomposes and delegates. Does not write code directly.</li>
+        <li><strong>Code mode</strong> — the default subagent mode. Implements a specific task.</li>
+        <li><strong>Architect mode</strong> — designs structure and produces specs, does not implement.</li>
+        <li><strong>Ask mode</strong> — read-only question-answering. Never writes files.</li>
+        <li><strong>Debug mode</strong> — specialized for root-cause analysis.</li>
+      </ul>
+
+      <p>A typical Kilo Code orchestrated flow: switch to Orchestrator mode → describe the feature → Orchestrator mode spawns an Architect subagent to write the spec, then two Code subagents (implementation + tests) in parallel, then a Debug subagent if tests fail. The user interacts only with the Orchestrator; subagents are dispatched automatically.</p>
+
+      <p>The key advantage over manual Agent tool calls: Kilo Code tracks subagent state in a visible boomerang task panel, making it easier to see which subagents are in-flight, which completed, and which need attention.</p>
+
+      <h2>11.9 When parallel hurts — shared state, races, context fragmentation</h2>
+      <p>Multi-agent is not a universal speedup. Three failure modes are common enough that you need to recognize them before reaching for parallelism.</p>
+
+      <p><strong>Shared state races.</strong> Two agents dispatched to "add error handling to the codebase" will both modify the same utility files — one agent's writes overwrite the other's. Result: silent data loss or a broken repo. Prevention: enforce one-file-per-agent and use worktrees.</p>
+
+      <p><strong>Context fragmentation.</strong> Each subagent has a partial view of the system. Agent A knows the API layer. Agent B knows the database layer. Neither knows both. When Agent A makes an assumption about database behavior that contradicts Agent B's implementation, you get a coherent-looking but internally inconsistent result. Prevention: the orchestrator must hold the full-system context and inject relevant cross-cutting constraints into every subagent prompt. Do not assume subagents will "figure out" what they don't know.</p>
+
+      <p><strong>Coordination tax exceeding parallelism gain.</strong> For tasks that take 5 minutes sequentially: creating worktrees, crafting 3 well-scoped prompts, dispatching, integrating, and resolving conflicts may take longer. Parallelism wins at scale — large tasks with clear decomposition boundaries. It loses on small tasks and tasks with implicit coupling.</p>
+
+      <div style="background:var(--surface); border:2px solid #c0392b; border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
+        <p style="font-weight:700; color:#c0392b; margin:0 0 0.6rem;">Anti-patterns</p>
+        <ul style="margin:0; font-size:0.92rem;">
+          <li><strong>Shotgun dispatch:</strong> spawning many agents without decomposing — "do the whole refactor in parallel." No clean boundaries → guaranteed conflicts.</li>
+          <li><strong>Context-free subagents:</strong> prompts that say "fix the auth module" without providing the module path, relevant interfaces, or constraints. Subagent hallucinates context.</li>
+          <li><strong>No integration plan:</strong> dispatch agents, collect outputs, declare done — without actually reading and reconciling the results. Integration is where most multi-agent value gets destroyed.</li>
+          <li><strong>Parallel review of dependent code:</strong> dispatching a review agent on code that a concurrent implementation agent is still writing.</li>
+        </ul>
+      </div>
+
+      <h2>11.10 The token math of multi-agent</h2>
+      <p>Multi-agent is not free. Each subagent consumes tokens independently. The cost model:</p>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
+        <p style="font-weight:700; margin:0 0 0.8rem;">Token cost formula</p>
+        <pre style="margin:0; font-size:0.9rem;"><code>Total tokens = N × (C_prompt + C_work + C_output)
+  + C_orchestrator
+
+Where:
+  N           = number of parallel subagents
+  C_prompt    = tokens in each subagent's seeded context (your dispatch prompt
+                + any injected file content)
+  C_work      = tokens consumed by the subagent during its work turns
+  C_output    = tokens in the subagent's final output returned to orchestrator
+  C_orchestrator = tokens consumed by the orchestrator reading + integrating
+                   all N outputs</code></pre>
+      </div>
+
+      <p><strong>Example:</strong> You dispatch 3 subagents. Each receives a 4 000-token prompt, does 8 000 tokens of work, and returns a 2 000-token result. The orchestrator reads all three results (6 000 tokens) and produces a 3 000-token integration.</p>
+      <pre><code>Subagent cost: 3 × (4 000 + 8 000 + 2 000) = 42 000 tokens
+Orchestrator:  6 000 (input) + 3 000 (output) = 9 000 tokens
+Total:                                          51 000 tokens
+
+Sequential equivalent (same work, one agent):  ~28 000 tokens
+Overhead:                                       +23 000 tokens (≈ 82 % more)
+
+But wall-clock time: 3 × sequential → 1 × parallel (if tasks are truly independent)
+Break-even: the 82% token overhead is justified if the work takes > ~15 min sequentially
+            and you need the result in < 5 min.</code></pre>
+
+      <p>Multi-agent amortizes only when the tasks are <em>genuinely</em> parallel and the wall-clock savings matter. For background tasks where you don't care about latency, sequential is almost always cheaper. For interactive workflows where you need results fast, the token overhead is often worth paying.</p>
+
+      <h2>11.11 Mini-walkthrough: gitlog-report polish pass in parallel</h2>
+
+      <div class="walkthrough">
+        <h3>Mini-walkthrough · gitlog-report — polish pass in parallel</h3>
+
+        <p><strong>Starting point:</strong> the <code>gitlog-report</code> script from Ch 7–8, reviewed and bug-fixed in Ch 10.11. The core implementation is complete and passing review. This is a <em>polish pass</em> — we are not re-implementing anything. We are extending and documenting an already-reviewed codebase.</p>
+
+        <p><strong>Goal:</strong> run three parallel agents to add three independent improvements simultaneously:</p>
+        <ul>
+          <li><strong>(a) Feature extension:</strong> add a <code>--json</code> output flag to <code>gitlog-report</code></li>
+          <li><strong>(b) Additional test coverage:</strong> edge cases — very large repo (10 000+ commits), unicode author names, repo with no history</li>
+          <li><strong>(c) README + usage docs:</strong> write <code>README.md</code> and usage examples for the script</li>
+        </ul>
+
+        <p>These three tasks touch different files (source, tests, docs) — a clean three-way independence boundary.</p>
+
+        <p><strong>Step 1 — Invoke the git worktrees skill, then create three worktrees:</strong></p>
+        <pre><code># Use the superpowers:using-git-worktrees skill to ensure clean isolation
+# Then create the three branches:
+
+git worktree add ../gitlog-feat   -b polish/json
+git worktree add ../gitlog-tests  -b polish/tests
+git worktree add ../gitlog-docs   -b polish/docs</code></pre>
+
+        <p><em>Skill reference: <code>superpowers:using-git-worktrees</code> — automates this setup, handles branch naming, and ensures no shared state between worktrees.</em></p>
+
+        <p><strong>Step 2 — Single dispatch message with three parallel Agent tool calls:</strong></p>
+        <pre><code># Orchestrator prompt (single message, dispatches 3 agents in parallel):
+
+"Dispatch 3 subagents in parallel:
+
+Agent A — working in ../gitlog-feat (branch polish/json):
+  Add a --json flag to gitlog-report. When passed, output the report as a
+  JSON array of objects {author, commits, insertions, deletions} instead of
+  the plain-text table. No other changes. Commit to polish/json.
+
+Agent B — working in ../gitlog-tests (branch polish/tests):
+  Add edge-case tests to the existing test suite for:
+    (1) very large repo (mock 10 000+ commits),
+    (2) author names containing unicode (e.g., '山田 太郎', 'Ångström, Erik'),
+    (3) repo with zero commits (empty history).
+  Do not modify the main script. Commit to polish/tests.
+
+Agent C — working in ../gitlog-docs (branch polish/docs):
+  Write README.md for gitlog-report covering: purpose, installation,
+  usage examples (plain text, --json, --since, --author filters),
+  output format description, and contributing notes.
+  Do not modify the main script or tests. Commit to polish/docs."</code></pre>
+
+        <p><em>Skill reference: <code>superpowers:dispatching-parallel-agents</code> — guides the orchestrator prompt structure, ensures each subagent gets full context, and handles the integration step.</em></p>
+
+        <p><strong>Step 3 — Integration: 3 PRs → merge order → conflict resolution:</strong></p>
+        <pre><code># After all three agents complete and commit:
+
+# Raise three PRs
+gh pr create --head polish/json   --base main --title "feat: add --json output flag"
+gh pr create --head polish/tests  --base main --title "test: edge-case coverage"
+gh pr create --head polish/docs   --base main --title "docs: README and usage"
+
+# Merge order (safest to reduce conflicts):
+# 1. docs (README only — no code changes, zero conflict risk)
+# 2. tests (test files only — no conflict with docs)
+# 3. feature (source change — review independently, then merge last)
+
+# If polish/json conflicts with main after merges:
+git checkout polish/json
+git rebase main
+# Resolve any conflicts, then:
+git push --force-with-lease origin polish/json</code></pre>
+
+        <p><strong>What this walkthrough demonstrates:</strong></p>
+        <ul>
+          <li>Three parallel worktrees eliminate shared-state races by giving each agent an isolated filesystem.</li>
+          <li>The dispatch message is a single orchestrator turn — Claude Code runs all three agents concurrently.</li>
+          <li>Integration is explicit: three PRs, a reasoned merge order, and a conflict resolution path.</li>
+          <li>The orchestrator (you) holds the full picture; each subagent had a scoped view.</li>
+        </ul>
+
+        <p><em>Next: we ship the whole pipeline end-to-end in Ch 17. The gitlog-report built across Ch 7 (plan), Ch 8 (TDD), Ch 10 (review), and Ch 11 (parallel polish) becomes the worked example for the complete agentic development lifecycle.</em></p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch10-review')">← Ch 10. Safety, Review &amp; Verification</a>
+        <a onclick="go('ch13-claude')">→ Ch 13. Claude Code Deep Dive (sub-agents, /loop, /schedule)</a>
+        <a onclick="go('ch15-superpowers')">→ Ch 15. Superpowers (dispatching-parallel-agents, using-git-worktrees)</a>
+        <a onclick="go('ch17-worked')">→ Ch 17. Worked Example end-to-end</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
