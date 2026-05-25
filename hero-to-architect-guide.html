@@ -2129,7 +2129,7 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       <p><strong>Entering plan mode in Claude Code</strong></p>
       <ul>
         <li>Cycle through modes with <kbd>Shift+Tab</kbd> until the mode indicator shows <em>Plan</em></li>
-        <li>Or type <code>/plan</code> at the prompt</li>
+        <li>Or prefix your request with "Plan:" to signal plan-mode intent (the agent will enter plan mode before responding)</li>
         <li>The mode persists for the session; the agent will not exit it until you approve</li>
       </ul>
 
@@ -2221,7 +2221,7 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       <ol>
         <li><strong>Reviewability</strong> — a PR containing <code>PLAN.md</code> alongside the spec lets a reviewer verify that the planned approach actually satisfies the spec criteria before a single line of implementation is written. This is the cheapest code review possible.</li>
         <li><strong>Resumability</strong> — if you close the session mid-execution, the next session starts with: "Read PLAN.md and continue from Task N." No context reconstruction. No guessing what was done.</li>
-        <li><strong>Auditability</strong> — the git log records <em>when</em> the plan changed and <em>why</em>. If a post-mortom asks "did we have a plan for this?", the answer is in the history.</li>
+        <li><strong>Auditability</strong> — the git log records <em>when</em> the plan changed and <em>why</em>. If a post-mortem asks "did we have a plan for this?", the answer is in the history.</li>
       </ol>
       <p>Typical file paths: <code>PLAN.md</code> at repo root for small features; <code>specs/&lt;feature&gt;/plan.md</code> alongside the spec for larger work; <code>.claude/PLAN.md</code> for plans that are agent-internal and shouldn't appear in the main repo tree.</p>
       <p>Commit message convention: <code>plan(&lt;feature&gt;): draft execution plan</code>. This makes the plan easy to find in <code>git log --oneline</code> without grep.</p>
