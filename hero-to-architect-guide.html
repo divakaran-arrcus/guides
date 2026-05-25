@@ -3991,6 +3991,7 @@ When this skill is invoked, do the following:
     ]
   }
 }</code></pre>
+        <p style="margin-top:0.8rem; font-size:0.92rem; color:var(--text-dim);"><em>Verify the exact hook event names and matcher syntax against current Claude Code docs — the hooks schema has evolved across versions and matcher fields differ per event.</em></p>
       </div>
 
       <h2>13.7 Sub-agents — the Agent tool</h2>
@@ -4071,7 +4072,10 @@ When this skill is invoked, do the following:
       <h2>13.14 Hands-on: configure Claude Code for your daily workflow</h2>
       <p>This walkthrough takes you from a fresh Claude Code installation to a fully configured daily workflow in six steps. Each step is independently valuable — you can stop after any step and have a meaningfully improved setup.</p>
 
-      <ol>
+      <div class="walkthrough">
+        <h3>Walkthrough · Configure Claude Code for your daily workflow</h3>
+
+        <ol>
         <li>
           <strong>Create your global CLAUDE.md.</strong>
           <pre><code>mkdir -p ~/.claude
@@ -4156,6 +4160,7 @@ EOF</code></pre>
           Check that: (a) Claude greets you with awareness of the project (from CLAUDE.md); (b) <code>/standup</code> appears in <code>/help</code>; (c) a <code>git status</code> Bash call does not prompt for confirmation (allowlisted); (d) attempting a <code>rm -rf /tmp/test</code> Bash call prompts for confirmation or is blocked (depending on your deny rules). If any of these fail, review the settings and CLAUDE.md for typos or scope mismatches.
         </li>
       </ol>
+      </div>
 
       <p><strong>Daily rhythm with this setup:</strong> Start each session with <code>/standup</code> to orient. Use plan mode (Shift-Tab) for any task touching more than two files. Use <code>/schedule</code> to set up nightly code quality scans. When Claude makes a mistake, correct it explicitly and let auto-memory capture the correction — it will not repeat that mistake tomorrow. The investment in this config compounds: every session is faster than the last because the agent accumulates accurate context about how you work.</p>
 
