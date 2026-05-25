@@ -6044,6 +6044,168 @@ gemini extensions install --source &lt;git-url&gt;</code></pre>
 
     </section>
 
+    <section id="ref-glossary" class="section">
+      <h1>Glossary A–Z</h1>
+      <p class="lede">Extends the v1 glossary. This list adds advanced-tier terms used throughout the Hero to Architect guide. Each entry includes a chapter link to where the term is covered in depth.</p>
+
+      <dl class="glossary">
+
+        <dt><strong><code>activate_skill</code></strong></dt>
+        <dd>A Gemini CLI MCP tool that loads a named skill into the active session, making its instructions available to the model. Analogous to Claude Code's skill invocation but exposed as an MCP tool rather than a slash command. <a onclick="go('ch14-gemini')">→ Ch 14</a></dd>
+
+        <dt><strong>Agent tool</strong></dt>
+        <dd>A built-in Claude Code tool that spins up a sub-agent in a separate context to handle a delegated subtask. The parent agent resumes once the sub-agent returns its result. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>agent loop</strong></dt>
+        <dd>The core execution cycle of an AI coding agent: receive prompt → call tool → observe result → decide next action → repeat until the task is complete or the agent stops. Understanding the loop is foundational to reasoning about agent behaviour. <a onclick="go('ch1-loop')">→ Ch 1</a></dd>
+
+        <dt><strong>auto-approve</strong></dt>
+        <dd>A configuration mode in which the agent executes tool calls (Bash, file writes, etc.) without pausing to ask the user for confirmation. Reduces friction but widens blast radius. <a onclick="go('ch3-tools')">→ Ch 3</a></dd>
+
+        <dt><strong>blast radius</strong></dt>
+        <dd>The maximum scope of damage a single agent action could cause — e.g., deleting files, pushing to production, or sending messages. Keeping blast radius small (scoped permissions, dry-run flags, reversible operations) is a core safety principle. <a onclick="go('ch3-tools')">→ Ch 3</a></dd>
+
+        <dt><strong>BYO model</strong></dt>
+        <dd>Bring-Your-Own-Model — the ability to connect an AI coding tool to a model endpoint of your choice (e.g., a self-hosted Llama instance or a Vertex AI deployment) rather than the vendor default. Kilo Code and Gemini CLI both support BYO model configurations. <a onclick="go('ch12-kilo')">→ Ch 12</a></dd>
+
+        <dt><strong>cache hit rate</strong></dt>
+        <dd>The percentage of input tokens served from the prompt cache rather than re-processed. A high cache hit rate reduces latency and cost; optimising for it involves structuring stable context (CLAUDE.md, file trees) at the front of prompts. <a onclick="go('ch2-context')">→ Ch 2</a></dd>
+
+        <dt><strong>CLAUDE.md</strong></dt>
+        <dd>A markdown file that Claude Code reads at session start to load persistent project instructions — coding conventions, toolchain commands, constraints, and memory. The primary mechanism for injecting stable context without burning tokens each turn. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>Cline</strong></dt>
+        <dd>An open-source AI coding extension for VS Code (formerly Claude Dev) that supports multiple model backends, MCP servers, and custom modes. Covered as one of the IDE-native agent tools alongside Kilo Code and Continue.dev. <a onclick="go('ch5-ide')">→ Ch 5</a></dd>
+
+        <dt><strong>Context Bank</strong></dt>
+        <dd>The conceptual pool of tokens available to the agent across a session — files loaded, conversation history, tool outputs, and CLAUDE.md. Managing what enters and leaves the Context Bank is key to sustaining long tasks without compaction loss. <a onclick="go('ch12-kilo')">→ Ch 12</a></dd>
+
+        <dt><strong>context compaction</strong></dt>
+        <dd>An automatic (or manually triggered) process that summarises a long conversation in-place, discarding raw history and replacing it with a compressed summary. Invoked via <code>/compact</code> in Claude Code; prevents context-window exhaustion on extended tasks. <a onclick="go('ch2-context')">→ Ch 2</a></dd>
+
+        <dt><strong>Continue.dev</strong></dt>
+        <dd>An open-source AI coding assistant that runs as a VS Code / JetBrains extension, supports multiple model providers, and offers inline completions alongside a chat interface. <a onclick="go('ch5-ide')">→ Ch 5</a></dd>
+
+        <dt><strong>custom mode</strong></dt>
+        <dd>A named agent persona with a specific role definition, allowed tool groups, and custom instructions — defined in a YAML file and loaded by Kilo Code. Lets teams create specialised agents (reviewer, migrator, doc writer) without modifying base prompts. <a onclick="go('ch12-kilo')">→ Ch 12</a></dd>
+
+        <dt><strong>extensions (Gemini)</strong></dt>
+        <dd>Gemini CLI's plugin mechanism — packages that add new MCP tools, slash commands, or integrations to the CLI. Installed via <code>gemini extensions install</code> and analogous to Claude Code's plugin system. <a onclick="go('ch14-gemini')">→ Ch 14</a></dd>
+
+        <dt><strong>fast mode</strong></dt>
+        <dd>A Claude Code execution mode that skips confirmation prompts and uses a lighter approval heuristic, prioritising speed over caution. Useful for low-risk, repetitive tasks where round-trip friction is the bottleneck. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>GEMINI.md</strong></dt>
+        <dd>The Gemini CLI equivalent of CLAUDE.md — a markdown file in the project root that Gemini CLI reads at session start to inject persistent project context, commands, and conventions into the model's system prompt. <a onclick="go('ch14-gemini')">→ Ch 14</a></dd>
+
+        <dt><strong>golden test</strong></dt>
+        <dd>A regression test that captures a known-good output snapshot and fails if the output changes. In AI-assisted TDD, golden tests guard against silent behaviour changes introduced by refactors or model-generated edits. <a onclick="go('ch8-tdd')">→ Ch 8</a></dd>
+
+        <dt><strong>headless mode</strong></dt>
+        <dd>Running Claude Code without an interactive terminal — typically via <code>claude --headless</code> or <code>claude -p</code> — so it can be driven programmatically in CI pipelines, scripts, or orchestration systems. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>hooks</strong></dt>
+        <dd>Shell commands or scripts that Claude Code executes automatically at lifecycle events (SessionStart, PreToolUse, PostToolUse, Stop). Used to enforce policies, log activity, run linters, or trigger external systems without modifying the agent's instructions. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>HTTP/SSE transport</strong></dt>
+        <dd>A network-based MCP transport where the client connects to a running server over HTTP and receives streaming responses via Server-Sent Events. Used when the MCP server is remote or must be shared across multiple clients; contrasts with stdio transport. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>idempotency</strong></dt>
+        <dd>The property of an operation that produces the same result whether run once or many times. Designing agent-driven side effects (file writes, API calls, database mutations) to be idempotent makes retries safe and blast radius predictable. <a onclick="go('ch3-tools')">→ Ch 3</a></dd>
+
+        <dt><strong>Junie</strong></dt>
+        <dd>JetBrains' AI coding assistant, built into IntelliJ-based IDEs. Covered as part of the IDE-native agent landscape alongside Kilo Code, Cline, and Continue.dev. <a onclick="go('ch5-ide')">→ Ch 5</a></dd>
+
+        <dt><strong>Kilo custom modes</strong></dt>
+        <dd>Named agent configurations defined in <code>.kilocode/modes/&lt;name&gt;.yaml</code>, each specifying a role definition, allowed tool groups, and custom instructions. A team can maintain a library of modes (reviewer, migrator, doc-writer) checked into the repo. <a onclick="go('ch12-kilo')">→ Ch 12</a></dd>
+
+        <dt><strong><code>/loop</code></strong></dt>
+        <dd>A Claude Code skill (slash command) that re-runs a given prompt or sub-command on a repeating interval, keeping the agent active between invocations. Useful for polling, watchdog tasks, or paced batch processing. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>MCP</strong></dt>
+        <dd>Model Context Protocol — an open standard that defines how AI models connect to external tools, data sources, and services through a client–server architecture. MCP enables any compliant tool to be added to Claude Code, Kilo Code, or Gemini CLI without custom integration code. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>MCP inspector</strong></dt>
+        <dd>A developer utility (typically <code>npx @modelcontextprotocol/inspector</code>) that lets you connect to an MCP server interactively, browse its registered tools and resources, and call them manually — invaluable for debugging new servers. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>MCP registry</strong></dt>
+        <dd>A curated index of published MCP servers — e.g., the official MCP server list at modelcontextprotocol.io — where developers can discover, evaluate, and install community-maintained integrations. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>MCP resource</strong></dt>
+        <dd>An MCP primitive that exposes readable data (files, database records, API responses) to the model. Resources are fetched on demand and injected into context, distinct from tools (which perform actions) and prompts (which provide templates). <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>MCP tool</strong></dt>
+        <dd>An MCP primitive that the model can invoke to perform an action — reading a file, querying a database, sending a Slack message, etc. Each tool has a name, description, and JSON Schema input definition that the model uses to decide when and how to call it. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>memory file</strong></dt>
+        <dd>A persistent markdown file (e.g., <code>~/.claude/CLAUDE.md</code> or a project-level <code>CLAUDE.md</code>) that stores facts, preferences, and instructions the agent should carry across sessions. The primary long-term memory mechanism in Claude Code. <a onclick="go('ch2-context')">→ Ch 2</a></dd>
+
+        <dt><strong>OpenSpec</strong></dt>
+        <dd>A structured spec-management system that formalises the proposal → spec → implementation lifecycle inside a repository. Specs are versioned markdown files; OpenSpec CLI commands (init, validate, archive) keep the spec set coherent over time. <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
+
+        <dt><strong>Orchestrator mode</strong></dt>
+        <dd>An agent mode in which the model's primary job is decomposing a high-level task, dispatching subtasks to sub-agents or parallel workers, and synthesising their results — rather than doing the implementation work itself. <a onclick="go('ch11-multi')">→ Ch 11</a></dd>
+
+        <dt><strong>output style</strong></dt>
+        <dd>A Claude Code configuration that shapes how the model formats its responses — e.g., concise vs. verbose, markdown-heavy vs. plain text. Set in CLAUDE.md or via settings to match team preferences and downstream tooling. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>plan mode</strong></dt>
+        <dd>A read-only exploration phase in which the agent analyses the codebase, proposes a structured implementation plan, and waits for approval before writing any files. Dramatically reduces wasted work on complex features. <a onclick="go('ch7-plan')">→ Ch 7</a></dd>
+
+        <dt><strong>plugin</strong></dt>
+        <dd>A Claude Code extension installed via <code>/plugin</code> that adds an MCP server (and its tools/resources) to the session. Plugins are managed through the Claude Code plugin registry and configured in <code>settings.json</code>. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>prompt cache</strong></dt>
+        <dd>Anthropic's server-side mechanism that stores and reuses the KV representation of a prompt prefix across multiple requests. When a long, stable prefix (system prompt + CLAUDE.md) hits the cache, the model responds faster and the cost drops significantly. <a onclick="go('ch2-context')">→ Ch 2</a></dd>
+
+        <dt><strong><code>/schedule</code></strong></dt>
+        <dd>A Claude Code skill that creates a cron-scheduled remote agent — a routine that runs at a specified interval without a human in the loop. Useful for nightly reports, periodic health checks, and other recurring automation. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong><code>ScheduleWakeup</code></strong></dt>
+        <dd>A Claude Code hook event or internal mechanism that fires when a scheduled agent wakes up to run its routine. Allows hooks and setup logic to execute specifically at the start of a scheduled (non-interactive) session. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>SessionStart hook</strong></dt>
+        <dd>A Claude Code hook that executes a shell command immediately when a new session opens — before any user prompt is processed. Commonly used to inject dynamic context (git status, branch name, environment info) into the session. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>skill</strong></dt>
+        <dd>A named, reusable agent behaviour defined in a <code>SKILL.md</code> file under <code>~/.claude/skills/&lt;name&gt;/</code>. Skills are invoked as slash commands and encapsulate multi-step workflows that would be tedious to re-prompt every time. <a onclick="go('ch15-superpowers')">→ Ch 15</a></dd>
+
+        <dt><strong>slash command</strong></dt>
+        <dd>A <code>/keyword</code> typed in the Claude Code (or Gemini CLI) prompt that invokes a built-in feature or installed skill. Built-in slash commands include <code>/plan</code>, <code>/compact</code>, and <code>/clear</code>; skill-based ones are user-defined. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
+
+        <dt><strong>SpecKit</strong></dt>
+        <dd>A Claude Code skill suite that provides <code>/specify</code>, <code>/plan</code>, <code>/tasks</code>, and <code>/implement</code> slash commands to walk a feature from requirements to code in a structured, approval-gated pipeline. <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
+
+        <dt><strong>spec-driven dev</strong></dt>
+        <dd>A development methodology in which a formal specification (requirements, constraints, acceptance criteria) is written and approved before any implementation begins. The spec becomes the authoritative contract that the agent's code must satisfy. <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
+
+        <dt><strong>stdio transport</strong></dt>
+        <dd>An MCP transport where the client launches the server as a child process and communicates over stdin/stdout. The simplest deployment model — no network required — and the default for locally installed MCP servers. <a onclick="go('ch16-mcp')">→ Ch 16</a></dd>
+
+        <dt><strong>sub-agent</strong></dt>
+        <dd>An agent instance spawned by an orchestrator to handle a scoped subtask in its own context window. Sub-agents report results back to the parent; using them enables true parallelism and prevents context pollution between independent workstreams. <a onclick="go('ch11-multi')">→ Ch 11</a></dd>
+
+        <dt><strong>Superpowers</strong></dt>
+        <dd>A curated collection of Claude Code skills that implement high-leverage development workflows: brainstorming, writing plans, executing plans, TDD, systematic debugging, verification-before-completion, and more. Maintained as a skill library that teams can adopt wholesale. <a onclick="go('ch15-superpowers')">→ Ch 15</a></dd>
+
+        <dt><strong>thinking mode</strong></dt>
+        <dd>A Claude model capability (activated via API or supported tools) that causes the model to reason through a problem step-by-step in an extended thinking block before producing its final answer. Improves accuracy on hard planning and reasoning tasks at the cost of latency and tokens. <a onclick="go('ch4-model')">→ Ch 4</a></dd>
+
+        <dt><strong>verification-before-completion</strong></dt>
+        <dd>A Superpowers skill (and general principle) requiring the agent to actually run the application and observe real behaviour — not just read the code — before declaring a task done. Catches integration failures that static analysis misses. <a onclick="go('ch15-superpowers')">→ Ch 15</a></dd>
+
+        <dt><strong>Vertex AI</strong></dt>
+        <dd>Google Cloud's managed ML platform, usable as a Gemini CLI backend via Application Default Credentials. Enables enterprise authentication, VPC-SC controls, and data-residency guarantees that the public Gemini API doesn't provide. <a onclick="go('ch14-gemini')">→ Ch 14</a></dd>
+
+        <dt><strong>worktree</strong></dt>
+        <dd>A Git feature (<code>git worktree add</code>) that checks out a branch into a separate directory, letting multiple branches coexist on disk simultaneously. Used by the Superpowers <code>using-git-worktrees</code> skill to give parallel sub-agents isolated workspaces without stashing or branch-switching. <a onclick="go('ch11-multi')">→ Ch 11</a></dd>
+
+        <dt><strong>YOLO mode</strong></dt>
+        <dd>Informal name for running an agent with all confirmations disabled and maximum permissions granted — essentially auto-approve at its most aggressive. Fastest for throwaway tasks; highest blast radius for anything touching production or shared state. <a onclick="go('ch14-gemini')">→ Ch 14</a></dd>
+
+      </dl>
+    </section>
+
   </main>
 </div>
 
