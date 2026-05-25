@@ -5624,6 +5624,426 @@ Is the task trivial? (single file, &lt; 5 lines, zero risk)
       </div>
     </section>
 
+    <section id="ref-cheats" class="section">
+      <h1>Cheat Sheets</h1>
+      <p class="lede">Quick-reference cards for the major tools and conventions in this guide. Use these when you know the concept and just need to look up the command, the flag, or the file template.</p>
+
+      <!-- ── Kilo Code ── -->
+      <h2>Kilo Code</h2>
+      <p class="see-also"><a onclick="go('ch12-kilo')">Ch 12. Kilo Code Deep Dive</a></p>
+
+      <table class="tbl">
+        <thead><tr><th>Task</th><th>How</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Install</td>
+            <td>VS Code Command Palette → <code>ext install kilocode.kilo-code</code><br><em>Verify: search "Kilo Code" in the Extensions sidebar if the marketplace ID has changed.</em></td>
+          </tr>
+          <tr>
+            <td>Switch mode (keyboard)</td>
+            <td>Varies by Kilo version — check <strong>Kilo Code › Keybindings</strong> in VS Code settings. Common default: <kbd>Ctrl+Shift+K</kbd> (Win/Linux), <kbd>⌘⇧K</kbd> (Mac) — <em>verify in your installed version.</em></td>
+          </tr>
+          <tr>
+            <td>Switch mode (UI)</td>
+            <td>Click the mode badge in the Kilo Code panel header → select Architect / Code / Debug / Ask.</td>
+          </tr>
+          <tr>
+            <td>Open command palette</td>
+            <td><kbd>Ctrl+Shift+P</kbd> / <kbd>⌘⇧P</kbd> → type <code>Kilo Code:</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:1rem;"><strong>Custom mode file template</strong> — <em>path: <code>.kilocode/modes/&lt;name&gt;.yaml</code> (verify against your installed version; earlier releases used <code>.kilocodemodes</code>):</em></p>
+      <pre><code class="lang-yaml"># .kilocode/modes/my-reviewer.yaml
+name: My Reviewer
+slug: my-reviewer
+roleDefinition: |
+  You are a strict code reviewer focused on security and performance.
+  Flag any mutation of shared state and all unhandled errors.
+groups:
+  - read        # read-only file access
+  # - edit      # uncomment to allow edits
+  # - browser
+  # - command
+customInstructions: |
+  Always cite the relevant CWE or OWASP category when flagging a security issue.</code></pre>
+
+      <!-- ── Claude Code ── -->
+      <h2>Claude Code</h2>
+      <p class="see-also"><a onclick="go('ch13-claude')">Ch 13. Claude Code Deep Dive</a> · <a onclick="go('ch15-superpowers')">Ch 15. Superpowers &amp; Skills</a></p>
+
+      <h3>Built-in slash commands</h3>
+      <table class="tbl">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>/clear</code></td><td>Wipe conversation context; start fresh in the same session.</td></tr>
+          <tr><td><code>/compact</code></td><td>Summarise long context in-place to reduce token cost.</td></tr>
+          <tr><td><code>/cost</code></td><td>Show token spend for the current session.</td></tr>
+          <tr><td><code>/context</code></td><td>Display what files/content are currently in context.</td></tr>
+          <tr><td><code>/init</code></td><td>Bootstrap <code>CLAUDE.md</code> for the current project.</td></tr>
+          <tr><td><code>/plan</code></td><td>Enter plan mode (read-only exploration, no file writes).</td></tr>
+          <tr><td><code>/review</code></td><td>Code-review the current diff (skill).</td></tr>
+          <tr><td><code>/security-review</code></td><td>Security-focused review of the current diff (skill).</td></tr>
+          <tr><td><code>/help</code></td><td>List available slash commands.</td></tr>
+          <tr><td><code>/plugin</code></td><td>Manage installed MCP plugins.</td></tr>
+          <tr><td><code>/loop</code></td><td>Run a prompt on a repeating interval (skill).</td></tr>
+          <tr><td><code>/schedule</code></td><td>Create a cron-scheduled remote agent (skill).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Hook lifecycle events</h3>
+      <table class="tbl">
+        <thead><tr><th>Event</th><th>Fires when</th></tr></thead>
+        <tbody>
+          <tr><td><code>SessionStart</code></td><td>Claude Code session opens.</td></tr>
+          <tr><td><code>PreToolUse</code></td><td>Before any tool (Bash, Edit, Read, …) executes.</td></tr>
+          <tr><td><code>PostToolUse</code></td><td>After a tool returns its result.</td></tr>
+          <tr><td><code>Stop</code></td><td>When the assistant turn ends.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Skill frontmatter template</h3>
+      <pre><code class="lang-yaml"># ~/.claude/skills/&lt;skill-name&gt;/SKILL.md
+---
+name: my-skill
+description: &gt;
+  One sentence Claude sees when deciding whether to invoke this skill.
+  Be specific: mention the trigger phrase and what the skill produces.
+metadata:
+  trigger_phrases:
+    - "generate a foo"
+    - "create foo report"
+  produces: "foo-report.md in the project root"
+---
+
+## Instructions
+...your skill body...</code></pre>
+
+      <h3><code>.claude/settings.json</code> template</h3>
+      <pre><code class="lang-json">{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm run *)",
+      "Read(**)",
+      "Edit(**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "echo 'Bash tool used' >> ~/.claude/audit.log" }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+      <!-- ── Gemini CLI ── -->
+      <h2>Gemini CLI</h2>
+      <p class="see-also"><a onclick="go('ch14-gemini')">Ch 14. Gemini CLI Deep Dive</a></p>
+
+      <table class="tbl">
+        <thead><tr><th>Task</th><th>Command / note</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Install</td>
+            <td><code>npm install -g @google/gemini-cli</code><br><em>Verify: package name may change — check <a href="https://github.com/google-gemini/gemini-cli" target="_blank">google-gemini/gemini-cli</a> for the current release.</em></td>
+          </tr>
+          <tr>
+            <td>Auth — personal Google</td>
+            <td>Run <code>gemini</code> → browser OAuth flow auto-opens.</td>
+          </tr>
+          <tr>
+            <td>Auth — API key</td>
+            <td><code>export GEMINI_API_KEY=&lt;key&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Auth — Vertex AI</td>
+            <td><code>export GOOGLE_CLOUD_PROJECT=&lt;project&gt;</code> + ADC (<code>gcloud auth application-default login</code>).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Slash commands <em>(verify against current <code>gemini /help</code> output)</em></h3>
+      <table class="tbl">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>/help</code></td><td>List available commands.</td></tr>
+          <tr><td><code>/clear</code></td><td>Clear conversation context.</td></tr>
+          <tr><td><code>/quit</code></td><td>Exit the CLI.</td></tr>
+          <tr><td><code>/tools</code></td><td>List active MCP tools.</td></tr>
+          <tr><td><code>/memory</code></td><td>Show or edit saved memory entries.</td></tr>
+          <tr><td><code>/stats</code></td><td>Token &amp; cost stats for the session.</td></tr>
+          <tr><td><code>/theme</code></td><td>Toggle colour theme.</td></tr>
+        </tbody>
+      </table>
+
+      <h3><code>activate_skill</code> example</h3>
+      <pre><code class="lang-text">gemini&gt; /tools
+# lists registered MCP tools including activate_skill
+
+gemini&gt; Use activate_skill to load the "code-review" skill, then review the current diff.</code></pre>
+
+      <h3>Extension install</h3>
+      <pre><code class="lang-bash"># Verify: command syntax subject to change across versions
+gemini extensions install --source &lt;git-url&gt;</code></pre>
+
+      <h3><code>GEMINI.md</code> template</h3>
+      <pre><code class="lang-markdown"># Project context for Gemini CLI
+## Repo overview
+&lt;one paragraph summary&gt;
+
+## Key directories
+- `src/` — application source
+- `tests/` — test suite
+- `docs/` — documentation
+
+## Coding conventions
+- Language: TypeScript, strict mode
+- Formatter: Prettier (run `npm run fmt` before committing)
+
+## Commands
+- `npm run build` — compile
+- `npm test` — full test suite</code></pre>
+
+      <h3>Free-tier limits at-a-glance</h3>
+      <table class="tbl">
+        <thead><tr><th>Limit</th><th>Value (verify at <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank">ai.google.dev rate limits</a>)</th></tr></thead>
+        <tbody>
+          <tr><td>Context window</td><td>Up to 1M tokens (Gemini 1.5 Pro)</td></tr>
+          <tr><td>Free requests/day</td><td>~1 000 req/day on free tier — <em>subject to change; check current quota page.</em></td></tr>
+          <tr><td>Paid tier</td><td>Per-token pricing via Google AI Studio or Vertex AI.</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ── MCP Servers ── -->
+      <h2>MCP Servers</h2>
+      <p class="see-also"><a onclick="go('ch10-mcp')">Ch 10. MCP Ecosystem</a></p>
+
+      <h3>Popular servers — one-line install snippets</h3>
+      <table class="tbl">
+        <thead><tr><th>Server</th><th>Install / add to config</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Atlassian</strong> (Jira + Confluence)</td>
+            <td>No npm install needed — add the config block below using the <code>@anthropic-ai/mcp-server-atlassian</code> package or the bundled Claude plugin. <em>Verify package name in Anthropic's plugin registry.</em></td>
+          </tr>
+          <tr>
+            <td><strong>Slack</strong></td>
+            <td><code>npx -y @slack/mcp-server</code> (or add via Claude Code <code>/plugin</code>).</td>
+          </tr>
+          <tr>
+            <td><strong>Box</strong></td>
+            <td>Available as a Claude plugin — install via <code>/plugin</code> → search "Box".</td>
+          </tr>
+          <tr>
+            <td><strong>Figma</strong></td>
+            <td>Install via <code>/plugin</code> → search "Figma" or <code>npx @figma/mcp</code> — <em>verify package name.</em></td>
+          </tr>
+          <tr>
+            <td><strong>GitHub</strong></td>
+            <td><code>npx -y @modelcontextprotocol/server-github</code></td>
+          </tr>
+          <tr>
+            <td><strong>Filesystem</strong></td>
+            <td><code>npx -y @modelcontextprotocol/server-filesystem /path/to/root</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><code>settings.json</code> stdio config snippet</h3>
+      <p>Works for both <strong>Claude Code</strong> (<code>~/.claude/settings.json</code>) and <strong>Kilo Code</strong> (VS Code <code>settings.json</code> under <code>kilocode.mcpServers</code>).</p>
+      <pre><code class="lang-json">// Claude Code — ~/.claude/settings.json
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "&lt;your-pat&gt;"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"]
+    }
+  }
+}
+
+// Kilo Code — VS Code settings.json
+// "kilocode.mcpServers": { ... same object shape ... }</code></pre>
+
+      <!-- ── OpenSpec ── -->
+      <h2>OpenSpec</h2>
+      <p class="see-also"><a onclick="go('ch8-openspec')">Ch 8. OpenSpec</a></p>
+
+      <h3>Command reference <em>(verify against <code>openspec --help</code>)</em></h3>
+      <table class="tbl">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>openspec init</code></td><td>Bootstrap <code>openspec/</code> directory skeleton in the current repo.</td></tr>
+          <tr><td><code>openspec list</code></td><td>List all specs (active + archived).</td></tr>
+          <tr><td><code>openspec show &lt;id&gt;</code></td><td>Print the full spec for the given ID.</td></tr>
+          <tr><td><code>openspec validate</code></td><td>Lint all specs against the schema.</td></tr>
+          <tr><td><code>openspec archive &lt;id&gt;</code></td><td>Move a spec to the archive (keeps history).</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Slash command for change creation</h3>
+      <pre><code class="lang-text"># Verify: command name depends on which OpenSpec skill/plugin is installed
+/opsx:propose &lt;change-name&gt;
+
+# Example
+/opsx:propose add-rate-limiting-to-api-gateway</code></pre>
+
+      <h3>Proposal file template</h3>
+      <pre><code class="lang-markdown"># Proposal: &lt;change-name&gt;
+**ID:** PROP-&lt;YYYYMMDD&gt;-&lt;slug&gt;
+**Status:** Draft
+**Author:** &lt;name&gt;
+
+## Problem statement
+&lt;What is broken or missing? Why now?&gt;
+
+## Proposed change
+&lt;Describe the change in 2–4 sentences.&gt;
+
+## Alternatives considered
+- Option A — &lt;why rejected&gt;
+- Option B — &lt;why rejected&gt;
+
+## Acceptance criteria
+- [ ] &lt;measurable criterion 1&gt;
+- [ ] &lt;measurable criterion 2&gt;</code></pre>
+
+      <h3>Delta spec template</h3>
+      <pre><code class="lang-markdown"># Delta Spec: &lt;feature-name&gt;
+**Spec ID:** SPEC-&lt;id&gt;
+**Parent proposal:** PROP-&lt;id&gt;
+**Status:** Active
+
+## Summary
+&lt;One paragraph.&gt;
+
+## Changed interfaces
+| Interface | Before | After |
+|-----------|--------|-------|
+| &lt;name&gt;    | &lt;old signature&gt; | &lt;new signature&gt; |
+
+## Invariants that must not break
+1. &lt;invariant 1&gt;
+
+## Out of scope
+- &lt;item&gt;</code></pre>
+
+      <!-- ── SpecKit ── -->
+      <h2>SpecKit</h2>
+      <p class="see-also"><a onclick="go('ch6-spec')">Ch 6. Spec-Driven Dev</a> · <a onclick="go('ch7-plan')">Ch 7. Plan-Driven Execution</a></p>
+
+      <table class="tbl">
+        <thead><tr><th>Slash command</th><th>Produces</th><th>Reads</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>/specify</code></td>
+            <td><code>spec.md</code> — requirements, constraints, acceptance criteria.<br><em>Verify: output path is project root by default.</em></td>
+            <td>Your prompt + project context</td>
+          </tr>
+          <tr>
+            <td><code>/plan</code></td>
+            <td><code>plan.md</code> — ordered implementation steps.</td>
+            <td><code>spec.md</code></td>
+          </tr>
+          <tr>
+            <td><code>/tasks</code></td>
+            <td><code>tasks.md</code> — atomic, trackable task list with checkboxes.</td>
+            <td><code>plan.md</code></td>
+          </tr>
+          <tr>
+            <td><code>/implement</code></td>
+            <td>Code changes across the repo.</td>
+            <td><code>spec.md</code> + <code>plan.md</code> + <code>tasks.md</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>File directory pattern <em>(verify — may vary by project)</em></h3>
+      <pre><code class="lang-text">project-root/
+├── spec.md          ← /specify output
+├── plan.md          ← /plan output
+├── tasks.md         ← /tasks output
+└── .speckit/
+    └── history/     ← archived spec iterations (if SpecKit creates this)</code></pre>
+
+      <!-- ── Superpowers Skills ── -->
+      <h2>Superpowers Skills</h2>
+      <p class="see-also">
+        <a onclick="go('ch15-superpowers')">← Ch 15.3 for the full library tour</a>
+      </p>
+
+      <table class="tbl">
+        <thead><tr><th>Skill</th><th>One-liner</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>brainstorming</code></td>
+            <td>Explores intent, requirements, and design space before any implementation begins.</td>
+          </tr>
+          <tr>
+            <td><code>writing-plans</code></td>
+            <td>Turns a spec or requirements brief into a structured, multi-step implementation plan.</td>
+          </tr>
+          <tr>
+            <td><code>executing-plans</code></td>
+            <td>Runs an approved plan in a separate session with review checkpoints between phases.</td>
+          </tr>
+          <tr>
+            <td><code>subagent-driven-development</code></td>
+            <td>Breaks a plan into independent tasks and dispatches them to parallel sub-agents.</td>
+          </tr>
+          <tr>
+            <td><code>test-driven-development</code></td>
+            <td>Writes failing tests first, then iterates on implementation until they pass.</td>
+          </tr>
+          <tr>
+            <td><code>systematic-debugging</code></td>
+            <td>Structured fault-isolation workflow: reproduce → hypothesise → test → fix → verify.</td>
+          </tr>
+          <tr>
+            <td><code>verification-before-completion</code></td>
+            <td>Runs the app and observes real behaviour to confirm a change works before closing the task.</td>
+          </tr>
+          <tr>
+            <td><code>requesting-code-review</code></td>
+            <td>Prepares a clean PR and requests a review using the project's conventions.</td>
+          </tr>
+          <tr>
+            <td><code>receiving-code-review</code></td>
+            <td>Processes reviewer feedback, applies fixes, and responds to each comment.</td>
+          </tr>
+          <tr>
+            <td><code>finishing-a-development-branch</code></td>
+            <td>Cleans up, squashes noise commits, updates docs, and opens the final PR.</td>
+          </tr>
+          <tr>
+            <td><code>writing-skills</code></td>
+            <td>Creates or edits Claude Code skills with correct frontmatter and deployment verification.</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+
   </main>
 </div>
 
