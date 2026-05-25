@@ -978,13 +978,13 @@
      + (uncached_remainder × P_input)
      + (output × P_output)</code></pre>
 
-        <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2025: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a similar implicit caching model with 4× cache-write premium and 0.25× read; OpenAI prompt caching for GPT-4o is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
+        <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2025: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a different cache pricing model — context caching charges a per-token-per-hour storage fee for cached prefixes rather than a write-multiplier (<strong>verify exact pricing against <code>ai.google.dev</code> before writing — the model evolves</strong>); OpenAI prompt caching for GPT-4o is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
       </div>
 
       <p>The strategic takeaway: maximize the fraction of each turn that lands in <em>cached input</em>. The steady-state formula shows cache reads are cheap; the first-write formula shows that invalidating the cache (by editing an early message or the system prompt) resets the clock and pays the write premium again.</p>
 
       <h2>2.4 Prompt caching — how it works, when it kicks in, what breaks it</h2>
-      <p>Anthropic's prompt caching is prefix-based: the model caches the longest matching prefix of the input that was seen in a recent prior request (TTL: 5 minutes for standard, up to 1 hour with explicit cache-control headers). The cache key is the exact byte sequence of the prefix — any edit to the system prompt, any added tool schema, or any changed message <em>before</em> the cached region invalidates it entirely.</p>
+      <p>Anthropic's prompt caching is prefix-based: the model caches the longest matching prefix of the input that was seen in a recent prior request (TTL: 5 minutes for standard, up to 1 hour with explicit cache-control headers — <strong>verify current TTL options against Anthropic docs, these evolve</strong>). The cache key is the exact byte sequence of the prefix — any edit to the system prompt, any added tool schema, or any changed message <em>before</em> the cached region invalidates it entirely.</p>
       <p>Patterns that maximize cache hits:</p>
       <ul>
         <li><strong>Freeze the system prompt.</strong> Put stable content (persona, project conventions) at the top; put session-variable content (file paths, current branch) at the bottom or pass it as user messages.</li>
