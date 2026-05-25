@@ -1790,10 +1790,10 @@ per-author contribution summary.
 - Runs in under 5 seconds on a 10,000-commit repo
 
 ## Interface
-`gitlog-report [--path &lt;dir&gt;] [--format json|md] [--since &lt;date&gt;] [--until &lt;date&gt;]`
+`gitlog-report [--path &lt;dir&gt;] [--format json|md] [--since &lt;ISO-date&gt;] [--until &lt;ISO-date&gt;] [--include-merges]`
 
 ## Edge cases
-- Merge commits: counted as commits, lines excluded (configurable)
+- Merge commits: counted as commits, lines excluded by default (opt-in via `--include-merges`)
 - Unborn HEAD (no commits): returns empty result set
 - Author email deduplication: case-insensitive
       </pre>
