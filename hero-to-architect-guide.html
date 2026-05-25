@@ -4594,6 +4594,338 @@ activate_skill("create-pr") before starting.</code></pre>
       </div>
     </section>
 
+    <section id="ch16-mcp" class="section">
+      <h1>16. MCP Servers — Using and Building</h1>
+      <p class="lede">What you'll learn: what MCP is and why it matters, the three primitives, how to use existing servers, how to build your own (Python canonical example), and how to ship a tiny local-notes MCP server end-to-end.</p>
+
+      <h2>16.1 What MCP is — in plain terms</h2>
+      <p>The <strong>Model Context Protocol (MCP)</strong> is an open protocol, originally authored by Anthropic and now an industry-standard adopted across the AI tooling ecosystem, that standardises how LLM-based agents connect to external tools and data sources. Before MCP, every AI coding tool and every enterprise integration had to reinvent its own ad-hoc plugin protocol — resulting in fragmented, non-transferable integrations. MCP defines a single contract: a server exposes capabilities, a client (the AI tool or harness) discovers and calls them, and the LLM receives a structured description of what's available. Anyone's MCP server works with anyone's MCP-compatible agent.</p>
+      <p>Why does this matter in practice? <strong>Ecosystem leverage.</strong> There are already hundreds of MCP servers — for databases, version control, project management, communication tools, cloud APIs, file systems, and more. When you configure one of them in Claude Code or Kilo Code, your agent immediately gains the ability to query Jira tickets, post Slack messages, read Confluence pages, or look up GitHub issues — without a single line of integration code on your part. You simply point your tool at a server and it works. The protocol also future-proofs your work: if you build an MCP server for your team's internal API today, it will work with whatever agent harness your team adopts next year.</p>
+      <p>MCP is also the reason Claude Code's deferred tools list (those <code>&lt;system-reminder&gt;</code> entries you've seen) can include <code>mcp__claude_ai_Atlassian__getJiraIssue</code> alongside <code>mcp__claude_ai_Slack__slack_send_message</code> — each of those is a tool exposed by an MCP server that has been registered with the harness. The harness discovers the server, fetches its tool list, and injects the tool schemas into the model's context so the model knows what to call.</p>
+
+      <h2>16.2 The three primitives — tools, resources, prompts</h2>
+      <p>MCP servers expose exactly three kinds of capabilities. Understanding each primitive is essential before you build or configure a server.</p>
+      <table class="tbl">
+        <thead><tr><th>Primitive</th><th>What it is</th><th>When to use it</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Tools</strong></td>
+            <td>Callable functions with side effects. The agent invokes a tool with typed parameters and receives a structured result. Tools can create, update, delete, query, or send — anything that requires executing an action against an external system.</td>
+            <td>Any time the agent needs to <em>do</em> something: create a Jira ticket, send a Slack message, run a database query, push a file to S3, trigger a CI job.</td>
+          </tr>
+          <tr>
+            <td><strong>Resources</strong></td>
+            <td>Read-only, referenceable data identified by a URI. The agent (or user) requests a resource by URI and receives its content. Resources are <em>pulled</em>, not called — they don't execute logic, they return data.</td>
+            <td>Any time there is large, stable, or reference content the agent might need to read: a Confluence page, a file from an S3 bucket, a database schema, a configuration document. Resources avoid the overhead of tool round-trips for pure reads.</td>
+          </tr>
+          <tr>
+            <td><strong>Prompts</strong></td>
+            <td>Pre-built, guided workflows that the user or harness can invoke by name (typically via a slash command). A prompt template encodes the instructions and any required parameters for a specific, repeatable task.</td>
+            <td>Any time there is a workflow complex enough to benefit from a curated preamble: a standup-update generator, a code-review template, an incident-response runbook. Prompts give non-technical users a safe, structured entry point into agent capabilities.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Most MCP servers focus primarily on tools, because tools are the most broadly useful primitive for agent-driven work. Resources are the right choice when the content is large (several kilobytes of documentation), read-only, and likely to be reused across multiple tool calls in the same session — the agent can reference the URI rather than re-fetching through a tool each time. Prompts are the least commonly authored but the most valuable for encoding team workflows that less experienced users should follow consistently.</p>
+
+      <h2>16.3 Transport — stdio vs HTTP/SSE</h2>
+      <p>MCP supports two transport mechanisms that determine how the client and server communicate. The choice has significant operational implications.</p>
+      <table class="tbl">
+        <thead><tr><th>Property</th><th>stdio (subprocess)</th><th>HTTP / SSE (remote)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Mechanism</strong></td><td>Client spawns the server as a local subprocess; communicates over stdin/stdout JSON-RPC.</td><td>Server runs as a persistent HTTP process; client connects via Server-Sent Events for streaming + HTTP POST for calls.</td></tr>
+          <tr><td><strong>Setup complexity</strong></td><td>Minimal — just a command and args in your settings JSON.</td><td>Higher — requires a running service, URL, optional auth headers.</td></tr>
+          <tr><td><strong>Multi-client</strong></td><td>No — one process per client instance.</td><td>Yes — multiple agents or users can connect to the same server simultaneously.</td></tr>
+          <tr><td><strong>Latency</strong></td><td>Near-zero IPC latency.</td><td>Network latency; typically acceptable for human-paced agent tasks.</td></tr>
+          <tr><td><strong>Auth</strong></td><td>Process-level — env vars injected at spawn time.</td><td>HTTP headers, Bearer tokens, OAuth; configurable per-request.</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Local developer tools, personal productivity servers, anything that runs on the developer's machine.</td><td>Team-shared servers, servers that need to access internal network resources, production integrations.</td></tr>
+        </tbody>
+      </table>
+      <p>For the vast majority of servers you will author yourself — especially the kind of local-productivity or team-internal servers described in this chapter — <strong>stdio is the right default</strong>. It requires no networking, no authentication infrastructure, and the server binary is just a script you run. HTTP/SSE becomes necessary when multiple team members need to share a single server instance (e.g., a central integration with your company's internal API that requires credentials you don't want to distribute), or when the server needs to maintain state across multiple client connections.</p>
+
+      <h2>16.4 Existing MCP server tour — Atlassian, Slack, Box, Figma, GitHub</h2>
+      <p><strong>Atlassian MCP server</strong> surfaces the full breadth of Jira and Confluence operations. On the Jira side, you get tools to search issues with JQL (<code>searchJiraIssuesUsingJql</code>), fetch individual issues, create and edit issues, transition issues through workflows, add comments, and log work. On the Confluence side, you can get and search pages, create new pages, add inline and footer comments, and traverse page hierarchies. If your team uses Jira for backlog management, the Atlassian MCP server is probably the highest-leverage integration you can add: agents can now read the ticket context before writing code and update the ticket status when they're done.</p>
+      <p><strong>Slack MCP server</strong> exposes channel reading, thread reading, user profile lookup, message sending (including drafts and scheduled sends), channel and user search, and canvas creation and editing. For an agent doing team-facing work — posting standup updates, sending PR notifications, surfacing deployment summaries to a channel — the Slack server is indispensable. Note that the server requires appropriate OAuth scopes for the workspace; read-only scopes suffice for most ambient-awareness use cases, while send scopes require explicit OAuth approval.</p>
+      <p><strong>Box MCP server</strong> provides file and folder CRUD operations, content retrieval, metadata templates, search (by keyword or metadata), collaboration listing, and file commenting. If your team stores documentation, contracts, or design assets in Box, this server gives agents the ability to retrieve reference materials, upload generated artifacts, and maintain a structured audit trail of what was created and when.</p>
+      <p><strong>Figma MCP server</strong> enables read access to Figma design files, component libraries, and diagrams (including FigJam boards). With authentication, agents can retrieve design specs, inspect component properties, and extract style tokens. The primary use case is bridging design and code: an agent implementing a UI component can fetch the exact spec from Figma rather than relying on a screenshot or a human description.</p>
+      <p><strong>GitHub MCP server</strong> wraps the GitHub REST and GraphQL APIs to expose repository operations, issue and PR management, code search, file content retrieval, and workflow status. For an agent doing software development work, this is frequently the first MCP server you should add: the agent can look up open issues, read PR comments, fetch file contents from a branch, and create or update issues without leaving the conversation.</p>
+
+      <h2>16.5 Adding an MCP server to Kilo Code and Claude Code</h2>
+      <p>Both tools use a JSON configuration file to register MCP servers. The structure is nearly identical; the differences are in where the file lives and what the top-level key is called.</p>
+      <p><strong>Claude Code</strong> reads MCP server configuration from <code>~/.claude/settings.json</code> (global) or <code>.claude/settings.json</code> (project-local). Add a <code>mcpServers</code> key:</p>
+      <pre><code>{
+  "mcpServers": {
+    "local-notes": {
+      "command": "python",
+      "args": ["/path/to/notes_server.py"],
+      "env": {
+        "NOTES_DB_PATH": "/Users/you/notes.db"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_..."
+      }
+    }
+  }
+}</code></pre>
+      <p>You can also use the <code>/mcp</code> command interactively inside Claude Code to list, add, and inspect registered servers without editing JSON by hand. Run <code>/mcp</code> in the chat and follow the prompts. Changes made via <code>/mcp</code> write back to the same settings file.</p>
+      <p><strong>Kilo Code</strong> uses a similar structure in the Kilo Code settings (accessible via the Kilo Code panel → Settings → MCP Servers). The configuration JSON looks identical to Claude Code's <code>mcpServers</code> block — same <code>command</code>, <code>args</code>, <code>env</code> keys. You can paste the same stdio snippet into Kilo's MCP settings UI and it will work without modification. For project-level configuration, Kilo Code also reads from <code>.kilocode/mcp.json</code> in the workspace root:</p>
+      <pre><code>{
+  "mcpServers": {
+    "local-notes": {
+      "command": "python",
+      "args": ["${workspaceFolder}/tools/notes_server.py"],
+      "env": {
+        "NOTES_DB_PATH": "${workspaceFolder}/.notes.db"
+      }
+    }
+  }
+}</code></pre>
+      <p>After saving, both tools will automatically spawn the server subprocess on the next tool call that touches it. If the server fails to start, check the MCP logs panel (Kilo Code) or run <code>/mcp</code> in Claude Code to see the error output from the subprocess.</p>
+
+      <h2>16.6 Authoring an MCP server — Python or TypeScript</h2>
+      <p>Anthropic provides official SDKs for both Python (<code>mcp</code> on PyPI) and TypeScript (<code>@modelcontextprotocol/sdk</code> on npm). Both expose the same protocol surface through idiomatic language patterns, and both support stdio and HTTP/SSE transports out of the box.</p>
+      <p><strong>Python</strong> is the natural choice when your server needs to interact with ML models, data science libraries, internal Python-based systems, or when the team is primarily Python-fluent. The SDK is installable with <code>pip install mcp</code> and requires Python 3.10+. The programming model uses <code>async def</code> handlers decorated with SDK decorators — familiar to anyone who has written FastAPI or asyncio code. Because most AI-adjacent tooling (LangChain, HuggingFace, custom model wrappers) lives in the Python ecosystem, Python MCP servers tend to be the right fit for ML-adjacent integrations.</p>
+      <p><strong>TypeScript</strong> is the right choice when your server needs to integrate deeply with the npm ecosystem, when the rest of your frontend or backend is TypeScript/Node, or when you want to publish to npm for easy team distribution. The TS SDK mirrors the Python SDK's structure with TypeScript-idiomatic wrappers. The official MCP quick-start at <a href="https://modelcontextprotocol.io/quickstart/server" target="_blank">modelcontextprotocol.io/quickstart/server</a> shows both languages side by side. For this chapter, all examples use Python because it requires less toolchain overhead for a first server.</p>
+
+      <h2>16.7 The server skeleton — handlers, schemas, errors</h2>
+      <p>Every MCP server, regardless of what it does, has the same structural skeleton: it declares its capabilities, registers handlers for each capability type, and runs a transport loop. Here is the minimal Python skeleton using the <code>mcp</code> SDK:</p>
+      <pre><code>from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import Tool, TextContent
+import asyncio
+
+app = Server("my-server")
+
+@app.list_tools()
+async def list_tools() -> list[Tool]:
+    return [
+        Tool(
+            name="hello",
+            description="Returns a greeting. Call this to test the server is alive.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Name to greet"}
+                },
+                "required": ["name"]
+            }
+        )
+    ]
+
+@app.call_tool()
+async def call_tool(name: str, arguments: dict) -> list[TextContent]:
+    if name == "hello":
+        return [TextContent(type="text", text=f"Hello, {arguments['name']}!")]
+    raise ValueError(f"Unknown tool: {name}")
+
+async def main():
+    async with stdio_server() as (read, write):
+        await app.run(read, write, app.create_initialization_options())
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+      <p>The same shape applies when you add resources: decorate an async handler with <code>@app.list_resources()</code> and another with <code>@app.read_resource()</code>. For prompts: <code>@app.list_prompts()</code> and <code>@app.get_prompt()</code>. The SDK handles protocol framing, capability negotiation, and transport plumbing — your only job is to implement the handlers. The TypeScript equivalent has an identical structure: <code>server.setRequestHandler(ListToolsRequestSchema, ...)</code> and <code>server.setRequestHandler(CallToolRequestSchema, ...)</code> — see the official TS quick-start for the verbatim equivalent.</p>
+      <p>For error handling, raise a standard Python exception from <code>call_tool</code> — the SDK will catch it and return a proper MCP error response to the client. For user-facing errors (e.g., "note not found"), return a <code>TextContent</code> with the error message rather than raising, so the agent can read and reason about the error in its next turn rather than treating it as a fatal fault.</p>
+
+      <h2>16.8 Designing tools agents use well</h2>
+      <p>The most important thing to understand about tool design for MCP servers is that <strong>the model reads your tool descriptions</strong>. The <code>description</code> field of each <code>Tool</code> object and the <code>description</code> fields of each parameter in the JSON schema are injected verbatim into the model's context. They are not documentation for humans; they are instructions to the model. A vague description produces unreliable tool calls; a precise description produces reliable ones.</p>
+      <p><strong>Good tool design principles:</strong> Give each tool a single, clearly bounded purpose. Name it with a verb that describes what it does (<code>create_note</code>, <code>search_notes</code>, not <code>notes_operation</code>). Write the description as if instructing a junior developer: "Creates a new note with the given title and body. Returns the note ID. Call this when the user asks to save, record, or note something." Keep parameter schemas narrow — use enums for fixed choices, mark only truly required fields as required, and describe each parameter's purpose and acceptable range. Make tools idempotent where possible so the model can safely retry a call if it loses the result.</p>
+      <div class="info orange"><strong>Anti-pattern: the kitchen-sink tool.</strong> A single tool called <code>manage_notes</code> with a required <code>action</code> parameter that accepts <code>"create"</code>, <code>"update"</code>, <code>"delete"</code>, <code>"list"</code>, or <code>"search"</code> is a common beginner mistake. The model has to make two decisions — which tool to call, and which action to pass — and the parameter schemas for each action are different but all stuffed into one schema. The result is frequent incorrect calls, incorrect action values, and missing required parameters. Split it: one tool per action. The agent's decision of which tool to call is made at the selection step where the model is most reliable; the "what to pass" decision then has a clean, unambiguous schema.</div>
+
+      <h2>16.9 Authoring resources — when they fit better than tools</h2>
+      <p>Resources are the right primitive when your server has read-only data that the agent might want to reference multiple times across a session, or data that is large enough that streaming it as a resource (identified by URI) is preferable to embedding it in a tool call response. The key distinction: a tool call is a one-off action; a resource is a named, stable thing that can be referenced by URI. The agent (or the harness) can fetch a resource once, cache it locally for the session, and reference it by URI in subsequent tool calls without re-fetching.</p>
+      <p>Concrete examples where resources are the right choice: a server that exposes your team's architecture decision records (each ADR as a resource URI like <code>adr://decisions/004-use-postgres</code>); a server that exposes your API's OpenAPI spec (<code>openapi://spec/v3</code>); a server that exposes database schema documentation. In each case, the content is large, read-only, and reference material — not something that needs to be re-generated on each call. Implement <code>@app.list_resources()</code> to return a list of available URIs and <code>@app.read_resource()</code> to return the content for a given URI. The content can be text or binary (base64-encoded); use <code>TextContent</code> for text and <code>BlobResourceContents</code> for binary.</p>
+
+      <h2>16.10 Authoring prompts — guided workflows</h2>
+      <p>Prompts are pre-built, parameterised message templates that the harness or user can invoke by name. When a user invokes a prompt (typically via a <code>/prompt-name</code> command in the chat UI, or programmatically via the harness's prompt invocation API), the MCP server receives the invocation with any provided arguments, and returns a list of messages that the harness injects into the conversation as if the user had typed them. This gives you a way to encode multi-step, carefully worded workflows that less experienced users can trigger without having to know the exact phrasing.</p>
+      <p>Implement <code>@app.list_prompts()</code> to return available prompt templates and <code>@app.get_prompt()</code> to return the rendered messages for a given prompt name and arguments. A well-designed prompt template for a standup generator might accept a <code>since</code> date parameter and return a system message instructing the agent to fetch recent commits, recent Jira completions, and current blockers, then format them in the team's standup format. The user just types <code>/standup since=yesterday</code> rather than having to remember and type all of that.</p>
+      <p>The exact invocation syntax for prompts depends on the harness. In Claude Code, slash commands that map to MCP prompts are surfaced when the server is registered and the harness discovers the prompt list — verify with <code>/mcp</code> to see what prompts are available from each registered server. In Kilo Code, MCP prompts appear in the prompt library accessible from the chat UI.</p>
+
+      <h2>16.11 Auth and secrets in MCP servers</h2>
+      <p><strong>Environment variables</strong> are the right choice for the vast majority of MCP server authentication scenarios. For an API key (GitHub PAT, Slack Bot Token, an internal API key), inject it as an env var in the server's registration config (<code>"env": {"GITHUB_TOKEN": "..."}</code> in the settings JSON). The server reads <code>os.environ["GITHUB_TOKEN"]</code> at startup or at call time. For local developer tools, this is ideal: the key lives in the settings file, which lives in the developer's home directory and is not committed to source control. The secret never appears in the server code, never appears in conversation context, and is scoped to the local machine.</p>
+      <p><strong>OAuth</strong> is necessary when the server needs to act on behalf of a specific user rather than a service account — typically when you're integrating with user-scoped APIs (personal Google Drive, user-specific Jira permissions, Slack DMs on behalf of a user). OAuth adds significant implementation complexity: you need to implement the authorization code flow, store and refresh tokens, and handle token expiry during long-running sessions. For most team-internal MCP servers, a service account API key (env var) is the right answer and OAuth is unnecessary overhead. When you do need OAuth, the MCP specification defines an authorization extension; consult the official docs at <a href="https://modelcontextprotocol.io/docs/concepts/authentication" target="_blank">modelcontextprotocol.io/docs/concepts/authentication</a> for the current recommended implementation pattern, as the OAuth profile for MCP is still evolving.</p>
+      <p><strong>Never</strong> hardcode secrets in the server script itself. Never log secrets in the server's stdout (the MCP client reads stdout as the protocol stream — any debug output that accidentally contains a secret will be visible in the harness's MCP log viewer). Use <code>stderr</code> for all debug and log output from your server; the MCP SDK routes stderr to the harness's log panel, separate from the protocol stream.</p>
+
+      <h2>16.12 Testing your MCP server</h2>
+      <p><strong>Unit tests for handlers</strong> are straightforward: because each handler is an async function that takes plain Python arguments and returns typed objects, you can test them directly without running the full transport stack. Mock the database or external API calls, call the handler functions directly in <code>pytest-asyncio</code> tests, and assert on the returned <code>TextContent</code> or <code>Tool</code> lists. This covers the logic of your server without any MCP infrastructure.</p>
+      <p><strong>Integration testing</strong> against the real MCP protocol requires a client. The official tool for this is the <strong>MCP Inspector</strong>: run <code>npx @modelcontextprotocol/inspector python your_server.py</code> and it opens a browser-based UI that lets you browse the server's tool/resource/prompt list, invoke tools with arbitrary parameters, and inspect the raw JSON-RPC messages. This is the fastest way to verify that your server's schemas are correct, that tool calls return the expected structure, and that error handling works. Use the Inspector before registering your server in Claude Code or Kilo Code — it will catch schema errors and missing fields that would otherwise show up as cryptic "tool not found" errors in the harness.</p>
+      <p>For automated integration tests, the Python MCP SDK includes test utilities that let you create an in-process client/server pair without a real transport: instantiate your server and a test client, run them in the same event loop, and call tools programmatically. This is appropriate for CI pipelines where you want to test the full MCP protocol path (capability negotiation, tool listing, tool calling, error propagation) without spawning a subprocess.</p>
+
+      <h2>16.13 Publishing and distribution</h2>
+      <p><strong>PyPI and npm</strong> are the standard distribution channels for MCP servers intended for broad use. A Python MCP server published to PyPI can be installed with <code>pip install your-server-package</code> and registered in Claude Code/Kilo Code with <code>"command": "python", "args": ["-m", "your_server_package"]</code>. A TypeScript server published to npm can be registered with <code>"command": "npx", "args": ["-y", "your-npm-package"]</code> — which downloads and runs the latest version automatically. For internal team distribution, a private PyPI repository or npm registry is the cleanest solution; alternatively, install directly from a Git URL (<code>pip install git+https://github.com/your-org/your-server.git</code>).</p>
+      <p><strong>GitHub Releases</strong> are appropriate for servers that are too team-specific or deployment-specific to warrant a PyPI/npm package. Tag a release, include installation instructions in the release notes, and have teammates clone the repo and configure the command path directly. This is the right pattern for servers that require project-specific configuration at installation time.</p>
+      <p><strong>The MCP Registry</strong> at <a href="https://registry.modelcontextprotocol.io" target="_blank">registry.modelcontextprotocol.io</a> is the growing community index of publicly available MCP servers. If you build a server that might benefit others outside your team, submitting it to the registry makes it discoverable. Check the registry before building a new server — there is a good chance someone has already built and published a server for the API you need.</p>
+
+      <h2>16.14 Hands-on: build a tiny local-notes MCP server</h2>
+      <div class="walkthrough">
+        <h3>Walkthrough · Build a tiny local-notes MCP server</h3>
+
+        <p><strong>Goal.</strong> Build a Python MCP server with three tools — <code>add_note</code>, <code>list_notes</code>, <code>search_notes</code> — backed by a SQLite database. Register it in Claude Code. Invoke it. Verify it works.</p>
+
+        <p><strong>Step 1: Install the SDK.</strong></p>
+        <pre><code>pip install mcp</code></pre>
+
+        <p><strong>Step 2: Write <code>notes_server.py</code>.</strong> Save this to <code>~/tools/notes_server.py</code> (or any stable path):</p>
+        <pre><code>#!/usr/bin/env python3
+"""Local notes MCP server — SQLite-backed."""
+import os
+import sqlite3
+import asyncio
+from datetime import datetime
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import Tool, TextContent
+
+DB_PATH = os.environ.get("NOTES_DB_PATH", os.path.expanduser("~/.notes.db"))
+
+def get_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS notes "
+        "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        " title TEXT NOT NULL, "
+        " body TEXT NOT NULL, "
+        " created_at TEXT NOT NULL)"
+    )
+    conn.commit()
+    return conn
+
+app = Server("local-notes")
+
+@app.list_tools()
+async def list_tools() -> list[Tool]:
+    return [
+        Tool(
+            name="add_note",
+            description=(
+                "Saves a new note with a title and body to the local notes database. "
+                "Call this when the user asks to save, record, remember, or note something. "
+                "Returns the ID of the created note."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Short title for the note"},
+                    "body":  {"type": "string", "description": "Full content of the note"}
+                },
+                "required": ["title", "body"]
+            }
+        ),
+        Tool(
+            name="list_notes",
+            description=(
+                "Returns all notes in the database, newest first. "
+                "Call this when the user asks to see, show, or list their notes. "
+                "Returns a numbered list with IDs, titles, and creation dates."
+            ),
+            inputSchema={"type": "object", "properties": {}, "required": []}
+        ),
+        Tool(
+            name="search_notes",
+            description=(
+                "Searches notes by keyword in title or body. Case-insensitive. "
+                "Call this when the user wants to find a specific note or recalls partial content. "
+                "Returns matching notes with their IDs, titles, and body previews."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search term to look for in title or body"}
+                },
+                "required": ["query"]
+            }
+        ),
+    ]
+
+@app.call_tool()
+async def call_tool(name: str, arguments: dict) -> list[TextContent]:
+    conn = get_db()
+    try:
+        if name == "add_note":
+            now = datetime.utcnow().isoformat()
+            cur = conn.execute(
+                "INSERT INTO notes (title, body, created_at) VALUES (?, ?, ?)",
+                (arguments["title"], arguments["body"], now)
+            )
+            conn.commit()
+            return [TextContent(type="text",
+                                text=f"Note saved. ID: {cur.lastrowid}")]
+
+        elif name == "list_notes":
+            rows = conn.execute(
+                "SELECT id, title, created_at FROM notes ORDER BY id DESC"
+            ).fetchall()
+            if not rows:
+                return [TextContent(type="text", text="No notes yet.")]
+            lines = [f"[{r[0]}] {r[1]} ({r[2][:10]})" for r in rows]
+            return [TextContent(type="text", text="\n".join(lines))]
+
+        elif name == "search_notes":
+            q = f"%{arguments['query']}%"
+            rows = conn.execute(
+                "SELECT id, title, body FROM notes "
+                "WHERE title LIKE ? OR body LIKE ? ORDER BY id DESC",
+                (q, q)
+            ).fetchall()
+            if not rows:
+                return [TextContent(type="text", text="No matching notes.")]
+            lines = [f"[{r[0]}] {r[1]}: {r[2][:80]}..." for r in rows]
+            return [TextContent(type="text", text="\n".join(lines))]
+
+        else:
+            return [TextContent(type="text", text=f"Unknown tool: {name}")]
+    finally:
+        conn.close()
+
+async def main():
+    async with stdio_server() as (read, write):
+        await app.run(read, write, app.create_initialization_options())
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+
+        <p><strong>Step 3: Test with the MCP Inspector.</strong> Before registering with Claude Code, verify the server works:</p>
+        <pre><code>npx @modelcontextprotocol/inspector python ~/tools/notes_server.py</code></pre>
+        <p>Open the Inspector URL in your browser. In the Tools panel, you should see <code>add_note</code>, <code>list_notes</code>, and <code>search_notes</code>. Call <code>add_note</code> with <code>{"title": "test", "body": "hello from inspector"}</code> and confirm you get back a note ID. Call <code>list_notes</code> and verify the note appears.</p>
+
+        <p><strong>Step 4: Register with Claude Code.</strong> Add to <code>~/.claude/settings.json</code>:</p>
+        <pre><code>{
+  "mcpServers": {
+    "local-notes": {
+      "command": "python",
+      "args": ["/Users/you/tools/notes_server.py"],
+      "env": {
+        "NOTES_DB_PATH": "/Users/you/.notes.db"
+      }
+    }
+  }
+}</code></pre>
+        <p>Replace <code>/Users/you</code> with your actual home directory path.</p>
+
+        <p><strong>Step 5: Invoke and verify.</strong> Start a new Claude Code session. Run <code>/mcp</code> — you should see <code>local-notes</code> listed as a connected server with 3 tools. Then say:</p>
+        <pre><code>Please add a note titled "MCP chapter done" with body "Finished Ch 16 of Hero to Architect".</code></pre>
+        <p>Claude Code will call <code>add_note</code> and return the note ID. Then say:</p>
+        <pre><code>List all my notes.</code></pre>
+        <p>You should see the note you just created. Finally:</p>
+        <pre><code>Search my notes for "architect".</code></pre>
+        <p>The note appears in search results. Your local-notes MCP server is live and working end-to-end.</p>
+
+        <p><strong>What to extend next.</strong> Add an <code>update_note</code> tool and a <code>delete_note</code> tool. Add a resource that exposes the full notes list as a URI (<code>notes://all</code>) so the agent can reference it without calling a tool. Add a <code>daily-summary</code> prompt that renders a standup-style summary of notes created today. Each of these extensions follows exactly the same SDK patterns shown above.</p>
+      </div>
+
+      <h2>16.15 See also</h2>
+      <div class="see-also">
+        <a onclick="go('ch3-tools')">← Ch 3. Tools, Side Effects &amp; the Agent's World</a>
+        <a onclick="go('ch12-kilo')">← Ch 12. Kilo Code Deep Dive (MCP in Kilo)</a>
+        <a onclick="go('ch13-claude')">← Ch 13. Claude Code Deep Dive (MCP in Claude Code)</a>
+        <a onclick="go('ch14-gemini')">← Ch 14. Gemini CLI Deep Dive (MCP in Gemini)</a>
+        <a onclick="go('ch17-worked')">→ Ch 17. Worked Example end-to-end</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
