@@ -1625,6 +1625,388 @@ npx @google/gemini-cli
       </div>
     </section>
 
+    <section id="ch6-spec" class="section">
+      <h1>6. Spec-Driven Development: OpenSpec &amp; SpecKit</h1>
+      <p class="lede">What you'll learn: why specs matter when agents code at speed, two production approaches (OpenSpec and SpecKit) to driving features through specs, how they differ, and how to apply either to a real CLI tool.</p>
+
+      <h2>6.1 Why specs matter when agents code fast</h2>
+      <p>Agentic coding tools can generate hundreds of lines of working code in seconds. That speed is their greatest asset — and it is also the source of a subtle, compounding risk: <strong>drift is cheap, drift recovery is expensive.</strong></p>
+      <p>When a human writes code slowly, each line of implementation is a moment of conscious alignment with intent. When an agent writes code fast, that alignment check collapses. The agent will produce code that compiles, passes tests, and looks plausible — but may be solving a slightly different problem than the one you actually have. The first sign of drift is often not a failing test but a code review comment like "this isn't quite what I asked for," or worse, a production bug that traces back to a misunderstood requirement.</p>
+      <p>The traditional countermeasure is code review. But code review catches drift <em>after</em> implementation. At agentic speed, a single session can produce changes across dozens of files before anyone looks at a diff. By the time drift is detected, the agent has built more on top of it — integration points, tests, documentation. The cost of unwinding grows non-linearly.</p>
+      <p>The right countermeasure is <strong>a spec written before the agent writes the first line of code.</strong> A spec externalises intent into a form the agent can read, reason over, and be held to. It becomes the ground truth that resolves ambiguity — not memory, not conversation history, not hope. When the spec is versioned alongside the code, drift becomes visible as a diff between the spec and the implementation, not as a mysterious behavior in production.</p>
+      <p>Specs also solve a second problem: context degradation. Long agent sessions lose fidelity. The spec file, re-injected at the start of each session, restores full context instantly. It is the cheapest possible form of persistent memory.</p>
+      <p>The time investment in writing a spec is almost always recovered in the first session it prevents from going sideways. At scale — multiple engineers, multiple agents, multiple concurrent features — specs are not overhead; they are the coordination layer that makes agentic development coherent.</p>
+
+      <h2>6.2 The contract — spec → behavior → tests</h2>
+      <p>A spec is not documentation written after the fact. It is a <strong>contract</strong>: a formal statement of what a feature must do, written before implementation begins. The contract has three parties: the spec that describes behavior, the implementation that realises it, and the tests that enforce it. When all three are in sync, you have working software. When any two diverge, you have a bug, a doc mistake, or a test gap — all recoverable. When all three diverge independently, you have an undocumented feature that no-one can safely change.</p>
+
+      <div style="font-family:monospace; font-size:0.88rem; line-height:1.7; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem 1.6rem; margin:1.2rem 0;">
+        <div style="display:flex; align-items:center; justify-content:center; gap:2rem; flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:1.4rem;">📄</div>
+            <div style="font-weight:700; color:var(--accent);">SPEC</div>
+            <div style="font-size:0.78rem; color:var(--muted);">describes behavior</div>
+          </div>
+          <div style="font-size:1.3rem; color:var(--muted);">→</div>
+          <div style="text-align:center;">
+            <div style="font-size:1.4rem;">🤖</div>
+            <div style="font-weight:700; color:var(--accent);">AGENT</div>
+            <div style="font-size:0.78rem; color:var(--muted);">reads spec, writes impl</div>
+          </div>
+          <div style="font-size:1.3rem; color:var(--muted);">→</div>
+          <div style="text-align:center;">
+            <div style="font-size:1.4rem;">✅</div>
+            <div style="font-weight:700; color:var(--accent);">TESTS</div>
+            <div style="font-size:0.78rem; color:var(--muted);">enforce the contract</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:1rem; color:var(--muted); font-size:0.82rem;">
+          Spec diverges from impl? → tests catch it. Impl diverges from tests? → CI catches it. Tests diverge from spec? → review catches it.
+        </div>
+      </div>
+
+      <p>The agent's role in this triangle is mechanical: it reads the spec as its primary context, generates implementation to satisfy it, and then runs or writes the tests that prove the contract holds. The human's role is to write and review the spec — the one artifact in the triangle that requires genuine domain understanding and product judgment. Everything else can be delegated.</p>
+      <p>This framing has a useful implication: <strong>the spec is the only artifact an agent cannot write for you.</strong> An agent can refine a draft spec, suggest edge cases, and flag ambiguities — but the initial "this is what it must do" judgment is irreducibly human. Investing time here is not overhead; it is the work.</p>
+
+      <h2>6.3 OpenSpec model — workspace and proposals</h2>
+      <p>OpenSpec is an open-source specification management system designed for codebases where specs live alongside code in git. The core idea is that specs are <em>first-class files</em>, not wiki pages or tickets. They live in a versioned workspace, they are updated through a formal change process, and they are archived (not deleted) when superseded.</p>
+      <p><strong>Note:</strong> The directory layout below reflects the OpenSpec model at the time of writing. Always verify the current canonical structure against the official repository at <code>github.com/Fission-AI/OpenSpec</code> before adopting it — directory names and file conventions have evolved across versions.</p>
+
+      <pre>
+openspec/
+├── specs/                        # canonical (accepted) specs live here
+│   └── gitlog-report.md          # example: a feature spec
+│
+└── changes/                      # in-flight proposals
+    ├── add-gitlog-report/        # one subdirectory per change id
+    │   ├── proposal.md           # change rationale + summary
+    │   └── specs/                # delta specs for this change
+    │       └── gitlog-report.md  # the proposed new or modified spec
+    │
+    └── archive/                  # accepted/rejected changes moved here
+        └── add-gitlog-report/    # original structure preserved
+      </pre>
+
+      <p>The lifecycle of an OpenSpec change moves through three states: <strong>proposed</strong> (in <code>openspec/changes/&lt;id&gt;/</code>), <strong>accepted</strong> (spec promoted to <code>openspec/specs/</code>, change directory moved to <code>openspec/changes/archive/</code>), and <strong>rejected</strong> (moved to archive without promotion). The archive discipline is intentional: rejected or superseded proposals are preserved for audit and context, not deleted.</p>
+      <p>The <strong>canonical specs</strong> in <code>openspec/specs/</code> are the authoritative source of truth. Agents are expected to read from this directory before implementing any feature. The <strong>changes</strong> directory is ephemeral working space — it holds proposals under review and disappears from the active tree on acceptance.</p>
+      <p>CLI operations cover lifecycle management only: <code>openspec list</code> (show active changes), <code>openspec show &lt;id&gt;</code> (display a change's proposal and delta specs), <code>openspec validate</code> (lint spec structure), <code>openspec archive &lt;id&gt;</code> (move an accepted change to the archive). Content — writing the spec, reasoning about it — is handled by the AI slash commands, not the CLI.</p>
+
+      <h2>6.4 OpenSpec workflow walk-through</h2>
+      <p>This walk-through uses <code>gitlog-report</code> — a CLI tool that reads git log and produces a per-author contribution summary — as the running example. Every step is reproducible in any project that has OpenSpec installed.</p>
+      <p><strong>Note on slash commands:</strong> OpenSpec's AI integration uses slash commands (e.g. in Claude Code or compatible shells) to drive change creation. The exact command name may vary with OpenSpec version — always check the current README at <code>github.com/Fission-AI/OpenSpec</code>. At the time of writing, the command pattern is <code>/opsx:propose &lt;change-id&gt;</code>.</p>
+
+      <pre>
+# Step 1 — create a new change proposal via AI slash command
+/opsx:propose add-gitlog-report
+
+# OpenSpec creates the scaffold:
+# openspec/changes/add-gitlog-report/
+# ├── proposal.md          ← AI fills in rationale/summary
+# └── specs/
+#     └── gitlog-report.md ← you write (or AI drafts) the spec
+      </pre>
+
+      <p>The generated <code>proposal.md</code> looks like:</p>
+      <pre>
+# Change: add-gitlog-report
+
+**Type:** new-feature
+**Status:** proposed
+
+## Rationale
+Introduce a `gitlog-report` CLI command that aggregates git log output
+into a per-author contribution summary, supporting JSON and Markdown output.
+
+## Summary of changes
+- Adds `openspec/specs/gitlog-report.md` describing the new command's
+  interface, flags, output schema, and edge-case behavior.
+
+## Linked spec delta
+`openspec/changes/add-gitlog-report/specs/gitlog-report.md`
+      </pre>
+
+      <p>You then write or review the delta spec in <code>openspec/changes/add-gitlog-report/specs/gitlog-report.md</code>. Once the spec is approved (by review, PR merge, or team sign-off), accept the change:</p>
+      <pre>
+# Step 2 — validate the spec structure
+openspec validate
+
+# Step 3 — list active changes
+openspec list
+# → add-gitlog-report  proposed  (1 spec delta)
+
+# Step 4 — after approval, archive the change and promote the spec
+openspec archive add-gitlog-report
+# Promotes:  openspec/changes/add-gitlog-report/specs/gitlog-report.md
+#         → openspec/specs/gitlog-report.md
+# Archives:  openspec/changes/add-gitlog-report/
+#         → openspec/changes/archive/add-gitlog-report/
+      </pre>
+
+      <p>The agent can now be invoked with: <em>"Implement <code>gitlog-report</code> according to <code>openspec/specs/gitlog-report.md</code>."</em> The spec is the contract; the canonical location is stable; the agent has no ambiguity about what to build.</p>
+
+      <h2>6.5 SpecKit model — slash commands and artifacts</h2>
+      <p>SpecKit takes a different philosophy: rather than a file-system workspace with a CLI lifecycle, it provides a set of AI slash commands that each write a specific artifact into a feature-scoped directory. The workflow is <strong>slash-command-driven</strong> rather than file-system-driven, and it is designed to work natively inside Claude Code or compatible AI environments.</p>
+      <p><strong>Note:</strong> SpecKit's directory structure and exact slash command names may differ from what is shown below. Always verify the current artifact layout and command names against the official SpecKit documentation before adopting the pattern in a new project.</p>
+      <p>The four primary slash commands and their outputs:</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Command</th><th>Writes</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/specify &lt;feature&gt;</code></td><td><code>spec.md</code></td><td>Generate the feature specification — acceptance criteria, interface contract, edge cases</td></tr>
+          <tr><td><code>/plan &lt;feature&gt;</code></td><td><code>plan.md</code></td><td>Generate a phased implementation plan from the spec</td></tr>
+          <tr><td><code>/tasks &lt;feature&gt;</code></td><td><code>tasks.md</code></td><td>Break the plan into atomic, checkable task list</td></tr>
+          <tr><td><code>/implement &lt;feature&gt;</code></td><td>source files</td><td>Execute the tasks, writing code against spec + plan</td></tr>
+        </tbody>
+      </table>
+      <p>Artifacts are written into a feature-scoped directory — the exact path pattern depends on the SpecKit version; common conventions include <code>.specify/specs/&lt;feature&gt;/</code> or <code>specs/&lt;NNN-feature&gt;/</code>. The key invariant is that each feature gets its own isolated directory containing all four artifacts in sequence.</p>
+      <p>The slash-command model has two important properties. First, each command is <em>idempotent</em> — you can re-run <code>/specify</code> to refine the spec without losing the plan, because each artifact is a separate file. Second, each command reads its predecessors — <code>/plan</code> reads <code>spec.md</code>, <code>/tasks</code> reads both, <code>/implement</code> reads all three. The chain is self-documenting.</p>
+
+      <h2>6.6 SpecKit workflow walk-through</h2>
+      <p>The same <code>gitlog-report</code> example, now in SpecKit terms. Starting in a project directory with SpecKit configured:</p>
+      <pre>
+# Step 1 — specify the feature
+/specify gitlog-report
+
+# Writes: specs/001-gitlog-report/spec.md
+# (or .specify/specs/gitlog-report/spec.md — verify with your SpecKit version)
+      </pre>
+
+      <p>The generated <code>spec.md</code> contains:</p>
+      <pre>
+# Spec: gitlog-report
+
+## Feature
+A CLI command that reads `git log` for a repository and produces a
+per-author contribution summary.
+
+## Acceptance criteria
+- Reads git log from the current directory (or --path flag)
+- Produces per-author: commit count, days active, lines added/removed
+- Outputs JSON (default) and Markdown (--format md)
+- Supports --since / --until date range filters
+- Handles empty repository gracefully (zero-row output, exit 0)
+- Top-5 most-touched files listed per author
+- Runs in under 5 seconds on a 10,000-commit repo
+
+## Interface
+`gitlog-report [--path &lt;dir&gt;] [--format json|md] [--since &lt;date&gt;] [--until &lt;date&gt;]`
+
+## Edge cases
+- Merge commits: counted as commits, lines excluded (configurable)
+- Unborn HEAD (no commits): returns empty result set
+- Author email deduplication: case-insensitive
+      </pre>
+
+      <pre>
+# Step 2 — generate implementation plan from spec
+/plan gitlog-report
+# Writes: specs/001-gitlog-report/plan.md
+# (phases: git log parsing, data aggregation, output formatting, CLI wiring)
+
+# Step 3 — break plan into tasks
+/tasks gitlog-report
+# Writes: specs/001-gitlog-report/tasks.md
+# (atomic checklist: [ ] parse git log output, [ ] aggregate by author, ...)
+
+# Step 4 — implement
+/implement gitlog-report
+# Reads all three artifacts, writes source files
+# Agent works task by task, checks each off as it completes
+      </pre>
+
+      <p>At every stage the artifact file is the ground truth. If the implementation diverges from <code>spec.md</code>, re-running <code>/implement</code> corrects it. If the spec changes, re-run <code>/plan</code> and <code>/tasks</code> to regenerate downstream artifacts before re-implementing.</p>
+
+      <h2>6.7 Side-by-side comparison</h2>
+      <table class="tbl">
+        <thead>
+          <tr><th>Dimension</th><th>OpenSpec</th><th>SpecKit</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Core philosophy</strong></td>
+            <td>Specs as first-class files with a formal change lifecycle</td>
+            <td>Slash-command-driven artifact chain, each command produces one file</td>
+          </tr>
+          <tr>
+            <td><strong>File structure</strong></td>
+            <td><code>openspec/specs/</code> (canonical) + <code>openspec/changes/&lt;id&gt;/</code> (proposals)</td>
+            <td><code>specs/&lt;NNN-feature&gt;/</code> containing spec.md, plan.md, tasks.md</td>
+          </tr>
+          <tr>
+            <td><strong>Change tracking</strong></td>
+            <td>Explicit proposal + archive lifecycle; rejected proposals preserved</td>
+            <td>Git history on artifact files; no formal proposal/archive concept</td>
+          </tr>
+          <tr>
+            <td><strong>Primary interaction</strong></td>
+            <td>CLI (<code>openspec list/show/validate/archive</code>) + AI slash commands for authoring</td>
+            <td>AI slash commands exclusively (<code>/specify /plan /tasks /implement</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Spec granularity</strong></td>
+            <td>One spec file per feature (canonical); delta specs per change</td>
+            <td>One spec.md per feature; plan and tasks are derived artifacts</td>
+          </tr>
+          <tr>
+            <td><strong>Archive model</strong></td>
+            <td>Formal archive directory; changes archived on acceptance/rejection</td>
+            <td>No formal archive; old specs remain in place, superseded by new ones</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-tool support</strong></td>
+            <td>Tool-agnostic — any AI tool can read the spec files</td>
+            <td>Designed for Claude Code and Gemini CLI; slash commands may not work elsewhere</td>
+          </tr>
+          <tr>
+            <td><strong>Onboarding friction</strong></td>
+            <td>Higher — requires workspace setup, CLI install, change conventions</td>
+            <td>Lower — slash commands work immediately in a compatible AI environment</td>
+          </tr>
+          <tr>
+            <td><strong>Auditability</strong></td>
+            <td>High — every change has a proposal with rationale; archive is permanent</td>
+            <td>Moderate — artifact files are versioned by git, but no formal rationale file</td>
+          </tr>
+          <tr>
+            <td><strong>Best fit</strong></td>
+            <td>Teams with multiple contributors, long-lived projects, compliance needs</td>
+            <td>Solo developers or small teams moving fast with AI-first tooling</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>6.8 Decision matrix — when OpenSpec fits, when SpecKit fits</h2>
+      <p>Neither system is universally superior. The right choice depends on your team size, workflow maturity, tooling preferences, and how much process overhead is acceptable for the project's scale.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Signal</th><th>Reach for OpenSpec</th><th>Reach for SpecKit</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Team size</strong></td>
+            <td>3+ engineers; multiple concurrent features</td>
+            <td>1–2 engineers; fast-moving solo or pair project</td>
+          </tr>
+          <tr>
+            <td><strong>Change discipline</strong></td>
+            <td>You want a formal record of why each spec changed, not just what changed</td>
+            <td>Git history on spec.md is sufficient audit trail</td>
+          </tr>
+          <tr>
+            <td><strong>Tooling</strong></td>
+            <td>Mixed AI tools in use — some team members on Cursor, some on Claude Code</td>
+            <td>Team is uniformly on Claude Code or Gemini CLI with slash-command support</td>
+          </tr>
+          <tr>
+            <td><strong>Integration with CI</strong></td>
+            <td>You want <code>openspec validate</code> to run in CI as a lint step</td>
+            <td>CI integration is not a current requirement</td>
+          </tr>
+          <tr>
+            <td><strong>Lifecycle clarity</strong></td>
+            <td>You need a clear "this spec is the accepted version" moment in the process</td>
+            <td>Spec files are edited in-place; latest version is always current</td>
+          </tr>
+          <tr>
+            <td><strong>Onboarding speed</strong></td>
+            <td>You can invest in workspace setup upfront for long-term benefit</td>
+            <td>You need to start speccing immediately with no setup cost</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>A useful heuristic: if your project already has a PR review process and you want specs to go through the same gates as code, OpenSpec's change-and-archive model maps naturally onto that workflow. If your project is a personal tool or a prototype where the bottleneck is speed of iteration rather than coordination, SpecKit's slash-command chain gives you the discipline of specs without the ceremony.</p>
+      <p>The two systems are not mutually exclusive. Some teams adopt SpecKit for rapid early-stage work and migrate to OpenSpec as the project matures and more contributors join.</p>
+
+      <h2>6.9 Living with specs — drift, refactoring, archiving</h2>
+      <p>Specs are not write-once artifacts. Code evolves, requirements change, and the spec that was accurate in month one will drift from the implementation by month three — unless you actively maintain it. The question is not whether drift will happen, but how you detect and correct it.</p>
+      <p><strong>Detecting drift:</strong> The simplest technique is to include a "spec review" step in your regular code review process. When a PR modifies a feature, check whether the corresponding spec file was also updated. If the implementation changed but the spec did not, flag it. Some teams run a periodic "spec audit" session — every quarter, read through the canonical specs and run a quick prompt: <em>"Does the current implementation of &lt;feature&gt; match this spec? Flag discrepancies."</em> The agent will surface them in minutes.</p>
+      <p><strong>Refactoring specs:</strong> When a feature genuinely changes scope or behavior, update the spec <em>first</em>, then update the implementation. This is the spec-driven equivalent of test-first development: the spec change is the declaration of intent, and the implementation change is the execution. In OpenSpec, this means creating a new change proposal for the spec update before touching the code. In SpecKit, it means re-running <code>/specify</code> with updated requirements before re-running <code>/plan</code> and <code>/implement</code>.</p>
+      <p><strong>Archiving specs:</strong> When a feature is deprecated or removed, do not delete its spec. Archive it (in OpenSpec this is handled by the archive lifecycle; in SpecKit, move the spec directory to an <code>archived/</code> subdirectory). Deleted specs disappear from the record; archived specs preserve the history of decisions. Future engineers — or future agents — will find context in archived specs that they cannot find anywhere else.</p>
+      <p><strong>Spec granularity creep:</strong> Over time, specs tend to accumulate detail. A 2-page spec becomes a 10-page spec as edge cases are documented, exceptions are catalogued, and historical context is appended. This is mostly healthy, but watch for the point where the spec becomes harder to parse than the code. If an agent takes 60 seconds of context-loading to read the spec before it can start work, the spec has grown too large. Consider splitting into a core spec (the contract) and a separate decisions log (the history).</p>
+
+      <h2>6.10 Anti-patterns — speccing what doesn't need a spec</h2>
+      <p>Spec-driven development has real overhead. A spec file needs to be written, reviewed, maintained, and eventually archived. For the right features, this overhead is paid back many times over. For the wrong features, it is pure waste. Recognising the anti-patterns saves you from drowning in spec files for things that did not need one.</p>
+      <p><strong>Anti-pattern 1: Speccing trivial CRUD.</strong> If the feature is "add a /users/:id GET endpoint that returns the user by ID," the spec is already fully described by the sentence you just wrote plus the existing data model. Writing a formal spec file adds no information. The agent can implement this from a one-line prompt. Reserve specs for features with non-trivial business logic, multiple output formats, or behavior that cannot be inferred from naming conventions.</p>
+      <p><strong>Anti-pattern 2: Spec effort exceeds implementation effort.</strong> If writing and reviewing the spec takes longer than the implementation would have taken without one, the spec is not providing value at this scale. This most often happens with one-off scripts, migration scripts, or throwaway tooling. If the tool will be used once and discarded, a spec is overhead with no return. A rough prompt is sufficient.</p>
+      <p><strong>Anti-pattern 3: Specs that drift untouched.</strong> A spec that no-one updates is worse than no spec — it actively misleads. Agents that read a stale spec will implement against outdated requirements with full confidence, because they have no way to know the spec is stale. If your team cannot commit to maintaining specs, do not introduce them. An honest "no spec, use judgment" is safer than a lying spec file.</p>
+      <p><strong>Anti-pattern 4: Over-speccing exploratory work.</strong> In the early stages of a feature — when you are not yet sure what the right interface is — writing a detailed spec freezes premature decisions. In this phase, use a lightweight "spike spec" (a few bullet points of hypotheses) rather than a full behavioral contract. Graduate to a full spec once the shape of the feature is clear.</p>
+      <p><strong>Anti-pattern 5: Spec by committee.</strong> A spec that needs sign-off from six people before any code is written reproduces the worst of traditional requirements processes without the benefits of agility. Keep spec review tight: one author, one reviewer, merge. Larger specs can go through wider review — but the default should be lightweight, not heavyweight.</p>
+
+      <h2>6.11 Mini-walkthrough: gitlog-report spec</h2>
+
+      <div class="walkthrough">
+        <h3>Mini-walkthrough &middot; gitlog-report — write the spec</h3>
+        <p><strong>The tool:</strong> <code>gitlog-report</code> is a CLI command that reads <code>git log</code> for a repository and produces a per-author contribution summary. It is a real, buildable tool — simple enough to implement in an afternoon, complex enough to benefit from a spec. We will use it as the running example across Ch 6–11, then build it end-to-end in Ch 17.</p>
+
+        <p><strong>Acceptance criteria:</strong></p>
+        <ul>
+          <li>Reads <code>git log</code> from the current directory, or from a path specified via <code>--path &lt;dir&gt;</code></li>
+          <li>Produces per-author: commit count, days active, commits per day, lines added, lines removed</li>
+          <li>Lists the top 5 most-touched files per author (by total line change delta)</li>
+          <li>Outputs JSON by default; Markdown report via <code>--format md</code></li>
+          <li>Supports <code>--since &lt;date&gt;</code> and <code>--until &lt;date&gt;</code> date range filters (ISO 8601 format)</li>
+          <li>Handles an empty repository (no commits) gracefully: zero-row output, exit code 0</li>
+          <li>Handles merge commits consistently: counted in commit total, lines excluded by default (opt-in via <code>--include-merges</code>)</li>
+        </ul>
+
+        <p><strong>OpenSpec proposal snippet</strong> — what the file at <code>openspec/changes/add-gitlog-report/proposal.md</code> looks like after <code>/opsx:propose add-gitlog-report</code>:</p>
+        <pre>
+# Change: add-gitlog-report
+
+**Type:** new-feature
+**Status:** proposed
+
+## Rationale
+Teams want a quick, scriptable way to generate contribution summaries
+from git history — for retrospectives, billing reports, and onboarding
+context. `gitlog-report` fills this gap with a single command.
+
+## Summary of changes
+Adds `openspec/specs/gitlog-report.md` defining the CLI interface,
+output schema (JSON + Markdown), date filtering, merge-commit handling,
+and empty-repo edge case.
+
+## Linked spec delta
+`openspec/changes/add-gitlog-report/specs/gitlog-report.md`</pre>
+
+        <p><strong>SpecKit <code>/specify</code> output snippet</strong> — what <code>specs/001-gitlog-report/spec.md</code> looks like after <code>/specify gitlog-report</code>:</p>
+        <pre>
+# Spec: gitlog-report
+
+## Feature
+CLI command producing per-author git contribution summaries.
+
+## Interface
+gitlog-report [--path &lt;dir&gt;] [--format json|md]
+              [--since &lt;ISO-date&gt;] [--until &lt;ISO-date&gt;]
+              [--include-merges]
+
+## Acceptance criteria
+- [ ] Reads git log from CWD or --path
+- [ ] Per-author: commits, days-active, commits/day, lines+/-
+- [ ] Top-5 most-touched files per author
+- [ ] JSON output (default), Markdown (--format md)
+- [ ] --since / --until date filtering
+- [ ] Empty repo → zero-row output, exit 0
+- [ ] Merge commits: excluded from line counts by default
+
+## Edge cases
+- Author email deduplication: case-insensitive
+- Unborn HEAD (no commits): empty result, no error
+- Binary files: excluded from line-change counts</pre>
+
+        <p>Both formats capture the same contract — the difference is workflow. OpenSpec routes the spec through a formal change proposal before it becomes canonical. SpecKit writes spec, plan, tasks, and implementation in one slash-command chain.</p>
+        <p><strong>Next chapter:</strong> we take this spec and plan the implementation — breaking it into phases and tasks an agent can execute step by step. → Ch 7: Plan-Driven Execution.</p>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch7-plan')">→ Ch 7. Plan-Driven Execution</a>
+        <a onclick="go('ch8-tdd')">→ Ch 8. Test-Driven Development with Agents</a>
+        <a onclick="go('ch17-worked')">→ Ch 17. Worked Example: gitlog-report end-to-end</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
