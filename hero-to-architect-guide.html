@@ -1264,6 +1264,139 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
     </section>
 
+    <section id="ch4-models" class="section">
+      <h1>4. Model Selection &amp; Cost Engineering</h1>
+      <p class="lede">What you'll learn: pick the right model for each task, understand the three cost dials (capability/cost/latency), exploit caching and batching, and build a token budget that survives a feature-build cycle.</p>
+
+      <h2>4.1 The model landscape now — Claude 4.7, GPT-5, Gemini 3, open-weight</h2>
+      <p>The frontier as of mid-2026 has consolidated around four families, each with meaningfully different capability/cost/latency tradeoffs. The velocity of releases means any specific version numbering here may be stale within months — treat what follows as a structural map, not a spec sheet.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Family</th><th>Top model</th><th>Speed tier</th><th>One-line character</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Anthropic Claude</td><td>Claude 4.7 Opus</td><td>Medium–slow on extended thinking</td><td>Best at long-horizon reasoning, safety-first design, large context coherence</td></tr>
+          <tr><td>OpenAI GPT</td><td>GPT-5</td><td>Fast (mini) to medium (full)</td><td>Broadest plugin/tool ecosystem, strong at structured output, widely integrated</td></tr>
+          <tr><td>Google Gemini</td><td>Gemini 3 Pro</td><td>Flash is extremely fast; Pro is medium</td><td>Strongest at very-long-context recall, competitive free tier via AI Studio</td></tr>
+          <tr><td>Open-weight</td><td>Llama 4, Qwen 3, DeepSeek R2</td><td>Hardware-dependent</td><td>Zero inference cost, full local/private, capability gap closing fast</td></tr>
+        </tbody>
+      </table>
+      <p>The open-weight tier deserves a separate note: Llama 4 (Meta), Qwen 3 (Alibaba), and DeepSeek R2 are the three families worth tracking in 2026. At Q4/Q8 quantization on a modern consumer GPU (RTX 4090 or Apple M3 Ultra), 70B-class models produce output that competes with 2024-era frontier on coding tasks. The capability gap against today's frontier Opus/GPT-5 class is real but shrinking — and the cost gap is absolute zero once the hardware is amortized.</p>
+
+      <h2>4.2 The three dials — capability vs cost vs latency</h2>
+      <p>Every model selection decision reduces to three dials you cannot maximize simultaneously. <strong>Capability</strong> is the model's ability to reason correctly on hard tasks — long context coherence, multi-step planning, subtle bug detection. <strong>Cost</strong> is the dollar price of input and output tokens. <strong>Latency</strong> is time-to-first-token and total generation time. Turning one dial up typically turns at least one other down.</p>
+      <p>The pick rule, stated simply: <em>use the cheapest model that can do the job correctly at the latency your workflow tolerates.</em> "Can do the job correctly" is the constraint that prevents you from always picking Haiku/Flash — if the model hallucinates on your task, the downstream debugging cost exceeds the model savings. "At the latency your workflow tolerates" is the constraint that prevents you from always picking Opus/GPT-5 — if your task is synchronous and user-facing, a 20-second response is not acceptable regardless of how good it is.</p>
+      <p>A useful calibration exercise: run the same 10-prompt benchmark across three model tiers on your actual workload. Measure accuracy (does the output work without correction?), latency (wall clock from call to response), and cost (tokens in/out). Plot them. You will almost always find a tier that dominates on cost/latency with acceptable accuracy loss — that is your workhorse model. The top tier becomes the specialist you reach for when the workhorse fails.</p>
+
+      <h2>4.3 Claude family — Opus / Sonnet / Haiku and what each is for</h2>
+      <p>The Claude 4.7 family presents three distinct price/capability points. <strong>Opus</strong> is the architect model: use it for initial system design, complex refactors requiring whole-codebase reasoning, security analysis, and any task where a wrong answer has high recovery cost. Its extended thinking mode (section 4.8) is most valuable here. <strong>Sonnet</strong> is the daily coder: fast enough for interactive use, capable enough for the 90th percentile of coding tasks, and priced to make routine feature work economically sensible. <strong>Haiku</strong> is the volume model: use it for classification, intent parsing, short-form generation, embedding-style tasks, and any pipeline step that runs thousands of times per hour.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Model</th><th>Best for</th><th>Context window</th><th>Relative cost tier (verify current)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude 4.7 Opus</td><td>Architecture, deep code review, complex reasoning</td><td>200K (extended tiers available)</td><td>High — typically ~10–15× Haiku</td></tr>
+          <tr><td>Claude 4.7 Sonnet</td><td>Daily coding, medium-complexity tasks</td><td>200K</td><td>Medium — typically ~3–5× Haiku</td></tr>
+          <tr><td>Claude 4.7 Haiku</td><td>Volume tasks, classification, fast inline tasks</td><td>200K</td><td>Low — baseline reference tier</td></tr>
+        </tbody>
+      </table>
+      <p>Pricing note: Anthropic's per-million-token prices have tiered structures that change with demand and model generation. Opus 4.7's 1M-token context tier carries a different (higher) price than the standard 200K tier — the extended context capability is a separate offering. <strong>Verify current pricing at <a href="https://docs.anthropic.com" target="_blank">docs.anthropic.com</a> before budgeting</strong> — figures here are structural, not binding (as of mid-2025; verify current).</p>
+
+      <h2>4.4 GPT family — GPT-5, GPT-5 mini and what each is for</h2>
+      <p><strong>GPT-5</strong> is OpenAI's current flagship: strong reasoning, excellent structured output (JSON mode and function calling have been a GPT strength since GPT-4), and the widest third-party integration surface — more SaaS products connect to the OpenAI API than any other provider. <strong>GPT-5 mini</strong> is the cost-optimized tier, offering substantially lower token prices at the expense of reasoning depth on hard tasks. The mini tier is the right default for volume API workloads where GPT is the required provider.</p>
+      <p>The GPT family's practical advantage in agentic workflows is ecosystem breadth: more harnesses, more LangChain integrations, more off-the-shelf agents are built against the OpenAI API shape. If you are buying an AI coding tool rather than building one, GPT integration is the default. If you are building your own agent, the API shape is largely compatible with Claude's via OpenAI-compatible adapters.</p>
+      <p><strong>Verify current GPT-5 and GPT-5 mini pricing at <a href="https://platform.openai.com/docs/pricing" target="_blank">platform.openai.com/docs/pricing</a></strong> — the relative cost structure is similar to Claude (flagship ~10× mini) but exact figures shift frequently (as of mid-2025; verify current).</p>
+
+      <h2>4.5 Gemini family — 3 Pro, Flash and what each is for</h2>
+      <p><strong>Gemini 3 Pro</strong> is Google's flagship, notable for two things: the strongest long-context recall of any frontier model (its architecture handles 1M+ token contexts with less mid-context degradation than 2024-era competitors), and a competitive free tier through Google AI Studio. <strong>Gemini Flash</strong> is the speed/cost tier — genuinely fast time-to-first-token, suitable for real-time UI applications and high-throughput pipelines. Flash is the model Gemini CLI uses by default for interactive sessions (verify current default against Gemini CLI docs).</p>
+      <p>The free tier is strategically significant for individuals and small teams: Google AI Studio allows Gemini API calls at no charge up to a rate limit threshold (verify current limits at <a href="https://ai.google.dev" target="_blank">ai.google.dev</a>). For a solo developer doing experimentation, prototyping, or light daily coding assistance, this can mean genuinely zero AI inference spend. The tradeoff is that free-tier rate limits make it impractical for production workloads or multi-agent parallelism.</p>
+      <p>Gemini 3 Pro's long-context strength is worth calling out specifically: if your workflow involves ingesting large codebases, lengthy documentation sets, or multi-file refactors, Gemini 3 Pro has measurably better recall at 500K–1M token fill levels than Claude or GPT equivalents as of mid-2026. This changes the model-selection calculus for specifically large-context tasks. <strong>Verify current Gemini pricing at <a href="https://ai.google.dev/pricing" target="_blank">ai.google.dev/pricing</a></strong> (as of mid-2025; verify current).</p>
+
+      <h2>4.6 Local models — Ollama, LM Studio, when they make sense</h2>
+      <p><strong>Ollama</strong> and <strong>LM Studio</strong> are the two dominant local inference runtimes for developers in 2026. Ollama is CLI-first: <code>ollama run llama4</code> downloads and runs a model with no GUI, exposes an OpenAI-compatible REST endpoint at <code>localhost:11434</code>, and integrates with any tool that accepts an OpenAI API base URL override. LM Studio is GUI-first: a macOS/Windows/Linux desktop app with model browsing, quantization selection, and a built-in chat UI, also exposing a compatible local API endpoint.</p>
+      <p>Local inference makes sense in three scenarios: <strong>privacy requirements</strong> (code, prompts, or data cannot leave the device — legal, compliance, or employer policy constraints); <strong>cost requirements</strong> (high-volume pipelines where per-token cloud costs exceed hardware amortization); <strong>offline requirements</strong> (air-gapped environments, travel, or unreliable connectivity). It does not make sense when capability is the binding constraint — a 70B local model on consumer hardware will not match Opus or GPT-5 on genuinely hard reasoning tasks, and the capability gap matters for architecture-level decisions.</p>
+      <p>Hardware baseline for useful local inference: Apple Silicon M2 Pro or later (32 GB unified memory minimum for 70B Q4), or an RTX 4070 or better (12 GB+ VRAM for 7–13B, 24 GB for 70B Q4). The latency picture is nuanced: on Apple M3 Ultra, Llama 4 70B at Q4 produces ~30–50 tokens/second — fast for batch tasks, borderline acceptable for interactive use. A cloud Haiku or Flash call is typically faster wall-clock if network latency is low. Local wins on privacy and sustained high-volume throughput.</p>
+
+      <h2>4.7 BYO-model in Kilo Code — routing, fallbacks, mode-specific picks</h2>
+      <p>Kilo Code's model routing is configured per mode: each mode (Architect, Code, Ask, Debug, etc.) can be assigned a different model independently. This is the right design for cost engineering — your Architect mode should use a high-capability model because it runs infrequently and its output drives downstream work, while your Ask mode (used dozens of times per session for quick questions) should use a fast, cheap model. The configuration surface for per-mode model assignment is in the Kilo Code settings UI under the Modes section. <strong>Verify the exact config file path and schema</strong> — Kilo Code has historically used workspace-level config (look for <code>.kilocode/</code> directory or <code>.roomodes</code> file — verify against current Kilo Code docs, as the config format has evolved across versions).</p>
+      <p>An illustrative per-mode routing example (this is a suggested pattern, <strong>not Kilo Code's shipped default</strong> — your Kilo installation's actual defaults will differ): Architect mode → Claude 4.7 Opus (deep reasoning, infrequent); Code mode → Claude 4.7 Sonnet (fast, capable for routine coding); Ask mode → Claude 4.7 Haiku or Gemini Flash (speed-optimized, high-frequency). Debug mode might use Sonnet by default and escalate to Opus if the session produces more than 5 failed fix attempts.</p>
+      <p>Fallback routing — using a cheaper model first and escalating on failure or low confidence — is not natively built into Kilo Code's mode system as of mid-2026. You implement it at the orchestration layer: a custom mode whose system prompt instructs the model to explicitly mark tasks as requiring deep reasoning before the harness routes them. Alternatively, use the Kilo orchestrator pattern (Boomerang Tasks) where a lightweight orchestrator model delegates subtasks to specialist sub-agents running stronger models for hard subtasks only.</p>
+
+      <aside class="tool-alt">
+        <strong>Model routing surfaces across the three major harnesses</strong>
+        <table class="tbl" style="margin-top:10px;">
+          <thead>
+            <tr><th>Harness</th><th>How to configure model per task</th><th>Granularity</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Kilo Code</td><td>Settings UI → Modes → per-mode model selector; or edit <code>.kilocode/</code> workspace config / <code>.roomodes</code> file (verify current path)</td><td>Per mode — Architect, Code, Ask, Debug, etc.</td></tr>
+            <tr><td>Claude Code</td><td><code>CLAUDE.md</code> model preference line or skill-specific <code>SKILL.md</code> model directive; CLI flag <code>--model claude-...</code> per invocation</td><td>Per session or per skill; no native per-task routing without a wrapper</td></tr>
+            <tr><td>Gemini CLI</td><td><code>--model gemini-3-pro</code> or <code>--model gemini-flash</code> flag at launch (verify current flag names against Gemini CLI docs)</td><td>Per CLI invocation; no mid-session switching</td></tr>
+          </tbody>
+        </table>
+      </aside>
+
+      <h2>4.8 Thinking / extended thinking — what it buys, what it costs</h2>
+      <p>Extended thinking (Claude's term) or "reasoning" mode (OpenAI's o-series framing) refers to models that perform explicit chain-of-thought deliberation before producing their final answer. The thinking tokens are generated internally, typically billed at a reduced rate compared to output tokens, but the total token count can be substantial — a hard problem might consume 10,000–30,000 thinking tokens before the visible response appears. The latency cost is the more practical constraint: extended thinking adds 10–60 seconds to response time for hard problems.</p>
+      <p>When extended thinking pays: multi-step logical problems with no obvious greedy path (algorithmic design, security threat modeling, root-cause analysis of complex bugs), tasks where the model has historically hallucinated on the first attempt, and tasks where the cost of a wrong answer (debugging time, rollback, production incident) exceeds the cost of the extra thinking budget. When it wastes: well-defined mechanical tasks (generate a CRUD endpoint, rename a variable, write a migration), tasks with a clear single-step answer, and any interactive session where 30-second latency breaks the developer's flow.</p>
+      <p>Practical guidance: set a thinking budget cap (Anthropic's API allows a <code>budget_tokens</code> parameter for extended thinking — verify current parameter name). A budget of 5,000–8,000 tokens handles most medium-hard coding problems without runaway cost. Set it to 0 for routine tasks (the model will not invoke thinking). Reserve unlimited budget for the rare genuinely hard problem. Track your thinking token spend separately — it will surprise you in mixed-use sessions.</p>
+
+      <h2>4.9 Prompt caching as a cost lever — beyond the basics</h2>
+      <p>Prompt caching allows the provider to store a prefix of your prompt on their inference infrastructure and skip re-processing it on subsequent calls. The cache hit discount is substantial — historically 90% reduction in input token cost for cached prefixes on Claude (verify current discount at docs.anthropic.com). The catch: the cache only hits if the prefix is byte-for-byte identical from call to call. Any character change in the cached prefix invalidates the cache for all content after the change point.</p>
+      <p>Three structural rules for maximizing cache hit rate: <strong>keep system prompts static</strong> — do not interpolate dynamic values (timestamps, session IDs, user names) into the system prompt; move dynamic content to the human turn. <strong>Append, don't insert</strong> — if you must modify a long prompt between calls, add new content at the end rather than inserting it in the middle; insertion invalidates everything downstream. <strong>Monitor hit rate explicitly</strong> — the Anthropic API returns <code>cache_read_input_tokens</code> and <code>cache_creation_input_tokens</code> in the usage object; track the ratio per session to validate that your caching strategy is working.</p>
+      <p>A worked example: a coding session with a 10,000-token system prompt (project context, codebase summary, CLAUDE.md rules) that runs 40 turns. Without caching: 40 × 10,000 = 400,000 input tokens billed at full price. With caching and stable prefix: 1 × 10,000 cache-creation tokens + 39 × 10,000 cache-read tokens. If cache reads cost 10% of full price, the session's system-prompt input cost drops by ~88%. At scale, this is the single highest-leverage cost reduction available without changing models.</p>
+
+      <h2>4.10 Batching, message batches, async wins</h2>
+      <p>Batch APIs allow you to submit multiple API requests as a single job, processed asynchronously with a completion window (typically up to 24 hours) rather than synchronously. In exchange for accepting async delivery, providers offer significant price reductions. The historical pattern across providers has been roughly 50% discount on batch vs. synchronous pricing — but <strong>verify current discount and SLA for each provider</strong>: Anthropic's Message Batches API, OpenAI's Batch API, and Google's equivalent each have their own current discount tiers and time-to-completion guarantees that change with infrastructure capacity (as of mid-2025; verify current at each provider's batch documentation).</p>
+      <p>Batch APIs are the right tool for: generating documentation across a large codebase (hundreds of files, no user waiting), running evals over a test set, processing logs or data, classification pipelines, and any task where latency is not user-facing. They are wrong for: any interactive session, any task in the critical path of a deployment, and any task where the next step depends on the result of the current one (sequential dependencies prevent batching).</p>
+      <p>Implementation note for Claude Message Batches: the API accepts an array of request objects, each with its own <code>custom_id</code> for result matching. Results are polled or retrieved via a results endpoint after the batch completes. There is no streaming within a batch — each request produces a complete response. Error handling must account for partial failure: some requests in a batch may succeed while others fail; the <code>custom_id</code> map lets you retry only the failed items. This is meaningfully different from a synchronous retry loop.</p>
+
+      <h2>4.11 Context size vs effective usable context</h2>
+      <p>Nominal context windows have expanded dramatically: Claude 4.7 supports 200K tokens (with extended tiers), Gemini 3 Pro supports 1M+ tokens, GPT-5 supports 128K–1M depending on tier. These numbers do not mean you can fill them and get uniform quality. The "lost in the middle" problem — where information placed in the middle of a very long context is retrieved less reliably than information at the beginning or end — is documented across all frontier models, though the severity varies.</p>
+      <p>Rule of thumb (model-dependent, verify against current evals): performance begins to degrade past approximately 50–70% context fill for most coding tasks. This is not a cliff — it is a gradient, and the exact threshold depends on task type (factual retrieval degrades before reasoning), content structure (well-structured code is retrieved more reliably than prose), and model. Gemini 3 Pro has demonstrated stronger long-range recall than 2024-era frontier models at high fill levels — this is a genuine architectural advantage worth considering for specifically large-context use cases.</p>
+      <p>Practical consequence: for a 200K Claude session, treat ~120K–140K as your reliable working space. If your actual content needs more, restructure your context strategy: use retrieval (semantic search over the codebase, returning only relevant chunks) rather than whole-file loading, break the task into smaller subtasks with fresh context windows, or consider Gemini 3 Pro if the use case truly requires dense 500K+ context. Never pad context with content that is marginally relevant — every token of irrelevant context increases the chance that relevant content is displaced or diluted.</p>
+
+      <h2>4.12 The cost-per-feature mental model</h2>
+      <p>The cost of building a feature with an AI coding agent decomposes as: <code>cost = input_tokens_per_turn × turns × turns_per_feature × input_price + output_tokens_per_turn × turns × turns_per_feature × output_price</code>. The turns-per-feature variable is the one most developers underestimate — a feature that looks like "write the CRUD endpoint" typically involves 8–15 turns: initial plan, scaffold, write route, write model, write tests, fix lint error, fix test failure, refactor for consistency, add validation, handle edge case, final review. Not one.</p>
+      <p>A worked example with concrete numbers (using approximate mid-2025 pricing — verify current): a CRUD endpoint feature on Claude 4.7 Sonnet, 12 turns, average 4,000 input tokens/turn (including context + history) and 800 output tokens/turn. At approximately $3/million input tokens and $15/million output tokens (verify at docs.anthropic.com): input cost ≈ 12 × 4,000 × $0.000003 = $0.144; output cost ≈ 12 × 800 × $0.000015 = $0.144; total ≈ $0.29 per endpoint. With prompt caching hitting 80% of input tokens at a 90% discount, input cost drops to ~$0.032 — total with caching ≈ $0.18 per endpoint.</p>
+      <p>Scale this to a feature sprint: 20 endpoints + 10 service methods + 5 complex refactors. Without caching: roughly $0.29 × 35 = ~$10. With caching and Sonnet routing (reserving Opus for the 5 complex refactors): closer to $4–6. Routing the Opus tasks to Sonnet when possible and batching the non-interactive documentation generation could halve the total again. Cost-per-feature thinking turns model selection from an abstract API preference into a concrete budget line item.</p>
+
+      <h2>4.13 Decision tree — which model for which job</h2>
+      <p>Use the following tree as a starting point. The right answers for your specific tasks will differ — calibrate against your own benchmarks after reading section 4.12.</p>
+      <table class="tbl">
+        <thead>
+          <tr><th>Is the task interactive (user waiting)?</th><th>Is it high-complexity reasoning?</th><th>Is volume high (&gt;100/day)?</th><th>Recommended tier</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Yes</td><td>Yes</td><td>No</td><td>Opus / GPT-5 (capability wins)</td></tr>
+          <tr><td>Yes</td><td>No</td><td>No</td><td>Sonnet / GPT-5 mini / Flash (speed + capability balance)</td></tr>
+          <tr><td>Yes</td><td>No</td><td>Yes</td><td>Haiku / Flash / GPT-5 mini (speed + cost win)</td></tr>
+          <tr><td>No</td><td>Yes</td><td>No</td><td>Opus via Batch API (async, cost-optimized)</td></tr>
+          <tr><td>No</td><td>No</td><td>Yes</td><td>Haiku / Flash via Batch API (maximum throughput, minimum cost)</td></tr>
+          <tr><td>Either</td><td>Either</td><td>Either — privacy required</td><td>Local model (Ollama / LM Studio) — match size to task</td></tr>
+        </tbody>
+      </table>
+      <ol>
+        <li><strong>Start with task type</strong>: Is it a design/architecture decision, a mechanical code generation task, a classification/parsing task, or a documentation/explanation task?</li>
+        <li><strong>Apply the latency constraint</strong>: Is the user blocking on this response? If yes, the fastest acceptable-quality model wins over the cheapest.</li>
+        <li><strong>Apply the volume constraint</strong>: Will this run more than 100 times today? If yes, move one tier down from your initial pick and validate accuracy holds.</li>
+        <li><strong>Apply the context constraint</strong>: Does the task require &gt;150K tokens of context? If yes, consider Gemini 3 Pro for its long-range recall advantage.</li>
+        <li><strong>Apply the privacy constraint</strong>: Does the content have legal or policy constraints on leaving the device? If yes, go local regardless of capability tradeoffs.</li>
+        <li><strong>Apply the cost constraint</strong>: Does your budget allow for the selected model across the expected volume? If no, add batching and/or caching, then re-evaluate.</li>
+      </ol>
+
+      <h2>4.14 Hands-on: budget a real feature build</h2>
+      <p>Take last week's work — a specific feature or set of tasks you actually completed with an AI coding assistant. Reconstruct the session structure: how many distinct tasks, how many turns each, roughly how much context each turn carried. Use your harness's usage tracking (<code>ccusage</code> for Claude Code, the API usage dashboard for direct API use, Kilo Code's token counter in the status bar) to pull actual numbers if available.</p>
+      <p>Exercise steps: <strong>Step 1</strong> — list each distinct task from the week and classify it (design/architecture, mechanical coding, classification, documentation). <strong>Step 2</strong> — for each task, identify which model you used and estimate the token cost using the cost-per-feature formula from 4.12. <strong>Step 3</strong> — re-route each task to the cheapest model that would have produced acceptable output (use the decision tree from 4.13 as a guide). <strong>Step 4</strong> — identify which tasks could have used the Batch API (non-interactive, no sequential dependencies). <strong>Step 5</strong> — estimate the savings from re-routing + batching + caching, and express it as a percentage of actual spend.</p>
+      <p>Most developers who run this exercise for the first time find 40–60% savings available without any quality loss — primarily from three sources: using Sonnet instead of Opus for tasks that did not require deep reasoning, batching documentation and test generation that ran synchronously, and stabilizing system prompts to enable cache hits. The goal is not to squeeze every dollar — it is to build the habit of treating token spend as a real engineering variable, like memory or latency, with explicit tradeoffs that you control.</p>
+
+      <div class="see-also">
+        <a onclick="go('ch12-kilo')">→ Ch 12. Kilo Code Deep Dive (modes &amp; routing)</a>
+        <a onclick="go('ch13-claude')">→ Ch 13. Claude Code Deep Dive (fast mode)</a>
+        <a onclick="go('ch14-gemini')">→ Ch 14. Gemini CLI Deep Dive (free tier)</a>
+      </div>
+    </section>
+
   </main>
 </div>
 
