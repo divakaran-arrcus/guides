@@ -3770,6 +3770,14 @@ git push --force-with-lease origin polish/json</code></pre>
 
       <p><strong>Orchestrator mode</strong> is the multi-agent coordinator. It decomposes a high-level task, dispatches subagents in other modes (called "boomerang tasks" in Kilo Code's terminology), and integrates their results. Orchestrator mode does not write code directly — it delegates to Code, Debug, or Architect subagents. This mode is covered in depth in Ch 11.8 and is the subject of the parallel workflows walkthrough.</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Architect</div><div class="flv-desc">Read-only + spec writes — plan and design without touching code.</div></div>
+        <div class="flv"><div class="flv-name">Code</div><div class="flv-desc">Full file read/write + terminal — the implementation workhorse.</div></div>
+        <div class="flv"><div class="flv-name">Ask</div><div class="flv-desc">Strictly read-only — Q&amp;A and codebase exploration with zero write risk.</div></div>
+        <div class="flv"><div class="flv-name">Debug</div><div class="flv-desc">Read + diagnostics — targeted root-cause analysis without broad rewrites.</div></div>
+        <div class="flv"><div class="flv-name">Orchestrator</div><div class="flv-desc">Decomposes tasks and dispatches subagents — never writes code directly.</div></div>
+      </div>
+
       <h2>12.3 Why modes exist — constraint as feature</h2>
       <p>The instinct when encountering modes is to see them as restrictions. The correct mental model is the opposite: <strong>modes are footgun prevention</strong>. When you ask a question in Ask mode, you have a guarantee — not a hope — that the AI cannot accidentally modify a file. That guarantee changes how you interact with it. You can freely explore a live production codebase without a mental safety tax. You do not need to mentally track whether this particular question might trigger a tool call that rewrites something.</p>
 
@@ -4029,6 +4037,17 @@ git commit -m "chore: add Kilo Code project config (modes, rules, memory scaffol
       <p><strong>Headless mode</strong> (sometimes called non-interactive or scripted mode) allows Claude Code to be driven programmatically — via shell scripts, CI pipelines, or other orchestration systems — without a human at the keyboard. In headless mode Claude Code reads instructions from stdin or command-line flags, executes the task, and exits. This makes it a first-class participant in automated workflows: you can invoke it from a GitHub Actions step, a pre-commit hook, or a cron job and get structured output back. The <code>--output-format json</code> flag (or equivalent; <em>verify the current flag name in <code>claude --help</code></em>) produces machine-parseable results.</p>
 
       <p><strong>IDE extensions</strong> are available for VS Code and JetBrains IDEs. These extensions embed the Claude Code REPL inside the IDE's sidebar or panel, providing the same capabilities as the terminal client but with direct access to the open editor context: the active file, selected text, diagnostic errors, and diff views. The underlying agent is identical — the extensions are thin shells that pass editor context into the same CLI runtime. <em>Verify which IDE extension versions are currently shipping and stable, as the JetBrains extension in particular has lagged behind the VS Code release cadence historically.</em></p>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">CLAUDE.md</div><div class="flv-desc">Instruction injection at global, project, and subdirectory scope.</div></div>
+        <div class="flv"><div class="flv-name">Slash commands</div><div class="flv-desc">In-session control surface — built-in and custom per-project commands.</div></div>
+        <div class="flv"><div class="flv-name">Skills</div><div class="flv-desc">Named, reusable workflow bundles invoked via the Skill tool or /command.</div></div>
+        <div class="flv"><div class="flv-name">Plugins</div><div class="flv-desc">Distribution bundles that package skills, commands, and hooks together.</div></div>
+        <div class="flv"><div class="flv-name">Hooks</div><div class="flv-desc">Shell scripts wired to lifecycle events — SessionStart, PreToolUse, Stop.</div></div>
+        <div class="flv"><div class="flv-name">Sub-agents</div><div class="flv-desc">Isolated parallel agents spawned via the Agent tool for concurrent tasks.</div></div>
+        <div class="flv"><div class="flv-name">Plan mode</div><div class="flv-desc">Approval-gate that separates reasoning from execution before files change.</div></div>
+        <div class="flv"><div class="flv-name">Memory</div><div class="flv-desc">CLAUDE.md files + hooks persist context and preferences across sessions.</div></div>
+      </div>
 
       <h2>13.2 CLAUDE.md — global, project, subdirectory scope</h2>
       <p>CLAUDE.md is Claude Code's instruction-injection mechanism. Unlike a system prompt that you pass at invocation time, CLAUDE.md files are discovered automatically based on where you are in the filesystem. Claude Code reads them at session start and incorporates their contents into its context. There are three distinct scopes, and all three are active simultaneously when they exist.</p>
@@ -4320,6 +4339,12 @@ EOF</code></pre>
 
       <p><strong>Vertex AI authentication</strong> is the enterprise path. Here Gemini CLI uses Google Cloud Application Default Credentials (ADC) — typically via <code>gcloud auth application-default login</code> — and routes requests through your organization's Google Cloud project. Vertex AI gives you VPC-SC controls, data residency guarantees, audit logging, and the ability to use private model endpoints. This is the correct auth path for any production or compliance-sensitive deployment. The configuration lives in <code>settings.json</code> under the <code>vertexai</code> key; exact schema should be verified against current documentation as the Vertex AI integration has expanded significantly since initial launch.</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Personal Google account</div><div class="flv-desc">Free tier via OAuth — ~1M context, ~1 000 req/day; zero-friction entry point.</div></div>
+        <div class="flv"><div class="flv-name">API key (Gemini API)</div><div class="flv-desc">Pay-as-you-go via AI Studio — higher rate limits, CI-friendly, no browser flow.</div></div>
+        <div class="flv"><div class="flv-name">Vertex AI</div><div class="flv-desc">Enterprise path via GCP ADC — VPC-SC, data residency, audit logging.</div></div>
+      </div>
+
       <h2>14.4 GEMINI.md — global, project, subdirectory scope</h2>
       <p>GEMINI.md is Gemini CLI's instruction-injection mechanism, directly analogous to Claude Code's CLAUDE.md. At session start, Gemini CLI discovers and loads GEMINI.md files from three scope levels, merging them into the active context. Understanding which scope to use is the first configuration decision every team should make deliberately rather than accidentally.</p>
 
@@ -4486,6 +4511,20 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       <h2>15.3 The library tour — what each skill enforces</h2>
       <p>The Superpowers library covers the full development lifecycle. Each skill is a named, installable unit of methodology. Here is the canonical library in order:</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">brainstorming</div><div class="flv-desc">Forces exploration before any implementation begins.</div></div>
+        <div class="flv"><div class="flv-name">writing-plans</div><div class="flv-desc">Produces a reviewable numbered plan before code changes.</div></div>
+        <div class="flv"><div class="flv-name">executing-plans</div><div class="flv-desc">Steps through an approved plan with human checkpoints.</div></div>
+        <div class="flv"><div class="flv-name">subagent-driven-development</div><div class="flv-desc">Dispatches parallel subagents for independent plan tasks.</div></div>
+        <div class="flv"><div class="flv-name">test-driven-development</div><div class="flv-desc">Enforces red-green-refactor; blocks code before tests.</div></div>
+        <div class="flv"><div class="flv-name">systematic-debugging</div><div class="flv-desc">Hypothesis cycle: form, reproduce, verify, fix.</div></div>
+        <div class="flv"><div class="flv-name">verification-before-completion</div><div class="flv-desc">Runs structured checklist before any "task done" signal.</div></div>
+        <div class="flv"><div class="flv-name">requesting-code-review</div><div class="flv-desc">Formats change summary and decision rationale for reviewer.</div></div>
+        <div class="flv"><div class="flv-name">receiving-code-review</div><div class="flv-desc">Processes feedback systematically before making changes.</div></div>
+        <div class="flv"><div class="flv-name">finishing-a-development-branch</div><div class="flv-desc">Branch-close checklist: green, rebased, PR written, merged.</div></div>
+        <div class="flv"><div class="flv-name">writing-skills</div><div class="flv-desc">Meta-skill: guides creation of new methodology skills.</div></div>
+      </div>
+
       <ul>
         <li><strong>brainstorming</strong> — Forces exploration before implementation. Invokes structured divergent thinking (multiple approaches, hidden requirements, risks) before the agent produces any artifact. The mandatory pre-step for any creative work.</li>
         <li><strong>writing-plans</strong> — Takes a spec or requirements description and produces a written, numbered implementation plan. No code is written during this skill. The plan is an artifact for human review.</li>
@@ -4508,6 +4547,12 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       <p><strong>Gemini CLI skills (explicit)</strong>: the same SKILL.md format works in Gemini CLI, but activation is explicit via the <code>activate_skill</code> tool rather than automatic. Skills listed in GEMINI.md give the agent awareness of what's available; the agent then decides when to call <code>activate_skill</code>. This pull model is slightly more manual but has one advantage: it is transparent. Every skill activation is a visible agent action in the conversation log. Gemini CLI shines here when you want audit trails of which methodology steps were applied.</p>
 
       <p><strong>Kilo Code modes/rules (mode-selected)</strong>: Kilo Code encodes methodology as custom modes. Each Superpowers skill maps to a custom mode whose system prompt contains the skill body. The user (or an Orchestrator mode) selects the appropriate mode for each phase. Kilo Code's advantage is model selection per mode — you can route <code>brainstorming</code> mode to a reasoning-heavy model and <code>executing-plans</code> mode to a faster, cheaper model. The tradeoff is that mode transitions require explicit user action; there is no auto-invocation equivalent. Kilo Code is the best implementation for teams that want fine-grained model routing as part of their methodology.</p>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Claude Code skills</div><div class="flv-desc">Auto-invoked via SessionStart hook — methodology fires without user action.</div></div>
+        <div class="flv"><div class="flv-name">Gemini CLI skills</div><div class="flv-desc">Explicit pull model via activate_skill — visible in conversation audit log.</div></div>
+        <div class="flv"><div class="flv-name">Kilo Code modes/rules</div><div class="flv-desc">Mode-selected per phase — enables per-phase model routing for cost control.</div></div>
+      </div>
 
       <h2>15.5 The Claude Code plugin — installation and auto-invocation</h2>
       <p>The canonical installation path for Superpowers in Claude Code is the plugin marketplace. Install via the <code>/plugin</code> interactive flow — either through the official marketplace (<code>/plugin install superpowers@claude-plugins-official</code> or equivalent) or via the obra fork (<code>/plugin marketplace add obra/superpowers-marketplace</code> then <code>/plugin</code>). <strong>Verify the current canonical install path against the Superpowers README at github.com/obra/superpowers before scripting against it.</strong> To view installed plugins and confirm the installation was successful, run <code>/plugin</code>. After installation, skills are available immediately in the current session and all subsequent sessions. The plugin manager handles versioning and updates — you can check for updates by revisiting the plugin command.</p>
@@ -4748,6 +4793,12 @@ activate_skill("create-pr") before starting.</code></pre>
           </tr>
         </tbody>
       </table>
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Tools</div><div class="flv-desc">Callable functions with side effects — agent invokes to do things in external systems.</div></div>
+        <div class="flv"><div class="flv-name">Resources</div><div class="flv-desc">Read-only, URI-referenceable data — pull large stable content without tool round-trips.</div></div>
+        <div class="flv"><div class="flv-name">Prompts</div><div class="flv-desc">Guided workflow templates — curated entry points for repeatable team tasks.</div></div>
+      </div>
+
       <p>Most MCP servers focus primarily on tools, because tools are the most broadly useful primitive for agent-driven work. Resources are the right choice when the content is large (several kilobytes of documentation), read-only, and likely to be reused across multiple tool calls in the same session — the agent can reference the URI rather than re-fetching through a tool each time. Prompts are the least commonly authored but the most valuable for encoding team workflows that less experienced users should follow consistently.</p>
 
       <h2>16.3 Transport — stdio vs HTTP/SSE</h2>
