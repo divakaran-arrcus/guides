@@ -16,7 +16,7 @@ Each guide is a self-contained HTML file with sidebar navigation, dark/light mod
 | SR-TE Policy Guide | [sr-te-policy-guide.html](sr-te-policy-guide.html) | Segment Routing Traffic Engineering — SR Policies, ODN, PCE/PCEP, constraints, flex-algo integration, BSID chaining, VPN steering, and full packet walks |
 | SRv6 Network Programming | [srv6-network-programming-guide.html](srv6-network-programming-guide.html) | Advanced SRv6 operations — uSID behaviors (uN, uA, uDT, uDX, uB6), headend encapsulation, SRv6 TE policies, cross-domain B6 chaining, SR-MPLS interworking, and 5 detailed packet walks |
 | Gen AI: Zero to Hero | [gen-ai-zero-to-hero-guide.html](gen-ai-zero-to-hero-guide.html) | Complete guide from AI basics to mastery — neural networks, LLMs, transformers, prompting, RAG, AI agents, Claude, Claude Code, CLAUDE.md, skills, MCP, hands-on exercises, cheat sheets, and A-Z glossary |
-| Gen AI: Hero to Architect | [hero-to-architect-guide.html](hero-to-architect-guide.html) | Advanced companion to Zero to Hero — agentic coding loop, context engineering, OpenSpec, SpecKit, Superpowers, Kilo Code, Claude Code, Gemini CLI, MCP, multi-agent workflows, and a worked example shipping a CLI tool across three tools |
+| Gen AI: Hero to Architect | [gen-ai-hero-to-architect-guide.html](gen-ai-hero-to-architect-guide.html) | Advanced companion to Zero to Hero — agentic coding loop, context engineering, OpenSpec, SpecKit, Superpowers, Kilo Code, Claude Code, Gemini CLI, MCP, multi-agent workflows, and a worked example shipping a CLI tool across three tools |
 
 ## Usage
 
