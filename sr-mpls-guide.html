@@ -3143,6 +3143,134 @@
 
         <div class="marker-ok">Total packet loss window: BFD detection time only (~30ms). IGP convergence happens while traffic is already flowing via the backup path.</div>
       </div>
+
+      <!-- ======== CONVERGENCE BUDGET TABLE ======== -->
+      <div class="card">
+        <h2>Convergence Budget: End-to-End Timing</h2>
+        <p>TI-LFA's value is precisely the gap between fast local protection (&lt;50ms) and full IGP reconvergence (~1–3 seconds). The table below breaks that budget into its component phases.</p>
+
+        <table class="tbl">
+          <tr>
+            <th>Phase</th>
+            <th>Mechanism</th>
+            <th>Typical Duration</th>
+            <th>Traffic State</th>
+          </tr>
+          <tr>
+            <td><strong>Failure Detection</strong></td>
+            <td>BFD (3 × hello interval). Default 3×10ms = 30ms. Aggressive: 3×3.3ms ≈ 10ms.</td>
+            <td>10–50ms</td>
+            <td>Dropped on primary path</td>
+          </tr>
+          <tr>
+            <td><strong>Local FRR Activation</strong></td>
+            <td>Hardware FIB swap to pre-computed TI-LFA repair entry. No software convergence required — entry was installed before failure.</td>
+            <td>&lt;1ms (microseconds)</td>
+            <td><span class="marker-ok">Restored via repair path</span></td>
+          </tr>
+          <tr>
+            <td><strong>LSP Flooding</strong></td>
+            <td>Detecting router (or BFD notification) triggers IGP LSP/LSA re-origination. Floods to all routers in the area.</td>
+            <td>50–200ms</td>
+            <td>Already flowing via TI-LFA</td>
+          </tr>
+          <tr>
+            <td><strong>Remote SPF Computation</strong></td>
+            <td>Every router runs SPF on the updated LSDB. SPF timer (initial + holddown) controls when SPF fires after receiving LSP flood.</td>
+            <td>100ms–1s</td>
+            <td>Already flowing via TI-LFA</td>
+          </tr>
+          <tr>
+            <td><strong>Post-Convergence FIB Install</strong></td>
+            <td>New primary FIB entries replace TI-LFA repair entries. Repair labels removed. Clean forwarding resumes.</td>
+            <td>~50–500ms</td>
+            <td>Migrates to new primary path</td>
+          </tr>
+          <tr>
+            <td><strong>Total: Detection → FRR</strong></td>
+            <td colspan="2"><strong>~10–50ms</strong> (BFD + FIB swap)</td>
+            <td><span class="marker-ok">Sub-50ms restoration</span></td>
+          </tr>
+          <tr>
+            <td><strong>Total: Full Reconvergence</strong></td>
+            <td colspan="2"><strong>~1–3 seconds</strong> (flood + SPF + FIB)</td>
+            <td>Traffic uninterrupted throughout</td>
+          </tr>
+        </table>
+
+        <div class="info orange">
+          <strong>The TI-LFA bridge:</strong> Without TI-LFA, traffic is dropped from failure detection until full IGP reconvergence — a 1–3 second outage. With TI-LFA, traffic is restored in &lt;50ms and <em>continues flowing</em> while reconvergence completes in the background. The gap between sub-50ms and ~3 seconds is exactly what TI-LFA bridges.
+        </div>
+
+        <div class="info">
+          <strong>BFD timer trade-offs:</strong> Aggressive BFD timers (3×3ms) minimize detection time but increase CPU load and risk of false positives under congestion. 3×10ms (30ms) is a common production default. Some hardware can detect link-down in &lt;1ms via optical/physical signals, bypassing BFD entirely for link failures — but BFD remains essential for node failures and remote-end failures where no physical signal exists.
+        </div>
+      </div>
+
+      <!-- ======== DOUBLE FAILURE / LIMITATIONS ======== -->
+      <div class="card">
+        <h2>TI-LFA Limitations: Double Failures and Unprotectable Topologies</h2>
+        <p>TI-LFA is designed to protect against a <strong>single failure event</strong> — one link, one node, or one SRLG. Understanding its limits is as important as understanding its capabilities.</p>
+
+        <h3>Single vs. Double Failures</h3>
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--green);">Single Failure (TI-LFA protects)</h4>
+            <ul style="font-size:13px;color:var(--text-dim);padding-left:16px;margin-top:6px;">
+              <li>One link fails → TI-LFA repair activates in &lt;50ms</li>
+              <li>One node fails → node-protecting TI-LFA repair activates</li>
+              <li>One SRLG fails → SRLG-disjoint repair activates (if configured)</li>
+              <li>Traffic restored before IGP reconverges</li>
+            </ul>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--red);">Double Failure (TI-LFA cannot protect)</h4>
+            <ul style="font-size:13px;color:var(--text-dim);padding-left:16px;margin-top:6px;">
+              <li>First failure activates TI-LFA repair</li>
+              <li>Second failure hits the <em>repair path itself</em> before IGP reconverges</li>
+              <li>No backup for the backup — traffic drops until full reconvergence</li>
+              <li>Only full reconvergence (1–3s) restores service</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info red">
+          <strong>Double-failure scenario:</strong> P1→P2 link fails. TI-LFA activates repair P1→P3→PE2. 200ms later (before IGP reconverges), P1→P3 also fails. The repair path is now broken. P1 has no FIB entry for a post-double-failure path — it must wait for IGP reconvergence to discover a new path. If no alternate exists, traffic is permanently blackholed.
+        </div>
+
+        <h3>SRLG: When One "Failure" = Multiple Links</h3>
+        <p>A <strong>Shared Risk Link Group (SRLG)</strong> is a set of links that share a common physical resource — the same fiber, same conduit, same DWDM wavelength, or same duct. A single physical event (fiber cut, power failure) can fail all links in the SRLG simultaneously.</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">!</div><div class="stp-t">Why SRLG matters for TI-LFA</div></div>
+          <p>If P1→P2 and P1→P3 both run through the same underground duct, and a backhoe cuts that duct, <em>both</em> links fail simultaneously. A TI-LFA repair that uses P1→P3 as the repair for P1→P2 (or vice versa) provides zero protection — the repair path fails at the same instant as the primary. SRLG-disjoint repair forces TI-LFA to select a repair path that shares no SRLG membership with the protected link.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">SRLG Configuration</div></div>
+          <p>Each link is assigned one or more SRLG IDs in the IGP configuration. These SRLG IDs are advertised in the IS-IS TE sub-TLVs (sub-TLV 138 for IPv4, or extended TE attributes). Every router in the domain knows which links share which SRLGs.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">2</div><div class="stp-t">SRLG-Disjoint Path Computation</div></div>
+          <p>When computing TI-LFA backup for a protected link, the computation excludes all links sharing any SRLG with the protected link. The resulting repair path is SRLG-disjoint — it will survive the physical event that caused the primary failure.</p>
+        </div>
+
+        <h3>Topologies Where TI-LFA Cannot Find a Backup</h3>
+        <div class="info orange">
+          <strong>Not all topologies are protectable.</strong> TI-LFA can only protect if a loop-free alternate (LFA) exists from a different direction. Common unprotectable cases:
+          <ul style="margin-top:8px;padding-left:16px;">
+            <li><strong>Stub node:</strong> A router with only one uplink has no alternate. If that link fails, no repair path exists — the node is unreachable until reconvergence (which also fails, since the only path is gone).</li>
+            <li><strong>Ring with a single remaining path:</strong> In a 3-node ring (A─B─C─A), if the A─B link is already failed and reconvergence hasn't completed, TI-LFA for A─C now has only B as an alternate — but to reach B, traffic must go via the already-failed A─B. No backup.</li>
+            <li><strong>SRLG exhaustion:</strong> If all alternate links share the same SRLG as the protected link, SRLG-disjoint computation yields no result.</li>
+            <li><strong>Asymmetric topology:</strong> Some destinations can only be reached via a single next-hop from the protecting router, even with multiple physical links, due to metric/topology constraints.</li>
+          </ul>
+        </div>
+
+        <div class="info">
+          <strong>Design implication:</strong> Network topology design directly determines TI-LFA coverage. Operators measure <em>protection coverage</em> (percentage of prefixes with a valid TI-LFA repair) as a network KPI. Full-mesh or redundant ring topologies with independent physical paths typically achieve near-100% coverage. Sparse topologies or networks with heavy SRLG sharing may have coverage gaps that require topology remediation.
+        </div>
+      </div>
     </div>
 
     <!-- ==================== SECTION 13: MICROLOOP AVOIDANCE ==================== -->
@@ -4203,6 +4331,79 @@
 
         <div class="info">
           <strong>Rule of thumb:</strong> Algo-128 labels will only appear on paths where every forwarding hop is a participating node. The SPF computation for algo 128 only considers participating nodes' Prefix-SIDs and participating nodes' links. The path is self-consistent.
+        </div>
+      </div>
+
+      <!-- ======== TI-LFA + FLEX-ALGO INTERACTION ======== -->
+      <div class="card">
+        <h2>TI-LFA + Flex-Algo: Per-Algorithm Backup Computation</h2>
+        <p>TI-LFA and Flex-Algo are both topology-driven — and they interact in a critical way: <strong>TI-LFA computes the backup path within the Flex-Algo's constrained topology, not the default (algo-0) topology.</strong> The repair path for an algo-128 prefix must itself satisfy algo-128's constraints.</p>
+
+        <h3>Why This Matters</h3>
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--blue);">Algo-0 TI-LFA Backup</h4>
+            <p style="font-size:13px;color:var(--text-dim);margin-top:6px;">Computed over the full IGP topology. Any link with a valid metric can be a repair path. PQ-node and repair SID list use algo-0 Prefix-SIDs (e.g., 16004).</p>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--purple);">Algo-128 TI-LFA Backup</h4>
+            <p style="font-size:13px;color:var(--text-dim);margin-top:6px;">Computed over the <em>algo-128 constrained topology only</em>. Links excluded from algo-128 (e.g., high-delay links excluded by affinity constraints) <strong>cannot</strong> be a repair path for algo-128 traffic. PQ-node and repair SID list use algo-128 Prefix-SIDs (e.g., 16104).</p>
+          </div>
+        </div>
+
+        <h3>Concrete Example: Min-Delay Topology with TI-LFA</h3>
+        <p>Recall our topology: PE1 uses algo-128 (min-delay) to reach PE2 via P3 (2ms total delay). The P1 and P2 links have 5ms delay each — they are <em>excluded</em> from algo-128's topology by affinity constraints. Now consider what happens if the PE1→P3 link fails:</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">!</div><div class="stp-t">Algo-0 TI-LFA could use P1 or P2 as repair — algo-128 TI-LFA cannot</div></div>
+          <p>For algo-0 traffic to PE2, P1 and P2 are valid repair path hops. TI-LFA can compute a repair via P1→P2→PE2 using algo-0 SIDs. But for algo-128 traffic, P1 and P2 are <em>not in the constrained topology</em> — routing traffic through them would violate the delay constraint that algo-128 was designed to enforce. A repair via P1 would use a 5ms+5ms path instead of the 2ms path — defeating the entire purpose of the low-latency plane.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">✓</div><div class="stp-t">Valid algo-128 repair: only delay-constrained paths qualify</div></div>
+          <p>If a second low-delay path exists (e.g., PE1→P4→PE2 with 1ms delay, where P4 participates in algo-128), TI-LFA for algo-128 would use that path. The repair SID list uses algo-128 Prefix-SIDs only (e.g., 16104 for PE2 in algo-128). If no delay-compliant alternate path exists, algo-128 has no TI-LFA coverage for that failure — the topology itself has no valid repair within the constraint.</p>
+        </div>
+
+        <h3>Per-Algorithm Backup Independence</h3>
+        <table class="tbl">
+          <tr>
+            <th>Property</th>
+            <th>Algo-0 (Standard SPF)</th>
+            <th>Algo-128 (Flex-Algo)</th>
+          </tr>
+          <tr>
+            <td>Topology used for backup computation</td>
+            <td>Full IGP topology (all links)</td>
+            <td>Algo-128 constrained topology only</td>
+          </tr>
+          <tr>
+            <td>Links usable as repair paths</td>
+            <td>Any link satisfying loop-free criteria</td>
+            <td>Only links satisfying algo-128 constraints</td>
+          </tr>
+          <tr>
+            <td>Repair SID type</td>
+            <td>Algo-0 Prefix-SIDs (e.g., 16004)</td>
+            <td>Algo-128 Prefix-SIDs (e.g., 16104)</td>
+          </tr>
+          <tr>
+            <td>PQ-node selection</td>
+            <td>Any P/Q node in full topology</td>
+            <td>Must be an algo-128 participating node</td>
+          </tr>
+          <tr>
+            <td>Coverage risk</td>
+            <td>Low — full topology gives many alternates</td>
+            <td>Higher — constrained topology may have fewer alternates</td>
+          </tr>
+        </table>
+
+        <div class="info orange">
+          <strong>Key implication:</strong> Each Flex-Algo has its own independent backup paths. A well-protected algo-0 topology does not automatically give protection for algo-128. Operators must verify TI-LFA coverage <em>per algorithm</em>. Sparse Flex-Algo topologies (few participating nodes or many excluded links) may have significantly lower protection coverage than algo-0.
+        </div>
+
+        <div class="info">
+          <strong>Design note:</strong> When deploying Flex-Algo for SLA-sensitive traffic (low-latency, disjoint paths), include sufficient redundancy within the constrained topology itself. If algo-128 has only a single path (e.g., a dedicated low-latency fiber with no parallel low-latency alternate), TI-LFA has nothing to repair to — the SLA will break on any failure. The protection guarantee is only as strong as the redundancy available within the constrained topology.
         </div>
       </div>
     </div>
