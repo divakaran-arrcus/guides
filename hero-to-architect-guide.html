@@ -1084,12 +1084,22 @@
       <p class="lede">What you'll learn: how the context window actually works as the agent's RAM — token economy, prompt caching, compaction, memory systems, and the anti-patterns that waste both.</p>
 
       <h2>2.1 The context window, in plain terms</h2>
-      <p>Every model has a finite context window — a block of token slots that holds everything the model can "see" at inference time: your system prompt, the conversation history, tool schemas, tool outputs, and the assistant's own prior responses. Think of it as RAM. The CPU (the model) can only operate on what fits in RAM right now; anything outside it is simply invisible.</p>
-      <p>Current window sizes (verify current at time of reading): Claude Sonnet 4.6 and Opus 4.7 both offer a 200K-token default context with a 1M-token extended tier available on request; Gemini 2.5 Pro supports 1M tokens natively; GPT-4o and o3 top out around 128K tokens. Bigger windows don't mean free — everything in the window costs input tokens on every turn, even content that hasn't changed.</p>
-      <p>"In context" is binary: content is either inside the window or it isn't. There is no partial awareness, no fuzzy retrieval unless you build a RAG layer on top. When the window fills, either content is dropped (truncation), summarized (compaction), or the session ends.</p>
+      <p>Every model has a finite context window — a block of token slots that holds everything the model can "see" at inference time: your system prompt, the conversation history, tool schemas, tool outputs, and the assistant's own prior responses. Think of it as RAM.</p>
+      <h4 class="ph">What the window holds</h4>
+      <ul>
+        <li>The CPU (the model) can only operate on what fits in RAM right now; anything outside it is simply invisible.</li>
+        <li>Current window sizes (verify current at time of reading): Claude Sonnet 4.6 and Opus 4.7 both offer a 200K-token default context with a 1M-token extended tier available on request; Gemini 2.5 Pro supports 1M tokens natively; GPT-4o and o3 top out around 128K tokens.</li>
+        <li>Bigger windows don't mean free — everything in the window costs input tokens on every turn, even content that hasn't changed.</li>
+      </ul>
+      <h4 class="ph">The binary nature of "in context"</h4>
+      <ul>
+        <li>"In context" is binary: content is either inside the window or it isn't.</li>
+        <li>There is no partial awareness, no fuzzy retrieval unless you build a RAG layer on top.</li>
+        <li>When the window fills, either content is dropped (truncation), summarized (compaction), or the session ends.</li>
+      </ul>
 
       <h2>2.2 What actually costs tokens (it's not what you think)</h2>
-      <p>Developers routinely underestimate how much of their context is consumed by infrastructure rather than their actual problem. The biggest surprises:</p>
+      <p>Developers routinely underestimate how much of their context is consumed by infrastructure rather than their actual problem.</p>
       <table class="tbl">
         <thead>
           <tr><th>Source</th><th>Typical size</th><th>Notes</th></tr>
@@ -1103,7 +1113,11 @@
           <tr><td>Cache miss on system prompt</td><td>Full system-prompt cost × 1.25</td><td>First turn after a schema change pays a write premium (see 2.3)</td></tr>
         </tbody>
       </table>
-      <p>The practical implication: on a long task in Claude Code, tool output and read-file content often dominate the context — not your messages. Tools that return verbose JSON or full file contents on every call are the biggest budget leaks.</p>
+      <h4 class="ph">The practical implication</h4>
+      <ul>
+        <li>On a long task in Claude Code, tool output and read-file content often dominate the context — not your messages.</li>
+        <li>Tools that return verbose JSON or full file contents on every call are the biggest budget leaks.</li>
+      </ul>
 
       <div class="flv-grid">
         <div class="flv"><div class="flv-name">System prompt</div><div class="flv-desc">Your CLAUDE.md, persona rules, and project conventions — loaded on every session start; keep it lean and stable to maximise cache hits.</div></div>
@@ -1115,7 +1129,13 @@
       </div>
 
       <h2>2.3 The token economy — input vs output vs cached</h2>
-      <p>Providers charge differently for three token categories: uncached input, cached input, and output. Cache reads are typically ~10× cheaper than uncached input; cache writes cost ~1.25× the base input rate on Anthropic (the write premium amortizes over subsequent cache hits). Output tokens are the most expensive category — often 3–5× the per-token input rate.</p>
+      <h4 class="ph">The three token categories</h4>
+      <ul>
+        <li>Providers charge differently for: uncached input, cached input, and output.</li>
+        <li>Cache reads are typically ~10× cheaper than uncached input.</li>
+        <li>Cache writes cost ~1.25× the base input rate on Anthropic — the write premium amortizes over subsequent cache hits.</li>
+        <li>Output tokens are the most expensive category — often 3–5× the per-token input rate.</li>
+      </ul>
 
       <div class="info">
         <strong>Steady-state cost formula (per turn, after cache is warm):</strong>
@@ -1131,18 +1151,31 @@
         <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2026: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a different cache pricing model — context caching charges a per-token-per-hour storage fee for cached prefixes rather than a write-multiplier (<strong>verify exact pricing against <code>ai.google.dev</code> before writing — the model evolves</strong>); OpenAI prompt caching for GPT-4o is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
       </div>
 
-      <p>The strategic takeaway: maximize the fraction of each turn that lands in <em>cached input</em>. The steady-state formula shows cache reads are cheap; the first-write formula shows that invalidating the cache (by editing an early message or the system prompt) resets the clock and pays the write premium again.</p>
+      <h4 class="ph">Strategic takeaway</h4>
+      <ul>
+        <li>Maximize the fraction of each turn that lands in <em>cached input</em>.</li>
+        <li>The steady-state formula shows cache reads are cheap.</li>
+        <li>Invalidating the cache (by editing an early message or the system prompt) resets the clock and pays the write premium again.</li>
+      </ul>
 
       <h2>2.4 Prompt caching — how it works, when it kicks in, what breaks it</h2>
-      <p>Anthropic's prompt caching is prefix-based: the model caches the longest matching prefix of the input that was seen in a recent prior request (TTL: 5 minutes for standard, up to 1 hour with explicit cache-control headers — <strong>verify current TTL options against Anthropic docs, these evolve</strong>). The cache key is the exact byte sequence of the prefix — any edit to the system prompt, any added tool schema, or any changed message <em>before</em> the cached region invalidates it entirely.</p>
-      <p>Patterns that maximize cache hits:</p>
+      <h4 class="ph">How it works</h4>
+      <ul>
+        <li>Anthropic's prompt caching is prefix-based: the model caches the longest matching prefix of the input that was seen in a recent prior request (TTL: 5 minutes for standard, up to 1 hour with explicit cache-control headers — <strong>verify current TTL options against Anthropic docs, these evolve</strong>).</li>
+        <li>The cache key is the exact byte sequence of the prefix — any edit to the system prompt, any added tool schema, or any changed message <em>before</em> the cached region invalidates it entirely.</li>
+      </ul>
+      <h4 class="ph">Patterns that maximize cache hits</h4>
       <ul>
         <li><strong>Freeze the system prompt.</strong> Put stable content (persona, project conventions) at the top; put session-variable content (file paths, current branch) at the bottom or pass it as user messages.</li>
         <li><strong>Keep tool schemas stable.</strong> Don't register tools dynamically mid-session. A changed schema invalidates the entire prefix up to that point.</li>
         <li><strong>Use explicit cache-control breakpoints</strong> (Anthropic API: <code>"cache_control": {"type": "ephemeral"}</code>) to mark where the cacheable prefix ends. This tells the API exactly how much to cache rather than relying on automatic prefix matching.</li>
         <li><strong>Avoid prepending new content.</strong> Inserting new tool results early in the message list — rather than appending — breaks the prefix for everything that follows.</li>
       </ul>
-      <p>Claude Code handles cache breakpoints automatically — it marks the system prompt and loaded files as cacheable. You benefit without configuring anything; what you can do is avoid actions that bust the cache: editing CLAUDE.md mid-session, changing MCP server config, or using <code>/clear</code> when continuation would have preserved the warm cache.</p>
+      <h4 class="ph">What Claude Code does automatically</h4>
+      <ul>
+        <li>Claude Code handles cache breakpoints automatically — it marks the system prompt and loaded files as cacheable. You benefit without configuring anything.</li>
+        <li>What you <em>can</em> do is avoid actions that bust the cache: editing CLAUDE.md mid-session, changing MCP server config, or using <code>/clear</code> when continuation would have preserved the warm cache.</li>
+      </ul>
 
       <h2>2.5 Context compaction — what gets summarized, what gets thrown out</h2>
       <p>When the context fills, each tool has its own compaction mechanism:</p>
@@ -1156,12 +1189,26 @@
           <tr><td>Kilo Code</td><td>Built into session manager (automatic)</td><td>No slash command; managed transparently</td><td>Active file context and recent task state; older tool output dropped</td></tr>
         </tbody>
       </table>
-      <p>Compaction is lossy. The summarization step condenses many tokens into fewer, but nuance is lost — specific function signatures, exact error messages, intermediate reasoning. If you need to preserve something precisely across a compaction boundary, write it to a file or add it to your memory file (CLAUDE.md, GEMINI.md, etc.) before the compact runs.</p>
-      <p>After <code>/compact</code> in Claude Code, the session continues with a synthesized summary in place of the raw history. The model receives this as a user message prefixed with the compaction notice; your next turn can reference everything in the summary, but can't see the verbatim prior tool calls.</p>
+      <h4 class="ph">Compaction is lossy</h4>
+      <ul>
+        <li>The summarization step condenses many tokens into fewer, but nuance is lost — specific function signatures, exact error messages, intermediate reasoning.</li>
+        <li>If you need to preserve something precisely across a compaction boundary, write it to a file or add it to your memory file (CLAUDE.md, GEMINI.md, etc.) before the compact runs.</li>
+      </ul>
+      <h4 class="ph">What happens after /compact in Claude Code</h4>
+      <ul>
+        <li>The session continues with a synthesized summary in place of the raw history.</li>
+        <li>The model receives this as a user message prefixed with the compaction notice.</li>
+        <li>Your next turn can reference everything in the summary, but can't see the verbatim prior tool calls.</li>
+      </ul>
 
       <h2>2.6 The cost of long sessions (and how to keep one going)</h2>
-      <p>Long sessions degrade in two ways: context fills with stale tool output, and cache invalidations compound. The result is both slower (more tokens to process) and more expensive (cache misses, output re-explaining stale state). A 4-hour Claude Code session on a complex codebase can hit 500K+ input tokens per turn late in the session.</p>
-      <p>Techniques to extend session quality:</p>
+      <h4 class="ph">How long sessions degrade</h4>
+      <ul>
+        <li>Context fills with stale tool output, and cache invalidations compound.</li>
+        <li>The result is both slower (more tokens to process) and more expensive (cache misses, output re-explaining stale state).</li>
+        <li>A 4-hour Claude Code session on a complex codebase can hit 500K+ input tokens per turn late in the session.</li>
+      </ul>
+      <h4 class="ph">Techniques to extend session quality</h4>
       <ul>
         <li><strong>Pin key files early.</strong> Use <code>/add</code> or ask the agent to re-read critical files at the start of a new sub-task — they'll be near the front of the window and more likely to survive compaction.</li>
         <li><strong>Clear irrelevant tool output.</strong> If a large grep result or test log was useful but is now stale, ask the agent to note the key finding and discard the raw output. This keeps the window lean.</li>
@@ -1181,7 +1228,7 @@ After compaction, still on-task?     → Continue (summary is good enough)
 Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
 
-      <p>Tool-specific clear commands:</p>
+      <h4 class="ph">Tool-specific clear commands</h4>
       <ul>
         <li><strong>Claude Code:</strong> <code>/clear</code> — wipes the conversation history, preserves CLAUDE.md and tool config.</li>
         <li><strong>Gemini CLI:</strong> <code>/clear</code> — same behavior, wipes conversation.</li>
@@ -1202,7 +1249,11 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <tr><td>Kilo Code</td><td>Chat panel (top or bottom)</td><td>Token counter and estimated cost shown inline in the Kilo Code chat UI</td></tr>
         </tbody>
       </table>
-      <p>Use <code>/cost</code> after any turn where you suspect a large tool result landed in context. If the cached-input fraction is dropping (more uncached input per turn), that's a signal the cache prefix has been invalidated — investigate what changed.</p>
+      <h4 class="ph">Reading the numbers</h4>
+      <ul>
+        <li>Use <code>/cost</code> after any turn where you suspect a large tool result landed in context.</li>
+        <li>If the cached-input fraction is dropping (more uncached input per turn), that's a signal the cache prefix has been invalidated — investigate what changed.</li>
+      </ul>
 
       <h2>2.9 Memory systems vs context — CLAUDE.md, GEMINI.md, Kilo rules</h2>
       <p>Memory files are <em>not</em> in the context window until referenced. They are loaded at session start (or on demand) and inserted as part of the system prompt or early context. They persist across <code>/clear</code>; raw conversation history does not. This is the key architectural distinction: use memory files for durable project knowledge, and context for task-specific working state.</p>
@@ -1221,10 +1272,16 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
         </table>
       </aside>
 
-      <p>What to put in memory files: project conventions (language, framework, code style), key architectural decisions, file layout, personas and output format rules. What NOT to put: current task state, specific file contents (load them on demand instead), or anything that changes per-task. Memory files that grow large burn system-prompt tokens on every session — keep them lean and focused.</p>
+      <h4 class="ph">What to put in memory files</h4>
+      <ul>
+        <li>Put in: project conventions (language, framework, code style), key architectural decisions, file layout, personas and output format rules.</li>
+        <li>Do NOT put in: current task state, specific file contents (load them on demand instead), or anything that changes per-task.</li>
+        <li>Memory files that grow large burn system-prompt tokens on every session — keep them lean and focused.</li>
+      </ul>
 
       <h2>2.10 Context anti-patterns</h2>
-      <p>These are the patterns most responsible for context bloat, cache busting, and degraded session quality:</p>
+      <p>These are the patterns most responsible for context bloat, cache busting, and degraded session quality.</p>
+      <h4 class="ph">The anti-patterns to avoid</h4>
       <ul>
         <li><strong>Paste-the-whole-file.</strong> You paste a 500-line module when you have a question about one function. Use <code>grep</code> or the Read tool with line ranges instead. Five targeted lines cost 30 tokens; the full file costs 3 500.</li>
         <li><strong>Paste-and-pray.</strong> You dump a full stack trace, log file, or JSON blob and ask the model to "figure out what's wrong." The model reads it, but now it's permanently in the context. Use <code>grep</code>, <code>head</code>, or a summarizing sub-agent to extract the signal first.</li>
@@ -1263,7 +1320,12 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       <p class="lede">What you'll learn: how tool calls extend an agent's capabilities, the blast-radius spectrum from grep to <code>rm -rf</code>, permission models, sandboxes, and how to design an allowlist that lets the agent move fast without breaking things.</p>
 
       <h2>3.1 What is a "tool" to an agent</h2>
-      <p>From the model's perspective, a tool is a JSON-schema-described function it may choose to invoke. The runtime — Claude Code, Kilo Code, Gemini CLI — intercepts the model's tool-call output, executes the function, and injects the result back into context as a tool-result message. The model never runs code itself; it emits structured intent, and the harness acts on it.</p>
+      <h4 class="ph">What a tool is</h4>
+      <ul>
+        <li>From the model's perspective, a tool is a JSON-schema-described function it may choose to invoke.</li>
+        <li>The runtime — Claude Code, Kilo Code, Gemini CLI — intercepts the model's tool-call output, executes the function, and injects the result back into context as a tool-result message.</li>
+        <li>The model never runs code itself; it emits structured intent, and the harness acts on it.</li>
+      </ul>
       <p>Every tool definition in the Anthropic Messages API shape carries three standard fields (<code>name</code> and <code>input_schema</code> are required; <code>description</code> is strongly recommended but technically optional — the model relies on it for selection):</p>
       <pre><code>{
   "name": "read_file",
@@ -1279,15 +1341,47 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
     "required": ["file_path"]
   }
 }</code></pre>
-      <p>The <code>description</code> is not metadata — it is a natural-language instruction to the model about when and how to invoke the tool. A weak description means the model misuses the tool or skips it entirely. The <code>input_schema</code> is a JSON Schema object; the model's input will be validated against it before execution. This matters: a schema that accepts a string where an array is needed creates ambiguous behavior at the boundary.</p>
+      <h4 class="ph">Why description and schema matter</h4>
+      <ul>
+        <li>The <code>description</code> is not metadata — it is a natural-language instruction to the model about when and how to invoke the tool.</li>
+        <li>A weak description means the model misuses the tool or skips it entirely.</li>
+        <li>The <code>input_schema</code> is a JSON Schema object; the model's input will be validated against it before execution.</li>
+        <li>A schema that accepts a string where an array is needed creates ambiguous behavior at the boundary.</li>
+      </ul>
 
       <h2>3.2 Built-ins you'll use daily — Read, Edit, Write, Bash, Grep, Glob</h2>
-      <p><strong>Read</strong> loads a file into context. Prefer it over a Bash <code>cat</code> because the harness tracks which files have been read — both for permission enforcement and to provide line-number prefixes that make Edit diffs unambiguous. Always read before editing.</p>
-      <p><strong>Edit</strong> makes a targeted string replacement in a file. It validates that the old string exists exactly once before applying the change. This is the right tool for surgical modifications: changing a function signature, fixing a bug, updating a constant. Because it sends only the diff, it is far cheaper in tokens than Write for large files.</p>
-      <p><strong>Write</strong> creates or completely overwrites a file. Use it when you are producing a new file from scratch or when a complete rewrite is genuinely cheaper than a sequence of Edits. It requires a Read first on existing files — the harness will refuse otherwise, protecting you from clobbering unread state.</p>
-      <p><strong>Bash</strong> runs an arbitrary shell command. It is the most powerful and the most dangerous built-in. Prefer narrow, read-only Bash invocations (grep, find, git log) during exploration, and reserve write/destructive commands for explicit intent. The harness can be configured to require per-call approval for Bash while auto-approving Read/Edit.</p>
-      <p><strong>Grep</strong> searches file contents by pattern. It is faster than <code>Bash grep</code> for simple cases because the harness can short-circuit it without spawning a shell. Use it when you want the first occurrence in a large codebase — the tool returns matches with file paths and line numbers ready for a follow-up Read.</p>
-      <p><strong>Glob</strong> lists files matching a pattern. Use it to discover structure — <code>**/*.ts</code>, <code>src/**/index.{ts,tsx}</code> — before deciding which files to read. It is strictly non-mutating and can always be auto-approved.</p>
+      <h4 class="ph">Read</h4>
+      <ul>
+        <li>Loads a file into context. Prefer it over a Bash <code>cat</code> because the harness tracks which files have been read — both for permission enforcement and to provide line-number prefixes that make Edit diffs unambiguous.</li>
+        <li>Always read before editing.</li>
+      </ul>
+      <h4 class="ph">Edit</h4>
+      <ul>
+        <li>Makes a targeted string replacement in a file. Validates that the old string exists exactly once before applying the change.</li>
+        <li>The right tool for surgical modifications: changing a function signature, fixing a bug, updating a constant.</li>
+        <li>Because it sends only the diff, it is far cheaper in tokens than Write for large files.</li>
+      </ul>
+      <h4 class="ph">Write</h4>
+      <ul>
+        <li>Creates or completely overwrites a file. Use it when producing a new file from scratch or when a complete rewrite is genuinely cheaper than a sequence of Edits.</li>
+        <li>Requires a Read first on existing files — the harness will refuse otherwise, protecting you from clobbering unread state.</li>
+      </ul>
+      <h4 class="ph">Bash</h4>
+      <ul>
+        <li>Runs an arbitrary shell command — the most powerful and the most dangerous built-in.</li>
+        <li>Prefer narrow, read-only Bash invocations (grep, find, git log) during exploration, and reserve write/destructive commands for explicit intent.</li>
+        <li>The harness can be configured to require per-call approval for Bash while auto-approving Read/Edit.</li>
+      </ul>
+      <h4 class="ph">Grep</h4>
+      <ul>
+        <li>Searches file contents by pattern. Faster than <code>Bash grep</code> for simple cases because the harness can short-circuit it without spawning a shell.</li>
+        <li>Returns matches with file paths and line numbers ready for a follow-up Read.</li>
+      </ul>
+      <h4 class="ph">Glob</h4>
+      <ul>
+        <li>Lists files matching a pattern — use it to discover structure (<code>**/*.ts</code>, <code>src/**/index.{ts,tsx}</code>) before deciding which files to read.</li>
+        <li>Strictly non-mutating and can always be auto-approved.</li>
+      </ul>
 
       <div class="flv-grid">
         <div class="flv"><div class="flv-name">Read</div><div class="flv-desc">When you need file contents with line-number context — always read before editing so the harness tracks state and Edit diffs stay unambiguous.</div></div>
@@ -1299,9 +1393,22 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
 
       <h2>3.3 How agents pick which tool to call</h2>
-      <p>The model selects a tool by weighing three signals: the tool's description (the primary signal), the shape of the input schema (does the data I have fit?), and the prior turn context (what has already been read, what partial state exists). A model that has just done a Read on a file will prefer Edit over Write for the same file because the context signal says "partial knowledge" matches Edit's stated contract.</p>
-      <p>This selection is not rule-based lookup — it is inference. The practical implication: if your tool description says "use this for X" and the model keeps using it for Y, the description is wrong or the schema is too permissive. Descriptions that include explicit anti-patterns ("do not use this if the file is larger than 100 lines") are not pedantry — they are steering prompts baked into the tool manifest. This becomes critical when you build your own MCP tools (Chapter 16): bad descriptions cause agent thrash that wastes tokens and time.</p>
-      <p>Prior turn context also influences tool ordering. If the agent is mid-plan and has already called Bash to clone a repo, it will sequence subsequent calls assuming the working directory is now inside the repo. This is why agent sessions with long tool-call chains become increasingly context-sensitive — the model's implicit state model grows with each tool result.</p>
+      <h4 class="ph">The three selection signals</h4>
+      <ul>
+        <li>The model selects a tool by weighing: the tool's description (primary signal), the shape of the input schema (does the data I have fit?), and prior turn context (what has already been read, what partial state exists).</li>
+        <li>A model that has just done a Read on a file will prefer Edit over Write for the same file because the context signal says "partial knowledge" matches Edit's stated contract.</li>
+      </ul>
+      <h4 class="ph">Selection is inference, not lookup</h4>
+      <ul>
+        <li>If your tool description says "use this for X" and the model keeps using it for Y, the description is wrong or the schema is too permissive.</li>
+        <li>Descriptions that include explicit anti-patterns ("do not use this if the file is larger than 100 lines") are not pedantry — they are steering prompts baked into the tool manifest.</li>
+        <li>This becomes critical when you build your own MCP tools (Chapter 16): bad descriptions cause agent thrash that wastes tokens and time.</li>
+      </ul>
+      <h4 class="ph">Prior context grows with every tool result</h4>
+      <ul>
+        <li>If the agent is mid-plan and has already called Bash to clone a repo, it will sequence subsequent calls assuming the working directory is now inside the repo.</li>
+        <li>Agent sessions with long tool-call chains become increasingly context-sensitive — the model's implicit state model grows with each tool result.</li>
+      </ul>
 
       <h2>3.4 Blast radius — reversible vs hard-to-reverse actions</h2>
       <p>Not all tool calls are equal. A Glob that finds nothing has zero side effects; a Bash that pipes to <code>psql</code> in production has potentially irreversible ones. Before granting auto-approval to any tool, place it on the blast-radius spectrum.</p>
@@ -1321,20 +1428,62 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <tr><td>Bash — cloud API (deploy, delete)</td><td>Often no</td><td>Critical</td><td>Never</td></tr>
         </tbody>
       </table>
-      <p>The design principle: auto-approve the entire read tier and the edit tier when git is the safety net. Require confirmation for anything that writes outside the working tree, modifies shared state, or is not undoable with a standard git workflow. See Chapter 10 for a full verification checklist before any high-blast-radius operation lands.</p>
+      <h4 class="ph">The design principle</h4>
+      <ul>
+        <li>Auto-approve the entire read tier and the edit tier when git is the safety net.</li>
+        <li>Require confirmation for anything that writes outside the working tree, modifies shared state, or is not undoable with a standard git workflow.</li>
+        <li>See Chapter 10 for a full verification checklist before any high-blast-radius operation lands.</li>
+      </ul>
 
       <h2>3.5 Idempotency, retries, and the side-effect problem</h2>
-      <p>Idempotency means running the same operation twice produces the same result as running it once. Most file edits are idempotent only if they are pure replacements. A Bash script that appends to a config file, runs <code>npm install</code>, or applies a database migration is not idempotent by default. If the agent retries — because a network timeout made the first attempt ambiguous — you can end up with duplicate entries, doubled dependencies, or failed migrations that refuse to re-run.</p>
-      <p>Patterns that help: wrap install steps with existence checks (<code>if ! command -v foo; then install foo; fi</code>), use <code>CREATE TABLE IF NOT EXISTS</code> in migrations, and use declarative config formats (Terraform, Helm values) rather than imperative scripts where possible. For Bash tools you expose to an agent, document idempotency guarantees in the tool description — the model will then reason about whether a retry is safe.</p>
-      <p>The retry problem is compounded in multi-step plans. An agent that executes steps 1–5 successfully, then fails at step 6, may restart from step 1 if context is lost. Without idempotency, steps 1–5 produce errors or duplicate state. This is why checkpointing (commit after each logical unit of work) is not just a workflow nicety — it is a correctness requirement when side effects are involved.</p>
+      <h4 class="ph">Why non-idempotency is dangerous</h4>
+      <ul>
+        <li>Idempotency means running the same operation twice produces the same result as running it once.</li>
+        <li>Most file edits are idempotent only if they are pure replacements.</li>
+        <li>A Bash script that appends to a config file, runs <code>npm install</code>, or applies a database migration is not idempotent by default.</li>
+        <li>If the agent retries — because a network timeout made the first attempt ambiguous — you can end up with duplicate entries, doubled dependencies, or failed migrations that refuse to re-run.</li>
+      </ul>
+      <h4 class="ph">Patterns that help</h4>
+      <ul>
+        <li>Wrap install steps with existence checks (<code>if ! command -v foo; then install foo; fi</code>).</li>
+        <li>Use <code>CREATE TABLE IF NOT EXISTS</code> in migrations.</li>
+        <li>Use declarative config formats (Terraform, Helm values) rather than imperative scripts where possible.</li>
+        <li>For Bash tools you expose to an agent, document idempotency guarantees in the tool description — the model will then reason about whether a retry is safe.</li>
+      </ul>
+      <h4 class="ph">Why checkpointing is a correctness requirement</h4>
+      <ul>
+        <li>The retry problem is compounded in multi-step plans: an agent that executes steps 1–5 successfully, then fails at step 6, may restart from step 1 if context is lost.</li>
+        <li>Without idempotency, steps 1–5 produce errors or duplicate state.</li>
+        <li>Committing after each logical unit of work is not just a workflow nicety — it is a correctness requirement when side effects are involved.</li>
+      </ul>
 
       <h2>3.6 The permission model — ask, allow, allow-edits, plan-only</h2>
-      <p>Permission tiers across the three major harnesses follow a common taxonomy despite different UI surfaces. At the coarsest level: <strong>plan-only</strong> (the agent proposes but never executes — pure planning mode); <strong>ask per call</strong> (every tool invocation requires interactive approval); <strong>allow by category</strong> (read-only always allowed, destructive always requires approval, everything else configured); and <strong>full auto</strong> (all tool calls execute without interruption).</p>
-      <p>Claude Code implements this through its <code>settings.json</code> allowlist and a per-session <code>--dangerously-skip-permissions</code> flag. Its default is ask-per-call for new tool patterns, which is the safest starting point. Kilo Code surfaces the same tiers as per-category checkboxes in the extension settings UI — read operations, write operations, and execute operations each have their own toggle, which you enable project-by-project without touching a config file.</p>
-      <p>Gemini CLI takes a different approach: it ships a one-shot launch flag, <code>--yolo</code> (verify any shorthand against current docs), which disables all permission prompts for the duration of that single CLI invocation. This is a <em>flag at launch time</em>, not a persisted mode toggle or a per-category setting. The asymmetry matters: there is no Gemini equivalent of Claude Code's per-pattern allowlist that carries across sessions — you either commit to --yolo at startup or you get prompts. Choose carefully based on the risk profile of the session.</p>
+      <h4 class="ph">The four permission tiers</h4>
+      <ul>
+        <li><strong>Plan-only:</strong> the agent proposes but never executes — pure planning mode.</li>
+        <li><strong>Ask per call:</strong> every tool invocation requires interactive approval.</li>
+        <li><strong>Allow by category:</strong> read-only always allowed, destructive always requires approval, everything else configured.</li>
+        <li><strong>Full auto:</strong> all tool calls execute without interruption.</li>
+      </ul>
+      <h4 class="ph">Claude Code and Kilo Code</h4>
+      <ul>
+        <li>Claude Code implements this through its <code>settings.json</code> allowlist and a per-session <code>--dangerously-skip-permissions</code> flag. Its default is ask-per-call for new tool patterns — the safest starting point.</li>
+        <li>Kilo Code surfaces the same tiers as per-category checkboxes in the extension settings UI — read operations, write operations, and execute operations each have their own toggle, enabled project-by-project without touching a config file.</li>
+      </ul>
+      <h4 class="ph">Gemini CLI's different approach</h4>
+      <ul>
+        <li>Ships a one-shot launch flag, <code>--yolo</code> (verify any shorthand against current docs), which disables all permission prompts for the duration of that single CLI invocation.</li>
+        <li>This is a <em>flag at launch time</em>, not a persisted mode toggle or a per-category setting.</li>
+        <li>There is no Gemini equivalent of Claude Code's per-pattern allowlist that carries across sessions — you either commit to --yolo at startup or you get prompts.</li>
+        <li>Choose carefully based on the risk profile of the session.</li>
+      </ul>
 
       <h2>3.7 Per-project allowlists — .claude/settings.json, Kilo permission rules</h2>
-      <p>Claude Code resolves permissions in a layered hierarchy: global user settings, then per-project <code>.claude/settings.json</code>, then per-session overrides. The project file is the right place for team-shared rules — commit it to the repo so everyone on the project gets the same tool permissions automatically.</p>
+      <h4 class="ph">Claude Code's layered hierarchy</h4>
+      <ul>
+        <li>Permissions resolve in order: global user settings → per-project <code>.claude/settings.json</code> → per-session overrides.</li>
+        <li>The project file is the right place for team-shared rules — commit it to the repo so everyone gets the same tool permissions automatically.</li>
+      </ul>
       <p>A minimal allowlist for a TypeScript project that wants read/edit auto-approved and all Bash requiring a pattern match:</p>
       <pre><code>{
   "permissions": {
@@ -1356,7 +1505,13 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
     ]
   }
 }</code></pre>
-      <p>Kilo Code does not use a file-based allowlist. Its permission rules live in VS Code extension settings (the Kilo Code settings panel), and they are stored in VS Code's <code>settings.json</code> at the workspace or user level. Rules are configured via checkboxes per operation category — not by writing permission strings. This means Kilo rules are not automatically shareable via git commit; they must be distributed through workspace settings or documented separately. The checkbox UI is more approachable for individuals, but it lacks Claude Code's granular pattern-matching for specific Bash commands.</p>
+      <h4 class="ph">Kilo Code's approach</h4>
+      <ul>
+        <li>Does not use a file-based allowlist. Permission rules live in VS Code extension settings (the Kilo Code settings panel), stored in VS Code's <code>settings.json</code> at the workspace or user level.</li>
+        <li>Rules are configured via checkboxes per operation category — not by writing permission strings.</li>
+        <li>Kilo rules are not automatically shareable via git commit; they must be distributed through workspace settings or documented separately.</li>
+        <li>The checkbox UI is more approachable for individuals, but lacks Claude Code's granular pattern-matching for specific Bash commands.</li>
+      </ul>
 
       <aside class="tool-alt">
         <strong>Per-tool config conventions across harnesses</strong>
@@ -1373,19 +1528,68 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </aside>
 
       <h2>3.8 Auto-mode — when to use, when to fear</h2>
-      <p>Auto-mode (full tool auto-approval) is the right choice for: isolated environments where blast radius is bounded by the sandbox (see 3.9), read-heavy exploration tasks where the worst outcome is a few extra file reads, and CI pipelines where there is no human in the loop anyway. The speed gain is real — interactive approval breaks the model's flow and introduces latency that fragments multi-step plans.</p>
-      <p>Auto-mode is dangerous for: any tool family that writes outside the working tree, operations on shared or production infrastructure, and sessions that include network-write tools (API calls, deployments, database writes). The failure mode is not that the model makes a wrong choice once — it is that a single bad tool call in a 20-step plan can leave a mess that is expensive to unwind. The model cannot feel regret; it keeps going.</p>
-      <p>Rules of thumb by tool family: Read/Grep/Glob are always safe for auto. Edit/Write are safe for auto when git is the safety net and the session is short enough that you will review the diff before committing. Bash is safe for auto only when the allowed patterns are tightly scoped — test runners, linters, read-only git commands. Network-write tools (MCP servers that POST to external APIs) should never be auto in anything resembling production.</p>
+      <h4 class="ph">When auto-mode is the right choice</h4>
+      <ul>
+        <li>Isolated environments where blast radius is bounded by the sandbox (see 3.9).</li>
+        <li>Read-heavy exploration tasks where the worst outcome is a few extra file reads.</li>
+        <li>CI pipelines where there is no human in the loop anyway.</li>
+        <li>The speed gain is real — interactive approval breaks the model's flow and introduces latency that fragments multi-step plans.</li>
+      </ul>
+      <h4 class="ph">When auto-mode is dangerous</h4>
+      <ul>
+        <li>Any tool family that writes outside the working tree, operations on shared or production infrastructure, sessions that include network-write tools (API calls, deployments, database writes).</li>
+        <li>The failure mode is not that the model makes a wrong choice once — it is that a single bad tool call in a 20-step plan can leave a mess that is expensive to unwind. The model cannot feel regret; it keeps going.</li>
+      </ul>
+      <h4 class="ph">Rules of thumb by tool family</h4>
+      <ul>
+        <li><strong>Read/Grep/Glob:</strong> always safe for auto.</li>
+        <li><strong>Edit/Write:</strong> safe for auto when git is the safety net and the session is short enough that you will review the diff before committing.</li>
+        <li><strong>Bash:</strong> safe for auto only when the allowed patterns are tightly scoped — test runners, linters, read-only git commands.</li>
+        <li><strong>Network-write tools</strong> (MCP servers that POST to external APIs): should never be auto in anything resembling production.</li>
+      </ul>
 
       <h2>3.9 The sandbox — container, devcontainer, VM, bare metal</h2>
-      <p>The sandbox spectrum runs from bare metal (highest capability, highest blast radius) through devcontainer/Docker (filesystem and process isolation, shared network by default) through a full VM (network isolation, snapshotable) to ephemeral container per session (maximum safety, highest cost in setup time). Each step up the isolation ladder reduces blast radius but also reduces the agent's ability to reach things it might need — local databases, test infrastructure, hardware interfaces.</p>
-      <p>For most development work, a devcontainer is the sweet spot: the agent gets a real filesystem, a real shell, and the project's full toolchain, but it cannot write to your host filesystem or persist side effects across container teardown. VS Code and Cursor ship devcontainer support out of the box; Claude Code can be run inside a devcontainer manually or via a pre-configured Docker image. The cost is a 10–30 second startup penalty per session and the occasional "the tool I need isn't installed in the container" friction.</p>
-      <p>Ephemeral containers (spin up, run, destroy) are the right choice for high-blast-radius automation — think CI agents that run against feature branches. A fresh container per session guarantees no state leaks between runs. The downside is that the agent cannot benefit from warm caches, installed dependencies, or prior build artifacts unless those are baked into the base image. Design your base image around the agent's typical tool requirements, not around developer convenience.</p>
+      <h4 class="ph">The isolation spectrum</h4>
+      <ul>
+        <li><strong>Bare metal:</strong> highest capability, highest blast radius.</li>
+        <li><strong>Devcontainer/Docker:</strong> filesystem and process isolation, shared network by default.</li>
+        <li><strong>Full VM:</strong> network isolation, snapshotable.</li>
+        <li><strong>Ephemeral container per session:</strong> maximum safety, highest cost in setup time.</li>
+        <li>Each step up the isolation ladder reduces blast radius but also reduces the agent's ability to reach things it might need — local databases, test infrastructure, hardware interfaces.</li>
+      </ul>
+      <h4 class="ph">Why devcontainer is the sweet spot for daily work</h4>
+      <ul>
+        <li>The agent gets a real filesystem, a real shell, and the project's full toolchain, but cannot write to your host filesystem or persist side effects across container teardown.</li>
+        <li>VS Code and Cursor ship devcontainer support out of the box; Claude Code can be run inside a devcontainer manually or via a pre-configured Docker image.</li>
+        <li>The cost is a 10–30 second startup penalty per session and the occasional "the tool I need isn't installed in the container" friction.</li>
+      </ul>
+      <h4 class="ph">When to use ephemeral containers</h4>
+      <ul>
+        <li>The right choice for high-blast-radius automation — CI agents that run against feature branches.</li>
+        <li>A fresh container per session guarantees no state leaks between runs.</li>
+        <li>The agent cannot benefit from warm caches, installed dependencies, or prior build artifacts unless baked into the base image — design the base image around the agent's typical tool requirements, not developer convenience.</li>
+      </ul>
 
       <h2>3.10 Tool-call observability — what just happened on disk?</h2>
-      <p>Claude Code exposes tool-call events via <code>--output-format=stream-json</code>, which emits a newline-delimited JSON stream of every event — tool invocations, tool results, model turns, and cost metadata. This is Claude Code-specific: Gemini CLI does not have an equivalent streaming JSON output flag (it logs to stderr in a human-readable format, and machine-parseable output requires wrapping the CLI or using the API directly); Kilo Code surfaces tool calls in the VS Code output panel as formatted log entries, not as a parseable stream.</p>
-      <p>For day-to-day observability without stream-JSON, git is the most reliable audit trail. Configure the agent to commit after each logical step, and <code>git log --oneline --stat</code> becomes a tool-call summary. For finer granularity, use hooks — Claude Code's <code>hooks</code> config block lets you fire shell commands on tool events (before/after Bash, after Edit, on session stop). A one-line hook that appends to a session log gives you a persistent record without needing to capture the stream.</p>
-      <p>For persistent MCP server tools, observability is a first-class design concern. Each MCP server should log its own inputs and outputs. When debugging an agent that called an MCP tool and produced a wrong result, the question is: did the model call the tool with the right input, or did the tool return the wrong output? Without per-tool logs, you can only infer from context — with them, you can pinpoint in seconds. Build logging into every MCP server you write (Chapter 16 returns to this).</p>
+      <h4 class="ph">Streaming JSON output per harness</h4>
+      <ul>
+        <li>Claude Code exposes tool-call events via <code>--output-format=stream-json</code> — a newline-delimited JSON stream of every event: tool invocations, tool results, model turns, and cost metadata.</li>
+        <li>Gemini CLI does not have an equivalent streaming JSON output flag; it logs to stderr in human-readable format, and machine-parseable output requires wrapping the CLI or using the API directly.</li>
+        <li>Kilo Code surfaces tool calls in the VS Code output panel as formatted log entries, not as a parseable stream.</li>
+      </ul>
+      <h4 class="ph">Git as the most reliable audit trail</h4>
+      <ul>
+        <li>Configure the agent to commit after each logical step, and <code>git log --oneline --stat</code> becomes a tool-call summary.</li>
+        <li>For finer granularity, use hooks — Claude Code's <code>hooks</code> config block lets you fire shell commands on tool events (before/after Bash, after Edit, on session stop).</li>
+        <li>A one-line hook that appends to a session log gives you a persistent record without needing to capture the stream.</li>
+      </ul>
+      <h4 class="ph">MCP server observability is a first-class concern</h4>
+      <ul>
+        <li>Each MCP server should log its own inputs and outputs.</li>
+        <li>When debugging an agent that called an MCP tool and produced a wrong result, the question is: did the model call the tool with the right input, or did the tool return the wrong output?</li>
+        <li>Without per-tool logs, you can only infer from context — with them, you can pinpoint in seconds.</li>
+        <li>Build logging into every MCP server you write (Chapter 16 returns to this).</li>
+      </ul>
 
       <h2>3.11 Hands-on: design a tool allowlist for a real project</h2>
       <p>Take a Node.js API project with a PostgreSQL database. The agent should be able to read and edit source files freely, run tests and lints, and read git history — but should never push to remote, run migrations without approval, or call any cloud CLI. Here is the <code>.claude/settings.json</code> allowlist for that project:</p>
@@ -1413,8 +1617,18 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
     ]
   }
 }</code></pre>
-      <p>To apply the same logic in Kilo Code: open Kilo Code settings → Permissions → enable "Read files" and "Edit/Write files" auto-approve; leave "Execute commands" as ask-per-call. Then in the system prompt rules field, add: "Never run git push, psql, npm run migrate, or any cloud CLI command without explicit user confirmation." Because Kilo's category granularity is coarser than Claude Code's pattern matching, the system prompt becomes the second enforcement layer for specific Bash commands.</p>
-      <p>Test your allowlist before trusting it: run the agent on a throwaway branch, watch the approval prompts it triggers, and refine. A good allowlist produces zero prompts for the 80% of operations that are routine and exactly one prompt for the 20% that carry real risk. If you are getting prompts on every file read, the allowlist is too tight; if the agent is pushing to remote without asking, it is too loose.</p>
+      <h4 class="ph">Kilo Code equivalent</h4>
+      <ul>
+        <li>Open Kilo Code settings → Permissions → enable "Read files" and "Edit/Write files" auto-approve; leave "Execute commands" as ask-per-call.</li>
+        <li>In the system prompt rules field, add: "Never run git push, psql, npm run migrate, or any cloud CLI command without explicit user confirmation."</li>
+        <li>Kilo's category granularity is coarser than Claude Code's pattern matching — the system prompt becomes the second enforcement layer for specific Bash commands.</li>
+      </ul>
+      <h4 class="ph">Testing your allowlist</h4>
+      <ul>
+        <li>Run the agent on a throwaway branch, watch the approval prompts it triggers, and refine.</li>
+        <li>A good allowlist produces zero prompts for the 80% of operations that are routine and exactly one prompt for the 20% that carry real risk.</li>
+        <li>If you are getting prompts on every file read, the allowlist is too tight; if the agent is pushing to remote without asking, it is too loose.</li>
+      </ul>
 
       <div class="see-also">
         <a onclick="go('ch10-review')">→ Ch 10. Safety, Review &amp; Verification</a>
@@ -1429,6 +1643,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
 
       <h2>4.1 The model landscape now — Claude 4.7, GPT-5, Gemini 3, open-weight</h2>
       <p>The frontier as of mid-2026 has consolidated around four families, each with meaningfully different capability/cost/latency tradeoffs. The velocity of releases means any specific version numbering here may be stale within months — treat what follows as a structural map, not a spec sheet.</p>
+
       <table class="tbl">
         <thead>
           <tr><th>Family</th><th>Top model</th><th>Speed tier</th><th>One-line character</th></tr>
@@ -1440,7 +1655,12 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <tr><td>Open-weight</td><td>Llama 4, Qwen 3, DeepSeek R2</td><td>Hardware-dependent</td><td>Zero inference cost, full local/private, capability gap closing fast</td></tr>
         </tbody>
       </table>
-      <p>The open-weight tier deserves a separate note: Llama 4 (Meta), Qwen 3 (Alibaba), and DeepSeek R2 are the three families worth tracking in 2026. At Q4/Q8 quantization on a modern consumer GPU (RTX 4090 or Apple M3 Ultra), 70B-class models produce output that competes with 2024-era frontier on coding tasks. The capability gap against today's frontier Opus/GPT-5 class is real but shrinking — and the cost gap is absolute zero once the hardware is amortized.</p>
+      <h4 class="ph">The open-weight tier</h4>
+      <ul>
+        <li>Llama 4 (Meta), Qwen 3 (Alibaba), and DeepSeek R2 are the three families worth tracking in 2026.</li>
+        <li>At Q4/Q8 quantization on a modern consumer GPU (RTX 4090 or Apple M3 Ultra), 70B-class models produce output that competes with 2024-era frontier on coding tasks.</li>
+        <li>The capability gap against today's frontier Opus/GPT-5 class is real but shrinking — and the cost gap is absolute zero once the hardware is amortized.</li>
+      </ul>
 
       <div class="flv-grid">
         <div class="flv"><div class="flv-name">Claude Opus</div><div class="flv-desc">Best for architecture, deep code review, complex multi-step reasoning, and any task where a wrong answer has high recovery cost.</div></div>
@@ -1453,12 +1673,33 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </div>
 
       <h2>4.2 The three dials — capability vs cost vs latency</h2>
-      <p>Every model selection decision reduces to three dials you cannot maximize simultaneously. <strong>Capability</strong> is the model's ability to reason correctly on hard tasks — long context coherence, multi-step planning, subtle bug detection. <strong>Cost</strong> is the dollar price of input and output tokens. <strong>Latency</strong> is time-to-first-token and total generation time. Turning one dial up typically turns at least one other down.</p>
-      <p>The pick rule, stated simply: <em>use the cheapest model that can do the job correctly at the latency your workflow tolerates.</em> "Can do the job correctly" is the constraint that prevents you from always picking Haiku/Flash — if the model hallucinates on your task, the downstream debugging cost exceeds the model savings. "At the latency your workflow tolerates" is the constraint that prevents you from always picking Opus/GPT-5 — if your task is synchronous and user-facing, a 20-second response is not acceptable regardless of how good it is.</p>
-      <p>A useful calibration exercise: run the same 10-prompt benchmark across three model tiers on your actual workload. Measure accuracy (does the output work without correction?), latency (wall clock from call to response), and cost (tokens in/out). Plot them. You will almost always find a tier that dominates on cost/latency with acceptable accuracy loss — that is your workhorse model. The top tier becomes the specialist you reach for when the workhorse fails.</p>
+      <h4 class="ph">The three dials</h4>
+      <ul>
+        <li><strong>Capability:</strong> the model's ability to reason correctly on hard tasks — long context coherence, multi-step planning, subtle bug detection.</li>
+        <li><strong>Cost:</strong> the dollar price of input and output tokens.</li>
+        <li><strong>Latency:</strong> time-to-first-token and total generation time.</li>
+        <li>Turning one dial up typically turns at least one other down.</li>
+      </ul>
+      <h4 class="ph">The pick rule</h4>
+      <ul>
+        <li><em>Use the cheapest model that can do the job correctly at the latency your workflow tolerates.</em></li>
+        <li>"Can do the job correctly" is the constraint that prevents you from always picking Haiku/Flash — if the model hallucinates on your task, the downstream debugging cost exceeds the model savings.</li>
+        <li>"At the latency your workflow tolerates" is the constraint that prevents you from always picking Opus/GPT-5 — if your task is synchronous and user-facing, a 20-second response is not acceptable regardless of how good it is.</li>
+      </ul>
+      <h4 class="ph">Calibration exercise</h4>
+      <ul>
+        <li>Run the same 10-prompt benchmark across three model tiers on your actual workload.</li>
+        <li>Measure accuracy (does the output work without correction?), latency (wall clock from call to response), and cost (tokens in/out). Plot them.</li>
+        <li>You will almost always find a tier that dominates on cost/latency with acceptable accuracy loss — that is your workhorse model. The top tier becomes the specialist you reach for when the workhorse fails.</li>
+      </ul>
 
       <h2>4.3 Claude family — Opus / Sonnet / Haiku and what each is for</h2>
-      <p>The Claude 4.7 family presents three distinct price/capability points. <strong>Opus</strong> is the architect model: use it for initial system design, complex refactors requiring whole-codebase reasoning, security analysis, and any task where a wrong answer has high recovery cost. Its extended thinking mode (section 4.8) is most valuable here. <strong>Sonnet</strong> is the daily coder: fast enough for interactive use, capable enough for the 90th percentile of coding tasks, and priced to make routine feature work economically sensible. <strong>Haiku</strong> is the volume model: use it for classification, intent parsing, short-form generation, embedding-style tasks, and any pipeline step that runs thousands of times per hour.</p>
+      <h4 class="ph">Three distinct price/capability points</h4>
+      <ul>
+        <li><strong>Opus</strong> is the architect model: use it for initial system design, complex refactors requiring whole-codebase reasoning, security analysis, and any task where a wrong answer has high recovery cost. Its extended thinking mode (section 4.8) is most valuable here.</li>
+        <li><strong>Sonnet</strong> is the daily coder: fast enough for interactive use, capable enough for the 90th percentile of coding tasks, and priced to make routine feature work economically sensible.</li>
+        <li><strong>Haiku</strong> is the volume model: use it for classification, intent parsing, short-form generation, embedding-style tasks, and any pipeline step that runs thousands of times per hour.</li>
+      </ul>
       <table class="tbl">
         <thead>
           <tr><th>Model</th><th>Best for</th><th>Context window</th><th>Relative cost tier (verify current)</th></tr>
@@ -1469,27 +1710,88 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <tr><td>Claude 4.7 Haiku</td><td>Volume tasks, classification, fast inline tasks</td><td>200K</td><td>Low — baseline reference tier</td></tr>
         </tbody>
       </table>
-      <p>Pricing note: Anthropic's per-million-token prices have tiered structures that change with demand and model generation. Opus 4.7's 1M-token context tier carries a different (higher) price than the standard 200K tier — the extended context capability is a separate offering. <strong>Verify current pricing at <a href="https://docs.anthropic.com" target="_blank">docs.anthropic.com</a> before budgeting</strong> — figures here are structural, not binding (verify current at time of reading).</p>
+      <h4 class="ph">Pricing note</h4>
+      <ul>
+        <li>Anthropic's per-million-token prices have tiered structures that change with demand and model generation.</li>
+        <li>Opus 4.7's 1M-token context tier carries a different (higher) price than the standard 200K tier — the extended context capability is a separate offering.</li>
+        <li><strong>Verify current pricing at <a href="https://docs.anthropic.com" target="_blank">docs.anthropic.com</a> before budgeting</strong> — figures here are structural, not binding (verify current at time of reading).</li>
+      </ul>
 
       <h2>4.4 GPT family — GPT-5, GPT-5 mini and what each is for</h2>
-      <p><strong>GPT-5</strong> is OpenAI's current flagship: strong reasoning, excellent structured output (JSON mode and function calling have been a GPT strength since GPT-4), and the widest third-party integration surface — more SaaS products connect to the OpenAI API than any other provider. <strong>GPT-5 mini</strong> is the cost-optimized tier, offering substantially lower token prices at the expense of reasoning depth on hard tasks. The mini tier is the right default for volume API workloads where GPT is the required provider.</p>
-      <p>The GPT family's practical advantage in agentic workflows is ecosystem breadth: more harnesses, more LangChain integrations, more off-the-shelf agents are built against the OpenAI API shape. If you are buying an AI coding tool rather than building one, GPT integration is the default. If you are building your own agent, the API shape is largely compatible with Claude's via OpenAI-compatible adapters.</p>
-      <p><strong>Verify current GPT-5 and GPT-5 mini pricing at <a href="https://platform.openai.com/docs/pricing" target="_blank">platform.openai.com/docs/pricing</a></strong> — the relative cost structure is similar to Claude (flagship ~10× mini) but exact figures shift frequently (verify current at time of reading).</p>
+      <h4 class="ph">GPT-5 and GPT-5 mini</h4>
+      <ul>
+        <li><strong>GPT-5</strong> is OpenAI's current flagship: strong reasoning, excellent structured output (JSON mode and function calling have been a GPT strength since GPT-4), and the widest third-party integration surface — more SaaS products connect to the OpenAI API than any other provider.</li>
+        <li><strong>GPT-5 mini</strong> is the cost-optimized tier, offering substantially lower token prices at the expense of reasoning depth on hard tasks. The mini tier is the right default for volume API workloads where GPT is the required provider.</li>
+      </ul>
+      <h4 class="ph">Ecosystem breadth advantage</h4>
+      <ul>
+        <li>More harnesses, more LangChain integrations, more off-the-shelf agents are built against the OpenAI API shape.</li>
+        <li>If you are buying an AI coding tool rather than building one, GPT integration is the default.</li>
+        <li>If you are building your own agent, the API shape is largely compatible with Claude's via OpenAI-compatible adapters.</li>
+        <li><strong>Verify current pricing at <a href="https://platform.openai.com/docs/pricing" target="_blank">platform.openai.com/docs/pricing</a></strong> — the relative cost structure is similar to Claude (flagship ~10× mini) but exact figures shift frequently (verify current at time of reading).</li>
+      </ul>
 
       <h2>4.5 Gemini family — 3 Pro, Flash and what each is for</h2>
-      <p><strong>Gemini 3 Pro</strong> is Google's flagship, notable for two things: the strongest long-context recall of any frontier model (its architecture handles 1M+ token contexts with less mid-context degradation than 2024-era competitors), and a competitive free tier through Google AI Studio. <strong>Gemini Flash</strong> is the speed/cost tier — genuinely fast time-to-first-token, suitable for real-time UI applications and high-throughput pipelines. Flash is the model Gemini CLI uses by default for interactive sessions (verify current default against Gemini CLI docs).</p>
-      <p>The free tier is strategically significant for individuals and small teams: Google AI Studio allows Gemini API calls at no charge up to a rate limit threshold (verify current limits at <a href="https://ai.google.dev" target="_blank">ai.google.dev</a>). For a solo developer doing experimentation, prototyping, or light daily coding assistance, this can mean genuinely zero AI inference spend. The tradeoff is that free-tier rate limits make it impractical for production workloads or multi-agent parallelism.</p>
-      <p>Gemini 3 Pro's long-context strength is worth calling out specifically: if your workflow involves ingesting large codebases, lengthy documentation sets, or multi-file refactors, Gemini 3 Pro has measurably better recall at 500K–1M token fill levels than Claude or GPT equivalents as of mid-2026. This changes the model-selection calculus for specifically large-context tasks. <strong>Verify current Gemini pricing at <a href="https://ai.google.dev/pricing" target="_blank">ai.google.dev/pricing</a></strong> (verify current at time of reading).</p>
+      <h4 class="ph">Gemini 3 Pro and Flash</h4>
+      <ul>
+        <li><strong>Gemini 3 Pro</strong> is notable for two things: the strongest long-context recall of any frontier model (handles 1M+ token contexts with less mid-context degradation than 2024-era competitors), and a competitive free tier through Google AI Studio.</li>
+        <li><strong>Gemini Flash</strong> is the speed/cost tier — genuinely fast time-to-first-token, suitable for real-time UI applications and high-throughput pipelines. Flash is the model Gemini CLI uses by default for interactive sessions (verify current default against Gemini CLI docs).</li>
+      </ul>
+      <h4 class="ph">The free tier</h4>
+      <ul>
+        <li>Google AI Studio allows Gemini API calls at no charge up to a rate limit threshold (verify current limits at <a href="https://ai.google.dev" target="_blank">ai.google.dev</a>).</li>
+        <li>For a solo developer doing experimentation, prototyping, or light daily coding assistance, this can mean genuinely zero AI inference spend.</li>
+        <li>Free-tier rate limits make it impractical for production workloads or multi-agent parallelism.</li>
+      </ul>
+      <h4 class="ph">Long-context advantage</h4>
+      <ul>
+        <li>If your workflow involves ingesting large codebases, lengthy documentation sets, or multi-file refactors, Gemini 3 Pro has measurably better recall at 500K–1M token fill levels than Claude or GPT equivalents as of mid-2026.</li>
+        <li>This changes the model-selection calculus for specifically large-context tasks.</li>
+        <li><strong>Verify current Gemini pricing at <a href="https://ai.google.dev/pricing" target="_blank">ai.google.dev/pricing</a></strong> (verify current at time of reading).</li>
+      </ul>
 
       <h2>4.6 Local models — Ollama, LM Studio, when they make sense</h2>
-      <p><strong>Ollama</strong> and <strong>LM Studio</strong> are the two dominant local inference runtimes for developers in 2026. Ollama is CLI-first: <code>ollama run llama4</code> downloads and runs a model with no GUI, exposes an OpenAI-compatible REST endpoint at <code>localhost:11434</code>, and integrates with any tool that accepts an OpenAI API base URL override. LM Studio is GUI-first: a macOS/Windows/Linux desktop app with model browsing, quantization selection, and a built-in chat UI, also exposing a compatible local API endpoint.</p>
-      <p>Local inference makes sense in three scenarios: <strong>privacy requirements</strong> (code, prompts, or data cannot leave the device — legal, compliance, or employer policy constraints); <strong>cost requirements</strong> (high-volume pipelines where per-token cloud costs exceed hardware amortization); <strong>offline requirements</strong> (air-gapped environments, travel, or unreliable connectivity). It does not make sense when capability is the binding constraint — a 70B local model on consumer hardware will not match Opus or GPT-5 on genuinely hard reasoning tasks, and the capability gap matters for architecture-level decisions.</p>
-      <p>Hardware baseline for useful local inference: Apple Silicon M2 Pro or later (32 GB unified memory minimum for 70B Q4), or an RTX 4070 or better (12 GB+ VRAM for 7–13B, 24 GB for 70B Q4). The latency picture is nuanced: on Apple M3 Ultra, Llama 4 70B at Q4 produces ~30–50 tokens/second — fast for batch tasks, borderline acceptable for interactive use. A cloud Haiku or Flash call is typically faster wall-clock if network latency is low. Local wins on privacy and sustained high-volume throughput.</p>
+      <h4 class="ph">The two dominant runtimes</h4>
+      <ul>
+        <li><strong>Ollama</strong> is CLI-first: <code>ollama run llama4</code> downloads and runs a model with no GUI, exposes an OpenAI-compatible REST endpoint at <code>localhost:11434</code>, and integrates with any tool that accepts an OpenAI API base URL override.</li>
+        <li><strong>LM Studio</strong> is GUI-first: a macOS/Windows/Linux desktop app with model browsing, quantization selection, and a built-in chat UI, also exposing a compatible local API endpoint.</li>
+      </ul>
+      <h4 class="ph">When local inference makes sense</h4>
+      <ul>
+        <li><strong>Privacy requirements:</strong> code, prompts, or data cannot leave the device — legal, compliance, or employer policy constraints.</li>
+        <li><strong>Cost requirements:</strong> high-volume pipelines where per-token cloud costs exceed hardware amortization.</li>
+        <li><strong>Offline requirements:</strong> air-gapped environments, travel, or unreliable connectivity.</li>
+        <li>Does not make sense when capability is the binding constraint — a 70B local model on consumer hardware will not match Opus or GPT-5 on genuinely hard reasoning tasks, and the capability gap matters for architecture-level decisions.</li>
+      </ul>
+      <h4 class="ph">Hardware baseline</h4>
+      <ul>
+        <li>Apple Silicon M2 Pro or later (32 GB unified memory minimum for 70B Q4), or an RTX 4070 or better (12 GB+ VRAM for 7–13B, 24 GB for 70B Q4).</li>
+        <li>On Apple M3 Ultra, Llama 4 70B at Q4 produces ~30–50 tokens/second — fast for batch tasks, borderline acceptable for interactive use.</li>
+        <li>A cloud Haiku or Flash call is typically faster wall-clock if network latency is low. Local wins on privacy and sustained high-volume throughput.</li>
+      </ul>
 
       <h2>4.7 BYO-model in Kilo Code — routing, fallbacks, mode-specific picks</h2>
-      <p>Kilo Code's model routing is configured per mode: each mode (Architect, Code, Ask, Debug, etc.) can be assigned a different model independently. This is the right design for cost engineering — your Architect mode should use a high-capability model because it runs infrequently and its output drives downstream work, while your Ask mode (used dozens of times per session for quick questions) should use a fast, cheap model. The configuration surface for per-mode model assignment is in the Kilo Code settings UI under the Modes section. <strong>Verify the exact config file path and schema</strong> — Kilo Code has historically used workspace-level config (look for <code>.kilocode/</code> directory or <code>.roomodes</code> file — verify against current Kilo Code docs, as the config format has evolved across versions).</p>
-      <p>An illustrative per-mode routing example (this is a suggested pattern, <strong>not Kilo Code's shipped default</strong> — your Kilo installation's actual defaults will differ): Architect mode → Claude 4.7 Opus (deep reasoning, infrequent); Code mode → Claude 4.7 Sonnet (fast, capable for routine coding); Ask mode → Claude 4.7 Haiku or Gemini Flash (speed-optimized, high-frequency). Debug mode might use Sonnet by default and escalate to Opus if the session produces more than 5 failed fix attempts.</p>
-      <p>Fallback routing — using a cheaper model first and escalating on failure or low confidence — is not natively built into Kilo Code's mode system as of mid-2026. You implement it at the orchestration layer: a custom mode whose system prompt instructs the model to explicitly mark tasks as requiring deep reasoning before the harness routes them. Alternatively, use the Kilo orchestrator pattern (Boomerang Tasks) where a lightweight orchestrator model delegates subtasks to specialist sub-agents running stronger models for hard subtasks only.</p>
+      <h4 class="ph">Per-mode model routing</h4>
+      <ul>
+        <li>Each mode (Architect, Code, Ask, Debug, etc.) can be assigned a different model independently.</li>
+        <li>Architect mode should use a high-capability model — runs infrequently, output drives downstream work.</li>
+        <li>Ask mode (used dozens of times per session) should use a fast, cheap model.</li>
+        <li>Config surface: Kilo Code settings UI under the Modes section. <strong>Verify the exact config file path and schema</strong> (look for <code>.kilocode/</code> directory or <code>.roomodes</code> file — verify against current Kilo Code docs, as the config format has evolved across versions).</li>
+      </ul>
+      <h4 class="ph">Illustrative routing pattern</h4>
+      <ul>
+        <li>This is a suggested pattern, <strong>not Kilo Code's shipped default</strong> — your Kilo installation's actual defaults will differ.</li>
+        <li>Architect mode → Claude 4.7 Opus (deep reasoning, infrequent).</li>
+        <li>Code mode → Claude 4.7 Sonnet (fast, capable for routine coding).</li>
+        <li>Ask mode → Claude 4.7 Haiku or Gemini Flash (speed-optimized, high-frequency).</li>
+        <li>Debug mode might use Sonnet by default and escalate to Opus if the session produces more than 5 failed fix attempts.</li>
+      </ul>
+      <h4 class="ph">Fallback routing</h4>
+      <ul>
+        <li>Fallback routing (cheaper model first, escalate on failure or low confidence) is not natively built into Kilo Code's mode system as of mid-2026.</li>
+        <li>Implement it at the orchestration layer: a custom mode whose system prompt instructs the model to explicitly mark tasks as requiring deep reasoning before the harness routes them.</li>
+        <li>Alternatively, use the Kilo orchestrator pattern (Boomerang Tasks) where a lightweight orchestrator delegates subtasks to specialist sub-agents running stronger models for hard subtasks only.</li>
+      </ul>
 
       <aside class="tool-alt">
         <strong>Model routing surfaces across the three major harnesses</strong>
@@ -1506,29 +1808,104 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </aside>
 
       <h2>4.8 Thinking / extended thinking — what it buys, what it costs</h2>
-      <p>Extended thinking (Claude's term) or "reasoning" mode (OpenAI's o-series framing) refers to models that perform explicit chain-of-thought deliberation before producing their final answer. The thinking tokens are generated internally, typically billed at a reduced rate compared to output tokens, but the total token count can be substantial — a hard problem might consume 10,000–30,000 thinking tokens before the visible response appears. The latency cost is the more practical constraint: extended thinking adds 10–60 seconds to response time for hard problems.</p>
-      <p>When extended thinking pays: multi-step logical problems with no obvious greedy path (algorithmic design, security threat modeling, root-cause analysis of complex bugs), tasks where the model has historically hallucinated on the first attempt, and tasks where the cost of a wrong answer (debugging time, rollback, production incident) exceeds the cost of the extra thinking budget. When it wastes: well-defined mechanical tasks (generate a CRUD endpoint, rename a variable, write a migration), tasks with a clear single-step answer, and any interactive session where 30-second latency breaks the developer's flow.</p>
-      <p>Practical guidance: set a thinking budget cap (Anthropic's API allows a <code>budget_tokens</code> parameter for extended thinking — verify current parameter name). A budget of 5,000–8,000 tokens handles most medium-hard coding problems without runaway cost. Set it to 0 for routine tasks (the model will not invoke thinking). Reserve unlimited budget for the rare genuinely hard problem. Track your thinking token spend separately — it will surprise you in mixed-use sessions.</p>
+      <h4 class="ph">What extended thinking is</h4>
+      <ul>
+        <li>Extended thinking (Claude's term) or "reasoning" mode (OpenAI's o-series framing): models perform explicit chain-of-thought deliberation before producing their final answer.</li>
+        <li>Thinking tokens are generated internally, typically billed at a reduced rate compared to output tokens — a hard problem might consume 10,000–30,000 thinking tokens before the visible response appears.</li>
+        <li>The latency cost is the more practical constraint: extended thinking adds 10–60 seconds to response time for hard problems.</li>
+      </ul>
+      <h4 class="ph">When it pays vs when it wastes</h4>
+      <ul>
+        <li><strong>Pays:</strong> multi-step logical problems with no obvious greedy path (algorithmic design, security threat modeling, root-cause analysis of complex bugs); tasks where the model has historically hallucinated on the first attempt; tasks where the cost of a wrong answer exceeds the cost of the extra thinking budget.</li>
+        <li><strong>Wastes:</strong> well-defined mechanical tasks (generate a CRUD endpoint, rename a variable, write a migration); tasks with a clear single-step answer; any interactive session where 30-second latency breaks developer flow.</li>
+      </ul>
+      <h4 class="ph">Practical budget guidance</h4>
+      <ul>
+        <li>Set a thinking budget cap (Anthropic's API: <code>budget_tokens</code> parameter — verify current parameter name).</li>
+        <li>A budget of 5,000–8,000 tokens handles most medium-hard coding problems without runaway cost.</li>
+        <li>Set it to 0 for routine tasks (the model will not invoke thinking). Reserve unlimited budget for the rare genuinely hard problem.</li>
+        <li>Track thinking token spend separately — it will surprise you in mixed-use sessions.</li>
+      </ul>
 
       <h2>4.9 Prompt caching as a cost lever — beyond the basics</h2>
-      <p>Prompt caching allows the provider to store a prefix of your prompt on their inference infrastructure and skip re-processing it on subsequent calls. The cache hit discount is substantial — historically 90% reduction in input token cost for cached prefixes on Claude (verify current discount at docs.anthropic.com). The catch: the cache only hits if the prefix is byte-for-byte identical from call to call. Any character change in the cached prefix invalidates the cache for all content after the change point.</p>
-      <p>Three structural rules for maximizing cache hit rate: <strong>keep system prompts static</strong> — do not interpolate dynamic values (timestamps, session IDs, user names) into the system prompt; move dynamic content to the human turn. <strong>Append, don't insert</strong> — if you must modify a long prompt between calls, add new content at the end rather than inserting it in the middle; insertion invalidates everything downstream. <strong>Monitor hit rate explicitly</strong> — the Anthropic API returns <code>cache_read_input_tokens</code> and <code>cache_creation_input_tokens</code> in the usage object; track the ratio per session to validate that your caching strategy is working.</p>
-      <p>A worked example: a coding session with a 10,000-token system prompt (project context, codebase summary, CLAUDE.md rules) that runs 40 turns. Without caching: 40 × 10,000 = 400,000 input tokens billed at full price. With caching and stable prefix: 1 × 10,000 cache-creation tokens + 39 × 10,000 cache-read tokens. If cache reads cost 10% of full price, the session's system-prompt input cost drops by ~88%. At scale, this is the single highest-leverage cost reduction available without changing models.</p>
+      <h4 class="ph">How caching works</h4>
+      <ul>
+        <li>The provider stores a prefix of your prompt on their inference infrastructure and skips re-processing it on subsequent calls.</li>
+        <li>Cache hit discount: historically 90% reduction in input token cost for cached prefixes on Claude (verify current discount at docs.anthropic.com).</li>
+        <li>The catch: the cache only hits if the prefix is byte-for-byte identical from call to call. Any character change invalidates the cache for all content after the change point.</li>
+      </ul>
+      <h4 class="ph">Three rules for maximizing cache hit rate</h4>
+      <ul>
+        <li><strong>Keep system prompts static:</strong> do not interpolate dynamic values (timestamps, session IDs, user names) into the system prompt; move dynamic content to the human turn.</li>
+        <li><strong>Append, don't insert:</strong> if you must modify a long prompt between calls, add new content at the end rather than inserting it in the middle; insertion invalidates everything downstream.</li>
+        <li><strong>Monitor hit rate explicitly:</strong> the Anthropic API returns <code>cache_read_input_tokens</code> and <code>cache_creation_input_tokens</code> in the usage object; track the ratio per session to validate your caching strategy is working.</li>
+      </ul>
+      <h4 class="ph">Worked example: the scale of savings</h4>
+      <ul>
+        <li>A coding session with a 10,000-token system prompt running 40 turns: without caching → 40 × 10,000 = 400,000 input tokens at full price.</li>
+        <li>With caching and stable prefix: 1 × 10,000 cache-creation tokens + 39 × 10,000 cache-read tokens. If cache reads cost 10%, the session's system-prompt input cost drops by ~88%.</li>
+        <li>At scale, this is the single highest-leverage cost reduction available without changing models.</li>
+      </ul>
 
       <h2>4.10 Batching, message batches, async wins</h2>
-      <p>Batch APIs allow you to submit multiple API requests as a single job, processed asynchronously with a completion window (typically up to 24 hours) rather than synchronously. In exchange for accepting async delivery, providers offer significant price reductions. The historical pattern across providers has been roughly 50% discount on batch vs. synchronous pricing — but <strong>verify current discount and SLA for each provider</strong>: Anthropic's Message Batches API, OpenAI's Batch API, and Google's equivalent each have their own current discount tiers and time-to-completion guarantees that change with infrastructure capacity (verify current at time of reading at each provider's batch documentation).</p>
-      <p>Batch APIs are the right tool for: generating documentation across a large codebase (hundreds of files, no user waiting), running evals over a test set, processing logs or data, classification pipelines, and any task where latency is not user-facing. They are wrong for: any interactive session, any task in the critical path of a deployment, and any task where the next step depends on the result of the current one (sequential dependencies prevent batching).</p>
-      <p>Implementation note for Claude Message Batches: the API accepts an array of request objects, each with its own <code>custom_id</code> for result matching. Results are polled or retrieved via a results endpoint after the batch completes. There is no streaming within a batch — each request produces a complete response. Error handling must account for partial failure: some requests in a batch may succeed while others fail; the <code>custom_id</code> map lets you retry only the failed items. This is meaningfully different from a synchronous retry loop.</p>
+      <h4 class="ph">What batch APIs offer</h4>
+      <ul>
+        <li>Submit multiple API requests as a single job, processed asynchronously with a completion window (typically up to 24 hours).</li>
+        <li>In exchange for accepting async delivery, providers offer significant price reductions — historically ~50% discount on batch vs. synchronous pricing.</li>
+        <li><strong>Verify current discount and SLA for each provider</strong> — Anthropic's Message Batches API, OpenAI's Batch API, and Google's equivalent each have their own current tiers (verify current at time of reading).</li>
+      </ul>
+      <h4 class="ph">Right and wrong use cases</h4>
+      <ul>
+        <li><strong>Right for:</strong> generating documentation across a large codebase (hundreds of files, no user waiting), running evals over a test set, processing logs or data, classification pipelines, and any task where latency is not user-facing.</li>
+        <li><strong>Wrong for:</strong> any interactive session, any task in the critical path of a deployment, and any task where the next step depends on the result of the current one (sequential dependencies prevent batching).</li>
+      </ul>
+      <h4 class="ph">Implementation notes for Claude Message Batches</h4>
+      <ul>
+        <li>The API accepts an array of request objects, each with its own <code>custom_id</code> for result matching. Results are polled or retrieved via a results endpoint after the batch completes.</li>
+        <li>There is no streaming within a batch — each request produces a complete response.</li>
+        <li>Error handling must account for partial failure: some requests may succeed while others fail; the <code>custom_id</code> map lets you retry only the failed items.</li>
+        <li>This is meaningfully different from a synchronous retry loop.</li>
+      </ul>
 
       <h2>4.11 Context size vs effective usable context</h2>
-      <p>Nominal context windows have expanded dramatically: Claude 4.7 supports 200K tokens (with extended tiers), Gemini 3 Pro supports 1M+ tokens, GPT-5 supports 128K–1M depending on tier. These numbers do not mean you can fill them and get uniform quality. The "lost in the middle" problem — where information placed in the middle of a very long context is retrieved less reliably than information at the beginning or end — is documented across all frontier models, though the severity varies.</p>
-      <p>Rule of thumb (model-dependent, verify against current evals): performance begins to degrade past approximately 50–70% context fill for most coding tasks. This is not a cliff — it is a gradient, and the exact threshold depends on task type (factual retrieval degrades before reasoning), content structure (well-structured code is retrieved more reliably than prose), and model. Gemini 3 Pro has demonstrated stronger long-range recall than 2024-era frontier models at high fill levels — this is a genuine architectural advantage worth considering for specifically large-context use cases.</p>
-      <p>Practical consequence: for a 200K Claude session, treat ~120K–140K as your reliable working space. If your actual content needs more, restructure your context strategy: use retrieval (semantic search over the codebase, returning only relevant chunks) rather than whole-file loading, break the task into smaller subtasks with fresh context windows, or consider Gemini 3 Pro if the use case truly requires dense 500K+ context. Never pad context with content that is marginally relevant — every token of irrelevant context increases the chance that relevant content is displaced or diluted.</p>
+      <h4 class="ph">Nominal vs effective context</h4>
+      <ul>
+        <li>Nominal windows: Claude 4.7 supports 200K tokens (with extended tiers), Gemini 3 Pro supports 1M+ tokens, GPT-5 supports 128K–1M depending on tier.</li>
+        <li>These numbers do not mean you can fill them and get uniform quality.</li>
+        <li>The "lost in the middle" problem — information placed in the middle of a very long context is retrieved less reliably than information at the beginning or end — is documented across all frontier models, though severity varies.</li>
+      </ul>
+      <h4 class="ph">The degradation gradient</h4>
+      <ul>
+        <li>Rule of thumb (model-dependent, verify against current evals): performance begins to degrade past approximately 50–70% context fill for most coding tasks.</li>
+        <li>This is a gradient, not a cliff — the threshold depends on task type (factual retrieval degrades before reasoning), content structure (well-structured code is retrieved more reliably than prose), and model.</li>
+        <li>Gemini 3 Pro has demonstrated stronger long-range recall than 2024-era frontier models at high fill levels — a genuine architectural advantage for large-context use cases.</li>
+      </ul>
+      <h4 class="ph">Practical consequences</h4>
+      <ul>
+        <li>For a 200K Claude session, treat ~120K–140K as your reliable working space.</li>
+        <li>If your actual content needs more: use retrieval (semantic search over the codebase, returning only relevant chunks) rather than whole-file loading; break the task into smaller subtasks with fresh context windows; or consider Gemini 3 Pro if the use case truly requires dense 500K+ context.</li>
+        <li>Never pad context with marginally relevant content — every token of irrelevant context increases the chance that relevant content is displaced or diluted.</li>
+      </ul>
 
       <h2>4.12 The cost-per-feature mental model</h2>
-      <p>The cost of building a feature with an AI coding agent decomposes as: <code>cost = input_tokens_per_turn × turns × turns_per_feature × input_price + output_tokens_per_turn × turns × turns_per_feature × output_price</code>. The turns-per-feature variable is the one most developers underestimate — a feature that looks like "write the CRUD endpoint" typically involves 8–15 turns: initial plan, scaffold, write route, write model, write tests, fix lint error, fix test failure, refactor for consistency, add validation, handle edge case, final review. Not one.</p>
-      <p>A worked example with concrete numbers (using approximate mid-2026 pricing — verify current): a CRUD endpoint feature on Claude 4.7 Sonnet, 12 turns, average 4,000 input tokens/turn (including context + history) and 800 output tokens/turn. At approximately $3/million input tokens and $15/million output tokens (verify at docs.anthropic.com): input cost ≈ 12 × 4,000 × $0.000003 = $0.144; output cost ≈ 12 × 800 × $0.000015 = $0.144; total ≈ $0.29 per endpoint. With prompt caching hitting 80% of input tokens at a 90% discount, input cost drops to ~$0.032 — total with caching ≈ $0.18 per endpoint.</p>
-      <p>Scale this to a feature sprint: 20 endpoints + 10 service methods + 5 complex refactors. Without caching: roughly $0.29 × 35 = ~$10. With caching and Sonnet routing (reserving Opus for the 5 complex refactors): closer to $4–6. Routing the Opus tasks to Sonnet when possible and batching the non-interactive documentation generation could halve the total again. Cost-per-feature thinking turns model selection from an abstract API preference into a concrete budget line item.</p>
+      <h4 class="ph">The cost formula</h4>
+      <ul>
+        <li><code>cost = input_tokens_per_turn × turns × turns_per_feature × input_price + output_tokens_per_turn × turns × turns_per_feature × output_price</code></li>
+        <li>The turns-per-feature variable is the one most developers underestimate — a feature that looks like "write the CRUD endpoint" typically involves 8–15 turns: initial plan, scaffold, write route, write model, write tests, fix lint error, fix test failure, refactor for consistency, add validation, handle edge case, final review. Not one.</li>
+      </ul>
+      <h4 class="ph">Worked example: one CRUD endpoint</h4>
+      <ul>
+        <li>Claude 4.7 Sonnet, 12 turns, average 4,000 input tokens/turn and 800 output tokens/turn.</li>
+        <li>At approximately $3/million input tokens and $15/million output tokens (verify at docs.anthropic.com): input ≈ $0.144; output ≈ $0.144; total ≈ $0.29 per endpoint.</li>
+        <li>With prompt caching hitting 80% of input tokens at a 90% discount: input drops to ~$0.032 — total with caching ≈ $0.18 per endpoint.</li>
+      </ul>
+      <h4 class="ph">Scaling to a feature sprint</h4>
+      <ul>
+        <li>20 endpoints + 10 service methods + 5 complex refactors: without caching ~$0.29 × 35 ≈ ~$10.</li>
+        <li>With caching and Sonnet routing (reserving Opus for the 5 complex refactors): closer to $4–6.</li>
+        <li>Routing Opus tasks to Sonnet when possible and batching non-interactive documentation generation could halve the total again.</li>
+        <li>Cost-per-feature thinking turns model selection from an abstract API preference into a concrete budget line item.</li>
+      </ul>
 
       <h2>4.13 Decision tree — which model for which job</h2>
       <p>Use the following tree as a starting point. The right answers for your specific tasks will differ — calibrate against your own benchmarks after reading section 4.12.</p>
@@ -1556,8 +1933,19 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
 
       <h2>4.14 Hands-on: budget a real feature build</h2>
       <p>Take last week's work — a specific feature or set of tasks you actually completed with an AI coding assistant. Reconstruct the session structure: how many distinct tasks, how many turns each, roughly how much context each turn carried. Use your harness's usage tracking (<code>ccusage</code> for Claude Code, the API usage dashboard for direct API use, Kilo Code's token counter in the status bar) to pull actual numbers if available.</p>
-      <p>Exercise steps: <strong>Step 1</strong> — list each distinct task from the week and classify it (design/architecture, mechanical coding, classification, documentation). <strong>Step 2</strong> — for each task, identify which model you used and estimate the token cost using the cost-per-feature formula from 4.12. <strong>Step 3</strong> — re-route each task to the cheapest model that would have produced acceptable output (use the decision tree from 4.13 as a guide). <strong>Step 4</strong> — identify which tasks could have used the Batch API (non-interactive, no sequential dependencies). <strong>Step 5</strong> — estimate the savings from re-routing + batching + caching, and express it as a percentage of actual spend.</p>
-      <p>Most developers who run this exercise for the first time find 40–60% savings available without any quality loss — primarily from three sources: using Sonnet instead of Opus for tasks that did not require deep reasoning, batching documentation and test generation that ran synchronously, and stabilizing system prompts to enable cache hits. The goal is not to squeeze every dollar — it is to build the habit of treating token spend as a real engineering variable, like memory or latency, with explicit tradeoffs that you control.</p>
+      <h4 class="ph">Exercise steps</h4>
+      <ul>
+        <li><strong>Step 1</strong> — list each distinct task from the week and classify it (design/architecture, mechanical coding, classification, documentation).</li>
+        <li><strong>Step 2</strong> — for each task, identify which model you used and estimate the token cost using the cost-per-feature formula from 4.12.</li>
+        <li><strong>Step 3</strong> — re-route each task to the cheapest model that would have produced acceptable output (use the decision tree from 4.13 as a guide).</li>
+        <li><strong>Step 4</strong> — identify which tasks could have used the Batch API (non-interactive, no sequential dependencies).</li>
+        <li><strong>Step 5</strong> — estimate the savings from re-routing + batching + caching, and express it as a percentage of actual spend.</li>
+      </ul>
+      <h4 class="ph">What to expect</h4>
+      <ul>
+        <li>Most developers find 40–60% savings available without any quality loss — primarily from three sources: using Sonnet instead of Opus for tasks that did not require deep reasoning, batching documentation and test generation that ran synchronously, and stabilizing system prompts to enable cache hits.</li>
+        <li>The goal is not to squeeze every dollar — it is to build the habit of treating token spend as a real engineering variable, like memory or latency, with explicit tradeoffs that you control.</li>
+      </ul>
 
       <div class="see-also">
         <a onclick="go('ch12-kilo')">→ Ch 12. Kilo Code Deep Dive (modes &amp; routing)</a>
@@ -1571,18 +1959,53 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       <p class="lede">What you'll learn: install and run the three primary agentic coding tools (Kilo Code, Claude Code, Gemini CLI), understand where each fits, place the wider field (Cursor, Aider, etc.) in context, and choose deliberately for the task in front of you.</p>
 
       <h2>5.1 The dominant idioms — IDE-resident vs terminal-resident</h2>
-      <p>Agentic coding tools cluster into two idioms based on where they live in your workflow. <strong>IDE-resident tools</strong> embed directly inside your editor — VS Code, Cursor, Windsurf, JetBrains. They see the file tree, the open editor tabs, inline diagnostics, and the selection you've highlighted. The interaction model is visual: proposed changes appear as inline diffs you accept or reject, context is injected automatically from the current file or workspace, and the feedback loop runs at the speed of a keypress. For developers who already live inside an IDE all day, the cognitive overhead is nearly zero.</p>
-      <p><strong>Terminal-resident tools</strong> live in your shell. They are invoked like any other CLI program, they read context from the working directory and flags you pass, and their output streams to stdout. This makes them composable: you can pipe them, script them, run them in CI, invoke them headlessly from a Makefile, or orchestrate multiple agents across repos without ever opening a GUI. The interaction model is conversational and scriptable rather than visual and point-and-click.</p>
-      <p>Neither idiom is strictly superior. IDE-resident tools reduce friction for single-file or single-project edits where visual diff review matters. Terminal-resident tools win on automation, reproducibility, and anything that needs to run without a human in the loop. Most professional engineers end up using at least one from each column, picking the right surface for each class of task.</p>
+      <h4 class="ph">IDE-resident tools</h4>
+      <ul>
+        <li>Embed directly inside your editor — VS Code, Cursor, Windsurf, JetBrains. They see the file tree, open editor tabs, inline diagnostics, and the selection you've highlighted.</li>
+        <li>Interaction model is visual: proposed changes appear as inline diffs you accept or reject, context is injected automatically from the current file or workspace, and the feedback loop runs at the speed of a keypress.</li>
+        <li>For developers who already live inside an IDE all day, the cognitive overhead is nearly zero.</li>
+      </ul>
+      <h4 class="ph">Terminal-resident tools</h4>
+      <ul>
+        <li>Live in your shell — invoked like any other CLI program, read context from the working directory and flags you pass, output streams to stdout.</li>
+        <li>Composable: you can pipe them, script them, run them in CI, invoke them headlessly from a Makefile, or orchestrate multiple agents across repos without ever opening a GUI.</li>
+        <li>The interaction model is conversational and scriptable rather than visual and point-and-click.</li>
+      </ul>
+      <h4 class="ph">Neither is strictly superior</h4>
+      <ul>
+        <li>IDE-resident tools reduce friction for single-file or single-project edits where visual diff review matters.</li>
+        <li>Terminal-resident tools win on automation, reproducibility, and anything that needs to run without a human in the loop.</li>
+        <li>Most professional engineers end up using at least one from each column, picking the right surface for each class of task.</li>
+      </ul>
 
       <h2>5.2 The three primary tools — Kilo Code, Claude Code, Gemini CLI</h2>
-      <p>This guide focuses on three tools that together represent the dominant paradigms at the time of writing. <strong>Kilo Code</strong> is an open-source VS Code extension that brings agentic, model-agnostic AI assistance directly into the IDE — the IDE-resident primary. <strong>Claude Code</strong> is Anthropic's official CLI agent that runs in the terminal, reads your local codebase, and executes multi-step tasks autonomously — the terminal-resident primary from the Claude ecosystem. <strong>Gemini CLI</strong> is Google's open-source terminal agent backed by the Gemini model family, with a notable free tier via personal Google account — the terminal-resident primary from the Gemini ecosystem.</p>
-      <p>These three were chosen not because competing tools are inferior, but because together they give you direct experience of both idioms, two distinct terminal-agent philosophies, two billing models, and two underlying model families. After working through the hands-on sections in this chapter and the deep-dives in Part 3, you will have enough first-hand context to evaluate any new tool that emerges against familiar reference points.</p>
+      <h4 class="ph">The three tools and what they represent</h4>
+      <ul>
+        <li><strong>Kilo Code:</strong> open-source VS Code extension, model-agnostic, IDE-resident primary.</li>
+        <li><strong>Claude Code:</strong> Anthropic's official CLI agent — runs in the terminal, reads your local codebase, executes multi-step tasks autonomously. Terminal-resident primary from the Claude ecosystem.</li>
+        <li><strong>Gemini CLI:</strong> Google's open-source terminal agent backed by the Gemini model family, with a notable free tier via personal Google account. Terminal-resident primary from the Gemini ecosystem.</li>
+      </ul>
+      <h4 class="ph">Why these three</h4>
+      <ul>
+        <li>Together they give you direct experience of both idioms, two distinct terminal-agent philosophies, two billing models, and two underlying model families.</li>
+        <li>After working through the hands-on sections and the deep-dives in Part 3, you will have enough first-hand context to evaluate any new tool that emerges against familiar reference points.</li>
+      </ul>
 
       <h2>5.3 Kilo Code — what it is + first run</h2>
-      <p>Kilo Code is a fork of Cline (formerly Claude Dev), maintained as a standalone open-source project. It installs as a VS Code extension, supports any model provider through API keys (Anthropic, OpenAI, Google, AWS Bedrock, Azure, local Ollama, and others), and exposes multiple interaction modes — <em>Code</em> for autonomous file edits, <em>Architect</em> for planning and reasoning, <em>Ask</em> for Q&amp;A without writes, and <em>Debug</em> for targeted diagnostics. The multi-model routing capability is the key differentiator: you can configure cheaper, faster models for Ask mode and reserve more capable models for Code and Architect.</p>
-      <p>To install, open VS Code, go to Extensions (Ctrl+Shift+X / Cmd+Shift+X), search for <strong>Kilo Code</strong>, and click Install. On first launch a setup panel appears where you choose your provider and paste your API key — or use BYO key if you already have one. Once configured, open the Kilo Code panel from the sidebar activity bar.</p>
-      <p>First prompt: open any project, click into the Kilo Code panel, select <strong>Code</strong> mode, and type <em>"Add a brief docstring to every function in this file that is missing one."</em> Kilo Code reads the active file, proposes a diff, and waits for your approval. Watch the mode selector and the token counter in the status bar — these are the first signals for developing cost intuition.</p>
+      <h4 class="ph">What Kilo Code is</h4>
+      <ul>
+        <li>A fork of Cline (formerly Claude Dev), maintained as a standalone open-source project. Installs as a VS Code extension.</li>
+        <li>Supports any model provider through API keys (Anthropic, OpenAI, Google, AWS Bedrock, Azure, local Ollama, and others).</li>
+        <li>Exposes multiple interaction modes: <em>Code</em> (autonomous file edits), <em>Architect</em> (planning and reasoning), <em>Ask</em> (Q&amp;A without writes), <em>Debug</em> (targeted diagnostics).</li>
+        <li>The multi-model routing capability is the key differentiator: configure cheaper, faster models for Ask mode and reserve more capable models for Code and Architect.</li>
+      </ul>
+      <h4 class="ph">Install and first run</h4>
+      <ul>
+        <li>Open VS Code → Extensions (Ctrl+Shift+X / Cmd+Shift+X) → search <strong>Kilo Code</strong> → Install.</li>
+        <li>On first launch a setup panel appears — choose your provider and paste your API key (or use BYO key). Once configured, open the Kilo Code panel from the sidebar activity bar.</li>
+        <li>First prompt: select <strong>Code</strong> mode, type <em>"Add a brief docstring to every function in this file that is missing one."</em> Kilo reads the active file, proposes a diff, and waits for your approval.</li>
+        <li>Watch the mode selector and the token counter in the status bar — these are the first signals for developing cost intuition.</li>
+      </ul>
       <pre>
 ┌──────────────────────────────────────────┐
 │  Kilo Code  ▼ Code  │ Architect │ Ask │ Debug │
@@ -1595,28 +2018,66 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       <p>Detailed Kilo Code configuration, mode-routing strategies, and provider selection are covered in Ch 12.</p>
 
       <h2>5.4 Claude Code — what it is + first run</h2>
-      <p>Claude Code is Anthropic's official agentic CLI, designed to operate autonomously in the terminal — reading files, writing code, running shell commands, searching the web, and executing multi-step plans with minimal hand-holding. It understands your entire local codebase, not just the file currently open, which makes it particularly powerful for cross-cutting tasks like refactors, security reviews, and dependency upgrades. It also exposes a rich hooks system and a Model Context Protocol (MCP) integration layer that lets you attach external tools and data sources.</p>
+      <h4 class="ph">What Claude Code is</h4>
+      <ul>
+        <li>Anthropic's official agentic CLI, designed to operate autonomously in the terminal — reading files, writing code, running shell commands, searching the web, and executing multi-step plans with minimal hand-holding.</li>
+        <li>Understands your entire local codebase, not just the file currently open — particularly powerful for cross-cutting tasks like refactors, security reviews, and dependency upgrades.</li>
+        <li>Exposes a rich hooks system and a Model Context Protocol (MCP) integration layer that lets you attach external tools and data sources.</li>
+      </ul>
       <p>Install instructions can shift between releases (npm package vs native binary distributions have both appeared in the official docs). Always verify the current canonical installation method at <strong><code>docs.claude.com/claude-code</code></strong> before running any command you copy from a guide. At the time of writing the npm route is:</p>
       <pre>
 npm install -g @anthropic-ai/claude-code
 claude login
       </pre>
-      <p><code>claude login</code> opens a browser OAuth flow that ties the CLI to your Anthropic account. First prompt in a project directory: <code>cd my-project &amp;&amp; claude</code>, then type <em>"Summarise this codebase in three paragraphs."</em> Claude Code reads the tree, samples key files, and responds. From there, try <em>"Find all places where we call the external API without retry logic."</em> — a task that would be tedious to do manually but runs in seconds. Claude Code billing, Pro/Max plan details, and full feature coverage are in Ch 13.</p>
+      <h4 class="ph">First run</h4>
+      <ul>
+        <li><code>claude login</code> opens a browser OAuth flow that ties the CLI to your Anthropic account.</li>
+        <li>First prompt in a project directory: <code>cd my-project &amp;&amp; claude</code>, then type <em>"Summarise this codebase in three paragraphs."</em> Claude Code reads the tree, samples key files, and responds.</li>
+        <li>From there, try <em>"Find all places where we call the external API without retry logic."</em> — a task that would be tedious to do manually but runs in seconds.</li>
+        <li>Claude Code billing, Pro/Max plan details, and full feature coverage are in Ch 13.</li>
+      </ul>
 
       <h2>5.5 Gemini CLI — what it is + first run</h2>
-      <p>Gemini CLI is Google's open-source terminal agent, backed by the Gemini model family and featuring a 1 million token context window. Its headline differentiator is the free tier available to anyone with a personal Google account: as of the time of writing, this provides approximately 1,000 requests per day at no charge — but always verify current limits at the official repository and Google AI Studio, as free-tier quotas are subject to change. The CLI is open-source and available at <strong><code>github.com/google-gemini/gemini-cli</code></strong> — check the repository for the current canonical package name and install method before running any command from a guide, as these have changed across releases.</p>
+      <h4 class="ph">What Gemini CLI is</h4>
+      <ul>
+        <li>Google's open-source terminal agent, backed by the Gemini model family and featuring a 1 million token context window.</li>
+        <li>Headline differentiator: free tier for anyone with a personal Google account — approximately 1,000 requests per day at no charge (always verify current limits at the official repository and Google AI Studio, as free-tier quotas are subject to change).</li>
+        <li>Available at <strong><code>github.com/google-gemini/gemini-cli</code></strong> — check the repository for the current canonical package name and install method before running any command from a guide, as these have changed across releases.</li>
+      </ul>
       <p>At the time of writing, the npm route is:</p>
       <pre>
 npm install -g @google/gemini-cli
 # or without a global install:
 npx @google/gemini-cli
       </pre>
-      <p>Authentication has three modes. <strong>Personal Google account</strong>: run <code>gemini</code>, choose the personal login option, and complete the browser OAuth flow — this gives you the free tier. <strong>API key</strong>: obtain a key from Google AI Studio (<code>aistudio.google.com</code>), set <code>GEMINI_API_KEY</code>, and run. <strong>Vertex AI</strong>: for enterprise deployments with GCP credentials and data residency requirements. First prompt: in any directory, type <em>"List the top three security concerns in this codebase."</em> The 1M context window means Gemini CLI can ingest very large repos without chunking. Full feature coverage is in Ch 14.</p>
+      <h4 class="ph">Authentication modes and first run</h4>
+      <ul>
+        <li><strong>Personal Google account:</strong> run <code>gemini</code>, choose the personal login option, and complete the browser OAuth flow — this gives you the free tier.</li>
+        <li><strong>API key:</strong> obtain a key from Google AI Studio (<code>aistudio.google.com</code>), set <code>GEMINI_API_KEY</code>, and run.</li>
+        <li><strong>Vertex AI:</strong> for enterprise deployments with GCP credentials and data residency requirements.</li>
+        <li>First prompt: in any directory, type <em>"List the top three security concerns in this codebase."</em> The 1M context window means Gemini CLI can ingest very large repos without chunking.</li>
+        <li>Full feature coverage is in Ch 14.</li>
+      </ul>
 
       <h2>5.6 IDE strengths vs terminal strengths</h2>
-      <p>IDE-resident tools shine when the feedback loop is visual and iterative. Inline diff review — where each proposed change appears highlighted in the exact line it modifies — is genuinely faster than reading a patch in the terminal when you are editing a single file or a small cluster of related files. IDE tools also benefit from zero context-setup cost: the tool already knows which file you have open, what your cursor is on, and what the compiler is currently complaining about. For developers new to agentic coding, the IDE surface reduces the learning curve because the interaction feels like pair programming rather than CLI operations.</p>
-      <p>Terminal-resident tools have a different set of strengths that compound over time. They are scriptable: you can drive them from shell scripts, Makefiles, GitHub Actions, or any orchestration layer without a GUI. They compose with existing Unix tooling — pipe output to <code>grep</code>, chain them with <code>&&</code>, background them with <code>&amp;</code>. They run headlessly in CI pipelines, enabling automated code review, security scanning, or documentation generation on every pull request. They also tend to give the user more explicit control over context, which matters for large codebases where automated context injection can bloat token costs.</p>
-      <p>A practical heuristic: reach for the IDE tool when you are actively editing and want to stay in flow; reach for the terminal tool when you want to automate, batch, run in CI, or operate across multiple repositories at once.</p>
+      <h4 class="ph">Where IDE tools shine</h4>
+      <ul>
+        <li>Inline diff review — each proposed change appears highlighted in the exact line it modifies — is genuinely faster than reading a patch in the terminal for single-file or small-cluster edits.</li>
+        <li>Zero context-setup cost: the tool already knows which file you have open, what your cursor is on, and what the compiler is currently complaining about.</li>
+        <li>For developers new to agentic coding, the IDE surface reduces the learning curve because the interaction feels like pair programming rather than CLI operations.</li>
+      </ul>
+      <h4 class="ph">Where terminal tools compound over time</h4>
+      <ul>
+        <li>Scriptable: drive from shell scripts, Makefiles, GitHub Actions, or any orchestration layer without a GUI.</li>
+        <li>Compose with existing Unix tooling — pipe output to <code>grep</code>, chain with <code>&&</code>, background with <code>&amp;</code>.</li>
+        <li>Run headlessly in CI pipelines for automated code review, security scanning, or documentation generation on every pull request.</li>
+        <li>Give the user more explicit control over context, which matters for large codebases where automated context injection can bloat token costs.</li>
+      </ul>
+      <h4 class="ph">The practical heuristic</h4>
+      <ul>
+        <li>Reach for the IDE tool when you are actively editing and want to stay in flow.</li>
+        <li>Reach for the terminal tool when you want to automate, batch, run in CI, or operate across multiple repositories at once.</li>
+      </ul>
 
       <div class="cmp">
         <div class="cmp-c">
@@ -1636,14 +2097,38 @@ npx @google/gemini-cli
       </div>
 
       <h2>5.7 Claude Code vs Gemini CLI — the terminal-vs-terminal choice</h2>
-      <p>Both Claude Code and Gemini CLI are terminal-resident agentic coding tools, and they overlap significantly in capability. Both can read your codebase, write code, run shell commands, and execute multi-step tasks. The practical differences come down to model family, context window, billing model, and ecosystem integration.</p>
-      <p>Claude Code is backed by Anthropic's Claude model family (Opus, Sonnet, Haiku). It has a strong reputation for following nuanced instructions precisely and for producing clean, idiomatic code. It integrates tightly with Anthropic's MCP ecosystem and exposes a powerful hooks system. <strong>Billing is not free: Claude Code requires either an Anthropic Pro or Max subscription, or an API key billed per token.</strong> There is no genuine free tier for production use.</p>
-      <p>Gemini CLI is backed by Google's Gemini model family and offers a 1 million token context window — significantly larger than Claude's current limits — which is a material advantage for tasks that require ingesting entire large codebases at once. <strong>The billing asymmetry is real and significant: Gemini CLI provides a genuine free tier via personal Google account, with approximately 1,000 requests per day at no charge (verify current limits at the official repo and AI Studio).</strong> For learners, side projects, and low-volume automation, this makes Gemini CLI the lower-friction entry point. For teams with existing Anthropic contracts or strong Claude-model preferences, Claude Code will often be the natural choice.</p>
+      <p>Both tools are terminal-resident agentic coding tools with significant capability overlap: both can read your codebase, write code, run shell commands, and execute multi-step tasks. The practical differences come down to model family, context window, billing model, and ecosystem integration.</p>
+      <h4 class="ph">Claude Code</h4>
+      <ul>
+        <li>Backed by Anthropic's Claude model family (Opus, Sonnet, Haiku). Strong reputation for following nuanced instructions precisely and producing clean, idiomatic code.</li>
+        <li>Integrates tightly with Anthropic's MCP ecosystem and exposes a powerful hooks system.</li>
+        <li><strong>Billing is not free:</strong> requires either an Anthropic Pro or Max subscription, or an API key billed per token. There is no genuine free tier for production use.</li>
+      </ul>
+      <h4 class="ph">Gemini CLI</h4>
+      <ul>
+        <li>Backed by Google's Gemini model family. Offers a 1 million token context window — significantly larger than Claude's current limits — a material advantage for ingesting entire large codebases at once.</li>
+        <li><strong>Billing asymmetry is real and significant:</strong> genuine free tier via personal Google account, with approximately 1,000 requests per day at no charge (verify current limits at the official repo and AI Studio).</li>
+        <li>For learners, side projects, and low-volume automation: lower-friction entry point. For teams with existing Anthropic contracts or strong Claude-model preferences: Claude Code will often be the natural choice.</li>
+      </ul>
 
       <h2>5.8 Working in multiple tools at once</h2>
-      <p>Nothing prevents you from running more than one agentic tool on the same codebase simultaneously, and in practice many professional engineers do. The most common pairing is <strong>Kilo Code for active editing + Claude Code (or Gemini CLI) for review and security scanning</strong>. The workflow looks like this: Kilo Code makes a batch of changes in the IDE, you commit or stash them, and then you invoke Claude Code from the terminal with a prompt like <em>"Review the changes I just made for security issues, off-by-one errors, and missing error handling."</em> The terminal agent reads the diff independently and surfaces concerns that the in-IDE tool missed — because it is operating from a fresh, unanchored perspective rather than the same context frame that generated the code.</p>
-      <p>Another useful pairing is <strong>Claude Code for implementation + Gemini CLI for a second opinion on architecture</strong>. Because both are terminal-resident, you can run them sequentially in the same shell session, feeding the output of one as context to the other. This is not a workflow most tutorials teach, but it is one of the highest-leverage habits an agentic engineer can develop: using model diversity as a quality gate rather than relying on a single model's blind spots.</p>
-      <p>The main caveat when running multiple tools simultaneously is write conflicts. Establish a clear ownership rule: one tool writes, others read-only review. Never let two agents write to the same files concurrently without a coordination layer.</p>
+      <h4 class="ph">Kilo Code + terminal agent (most common pairing)</h4>
+      <ul>
+        <li>Kilo Code for active editing + Claude Code (or Gemini CLI) for review and security scanning.</li>
+        <li>Workflow: Kilo Code makes a batch of changes in the IDE, you commit or stash them, then invoke Claude Code from the terminal: <em>"Review the changes I just made for security issues, off-by-one errors, and missing error handling."</em></li>
+        <li>The terminal agent reads the diff independently — operating from a fresh, unanchored perspective rather than the same context frame that generated the code — and surfaces concerns the in-IDE tool missed.</li>
+      </ul>
+      <h4 class="ph">Claude Code + Gemini CLI (model diversity as quality gate)</h4>
+      <ul>
+        <li>Claude Code for implementation + Gemini CLI for a second opinion on architecture.</li>
+        <li>Both are terminal-resident — run them sequentially in the same shell session, feeding the output of one as context to the other.</li>
+        <li>Using model diversity as a quality gate rather than relying on a single model's blind spots is one of the highest-leverage habits an agentic engineer can develop.</li>
+      </ul>
+      <h4 class="ph">The write-conflict caveat</h4>
+      <ul>
+        <li>Establish a clear ownership rule: one tool writes, others read-only review.</li>
+        <li>Never let two agents write to the same files concurrently without a coordination layer.</li>
+      </ul>
 
       <h2>5.9 The wider field — IDE-resident alternatives</h2>
       <p>Kilo Code is this guide's primary IDE-resident tool, but the IDE-resident category is crowded and rapidly evolving. The six tools below are the most-referenced alternatives at the time of writing. Each has a genuine user community and a distinct value proposition. This guide does not deep-dive them — the intent here is to give you enough orientation to evaluate them against the primary tools and your own workflow.</p>
@@ -1796,13 +2281,36 @@ npx @google/gemini-cli
 
       <h2>5.12 Hands-on: same task in two of three, compare</h2>
       <p>The goal of this exercise is to develop <em>felt intuition</em> about tool differences — not just read about them. Pick one of the following tasks and run it in two of the three primary tools. Record what you observe: how long it took, what context was required, how the output differed, and what the interaction felt like.</p>
-      <p><strong>Suggested task A (IDE vs terminal):</strong> Open a small project (your own, or clone a simple open-source repo). In <strong>Kilo Code</strong>, use Code mode to prompt: <em>"Add input validation to every public function that currently has none."</em> Accept or reject the diffs as you review them. Then, without resetting the code, run <strong>Claude Code</strong> or <strong>Gemini CLI</strong> in the same directory with: <em>"Review the recent changes for missing edge cases or error conditions."</em> Note how the terminal agent sees the same code, what it surfaces, and how the feedback loop feels different.</p>
-      <p><strong>Suggested task B (terminal vs terminal):</strong> In any project directory, run <strong>Claude Code</strong>: <em>"List the top five architectural concerns in this codebase with a short rationale for each."</em> Then run <strong>Gemini CLI</strong> with the identical prompt. Compare the two outputs side by side. Note differences in style, depth, what each missed, and how the 1M context window affects Gemini's ability to reference specific file locations. There is no single correct answer — the comparison itself is the learning.</p>
-      <p>After both runs, write a two-sentence note to yourself about which tool you would reach for first for this class of task and why. That note, accumulated over several exercises, becomes your personal decision matrix — more accurate than any generic table.</p>
+      <h4 class="ph">Suggested task A — IDE vs terminal</h4>
+      <ul>
+        <li>Open a small project (your own, or clone a simple open-source repo). In <strong>Kilo Code</strong>, use Code mode: <em>"Add input validation to every public function that currently has none."</em> Accept or reject the diffs as you review them.</li>
+        <li>Then, without resetting the code, run <strong>Claude Code</strong> or <strong>Gemini CLI</strong> in the same directory: <em>"Review the recent changes for missing edge cases or error conditions."</em></li>
+        <li>Note how the terminal agent sees the same code, what it surfaces, and how the feedback loop feels different.</li>
+      </ul>
+      <h4 class="ph">Suggested task B — terminal vs terminal</h4>
+      <ul>
+        <li>In any project directory, run <strong>Claude Code</strong>: <em>"List the top five architectural concerns in this codebase with a short rationale for each."</em> Then run <strong>Gemini CLI</strong> with the identical prompt.</li>
+        <li>Compare side by side: note differences in style, depth, what each missed, and how the 1M context window affects Gemini's ability to reference specific file locations.</li>
+        <li>There is no single correct answer — the comparison itself is the learning.</li>
+      </ul>
+      <h4 class="ph">After both runs</h4>
+      <ul>
+        <li>Write a two-sentence note to yourself about which tool you would reach for first for this class of task and why.</li>
+        <li>That note, accumulated over several exercises, becomes your personal decision matrix — more accurate than any generic table.</li>
+      </ul>
 
       <h2>5.13 Where next: pointers into Part 3 deep-dives</h2>
-      <p>This chapter gave you a working install, a first run, and a framework for choosing between surfaces. From here, Part 3 unpacks each of the three primary tools at full depth: configuration, advanced modes, MCP integrations, billing optimisation, and real-world workflow patterns. The deep-dives are designed to be read after this chapter and in any order — you do not need to read all three before moving on to Part 4.</p>
-      <p>If you are going to read only one, choose based on the tool you just found yourself reaching for most naturally in the 5.12 hands-on. That preference — even if provisional — is the right signal to follow. The mental models from any one deep-dive will accelerate your reading of the others because the underlying concepts (context management, token budgeting, model routing, MCP) are shared across all three tools.</p>
+      <h4 class="ph">What Part 3 covers</h4>
+      <ul>
+        <li>This chapter gave you a working install, a first run, and a framework for choosing between surfaces.</li>
+        <li>Part 3 unpacks each of the three primary tools at full depth: configuration, advanced modes, MCP integrations, billing optimisation, and real-world workflow patterns.</li>
+        <li>The deep-dives are designed to be read after this chapter and in any order — you do not need to read all three before moving on to Part 4.</li>
+      </ul>
+      <h4 class="ph">Which deep-dive to read first</h4>
+      <ul>
+        <li>If you are going to read only one, choose based on the tool you found yourself reaching for most naturally in the 5.12 hands-on. That preference — even if provisional — is the right signal to follow.</li>
+        <li>The mental models from any one deep-dive will accelerate your reading of the others because the underlying concepts (context management, token budgeting, model routing, MCP) are shared across all three tools.</li>
+      </ul>
 
       <div class="see-also">
         <a onclick="go('ch12-kilo')">→ Ch 12. Kilo Code Deep Dive (modes &amp; routing)</a>
