@@ -5120,8 +5120,20 @@ if __name__ == "__main__":
       <p>These eight bullets are the acceptance criteria. All three passes below must satisfy all eight. Any pass that ships without satisfying them is incomplete — that is the point of writing them down before touching code.</p>
 
       <h2>17.2 Why multiple passes — different surfaces, different lessons</h2>
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Pass 1 · Kilo Code</div><div class="flv-desc">IDE, mode-driven (Architect → Code → Debug), full pipeline.</div></div>
+        <div class="flv"><div class="flv-name">Pass 2 · Claude Code</div><div class="flv-desc">Terminal, parallel subagents + worktrees, /ultrareview.</div></div>
+        <div class="flv"><div class="flv-name">Pass 3 · Gemini CLI</div><div class="flv-desc">Free tier, 1M context window, highlights vs Pass 2.</div></div>
+      </div>
       <p>The same feature built with three different tools exposes things a single-tool walkthrough cannot. Kilo Code is IDE-embedded, mode-switching, and optimised for tight edit-test loops inside a project that is already open. Claude Code is terminal-first, operates on the whole repository without an IDE host, and has first-class multi-agent dispatch. Gemini CLI has a free-tier cost model and a 1M-token context window that changes how you think about compaction and context strategy. No tool dominates on all three dimensions: cost, speed, and ergonomics. That is the lesson the comparison table in §17.13 is designed to make concrete.</p>
       <p>The secondary reason for multiple passes is that real engineering teams are not monolithic. Some teammates live in their IDE; some live in the terminal; some are on free-tier accounts. Showing the same feature end-to-end in each environment means this chapter is relevant regardless of which tool you reach for. The methodology — spec first, plan before coding, TDD as the control rod, review before merge, parallel only when truly independent — is identical in all three passes. Only the surface syntax changes.</p>
+
+      <div class="stp"><div class="stp-h"><div class="stp-n grn">1</div><div class="stp-t">Brainstorm + Spec</div></div><p>Write the acceptance criteria before touching code. Architect mode or <code>superpowers:brainstorming</code> → OpenSpec / SpecKit output.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Plan</div></div><p>Decompose into TDD-ordered tasks naming exact files and verification commands. Review with the five-point checklist from Ch 7.6.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">TDD</div></div><p>Write failing test → confirm red → implement → verify green → commit. Repeat per task. The test suite is the control rod.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n red">4</div><div class="stp-t">Debug</div></div><p>Inject or encounter a real bug. Use Debug mode / <code>/systematic-debugging</code> to isolate root cause before touching code.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n pur">5</div><div class="stp-t">Review</div></div><p>Agent review, <code>/security-review</code>, or <code>/ultrareview</code>. Block on real findings; every fix is a quality investment, not a delay.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n grn">6</div><div class="stp-t">Ship</div></div><p>Open PR with <code>gh pr create</code>, confirm CI green, merge. Capture wall-clock time and token cost for the pass comparison.</p></div>
 
       <h2>17.3 Pass 1 (Kilo Code) — brainstorm + spec + plan</h2>
       <p>Open your project in VS Code with the Kilo Code extension active. The acceptance criteria from §17.1 are already written (they came from the Ch 6.11 walkthrough, which produced <code>openspec/specs/gitlog-report.md</code>). Switch Kilo Code to <strong>Architect mode</strong> — the mode designed for design-level work without direct file edits. The relevant mode mechanics are covered in Ch 12; the short version is: Architect mode can read all files but will not write them without your approval. Paste the brief:</p>
@@ -5451,6 +5463,13 @@ gh pr merge --squash</code></pre>
     <section id="ref-decisions" class="section">
       <h1>Decision Frameworks</h1>
       <p class="lede">Choose-the-right-thing matrices distilled from the rest of the guide. Each links back to the chapter that explains the underlying reasoning.</p>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Tool choice</div><div class="flv-desc">Kilo Code vs Claude Code vs Gemini CLI — see the "Which tool?" matrix below.</div></div>
+        <div class="flv"><div class="flv-name">Model choice</div><div class="flv-desc">Opus vs Sonnet vs Haiku vs Flash — see the "Which model?" matrix below.</div></div>
+        <div class="flv"><div class="flv-name">Mode / skill choice</div><div class="flv-desc">Architect, Code, Debug, Ask, or skill — see the "Which mode or skill?" matrix below.</div></div>
+        <div class="flv"><div class="flv-name">Spec system choice</div><div class="flv-desc">OpenSpec vs SpecKit vs ad-hoc — see the "Which spec system?" matrix below.</div></div>
+      </div>
 
       <!-- Matrix 1: Which tool -->
       <h2>Which tool?</h2>
@@ -5801,6 +5820,16 @@ Is the task trivial? (single file, &lt; 5 lines, zero risk)
     <section id="ref-cheats" class="section">
       <h1>Cheat Sheets</h1>
       <p class="lede">Quick-reference cards for the major tools and conventions in this guide. Use these when you know the concept and just need to look up the command, the flag, or the file template.</p>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Kilo Code</div><div class="flv-desc">Install, modes, custom mode YAML, MCP wiring.</div></div>
+        <div class="flv"><div class="flv-name">Claude Code</div><div class="flv-desc">CLI flags, slash commands, skills, subagent dispatch.</div></div>
+        <div class="flv"><div class="flv-name">Gemini CLI</div><div class="flv-desc">Install, /chat vs /code, context flags, free-tier limits.</div></div>
+        <div class="flv"><div class="flv-name">MCP</div><div class="flv-desc">Server config, tool call anatomy, auth patterns.</div></div>
+        <div class="flv"><div class="flv-name">OpenSpec</div><div class="flv-desc">Spec file layout, <code>openspec accept/archive</code> commands.</div></div>
+        <div class="flv"><div class="flv-name">SpecKit</div><div class="flv-desc">/specify workflow, template fields, diff review loop.</div></div>
+        <div class="flv"><div class="flv-name">Superpowers</div><div class="flv-desc">Skill invocation, worktrees, parallel dispatch, /ultrareview.</div></div>
+      </div>
 
       <!-- ── Kilo Code ── -->
       <h2>Kilo Code</h2>
