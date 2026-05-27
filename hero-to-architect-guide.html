@@ -2324,15 +2324,40 @@ npx @google/gemini-cli
       <p class="lede">What you'll learn: why specs matter when agents code at speed, two production approaches (OpenSpec and SpecKit) to driving features through specs, how they differ, and how to apply either to a real CLI tool.</p>
 
       <h2>6.1 Why specs matter when agents code fast</h2>
-      <p>Agentic coding tools can generate hundreds of lines of working code in seconds. That speed is their greatest asset — and it is also the source of a subtle, compounding risk: <strong>drift is cheap, drift recovery is expensive.</strong></p>
-      <p>When a human writes code slowly, each line of implementation is a moment of conscious alignment with intent. When an agent writes code fast, that alignment check collapses. The agent will produce code that compiles, passes tests, and looks plausible — but may be solving a slightly different problem than the one you actually have. The first sign of drift is often not a failing test but a code review comment like "this isn't quite what I asked for," or worse, a production bug that traces back to a misunderstood requirement.</p>
-      <p>The traditional countermeasure is code review. But code review catches drift <em>after</em> implementation. At agentic speed, a single session can produce changes across dozens of files before anyone looks at a diff. By the time drift is detected, the agent has built more on top of it — integration points, tests, documentation. The cost of unwinding grows non-linearly.</p>
-      <p>The right countermeasure is <strong>a spec written before the agent writes the first line of code.</strong> A spec externalises intent into a form the agent can read, reason over, and be held to. It becomes the ground truth that resolves ambiguity — not memory, not conversation history, not hope. When the spec is versioned alongside the code, drift becomes visible as a diff between the spec and the implementation, not as a mysterious behavior in production.</p>
-      <p>Specs also solve a second problem: context degradation. Long agent sessions lose fidelity. The spec file, re-injected at the start of each session, restores full context instantly. It is the cheapest possible form of persistent memory.</p>
-      <p>The time investment in writing a spec is almost always recovered in the first session it prevents from going sideways. At scale — multiple engineers, multiple agents, multiple concurrent features — specs are not overhead; they are the coordination layer that makes agentic development coherent.</p>
+      <h4 class="ph">Drift is cheap; drift recovery is expensive</h4>
+      <ul>
+        <li>Agentic coding tools can generate hundreds of lines of working code in seconds — their greatest asset and the source of a subtle, compounding risk.</li>
+        <li>When a human writes code slowly, each line is a moment of conscious alignment with intent. When an agent writes code fast, that alignment check collapses.</li>
+        <li>The agent will produce code that compiles, passes tests, and looks plausible — but may be solving a slightly different problem than the one you actually have.</li>
+        <li>The first sign of drift is often not a failing test but a code review comment like "this isn't quite what I asked for," or worse, a production bug that traces back to a misunderstood requirement.</li>
+      </ul>
+      <h4 class="ph">Why code review is too late</h4>
+      <ul>
+        <li>Code review catches drift <em>after</em> implementation. At agentic speed, a single session can produce changes across dozens of files before anyone looks at a diff.</li>
+        <li>By the time drift is detected, the agent has built more on top of it — integration points, tests, documentation. The cost of unwinding grows non-linearly.</li>
+      </ul>
+      <h4 class="ph">The right countermeasure: spec first</h4>
+      <ul>
+        <li>A spec written before the agent writes the first line of code externalises intent into a form the agent can read, reason over, and be held to.</li>
+        <li>It becomes the ground truth that resolves ambiguity — not memory, not conversation history, not hope.</li>
+        <li>When the spec is versioned alongside the code, drift becomes visible as a diff between the spec and the implementation, not as a mysterious behavior in production.</li>
+      </ul>
+      <h4 class="ph">Specs also cure context degradation</h4>
+      <ul>
+        <li>Long agent sessions lose fidelity. The spec file, re-injected at the start of each session, restores full context instantly.</li>
+        <li>It is the cheapest possible form of persistent memory.</li>
+        <li>The time investment in writing a spec is almost always recovered in the first session it prevents from going sideways.</li>
+        <li>At scale — multiple engineers, multiple agents, multiple concurrent features — specs are not overhead; they are the coordination layer that makes agentic development coherent.</li>
+      </ul>
 
       <h2>6.2 The contract — spec → behavior → tests</h2>
-      <p>A spec is not documentation written after the fact. It is a <strong>contract</strong>: a formal statement of what a feature must do, written before implementation begins. The contract has three parties: the spec that describes behavior, the implementation that realises it, and the tests that enforce it. When all three are in sync, you have working software. When any two diverge, you have a bug, a doc mistake, or a test gap — all recoverable. When all three diverge independently, you have an undocumented feature that no-one can safely change.</p>
+      <h4 class="ph">What a spec actually is</h4>
+      <ul>
+        <li>A spec is not documentation written after the fact — it is a <strong>contract</strong>: a formal statement of what a feature must do, written before implementation begins.</li>
+        <li>The contract has three parties: the spec that describes behavior, the implementation that realises it, and the tests that enforce it.</li>
+        <li>When all three are in sync, you have working software. When any two diverge, you have a bug, a doc mistake, or a test gap — all recoverable.</li>
+        <li>When all three diverge independently, you have an undocumented feature that no-one can safely change.</li>
+      </ul>
 
       <div style="font-family:monospace; font-size:0.88rem; line-height:1.7; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem 1.6rem; margin:1.2rem 0;">
         <div style="display:flex; align-items:center; justify-content:center; gap:2rem; flex-wrap:wrap;">
@@ -2359,12 +2384,21 @@ npx @google/gemini-cli
         </div>
       </div>
 
-      <p>The agent's role in this triangle is mechanical: it reads the spec as its primary context, generates implementation to satisfy it, and then runs or writes the tests that prove the contract holds. The human's role is to write and review the spec — the one artifact in the triangle that requires genuine domain understanding and product judgment. Everything else can be delegated.</p>
-      <p>This framing has a useful implication: <strong>the spec is the only artifact an agent cannot write for you.</strong> An agent can refine a draft spec, suggest edge cases, and flag ambiguities — but the initial "this is what it must do" judgment is irreducibly human. Investing time here is not overhead; it is the work.</p>
+      <h4 class="ph">Roles in the triangle</h4>
+      <ul>
+        <li>The agent's role is mechanical: read the spec as primary context, generate implementation to satisfy it, then run or write tests that prove the contract holds.</li>
+        <li>The human's role is to write and review the spec — the one artifact that requires genuine domain understanding and product judgment. Everything else can be delegated.</li>
+        <li><strong>The spec is the only artifact an agent cannot write for you.</strong> An agent can refine a draft spec, suggest edge cases, and flag ambiguities — but the initial "this is what it must do" judgment is irreducibly human.</li>
+        <li>Investing time here is not overhead; it is the work.</li>
+      </ul>
 
       <h2>6.3 OpenSpec model — workspace and proposals</h2>
-      <p>OpenSpec is an open-source specification management system designed for codebases where specs live alongside code in git. The core idea is that specs are <em>first-class files</em>, not wiki pages or tickets. They live in a versioned workspace, they are updated through a formal change process, and they are archived (not deleted) when superseded.</p>
-      <p><strong>Note:</strong> The directory layout below reflects the OpenSpec model at the time of writing. Always verify the current canonical structure against the official repository at <code>github.com/Fission-AI/OpenSpec</code> before adopting it — directory names and file conventions have evolved across versions.</p>
+      <p>OpenSpec is an open-source specification management system designed for codebases where specs live alongside code in git.</p>
+      <h4 class="ph">Core idea</h4>
+      <ul>
+        <li>Specs are <em>first-class files</em>, not wiki pages or tickets — they live in a versioned workspace, are updated through a formal change process, and are archived (not deleted) when superseded.</li>
+        <li><strong>Note:</strong> The directory layout below reflects the OpenSpec model at the time of writing. Always verify the current canonical structure against the official repository at <code>github.com/Fission-AI/OpenSpec</code> before adopting it — directory names and file conventions have evolved across versions.</li>
+      </ul>
 
       <pre>
 openspec/
@@ -2381,13 +2415,35 @@ openspec/
         └── add-gitlog-report/    # original structure preserved
       </pre>
 
-      <p>The lifecycle of an OpenSpec change moves through three states: <strong>proposed</strong> (in <code>openspec/changes/&lt;id&gt;/</code>), <strong>accepted</strong> (spec promoted to <code>openspec/specs/</code>, change directory moved to <code>openspec/changes/archive/</code>), and <strong>rejected</strong> (moved to archive without promotion). The archive discipline is intentional: rejected or superseded proposals are preserved for audit and context, not deleted.</p>
-      <p>The <strong>canonical specs</strong> in <code>openspec/specs/</code> are the authoritative source of truth. Agents are expected to read from this directory before implementing any feature. The <strong>changes</strong> directory is ephemeral working space — it holds proposals under review and disappears from the active tree on acceptance.</p>
-      <p>CLI operations cover lifecycle management only: <code>openspec list</code> (show active changes), <code>openspec show &lt;id&gt;</code> (display a change's proposal and delta specs), <code>openspec validate</code> (lint spec structure), <code>openspec archive &lt;id&gt;</code> (move an accepted change to the archive). Content — writing the spec, reasoning about it — is handled by the AI slash commands, not the CLI.</p>
+      <h4 class="ph">Change lifecycle: three states</h4>
+      <ul>
+        <li><strong>Proposed</strong> — in <code>openspec/changes/&lt;id&gt;/</code>.</li>
+        <li><strong>Accepted</strong> — spec promoted to <code>openspec/specs/</code>; change directory moved to <code>openspec/changes/archive/</code>.</li>
+        <li><strong>Rejected</strong> — moved to archive without promotion.</li>
+        <li>The archive discipline is intentional: rejected or superseded proposals are preserved for audit and context, not deleted.</li>
+      </ul>
+      <h4 class="ph">Canonical specs vs. changes directory</h4>
+      <ul>
+        <li>The <strong>canonical specs</strong> in <code>openspec/specs/</code> are the authoritative source of truth. Agents are expected to read from this directory before implementing any feature.</li>
+        <li>The <strong>changes</strong> directory is ephemeral working space — it holds proposals under review and disappears from the active tree on acceptance.</li>
+      </ul>
+      <h4 class="ph">CLI operations (lifecycle only)</h4>
+      <ul>
+        <li><code>openspec list</code> — show active changes.</li>
+        <li><code>openspec show &lt;id&gt;</code> — display a change's proposal and delta specs.</li>
+        <li><code>openspec validate</code> — lint spec structure.</li>
+        <li><code>openspec archive &lt;id&gt;</code> — move an accepted change to the archive.</li>
+        <li>Content — writing the spec, reasoning about it — is handled by the AI slash commands, not the CLI.</li>
+      </ul>
 
       <h2>6.4 OpenSpec workflow walk-through</h2>
       <p>This walk-through uses <code>gitlog-report</code> — a CLI tool that reads git log and produces a per-author contribution summary — as the running example. Every step is reproducible in any project that has OpenSpec installed.</p>
-      <p><strong>Note on slash commands:</strong> OpenSpec's AI integration uses slash commands (e.g. in Claude Code or compatible shells) to drive change creation. The exact command name may vary with OpenSpec version — always check the current README at <code>github.com/Fission-AI/OpenSpec</code>. At the time of writing, the command pattern is <code>/opsx:propose &lt;change-id&gt;</code>.</p>
+      <h4 class="ph">Note on slash commands</h4>
+      <ul>
+        <li>OpenSpec's AI integration uses slash commands (e.g. in Claude Code or compatible shells) to drive change creation.</li>
+        <li>The exact command name may vary with OpenSpec version — always check the current README at <code>github.com/Fission-AI/OpenSpec</code>.</li>
+        <li>At the time of writing, the command pattern is <code>/opsx:propose &lt;change-id&gt;</code>.</li>
+      </ul>
 
       <pre>
 # Step 1 — create a new change proposal via AI slash command
@@ -2419,7 +2475,7 @@ into a per-author contribution summary, supporting JSON and Markdown output.
 `openspec/changes/add-gitlog-report/specs/gitlog-report.md`
       </pre>
 
-      <p>You then write or review the delta spec in <code>openspec/changes/add-gitlog-report/specs/gitlog-report.md</code>. Once the spec is approved (by review, PR merge, or team sign-off), accept the change:</p>
+      <p>You then write or review the delta spec in <code>openspec/changes/add-gitlog-report/specs/gitlog-report.md</code>. Once the spec is approved (by review, PR merge, or team sign-off), accept the change.</p>
       <pre>
 # Step 2 — validate the spec structure
 openspec validate
@@ -2436,11 +2492,19 @@ openspec archive add-gitlog-report
 #         → openspec/changes/archive/add-gitlog-report/
       </pre>
 
-      <p>The agent can now be invoked with: <em>"Implement <code>gitlog-report</code> according to <code>openspec/specs/gitlog-report.md</code>."</em> The spec is the contract; the canonical location is stable; the agent has no ambiguity about what to build.</p>
+      <h4 class="ph">After acceptance</h4>
+      <ul>
+        <li>The agent can now be invoked with: <em>"Implement <code>gitlog-report</code> according to <code>openspec/specs/gitlog-report.md</code>."</em></li>
+        <li>The spec is the contract; the canonical location is stable; the agent has no ambiguity about what to build.</li>
+      </ul>
 
       <h2>6.5 SpecKit model — slash commands and artifacts</h2>
       <p>SpecKit takes a different philosophy: rather than a file-system workspace with a CLI lifecycle, it provides a set of AI slash commands that each write a specific artifact into a feature-scoped directory. The workflow is <strong>slash-command-driven</strong> rather than file-system-driven, and it is designed to work natively inside Claude Code or compatible AI environments.</p>
-      <p><strong>Note:</strong> SpecKit's directory structure and exact slash command names may differ from what is shown below. Always verify the current artifact layout and command names against the official SpecKit documentation before adopting the pattern in a new project.</p>
+      <h4 class="ph">Note on naming</h4>
+      <ul>
+        <li>SpecKit's directory structure and exact slash command names may differ from what is shown below.</li>
+        <li>Always verify the current artifact layout and command names against the official SpecKit documentation before adopting the pattern in a new project.</li>
+      </ul>
       <p>The four primary slash commands and their outputs:</p>
       <table class="tbl">
         <thead>
@@ -2453,11 +2517,16 @@ openspec archive add-gitlog-report
           <tr><td><code>/implement &lt;feature&gt;</code></td><td>source files</td><td>Execute the tasks, writing code against spec + plan</td></tr>
         </tbody>
       </table>
-      <p>Artifacts are written into a feature-scoped directory — the exact path pattern depends on the SpecKit version; common conventions include <code>.specify/specs/&lt;feature&gt;/</code> or <code>specs/&lt;NNN-feature&gt;/</code>. The key invariant is that each feature gets its own isolated directory containing all four artifacts in sequence.</p>
-      <p>The slash-command model has two important properties. First, each command is <em>idempotent</em> — you can re-run <code>/specify</code> to refine the spec without losing the plan, because each artifact is a separate file. Second, each command reads its predecessors — <code>/plan</code> reads <code>spec.md</code>, <code>/tasks</code> reads both, <code>/implement</code> reads all three. The chain is self-documenting.</p>
+      <h4 class="ph">Artifact paths and self-documenting chain</h4>
+      <ul>
+        <li>Artifacts are written into a feature-scoped directory — the exact path pattern depends on the SpecKit version; common conventions include <code>.specify/specs/&lt;feature&gt;/</code> or <code>specs/&lt;NNN-feature&gt;/</code>.</li>
+        <li>The key invariant: each feature gets its own isolated directory containing all four artifacts in sequence.</li>
+        <li>Each command is <em>idempotent</em> — you can re-run <code>/specify</code> to refine the spec without losing the plan, because each artifact is a separate file.</li>
+        <li>Each command reads its predecessors — <code>/plan</code> reads <code>spec.md</code>, <code>/tasks</code> reads both, <code>/implement</code> reads all three. The chain is self-documenting.</li>
+      </ul>
 
       <h2>6.6 SpecKit workflow walk-through</h2>
-      <p>The same <code>gitlog-report</code> example, now in SpecKit terms. Starting in a project directory with SpecKit configured:</p>
+      <p>The same <code>gitlog-report</code> example, now in SpecKit terms. Starting in a project directory with SpecKit configured.</p>
       <pre>
 # Step 1 — specify the feature
 /specify gitlog-report
@@ -2509,7 +2578,12 @@ per-author contribution summary.
 # Agent works task by task, checks each off as it completes
       </pre>
 
-      <p>At every stage the artifact file is the ground truth. If the implementation diverges from <code>spec.md</code>, re-running <code>/implement</code> corrects it. If the spec changes, re-run <code>/plan</code> and <code>/tasks</code> to regenerate downstream artifacts before re-implementing.</p>
+      <h4 class="ph">Artifacts as ground truth</h4>
+      <ul>
+        <li>At every stage the artifact file is the ground truth.</li>
+        <li>If the implementation diverges from <code>spec.md</code>, re-running <code>/implement</code> corrects it.</li>
+        <li>If the spec changes, re-run <code>/plan</code> and <code>/tasks</code> to regenerate downstream artifacts before re-implementing.</li>
+      </ul>
 
       <h2>6.7 Side-by-side comparison</h2>
       <table class="tbl">
@@ -2588,7 +2662,7 @@ per-author contribution summary.
       </div>
 
       <h2>6.8 Decision matrix — when OpenSpec fits, when SpecKit fits</h2>
-      <p>Neither system is universally superior. The right choice depends on your team size, workflow maturity, tooling preferences, and how much process overhead is acceptable for the project's scale.</p>
+      <p>Neither system is universally superior. The right choice depends on team size, workflow maturity, tooling preferences, and how much process overhead is acceptable for the project's scale.</p>
       <table class="tbl">
         <thead>
           <tr><th>Signal</th><th>Reach for OpenSpec</th><th>Reach for SpecKit</th></tr>
@@ -2626,23 +2700,71 @@ per-author contribution summary.
           </tr>
         </tbody>
       </table>
-      <p>A useful heuristic: if your project already has a PR review process and you want specs to go through the same gates as code, OpenSpec's change-and-archive model maps naturally onto that workflow. If your project is a personal tool or a prototype where the bottleneck is speed of iteration rather than coordination, SpecKit's slash-command chain gives you the discipline of specs without the ceremony.</p>
-      <p>The two systems are not mutually exclusive. Some teams adopt SpecKit for rapid early-stage work and migrate to OpenSpec as the project matures and more contributors join.</p>
+      <h4 class="ph">Decision heuristics</h4>
+      <ul>
+        <li>If your project already has a PR review process and you want specs to go through the same gates as code, OpenSpec's change-and-archive model maps naturally onto that workflow.</li>
+        <li>If your project is a personal tool or a prototype where the bottleneck is speed of iteration rather than coordination, SpecKit's slash-command chain gives you the discipline of specs without the ceremony.</li>
+        <li>The two systems are not mutually exclusive — some teams adopt SpecKit for rapid early-stage work and migrate to OpenSpec as the project matures and more contributors join.</li>
+      </ul>
 
       <h2>6.9 Living with specs — drift, refactoring, archiving</h2>
-      <p>Specs are not write-once artifacts. Code evolves, requirements change, and the spec that was accurate in month one will drift from the implementation by month three — unless you actively maintain it. The question is not whether drift will happen, but how you detect and correct it.</p>
-      <p><strong>Detecting drift:</strong> The simplest technique is to include a "spec review" step in your regular code review process. When a PR modifies a feature, check whether the corresponding spec file was also updated. If the implementation changed but the spec did not, flag it. Some teams run a periodic "spec audit" session — every quarter, read through the canonical specs and run a quick prompt: <em>"Does the current implementation of &lt;feature&gt; match this spec? Flag discrepancies."</em> The agent will surface them in minutes.</p>
-      <p><strong>Refactoring specs:</strong> When a feature genuinely changes scope or behavior, update the spec <em>first</em>, then update the implementation. This is the spec-driven equivalent of test-first development: the spec change is the declaration of intent, and the implementation change is the execution. In OpenSpec, this means creating a new change proposal for the spec update before touching the code. In SpecKit, it means re-running <code>/specify</code> with updated requirements before re-running <code>/plan</code> and <code>/implement</code>.</p>
-      <p><strong>Archiving specs:</strong> When a feature is deprecated or removed, do not delete its spec. Archive it (in OpenSpec this is handled by the archive lifecycle; in SpecKit, move the spec directory to an <code>archived/</code> subdirectory). Deleted specs disappear from the record; archived specs preserve the history of decisions. Future engineers — or future agents — will find context in archived specs that they cannot find anywhere else.</p>
-      <p><strong>Spec granularity creep:</strong> Over time, specs tend to accumulate detail. A 2-page spec becomes a 10-page spec as edge cases are documented, exceptions are catalogued, and historical context is appended. This is mostly healthy, but watch for the point where the spec becomes harder to parse than the code. If an agent takes 60 seconds of context-loading to read the spec before it can start work, the spec has grown too large. Consider splitting into a core spec (the contract) and a separate decisions log (the history).</p>
+      <p>Specs are not write-once artifacts. Code evolves, requirements change, and the spec accurate in month one will drift from the implementation by month three — unless you actively maintain it. The question is not whether drift will happen, but how you detect and correct it.</p>
+      <h4 class="ph">Detecting drift</h4>
+      <ul>
+        <li>Include a "spec review" step in your regular code review process: when a PR modifies a feature, check whether the corresponding spec file was also updated. If the implementation changed but the spec did not, flag it.</li>
+        <li>Some teams run a periodic "spec audit" session — every quarter, read through the canonical specs and run a quick prompt: <em>"Does the current implementation of &lt;feature&gt; match this spec? Flag discrepancies."</em> The agent will surface them in minutes.</li>
+      </ul>
+      <h4 class="ph">Refactoring specs</h4>
+      <ul>
+        <li>When a feature genuinely changes scope or behavior, update the spec <em>first</em>, then update the implementation — the spec-driven equivalent of test-first development.</li>
+        <li>The spec change is the declaration of intent; the implementation change is the execution.</li>
+        <li>In OpenSpec: create a new change proposal for the spec update before touching the code.</li>
+        <li>In SpecKit: re-run <code>/specify</code> with updated requirements before re-running <code>/plan</code> and <code>/implement</code>.</li>
+      </ul>
+      <h4 class="ph">Archiving specs</h4>
+      <ul>
+        <li>When a feature is deprecated or removed, do not delete its spec — archive it.</li>
+        <li>In OpenSpec: handled by the archive lifecycle. In SpecKit: move the spec directory to an <code>archived/</code> subdirectory.</li>
+        <li>Deleted specs disappear from the record; archived specs preserve the history of decisions. Future engineers — or future agents — will find context in archived specs that they cannot find anywhere else.</li>
+      </ul>
+      <h4 class="ph">Spec granularity creep</h4>
+      <ul>
+        <li>Over time, specs accumulate detail — a 2-page spec becomes a 10-page spec as edge cases are documented, exceptions catalogued, and historical context appended. This is mostly healthy.</li>
+        <li>Watch for the point where the spec becomes harder to parse than the code. If an agent takes 60 seconds of context-loading to read the spec before it can start work, the spec has grown too large.</li>
+        <li>Consider splitting into a core spec (the contract) and a separate decisions log (the history).</li>
+      </ul>
 
       <h2>6.10 Anti-patterns — speccing what doesn't need a spec</h2>
-      <p>Spec-driven development has real overhead. A spec file needs to be written, reviewed, maintained, and eventually archived. For the right features, this overhead is paid back many times over. For the wrong features, it is pure waste. Recognising the anti-patterns saves you from drowning in spec files for things that did not need one.</p>
-      <p><strong>Anti-pattern 1: Speccing trivial CRUD.</strong> If the feature is "add a /users/:id GET endpoint that returns the user by ID," the spec is already fully described by the sentence you just wrote plus the existing data model. Writing a formal spec file adds no information. The agent can implement this from a one-line prompt. Reserve specs for features with non-trivial business logic, multiple output formats, or behavior that cannot be inferred from naming conventions.</p>
-      <p><strong>Anti-pattern 2: Spec effort exceeds implementation effort.</strong> If writing and reviewing the spec takes longer than the implementation would have taken without one, the spec is not providing value at this scale. This most often happens with one-off scripts, migration scripts, or throwaway tooling. If the tool will be used once and discarded, a spec is overhead with no return. A rough prompt is sufficient.</p>
-      <p><strong>Anti-pattern 3: Specs that drift untouched.</strong> A spec that no-one updates is worse than no spec — it actively misleads. Agents that read a stale spec will implement against outdated requirements with full confidence, because they have no way to know the spec is stale. If your team cannot commit to maintaining specs, do not introduce them. An honest "no spec, use judgment" is safer than a lying spec file.</p>
-      <p><strong>Anti-pattern 4: Over-speccing exploratory work.</strong> In the early stages of a feature — when you are not yet sure what the right interface is — writing a detailed spec freezes premature decisions. In this phase, use a lightweight "spike spec" (a few bullet points of hypotheses) rather than a full behavioral contract. Graduate to a full spec once the shape of the feature is clear.</p>
-      <p><strong>Anti-pattern 5: Spec by committee.</strong> A spec that needs sign-off from six people before any code is written reproduces the worst of traditional requirements processes without the benefits of agility. Keep spec review tight: one author, one reviewer, merge. Larger specs can go through wider review — but the default should be lightweight, not heavyweight.</p>
+      <p>Spec-driven development has real overhead. A spec file needs to be written, reviewed, maintained, and eventually archived. For the right features, this overhead is paid back many times over. For the wrong features, it is pure waste.</p>
+      <h4 class="ph">Anti-pattern 1: Speccing trivial CRUD</h4>
+      <ul>
+        <li>If the feature is "add a /users/:id GET endpoint that returns the user by ID," the spec is already fully described by the sentence you just wrote plus the existing data model.</li>
+        <li>Writing a formal spec file adds no information. The agent can implement this from a one-line prompt.</li>
+        <li>Reserve specs for features with non-trivial business logic, multiple output formats, or behavior that cannot be inferred from naming conventions.</li>
+      </ul>
+      <h4 class="ph">Anti-pattern 2: Spec effort exceeds implementation effort</h4>
+      <ul>
+        <li>If writing and reviewing the spec takes longer than the implementation would have taken without one, the spec is not providing value at this scale.</li>
+        <li>This most often happens with one-off scripts, migration scripts, or throwaway tooling. If the tool will be used once and discarded, a spec is overhead with no return. A rough prompt is sufficient.</li>
+      </ul>
+      <h4 class="ph">Anti-pattern 3: Specs that drift untouched</h4>
+      <ul>
+        <li>A spec that no-one updates is worse than no spec — it actively misleads.</li>
+        <li>Agents that read a stale spec will implement against outdated requirements with full confidence, because they have no way to know the spec is stale.</li>
+        <li>If your team cannot commit to maintaining specs, do not introduce them. An honest "no spec, use judgment" is safer than a lying spec file.</li>
+      </ul>
+      <h4 class="ph">Anti-pattern 4: Over-speccing exploratory work</h4>
+      <ul>
+        <li>In the early stages of a feature — when you are not yet sure what the right interface is — writing a detailed spec freezes premature decisions.</li>
+        <li>In this phase, use a lightweight "spike spec" (a few bullet points of hypotheses) rather than a full behavioral contract.</li>
+        <li>Graduate to a full spec once the shape of the feature is clear.</li>
+      </ul>
+      <h4 class="ph">Anti-pattern 5: Spec by committee</h4>
+      <ul>
+        <li>A spec that needs sign-off from six people before any code is written reproduces the worst of traditional requirements processes without the benefits of agility.</li>
+        <li>Keep spec review tight: one author, one reviewer, merge.</li>
+        <li>Larger specs can go through wider review — but the default should be lightweight, not heavyweight.</li>
+      </ul>
 
       <h2>6.11 Mini-walkthrough: gitlog-report spec</h2>
 
@@ -2723,10 +2845,14 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       <p class="lede">What you'll learn: what a plan is (and how it differs from a spec), how to write one your agent can execute, when to review vs replan, and how to apply the rhythm to gitlog-report.</p>
 
       <h2>7.1 What "plan" means here — different from spec</h2>
-      <p>In everyday speech, "spec" and "plan" are near-synonyms. In agentic development they are completely distinct artifacts with different audiences, different lifecycles, and different purposes — and confusing them is one of the most reliable ways to produce a chaotic codebase.</p>
-      <p>A <strong>spec</strong> answers the question <em>what</em>. It is a durable contract: acceptance criteria, interface definitions, edge cases. It lives in version control alongside the code, changes rarely (only when requirements change), and is written for humans and agents alike to reference indefinitely. The spec is the source of truth about intent.</p>
-      <p>A <strong>plan</strong> answers the question <em>how</em>. It is a transient execution guide: ordered tasks, files to touch, code steps, commit points. It lives for the duration of one implementation session (or one sprint). Once the feature is merged, the plan is either archived or deleted — it has done its job. The plan is the source of truth about sequence.</p>
-      <p>The practical consequence: <em>never modify the spec to satisfy a plan.</em> If your plan conflicts with the spec, the plan is wrong. Replan. Never edit the spec mid-session unless the requirements themselves have changed (a rare, deliberate decision requiring stakeholder sign-off).</p>
+      <p>In everyday speech, "spec" and "plan" are near-synonyms. In agentic development they are completely distinct artifacts with different audiences, different lifecycles, and different purposes — confusing them is one of the most reliable ways to produce a chaotic codebase.</p>
+      <h4 class="ph">Spec vs. plan — the key distinction</h4>
+      <ul>
+        <li>A <strong>spec</strong> answers the question <em>what</em> — a durable contract of acceptance criteria, interface definitions, and edge cases. Lives in version control alongside the code, changes rarely (only when requirements change), written for humans and agents to reference indefinitely. The source of truth about intent.</li>
+        <li>A <strong>plan</strong> answers the question <em>how</em> — a transient execution guide of ordered tasks, files to touch, code steps, and commit points. Lives for the duration of one session (or one sprint). Once the feature is merged, the plan is archived or deleted. The source of truth about sequence.</li>
+        <li>Practical consequence: <em>never modify the spec to satisfy a plan.</em> If your plan conflicts with the spec, the plan is wrong — replan.</li>
+        <li>Never edit the spec mid-session unless the requirements themselves have changed — a rare, deliberate decision requiring stakeholder sign-off.</li>
+      </ul>
       <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin:1.2rem 0;">
         <thead>
           <tr style="background:var(--surface);">
@@ -2765,7 +2891,7 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       </table>
 
       <h2>7.2 Brainstorm → spec → plan → execute — the four-step rhythm</h2>
-      <p>Structured agentic development follows a four-step rhythm. Each step produces an artifact that the next step consumes. Skipping a step is possible — sometimes correct — but you should skip intentionally, not accidentally.</p>
+      <p>Structured agentic development follows a four-step rhythm. Each step produces an artifact that the next step consumes. Skipping a step is possible — sometimes correct — but skip intentionally, not accidentally.</p>
 
       <div style="display:flex; align-items:stretch; justify-content:center; gap:0; margin:1.8rem 0; flex-wrap:wrap;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px 0 0 8px; padding:1.2rem 1.4rem; text-align:center; min-width:130px;">
@@ -2797,14 +2923,17 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
         </div>
       </div>
 
-      <p><strong>Brainstorm</strong> — open-ended exploration with the agent. You are not writing code. You are pressure-testing assumptions, surfacing unknowns, and reaching clarity about what you actually want. Invest 5–15 minutes here; it repays itself in avoided spec rewrites. Use the <code>superpowers:brainstorming</code> skill.</p>
-      <p><strong>Spec</strong> — formalise the output of brainstorm into a durable contract. This is Ch 6 territory. The spec is written (or reviewed) before a single line of implementation is touched. It may be a Markdown file checked into the repo, an OpenSpec proposal, or a SpecKit <code>/specify</code> output.</p>
-      <p><strong>Plan</strong> — take the spec and decompose it into a numbered sequence of tasks the agent can execute one by one. The plan is the subject of this chapter. Use the <code>superpowers:writing-plans</code> skill or Claude plan mode.</p>
-      <p><strong>Execute</strong> — the agent follows the plan task by task, committing after each one. You review diffs at commit boundaries. If the plan becomes wrong mid-execution, you replan (see 7.7). Use the <code>superpowers:executing-plans</code> skill.</p>
+      <h4 class="ph">The four steps</h4>
+      <ul>
+        <li><strong>Brainstorm</strong> — open-ended exploration with the agent. Not writing code — pressure-testing assumptions, surfacing unknowns, reaching clarity about what you actually want. Invest 5–15 minutes here; it repays itself in avoided spec rewrites. Use the <code>superpowers:brainstorming</code> skill.</li>
+        <li><strong>Spec</strong> — formalise the output of brainstorm into a durable contract (Ch 6 territory). The spec is written or reviewed before a single line of implementation is touched. May be a Markdown file checked into the repo, an OpenSpec proposal, or a SpecKit <code>/specify</code> output.</li>
+        <li><strong>Plan</strong> — take the spec and decompose it into a numbered sequence of tasks the agent can execute one by one (the subject of this chapter). Use the <code>superpowers:writing-plans</code> skill or Claude plan mode.</li>
+        <li><strong>Execute</strong> — the agent follows the plan task by task, committing after each one. Review diffs at commit boundaries. If the plan becomes wrong mid-execution, replan (see 7.7). Use the <code>superpowers:executing-plans</code> skill.</li>
+      </ul>
 
       <h2>7.3 Anatomy of a good plan file</h2>
       <p>A plan file is a Markdown document (typically <code>PLAN.md</code> or <code>specs/&lt;feature&gt;/plan.md</code>) with a predictable structure. The <code>superpowers:writing-plans</code> skill produces this format automatically; the checklist below tells you what to look for when reviewing a plan the agent drafted.</p>
-      <p>Good plans share five structural properties:</p>
+      <h4 class="ph">Five structural properties of good plans</h4>
       <ol>
         <li><strong>Numbered tasks</strong> — each task is a discrete unit of work with a single, verifiable outcome. If a task can't be described in one sentence, split it.</li>
         <li><strong>Files-touched per task</strong> — every task names the files it will create, modify, or delete. This prevents surprise scope creep and makes review tractable.</li>
@@ -2831,21 +2960,27 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
 **Verify:** `gitlog-report --help` lists all five flags
 **Commit:** `feat(cli): add argument parser`
 ...</pre>
-      <p>Notice the pattern: each task is bounded, verifiable, and ends with a commit. An agent following this plan cannot accidentally do too much in one step — the commit boundary enforces a natural pause where you can review the diff.</p>
-      <p>Reference: the <code>superpowers:writing-plans</code> skill generates plan files in this format from a spec. Invoke it with: <code>/writing-plans</code> or trigger via the Skill tool.</p>
+      <h4 class="ph">Commit boundary discipline</h4>
+      <ul>
+        <li>Each task is bounded, verifiable, and ends with a commit — an agent following this plan cannot accidentally do too much in one step.</li>
+        <li>The commit boundary enforces a natural pause where you can review the diff.</li>
+        <li>The <code>superpowers:writing-plans</code> skill generates plan files in this format from a spec. Invoke it with: <code>/writing-plans</code> or trigger via the Skill tool.</li>
+      </ul>
 
       <h2>7.4 Plan mode in Claude Code (vs Kilo Architect — important asymmetry)</h2>
       <p>Claude Code has a dedicated <strong>plan mode</strong> that lets the agent think through an implementation before touching any files. Understanding its constraints — and how it differs from Kilo Architect's planning model — is essential for choosing the right tool.</p>
-
-      <p><strong>Entering plan mode in Claude Code</strong></p>
+      <h4 class="ph">Entering plan mode in Claude Code</h4>
       <ul>
         <li>Cycle through modes with <kbd>Shift+Tab</kbd> until the mode indicator shows <em>Plan</em></li>
         <li>Or prefix your request with "Plan:" to signal plan-mode intent (the agent will enter plan mode before responding)</li>
         <li>The mode persists for the session; the agent will not exit it until you approve</li>
       </ul>
 
-      <p><strong>The approval gate</strong> — the agent must invoke the <code>ExitPlanMode</code> tool to leave plan mode. That tool requires your explicit confirmation. This means the agent cannot silently slip from planning to execution. You always see the full plan and approve before a single file is touched.</p>
-
+      <h4 class="ph">The approval gate</h4>
+      <ul>
+        <li>The agent must invoke the <code>ExitPlanMode</code> tool to leave plan mode. That tool requires your explicit confirmation.</li>
+        <li>The agent cannot silently slip from planning to execution — you always see the full plan and approve before a single file is touched.</li>
+      </ul>
       <p><strong>Tool permissions in plan mode:</strong></p>
       <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1rem 0;">
         <thead>
@@ -2928,17 +3063,20 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
 
       <h2>7.5 Plan files as artifacts — committable, reviewable</h2>
       <p>A plan that exists only in conversation history has two problems: it disappears when the session ends, and it can't be reviewed by a teammate. Treating your plan as a committed artifact — a Markdown file in the repo — solves both.</p>
-      <p><strong>Three benefits of committing your plan file:</strong></p>
+      <h4 class="ph">Three benefits of committing your plan file</h4>
       <ol>
         <li><strong>Reviewability</strong> — a PR containing <code>PLAN.md</code> alongside the spec lets a reviewer verify that the planned approach actually satisfies the spec criteria before a single line of implementation is written. This is the cheapest code review possible.</li>
         <li><strong>Resumability</strong> — if you close the session mid-execution, the next session starts with: "Read PLAN.md and continue from Task N." No context reconstruction. No guessing what was done.</li>
         <li><strong>Auditability</strong> — the git log records <em>when</em> the plan changed and <em>why</em>. If a post-mortem asks "did we have a plan for this?", the answer is in the history.</li>
       </ol>
-      <p>Typical file paths: <code>PLAN.md</code> at repo root for small features; <code>specs/&lt;feature&gt;/plan.md</code> alongside the spec for larger work; <code>.claude/PLAN.md</code> for plans that are agent-internal and shouldn't appear in the main repo tree.</p>
-      <p>Commit message convention: <code>plan(&lt;feature&gt;): draft execution plan</code>. This makes the plan easy to find in <code>git log --oneline</code> without grep.</p>
+      <h4 class="ph">File paths and commit convention</h4>
+      <ul>
+        <li><code>PLAN.md</code> at repo root for small features; <code>specs/&lt;feature&gt;/plan.md</code> alongside the spec for larger work; <code>.claude/PLAN.md</code> for plans that are agent-internal and shouldn't appear in the main repo tree.</li>
+        <li>Commit message convention: <code>plan(&lt;feature&gt;): draft execution plan</code> — makes the plan easy to find in <code>git log --oneline</code> without grep.</li>
+      </ul>
 
       <h2>7.6 Reviewing your agent's plan before it acts</h2>
-      <p>Whether the plan comes from Claude plan mode, Kilo Architect, or the <code>superpowers:writing-plans</code> skill, you should review it before execution begins. A five-point check catches the most common failure modes:</p>
+      <p>Whether the plan comes from Claude plan mode, Kilo Architect, or the <code>superpowers:writing-plans</code> skill, review it before execution begins. A five-point check catches the most common failure modes.</p>
       <ol>
         <li><strong>Right files?</strong> Every task names the files it will touch. Verify each file actually exists (for modifications) or makes sense to create at that path (for new files). Watch for files that are never mentioned — a plan that modifies <code>cli.py</code> but never touches the corresponding test file is almost certainly incomplete.</li>
         <li><strong>Right order?</strong> Task N should not depend on something that Task N+2 creates. Read the dependency chain forward: if step 3 imports a module that step 5 creates, the plan will fail at step 3. The agent can get this wrong.</li>
@@ -2946,7 +3084,10 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
         <li><strong>No placeholders?</strong> Scan for <code>TODO</code>, <code>...</code>, <code>&lt;fill in&gt;</code>, <code>as appropriate</code>. Placeholders in a plan become agent hallucinations during execution. Fill them in now or mark the task as requiring human input before the agent reaches it.</li>
         <li><strong>Verification steps?</strong> Every task should have a concrete check: a test command to run, an output to grep for, a file to confirm exists. "Verify the feature works" is not a verification step. "Run <code>pytest tests/test_parser.py -v</code> and confirm all 4 tests pass" is.</li>
       </ol>
-      <p>The five-point check takes two to five minutes. It reliably prevents sessions that go sideways at step 3 and require a full replan. Pay the two minutes.</p>
+      <h4 class="ph">Time investment</h4>
+      <ul>
+        <li>The five-point check takes two to five minutes. It reliably prevents sessions that go sideways at step 3 and require a full replan. Pay the two minutes.</li>
+      </ul>
 
       <div class="stp"><div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Right files?</div></div><p>Every task names the exact files it will touch. Verify each exists (for modifications) or makes sense at that path (for new files). A plan that edits <code>cli.py</code> but never mentions its test file is incomplete.</p></div>
       <div class="stp"><div class="stp-h"><div class="stp-n org">2</div><div class="stp-t">Right order?</div></div><p>Read the dependency chain forward: Task N must not import or call something that only Task N+2 creates. Agents get ordering wrong more often than you'd expect.</p></div>
@@ -2955,20 +3096,28 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       <div class="stp"><div class="stp-h"><div class="stp-n pur">5</div><div class="stp-t">Verification steps?</div></div><p>Every task needs a concrete check: a test command to run, an output to grep for, a file to confirm exists. "Verify the feature works" is not a verification step. "Run <code>pytest tests/test_parser.py -v</code> and confirm all 4 tests pass" is.</p></div>
 
       <h2>7.7 Mid-plan replanning when reality changes</h2>
-      <p>Even a well-reviewed plan will sometimes collide with reality. The codebase was in a different state than expected. A dependency has a breaking API change. The chosen approach reveals a design flaw that wasn't visible from the spec. When this happens, you have two options — amend or abandon — and the choice depends on how far the collision propagates.</p>
-      <p><strong>Amend</strong> when the reality change is local: the current task and at most one successor need to change, but the overall structure and commit plan remain valid. Update the affected tasks in the plan file, commit the updated plan with a message like <code>plan(gitlog-report): amend task 3 — use argparse subcommands</code>, then continue. The agent re-reads the updated plan.</p>
-      <p><strong>Abandon and replan</strong> when the collision is structural: the approach chosen in the plan cannot satisfy the spec without touching more than two or three tasks, or the planned file structure is wrong. Stop execution, reset to the last clean commit, write a new plan, review it, then re-execute. Sunk cost reasoning ("we're already 60% done") is the enemy here. A bad 60% is more expensive to fix than a clean restart.</p>
-      <p><strong>Signs you need a full replan:</strong></p>
+      <p>Even a well-reviewed plan will sometimes collide with reality — the codebase was in a different state than expected, a dependency has a breaking API change, or the chosen approach reveals a design flaw not visible from the spec. You have two options: amend or abandon.</p>
+      <h4 class="ph">Amend vs. abandon</h4>
+      <ul>
+        <li><strong>Amend</strong> when the reality change is local: the current task and at most one successor need to change, but the overall structure and commit plan remain valid. Update the affected tasks, commit the updated plan (e.g., <code>plan(gitlog-report): amend task 3 — use argparse subcommands</code>), then continue. The agent re-reads the updated plan.</li>
+        <li><strong>Abandon and replan</strong> when the collision is structural: the approach cannot satisfy the spec without touching more than two or three tasks, or the planned file structure is wrong. Stop, reset to the last clean commit, write a new plan, review it, then re-execute.</li>
+        <li>Sunk cost reasoning ("we're already 60% done") is the enemy. A bad 60% is more expensive to fix than a clean restart.</li>
+      </ul>
+      <h4 class="ph">Signs you need a full replan</h4>
       <ul>
         <li>The agent has started improvising — adding files not in the plan, skipping tasks, or reordering steps without telling you.</li>
         <li>The current task has grown past its planned scope and is pulling in two or three others.</li>
         <li>The git diff is much larger than expected for the current task.</li>
         <li>A test introduced in an earlier task is now failing because of the current task's changes (integration conflict).</li>
       </ul>
-      <p>When in doubt, <code>git diff HEAD~1</code> and count the files changed. If it's more than the plan said, you're already off-plan.</p>
+      <h4 class="ph">Quick sanity check</h4>
+      <ul>
+        <li>When in doubt: <code>git diff HEAD~1</code> and count the files changed. If it's more than the plan said, you're already off-plan.</li>
+      </ul>
 
       <h2>7.8 Plan templates and patterns</h2>
       <p>Most plans fall into one of four structural patterns. Recognising the pattern lets you get to a draft plan faster — either by prompting the agent with the pattern name, or by instantiating the template yourself.</p>
+
       <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
         <thead>
           <tr style="background:var(--surface);">
@@ -3000,21 +3149,47 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
           </tr>
         </tbody>
       </table>
-      <p>The <code>superpowers:writing-plans</code> skill accepts a pattern argument (<code>--pattern bug-fix | feature | refactor | migration</code>) and generates a template-populated plan. You still fill in the specifics — file names, function signatures, test commands — but the skeleton is correct.</p>
+      <h4 class="ph">Using the writing-plans skill with a pattern</h4>
+      <ul>
+        <li>The <code>superpowers:writing-plans</code> skill accepts a pattern argument (<code>--pattern bug-fix | feature | refactor | migration</code>) and generates a template-populated plan.</li>
+        <li>You still fill in the specifics — file names, function signatures, test commands — but the skeleton is correct.</li>
+      </ul>
 
       <h2>7.9 When to skip the plan (yes, sometimes)</h2>
-      <p>Planning has a real cost: it takes time, it requires a spec to exist first, and it can feel like bureaucratic overhead on changes that are obviously small. The rule is: <strong>plan when the agent could go wrong; skip when it can't.</strong></p>
-      <p>Safe to skip: a single-file typo or doc fix; renaming a variable with a find-and-replace; adding one line to a config file; trivially mechanical changes where the diff will obviously be correct. For these, just give the agent a direct instruction and review the diff before committing.</p>
-      <p>Safe to skip (sometimes): exploratory or throwaway work where you're not committing the output — prototyping an approach, generating a draft to read and discard, investigating a bug by trial and error. Plans impose commit structure; explorations don't benefit from that structure.</p>
-      <p>Not safe to skip: any change that touches more than two files; any change that involves a new abstraction or interface; any change where a wrong approach would require undoing more than 20 lines; any change that a teammate will review. For these, the two-minute plan review (7.6) is not overhead — it is the review.</p>
-      <p>The test: <em>if the agent goes wrong, how long does recovery take?</em> If the answer is more than five minutes, write a plan.</p>
+      <p>Planning has a real cost: it takes time, requires a spec first, and can feel like bureaucratic overhead on obviously small changes. The rule is: <strong>plan when the agent could go wrong; skip when it can't.</strong></p>
+      <h4 class="ph">Safe to skip</h4>
+      <ul>
+        <li>A single-file typo or doc fix; renaming a variable with a find-and-replace; adding one line to a config file — trivially mechanical changes where the diff will obviously be correct. Just give the agent a direct instruction and review the diff.</li>
+        <li>Exploratory or throwaway work where you're not committing the output — prototyping an approach, generating a draft to read and discard, investigating a bug by trial and error. Plans impose commit structure; explorations don't benefit from that structure.</li>
+      </ul>
+      <h4 class="ph">Not safe to skip</h4>
+      <ul>
+        <li>Any change that touches more than two files.</li>
+        <li>Any change that involves a new abstraction or interface.</li>
+        <li>Any change where a wrong approach would require undoing more than 20 lines.</li>
+        <li>Any change that a teammate will review. For these, the two-minute plan review (7.6) is not overhead — it is the review.</li>
+        <li>Decision test: <em>if the agent goes wrong, how long does recovery take?</em> If the answer is more than five minutes, write a plan.</li>
+      </ul>
 
       <h2>7.10 Plans across sessions — handoff and resume</h2>
       <p>Agentic sessions are bounded by context windows, working hours, and attention. A feature that takes four hours of elapsed time will probably span multiple sessions. The plan file is the mechanism that makes multi-session work coherent.</p>
-      <p><strong>Handoff protocol:</strong> before closing a session mid-plan, the agent should update the plan file to mark completed tasks (e.g., prefix with <code>[x]</code>) and annotate the current task with a "stopped here" note including the last commit SHA. Commit this updated plan file. The commit message: <code>plan(gitlog-report): checkpoint after task 3 — resume at task 4</code>.</p>
-      <p><strong>Resume protocol:</strong> open a new session, inject the spec and the updated plan file at the start of the context. Prompt: <em>"Read PLAN.md. Tasks 1–3 are complete (see commit abc1234). Continue from Task 4."</em> The agent reconstructs its working state from the plan + git log, not from conversation history. This is reliable across model updates, team members, and days-long gaps.</p>
-      <p><strong>Team handoff:</strong> if a different engineer (or agent) picks up mid-plan, the same protocol applies. The plan file encodes intent; the git log encodes what was done; together they are a complete handoff document. No "what was I doing?" conversation needed.</p>
-      <p>The <code>superpowers:executing-plans</code> skill handles checkpoint and resume automatically when invoked with <code>--resume</code>. For manual workflows, the pattern above is reliable and requires no tooling beyond git.</p>
+      <h4 class="ph">Handoff protocol</h4>
+      <ul>
+        <li>Before closing a session mid-plan, the agent should update the plan file to mark completed tasks (e.g., prefix with <code>[x]</code>) and annotate the current task with a "stopped here" note including the last commit SHA.</li>
+        <li>Commit this updated plan file. Commit message: <code>plan(gitlog-report): checkpoint after task 3 — resume at task 4</code>.</li>
+      </ul>
+      <h4 class="ph">Resume protocol</h4>
+      <ul>
+        <li>Open a new session, inject the spec and the updated plan file at the start of the context.</li>
+        <li>Prompt: <em>"Read PLAN.md. Tasks 1–3 are complete (see commit abc1234). Continue from Task 4."</em></li>
+        <li>The agent reconstructs working state from the plan + git log, not from conversation history. This is reliable across model updates, team members, and days-long gaps.</li>
+      </ul>
+      <h4 class="ph">Team handoff</h4>
+      <ul>
+        <li>If a different engineer (or agent) picks up mid-plan, the same protocol applies.</li>
+        <li>The plan file encodes intent; the git log encodes what was done; together they are a complete handoff document — no "what was I doing?" conversation needed.</li>
+        <li>The <code>superpowers:executing-plans</code> skill handles checkpoint and resume automatically when invoked with <code>--resume</code>. For manual workflows, the pattern above requires no tooling beyond git.</li>
+      </ul>
 
       <h2>7.11 Mini-walkthrough: write the gitlog-report plan</h2>
 
@@ -3132,19 +3307,29 @@ Commit: feat(cli): complete CLI integration — gitlog-report ready</pre>
       <p class="lede">What you'll learn: why TDD becomes more important (not less) with agents, how the red-green-refactor cycle works as a control rod, the test types that survive agent edits, and how to write the gitlog-report tests before the implementation.</p>
 
       <h2>8.1 TDD with agents — does it still make sense? (yes, more than ever)</h2>
-      <p>A common reaction to AI-assisted coding is: <em>"The agent writes code so fast, do I really need to slow down with tests?"</em> The answer is the opposite of what that reaction implies. TDD matters <strong>more</strong> with agents, not less. Here is why.</p>
-      <p>When you write code by hand you have a mental model of what the code does — you can feel when something is off. Agents don't have that sensory feedback loop. They generate code that looks convincing, compiles, and passes a cursory read. Without a failing test to refute them, they can claim "done" while the behaviour is still wrong — and they will sound confident doing it.</p>
-      <p>Tests are the only objective signal an agent can't fake. They either pass or they don't. When you give an agent a failing test and the instruction "make this pass without modifying the test," you have created an unambiguous success criterion. The agent iterates against that criterion. Without it, the agent optimises for your approval, which is a much noisier signal.</p>
-      <p>Three concrete problems TDD prevents in agentic work:</p>
+      <p>A common reaction to AI-assisted coding is: <em>"The agent writes code so fast, do I really need to slow down with tests?"</em> The answer is the opposite of what that reaction implies. TDD matters <strong>more</strong> with agents, not less.</p>
+      <h4 class="ph">Why tests matter more, not less</h4>
+      <ul>
+        <li>When you write code by hand, you have a mental model of what it does — you can feel when something is off. Agents don't have that sensory feedback loop.</li>
+        <li>Agents generate code that looks convincing, compiles, and passes a cursory read. Without a failing test to refute them, they can claim "done" while the behaviour is still wrong — and they will sound confident doing it.</li>
+        <li>Tests are the only objective signal an agent can't fake: they either pass or they don't.</li>
+        <li>When you give an agent a failing test and the instruction "make this pass without modifying the test," you have created an unambiguous success criterion. The agent iterates against that criterion. Without it, the agent optimises for your approval — a much noisier signal.</li>
+      </ul>
+      <h4 class="ph">Three concrete problems TDD prevents in agentic work</h4>
       <ul>
         <li><strong>Silent regressions:</strong> Agent edits file A to fix a bug; test suite immediately tells you file B broke. Without tests you discover this at demo time.</li>
         <li><strong>Scope creep by accident:</strong> Agents occasionally rewrite more than you asked for. Tests catch when "fixing" one function altered the contract of another.</li>
         <li><strong>Confident wrong answers:</strong> Agents produce fluent, plausible outputs. Tests are the blunt instrument that says "no, the output was wrong" regardless of how fluent it sounded.</li>
       </ul>
-      <p>The discipline is: <em>before you ask the agent to implement anything, you — or the agent under your direction — must write a failing test that encodes the acceptance criterion.</em> The test is a compressed, executable version of the spec (see Ch 6). Implementation is the activity of making it pass.</p>
+      <h4 class="ph">The core discipline</h4>
+      <ul>
+        <li>Before you ask the agent to implement anything, you — or the agent under your direction — must write a failing test that encodes the acceptance criterion.</li>
+        <li>The test is a compressed, executable version of the spec (see Ch 6). Implementation is the activity of making it pass.</li>
+      </ul>
 
       <h2>8.2 Red → green → refactor as a control rod</h2>
       <p>The classic TDD cycle is <strong>red → green → refactor</strong>. With agents this cycle becomes a <em>control rod</em> — the mechanism that prevents the system from going critical.</p>
+
 
       <div style="display:flex; align-items:stretch; justify-content:center; gap:0; margin:1.8rem 0; flex-wrap:wrap;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px 0 0 8px; padding:1.2rem 1.6rem; min-width:160px; text-align:center;">
@@ -3166,29 +3351,45 @@ Commit: feat(cli): complete CLI integration — gitlog-report ready</pre>
         </div>
       </div>
 
-      <p><strong>How each step works with an agent:</strong></p>
-      <p><strong>Red:</strong> You write (or review) the failing test. This is a human responsibility. The test encodes <em>your</em> interpretation of the spec. If the agent writes the test for you without you verifying it against the spec, you risk the agent testing the wrong thing — and making it pass — which produces false confidence. At minimum, you must read and approve every test that enters the suite.</p>
-      <p><strong>Green:</strong> Hand the failing test to the agent with a constrained prompt: <em>"Make <code>test_date_filter</code> pass. Do not modify <code>tests/test_gitlog.py</code>. Show me the diff before writing it."</em> The agent iterates. You watch the test output. Green means done — nothing more.</p>
-      <p><strong>Refactor:</strong> Once green, the agent may refactor for clarity, performance, or structure. Your job here is to confirm the suite stays green after each refactor step. Never let the agent refactor on a red suite — that way lies a codebase where nothing works and no one knows why.</p>
-      <p>The control-rod metaphor is apt: the test suite absorbs energy from the agent's generative capacity and releases it in controlled, verifiable increments. Remove the tests (or let the agent update them freely) and the reaction goes uncontrolled.</p>
+      <h4 class="ph">How each step works with an agent</h4>
+      <ul>
+        <li><strong>Red:</strong> You write (or review) the failing test — this is a human responsibility. The test encodes <em>your</em> interpretation of the spec. If the agent writes the test without you verifying it against the spec, you risk the agent testing the wrong thing — producing false confidence. At minimum, read and approve every test that enters the suite.</li>
+        <li><strong>Green:</strong> Hand the failing test to the agent with a constrained prompt: <em>"Make <code>test_date_filter</code> pass. Do not modify <code>tests/test_gitlog.py</code>. Show me the diff before writing it."</em> The agent iterates. You watch the test output. Green means done — nothing more.</li>
+        <li><strong>Refactor:</strong> Once green, the agent may refactor for clarity, performance, or structure. Confirm the suite stays green after each refactor step. Never let the agent refactor on a red suite — that way lies a codebase where nothing works and no one knows why.</li>
+      </ul>
+      <h4 class="ph">Why the control-rod metaphor fits</h4>
+      <ul>
+        <li>The test suite absorbs energy from the agent's generative capacity and releases it in controlled, verifiable increments.</li>
+        <li>Remove the tests (or let the agent update them freely) and the reaction goes uncontrolled.</li>
+      </ul>
 
       <h2>8.3 Writing the failing test first — yourself, or with the agent</h2>
-      <p>The gold standard is <strong>you write the test</strong>. You have read the spec (Ch 6), you understand the acceptance criteria, and you translate one criterion into one test function. The test is small, has a single assertion, and has a name that reads like a sentence: <code>test_date_filter_excludes_commits_before_start_date</code>.</p>
-      <p>The silver standard is <strong>you ask the agent to draft the test, then you verify it against the spec</strong>. Ask: <em>"Read specs/gitlog-report/spec.md. Write failing pytest tests for the acceptance criteria in §3. Do not write any implementation. Return only the test file."</em> Then read every test against the spec line by line. Delete any test that is not traceable to a specific acceptance criterion.</p>
-      <p>The "test what the spec says" rule (see Ch 6): a test that does not correspond to a named acceptance criterion is speculative. Speculative tests often encode the agent's assumptions, not yours. They pass when the agent writes implementation code that satisfies its own assumptions — creating a closed loop that excludes your intent entirely.</p>
-      <p>Checklist before adding any test:</p>
+      <h4 class="ph">Gold vs. silver standard for test authorship</h4>
+      <ul>
+        <li><strong>Gold standard — you write the test:</strong> you have read the spec (Ch 6), understand the acceptance criteria, and translate one criterion into one test function. The test is small, has a single assertion, and has a name that reads like a sentence: <code>test_date_filter_excludes_commits_before_start_date</code>.</li>
+        <li><strong>Silver standard — agent drafts, you verify:</strong> ask: <em>"Read specs/gitlog-report/spec.md. Write failing pytest tests for the acceptance criteria in §3. Do not write any implementation. Return only the test file."</em> Then read every test against the spec line by line. Delete any test not traceable to a specific acceptance criterion.</li>
+        <li><strong>The "test what the spec says" rule</strong> (see Ch 6): a test not corresponding to a named acceptance criterion is speculative. Speculative tests encode the agent's assumptions, not yours — they pass when the agent satisfies its own assumptions, creating a closed loop that excludes your intent entirely.</li>
+      </ul>
+      <h4 class="ph">Checklist before adding any test</h4>
       <ul>
         <li>Can I point to the exact line in the spec this test covers?</li>
         <li>Does the test name match the acceptance criterion in plain language?</li>
         <li>Does the test fail right now (against no implementation or a stub)?</li>
         <li>Does the test have exactly one reason to fail?</li>
       </ul>
-      <p>If any answer is "no" or "I'm not sure," revise the test before adding it to the suite.</p>
+      <h4 class="ph">When to revise</h4>
+      <ul>
+        <li>If any answer is "no" or "I'm not sure," revise the test before adding it to the suite.</li>
+      </ul>
 
       <h2>8.4 The "stop until green" discipline</h2>
       <p>This is a simple rule with profound consequences: <strong>do not move to the next task while any test in the suite is red.</strong></p>
-      <p>Agents will routinely try to move on. The pattern looks like: "Test X is failing but that's because we haven't implemented feature Y yet — let me implement Y first and come back to X." This is almost always wrong. A failing test means the current task is incomplete. Moving on builds a stack of incomplete tasks that interact in ways that become progressively harder to untangle.</p>
-      <p>The correct response to a red test is:</p>
+      <h4 class="ph">Why agents violate this — and why they're wrong</h4>
+      <ul>
+        <li>Agents will routinely try to move on. The pattern: "Test X is failing but that's because we haven't implemented feature Y yet — let me implement Y first and come back to X."</li>
+        <li>This is almost always wrong. A failing test means the current task is incomplete. Moving on builds a stack of incomplete tasks that interact in ways that become progressively harder to untangle.</li>
+      </ul>
+      <h4 class="ph">Correct response to a red test</h4>
       <ol>
         <li>Stop. Do not write new features.</li>
         <li>Understand why the test is red. Read the error output literally.</li>
@@ -3196,12 +3397,20 @@ Commit: feat(cli): complete CLI integration — gitlog-report ready</pre>
         <li>If the implementation is wrong, fix the implementation.</li>
         <li>Run the full suite. Confirm all-green before proceeding.</li>
       </ol>
-      <p>Applied to agents: when you see an agent producing output and your test runner shows red, interrupt. Paste the test failure into the agent's context. Ask: <em>"This test is still failing. Do not add new code. Fix only what is needed to make this test pass."</em> The constraint "do not add new code" prevents the agent from burying the failure under additional complexity.</p>
-      <p>The "stop until green" discipline also applies to refactoring: never ask an agent to refactor code while tests are red. A red-plus-refactor session produces a diff where bug and cleanup are entangled, making review and bisection nearly impossible.</p>
+      <h4 class="ph">Applied to agents in practice</h4>
+      <ul>
+        <li>When you see an agent producing output and your test runner shows red, interrupt. Paste the test failure into the agent's context.</li>
+        <li>Ask: <em>"This test is still failing. Do not add new code. Fix only what is needed to make this test pass."</em> The constraint "do not add new code" prevents the agent from burying the failure under additional complexity.</li>
+        <li>The discipline also applies to refactoring: never ask an agent to refactor code while tests are red. A red-plus-refactor session produces a diff where bug and cleanup are entangled, making review and bisection nearly impossible.</li>
+      </ul>
 
       <h2>8.5 Golden tests — fixed, hand-curated truth</h2>
-      <p>A <strong>golden test</strong> is a test with a hand-curated, fixed input and a hand-verified, fixed expected output. No generated fixtures. No dynamic comparisons. The expected value is typed in by a human who checked it against the spec and confirmed it is correct.</p>
-      <p>Golden tests are the most durable test type in an agentic codebase. Because both input and expected output are fixed strings (or structures), no agent refactor can accidentally make them pass on wrong output. If the output changes — for any reason — the test fails.</p>
+      <h4 class="ph">What a golden test is</h4>
+      <ul>
+        <li>A <strong>golden test</strong> has a hand-curated, fixed input and a hand-verified, fixed expected output. No generated fixtures. No dynamic comparisons.</li>
+        <li>The expected value is typed in by a human who checked it against the spec and confirmed it is correct.</li>
+        <li>Golden tests are the most durable test type in an agentic codebase. Because both input and output are fixed strings or structures, no agent refactor can accidentally make them pass on wrong output — if the output changes for any reason, the test fails.</li>
+      </ul>
       <p>Example for gitlog-report (two authors, three commits):</p>
       <pre><code>GOLDEN_GIT_LOG = """
 abc1234 Alice 2024-01-15 Add parser module
@@ -3217,39 +3426,60 @@ GOLDEN_EXPECTED = {
 def test_golden_multi_author():
     result = parse_gitlog(GOLDEN_GIT_LOG)
     assert result == GOLDEN_EXPECTED</code></pre>
-      <p>Rules for golden tests:</p>
+      <h4 class="ph">Rules for golden tests</h4>
       <ul>
         <li>The expected value is always a literal — never computed at test time.</li>
         <li>When the expected output legitimately changes (because a requirement changed), update the golden value manually and commit with a message explaining why.</li>
         <li>Never let an agent update a golden value without your explicit review. Treat any agent-proposed change to a golden value as a requirement change, not a test fix.</li>
       </ul>
-      <p>Golden tests are especially powerful for parsing, formatting, and report-generation tasks — exactly the kind of work gitlog-report does.</p>
+      <h4 class="ph">Best uses</h4>
+      <ul>
+        <li>Golden tests are especially powerful for parsing, formatting, and report-generation tasks — exactly the kind of work gitlog-report does.</li>
+      </ul>
 
       <h2>8.6 Snapshot tests and their dangers with agents</h2>
-      <p>Snapshot tests (as offered by Jest, pytest-snapshot, and similar tools) automatically capture the output of a function and save it as a file. On subsequent runs, the test compares current output to the saved snapshot and fails only if they differ. When they differ, you run a "snapshot update" command and the new output becomes the new truth.</p>
-      <p>This convenience is a trap in agentic development. <strong>Agents will happily update snapshots to match wrong output.</strong> The pattern is: agent introduces a regression → test fails → agent runs snapshot update → test passes → agent reports success → you merge broken code.</p>
-      <p>The snapshot update command is the problem. It inverts the relationship between test and truth: instead of the expected output being fixed and the implementation being wrong, the expected output becomes wrong and the test silently accepts it.</p>
-      <p>How to treat snapshot tests in an agentic codebase:</p>
+      <p>Snapshot tests (as offered by Jest, pytest-snapshot, and similar tools) automatically capture the output of a function and save it as a file. On subsequent runs, the test compares current output to the saved snapshot and fails only if they differ.</p>
+      <h4 class="ph">Why snapshot updates are a trap with agents</h4>
+      <ul>
+        <li><strong>Agents will happily update snapshots to match wrong output.</strong> The pattern: agent introduces a regression → test fails → agent runs snapshot update → test passes → agent reports success → you merge broken code.</li>
+        <li>The snapshot update command inverts the relationship between test and truth: instead of the expected output being fixed and the implementation being wrong, the expected output becomes wrong and the test silently accepts it.</li>
+      </ul>
+      <h4 class="ph">How to treat snapshot tests in an agentic codebase</h4>
       <ul>
         <li><strong>Flag snapshot update as a reviewed action.</strong> Any commit that touches a <code>__snapshots__</code> directory or <code>.snap</code> file must be reviewed by a human who verifies the new snapshot is correct.</li>
         <li><strong>Prefer golden tests</strong> (§8.5) for any output that can be hand-curated.</li>
         <li><strong>If you use snapshots,</strong> add a CI lint rule that fails if snapshot files are modified without a corresponding label/tag indicating human review.</li>
         <li><strong>Never run <code>--updateSnapshot</code></strong> (or equivalent) in an automated agent loop. That flag must require explicit human invocation.</li>
       </ul>
-      <p>Snapshots are not inherently bad — they catch unexpected changes. They are bad when the mechanism for accepting changes is automated or undiscriminated. In agentic contexts, assume the agent will find and use the update path unless you explicitly prevent it.</p>
+      <h4 class="ph">Bottom line on snapshots</h4>
+      <ul>
+        <li>Snapshots are not inherently bad — they catch unexpected changes.</li>
+        <li>They are bad when the mechanism for accepting changes is automated or undiscriminated.</li>
+        <li>In agentic contexts, assume the agent will find and use the update path unless you explicitly prevent it.</li>
+      </ul>
 
       <h2>8.7 Anti-mocking discipline — integration over isolation</h2>
-      <p>The classic argument for mocks is speed and isolation: unit tests should not touch the network, the filesystem, or the database. This is sound advice for human-written tests operating in a CI environment with shared resources. It is partially wrong for agentic codebases.</p>
-      <p>The problem with mocks in agent-written tests is that <strong>agents mock the thing they just wrote</strong>. If the agent writes <code>GitLogParser</code> and then writes a test for it using a mock of <code>GitLogParser</code>, the test is testing the mock, not the parser. It passes trivially. The real parser can be completely broken.</p>
-      <p>The anti-mocking discipline: <strong>prefer integration tests against real dependencies</strong> wherever those dependencies are cheap to run locally.</p>
+      <p>The classic argument for mocks is speed and isolation: unit tests should not touch the network, the filesystem, or the database. This is sound advice for human-written tests in CI with shared resources — but it is partially wrong for agentic codebases.</p>
+      <h4 class="ph">The mock problem with agents</h4>
+      <ul>
+        <li><strong>Agents mock the thing they just wrote.</strong> If the agent writes <code>GitLogParser</code> and then writes a test for it using a mock of <code>GitLogParser</code>, the test is testing the mock, not the parser — it passes trivially while the real parser can be completely broken.</li>
+      </ul>
+      <h4 class="ph">The anti-mocking discipline</h4>
+      <ul>
+        <li>Prefer integration tests against real dependencies wherever those dependencies are cheap to run locally.</li>
+      </ul>
       <ul>
         <li>Use a real temporary directory instead of mocking the filesystem.</li>
         <li>Use a real in-memory SQLite database instead of mocking your ORM.</li>
         <li>Use a real subprocess call to <code>git log</code> on a temp repo instead of mocking the git output.</li>
         <li>Use real HTTP fixtures (recorded once, replayed) instead of mocking <code>requests</code>.</li>
       </ul>
-      <p>Integration tests are slower but they test the actual contract. An agent that breaks the real <code>git log</code> interaction will be caught by an integration test and will not be caught by a mock-based unit test.</p>
-      <p>The exceptions: external services with rate limits, expensive third-party APIs, non-deterministic services. For these, record real responses once (using a tool like <code>vcrpy</code> or <code>msw</code>) and replay them. This is fundamentally different from hand-writing mocks — the recorded response is real truth, not agent-constructed fiction.</p>
+      <h4 class="ph">Why integration tests beat mocks here</h4>
+      <ul>
+        <li>Integration tests are slower but they test the actual contract. An agent that breaks the real <code>git log</code> interaction will be caught by an integration test and will not be caught by a mock-based unit test.</li>
+        <li>Exception: external services with rate limits, expensive third-party APIs, non-deterministic services. For these, record real responses once (using a tool like <code>vcrpy</code> or <code>msw</code>) and replay them.</li>
+        <li>Recorded responses are fundamentally different from hand-writing mocks — the recorded response is real truth, not agent-constructed fiction.</li>
+      </ul>
 
       <div class="flv-grid">
         <div class="flv"><div class="flv-name">Golden tests</div><div class="flv-desc">Hand-curated input + fixed expected output. Best for parsers, formatters, and report generators where truth can be written down; fragile if output is legitimately non-deterministic.</div></div>
@@ -3260,8 +3490,12 @@ def test_golden_multi_author():
       </div>
 
       <h2>8.8 Eval loops — tests for the prompt, not just the code</h2>
-      <p>When your system includes an LLM call — a prompt that asks the model to extract, classify, summarise, or decide — the code around it may be correct while the <em>prompt itself</em> is producing wrong outputs. Unit tests on the code will not catch this. You need an <strong>eval loop</strong>: a test that runs the actual prompt against a fixed set of inputs and checks the outputs against fixed expected values.</p>
-      <p>An eval loop has the same structure as a golden test (§8.5), except the "function under test" is a prompt-plus-model call rather than a pure function:</p>
+      <h4 class="ph">Why eval loops are necessary</h4>
+      <ul>
+        <li>When your system includes an LLM call — a prompt asking the model to extract, classify, summarise, or decide — the code around it may be correct while the <em>prompt itself</em> is producing wrong outputs.</li>
+        <li>Unit tests on the code will not catch this. You need an <strong>eval loop</strong>: a test that runs the actual prompt against a fixed set of inputs and checks the outputs against fixed expected values.</li>
+        <li>An eval loop has the same structure as a golden test (§8.5), except the "function under test" is a prompt-plus-model call rather than a pure function.</li>
+      </ul>
       <pre><code>EVAL_CASES = [
     {
         "input": "Extract the author name from: 'abc123 Alice 2024-01-15 Fix bug'",
@@ -3279,29 +3513,42 @@ def test_author_extraction_eval():
         assert result.strip() == case["expected"], (
             f"Prompt produced wrong output for input: {case['input']!r}"
         )</code></pre>
-      <p>Eval loops catch:</p>
+      <h4 class="ph">What eval loops catch</h4>
       <ul>
         <li>Prompt regressions when the prompt template is edited.</li>
         <li>Model drift when you upgrade to a new model version.</li>
         <li>Edge cases the prompt handles inconsistently (multi-word names, special characters, empty input).</li>
       </ul>
-      <p>Eval loops are expensive (they make real LLM calls) so run them on a slow path: pre-commit on prompt file changes, or nightly CI, not on every unit test run. The key is that they exist and are non-negotiable gates before shipping a prompt change.</p>
-      <p>For agents writing prompt-heavy features, the eval loop is the spec equivalent for the prompt layer. Require it before any prompt change is merged.</p>
+      <h4 class="ph">When to run eval loops</h4>
+      <ul>
+        <li>Eval loops are expensive (real LLM calls) — run them on a slow path: pre-commit on prompt file changes, or nightly CI, not on every unit test run.</li>
+        <li>The key is that they exist and are non-negotiable gates before shipping a prompt change.</li>
+        <li>For agents writing prompt-heavy features, the eval loop is the spec equivalent for the prompt layer. Require it before any prompt change is merged.</li>
+      </ul>
 
       <h2>8.9 Coverage as a verification signal</h2>
-      <p>Line coverage tells you which lines of code were executed by at least one test. It is a useful signal but an unreliable metric for quality. The failure mode is coverage theatre: 100% line coverage with tests that make no meaningful assertions. Every line runs; nothing is verified.</p>
-      <p>Coverage is a <em>necessary</em> condition for confidence, not a <em>sufficient</em> one. A line with 0% coverage is definitely untested. A line with 100% coverage might still be untested in any meaningful sense.</p>
-      <p>How to use coverage correctly in an agentic codebase:</p>
+      <h4 class="ph">Coverage is necessary but not sufficient</h4>
+      <ul>
+        <li>Line coverage tells you which lines were executed by at least one test — a useful signal but an unreliable quality metric.</li>
+        <li>The failure mode is coverage theatre: 100% line coverage with tests that make no meaningful assertions. Every line runs; nothing is verified.</li>
+        <li>A line with 0% coverage is definitely untested. A line with 100% coverage might still be untested in any meaningful sense.</li>
+      </ul>
+      <h4 class="ph">How to use coverage correctly in an agentic codebase</h4>
       <ul>
         <li><strong>Use coverage to find gaps, not to prove quality.</strong> A module at 40% coverage has obvious gaps to address. A module at 100% coverage needs its tests read — not celebrated.</li>
         <li><strong>Use branch coverage, not just line coverage.</strong> Branch coverage catches untested conditional paths. Agents often write code with multiple branches and test only the happy path.</li>
         <li><strong>Set a floor, not a ceiling.</strong> Require, say, 80% branch coverage as a CI gate. Don't optimise for 100% — that incentivises coverage theatre.</li>
         <li><strong>Mutation testing is the honest metric.</strong> Tools like <code>mutmut</code> (Python) or <code>Stryker</code> (JS) introduce small bugs and check whether any test fails. If 100% of mutations survive (no test catches any injected bug), your coverage is theatre regardless of the number.</li>
       </ul>
-      <p>For agents: never let an agent report "coverage is 95%" as evidence of completeness. Ask instead: "How many of the acceptance criteria from the spec are covered by assertions in the test suite?" That is the number that matters.</p>
+      <h4 class="ph">The right question for agents</h4>
+      <ul>
+        <li>Never let an agent report "coverage is 95%" as evidence of completeness.</li>
+        <li>Ask instead: "How many of the acceptance criteria from the spec are covered by assertions in the test suite?" That is the number that matters.</li>
+      </ul>
 
       <h2>8.10 When the agent writes bad tests (and how to spot it)</h2>
-      <p>Agents write bad tests. Not from malice — from the same pattern-matching that makes them write good-looking code: they optimise for tests that pass, not for tests that would catch real bugs. Here are the signs to look for:</p>
+      <p>Agents write bad tests — not from malice, but from the same pattern-matching that makes them write good-looking code: they optimise for tests that pass, not for tests that would catch real bugs.</p>
+
 
       <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
         <thead>
@@ -3350,7 +3597,7 @@ def test_author_extraction_eval():
         </tbody>
       </table>
 
-      <p>How to catch bad tests systematically:</p>
+      <h4 class="ph">How to catch bad tests systematically</h4>
       <ol>
         <li><strong>Run the test suite against a known-broken implementation.</strong> Introduce a deliberate bug (delete a function body, return a wrong value) and run the tests. Any test that still passes is either testing the wrong thing or is tautological.</li>
         <li><strong>Read assertions literally.</strong> For every <code>assert</code> statement, ask: "What would make this assertion false?" If the answer is "almost nothing," the assertion is weak.</li>
@@ -3491,7 +3738,7 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
 
       <h2>9.1 The systematic debugging loop</h2>
       <p>Debugging with an agent without a framework is a gamble. The agent will pattern-match to the most plausible-looking cause, propose a fix, and report success — even when the root cause is untouched. To prevent this, Claude Code provides the <code>superpowers:systematic-debugging</code> skill, which enforces a 5-stage loop before any fix is written.</p>
-      <p>The 5-stage cycle:</p>
+      <h4 class="ph">The 5-stage cycle</h4>
       <ol>
         <li><strong>Reproduce</strong> — confirm the bug is deterministically triggerable. No reproduction, no debugging.</li>
         <li><strong>Isolate</strong> — narrow from "the system is broken" to "this specific input to this specific function produces this specific wrong output."</li>
@@ -3499,8 +3746,11 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
         <li><strong>Fix</strong> — apply the minimal change that corrects the root cause. Not the symptom.</li>
         <li><strong>Verify</strong> — rerun the failing test (green), then rerun the entire suite (no regressions).</li>
       </ol>
-      <p>The skill enforces this order. You cannot skip to stage 4 (Fix) without the agent having produced evidence at stages 2 and 3. This constraint is deliberate: it prevents the most common agent failure mode — applying a patch that silences the symptom while leaving the root cause in place.</p>
-      <p>To invoke: in Claude Code, type <code>/systematic-debugging</code> (via the skill). Describe the bug. The agent will ask you to complete each stage before advancing. Resist the urge to skip ahead.</p>
+      <h4 class="ph">Why the order is enforced</h4>
+      <ul>
+        <li>You cannot skip to stage 4 (Fix) without the agent having produced evidence at stages 2 and 3. This constraint is deliberate: it prevents the most common agent failure mode — applying a patch that silences the symptom while leaving the root cause in place.</li>
+        <li>To invoke: in Claude Code, type <code>/systematic-debugging</code> (via the skill). Describe the bug. The agent asks you to complete each stage before advancing. Resist the urge to skip ahead.</li>
+      </ul>
 
       <div class="stp"><div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Reproduce</div></div><p>Confirm the bug is deterministically triggerable. Write the reproduction recipe — exact steps, preconditions, expected vs. actual output — before touching any code. No reproduction, no debugging.</p></div>
       <div class="stp"><div class="stp-h"><div class="stp-n org">2</div><div class="stp-t">Isolate</div></div><p>Narrow from "the system is broken" to "this specific input to this specific function produces this specific wrong output." Produce the minimal failing case. Agents will skip this and jump to the full system — don't let them.</p></div>
@@ -3509,7 +3759,10 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
       <div class="stp"><div class="stp-h"><div class="stp-n pur">5</div><div class="stp-t">Verify</div></div><p>Rerun the failing test (green), then rerun the full suite (no regressions). Fixes that introduce regressions traded one bug for another — both are failures.</p></div>
 
       <h2>9.2 Reproduce → isolate → root cause → fix → verify</h2>
-      <p><strong>Reproduce reliably first.</strong> If you cannot reproduce the bug on demand, your fix is a hope. A fix applied to an unreproducible bug may appear to work — the bug simply didn't trigger — and will resurface later under conditions you didn't anticipate.</p>
+      <h4 class="ph">Reproduce reliably first</h4>
+      <ul>
+        <li>If you cannot reproduce the bug on demand, your fix is a hope. A fix applied to an unreproducible bug may appear to work — the bug simply didn't trigger — and will resurface under conditions you didn't anticipate.</li>
+      </ul>
       <p>The <strong>reproduction recipe</strong> pattern: before touching any code, write down (or have the agent write down) the exact steps that reliably produce the failure:</p>
       <pre><code># Reproduction recipe — write this before any fix attempt
 # Bug: date_filter includes boundary commit when it should not
@@ -3521,11 +3774,17 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
 # Expected: 2 (commits on 2024-01-10 and 2024-01-15)
 # Actual:   1 (commit on 2024-01-10 excluded)
 # Confirmed on: Python 3.11, pytest 7.4</code></pre>
-      <p>With the recipe written, you have pinned the bug in space and time. Any fix that doesn't make the recipe produce the expected result hasn't fixed the bug.</p>
-      <p>The stages are not decorative. <strong>Isolate</strong> means producing a minimal failing case — the smallest input that still triggers the bug. Agents will skip this and jump to the full system. Don't let them. A minimal case eliminates false suspects and makes the root cause obvious. <strong>Root cause</strong> means reading the actual code and stating a falsifiable hypothesis: "The bug is on line 47 of <code>parser.py</code> — the condition uses <code>&gt;</code> instead of <code>&gt;=</code>." <strong>Verify</strong> means running the full suite, not just the test that was red. Fixes that introduce regressions are fixes that traded one bug for another.</p>
+      <h4 class="ph">What each stage actually requires</h4>
+      <ul>
+        <li>With the recipe written, you have pinned the bug in space and time. Any fix that doesn't make the recipe produce the expected result hasn't fixed the bug.</li>
+        <li><strong>Isolate</strong> means producing a minimal failing case — the smallest input that still triggers the bug. Agents will skip this and jump to the full system. Don't let them. A minimal case eliminates false suspects and makes the root cause obvious.</li>
+        <li><strong>Root cause</strong> means reading the actual code and stating a falsifiable hypothesis: "The bug is on line 47 of <code>parser.py</code> — the condition uses <code>&gt;</code> instead of <code>&gt;=</code>."</li>
+        <li><strong>Verify</strong> means running the full suite, not just the test that was red. Fixes that introduce regressions traded one bug for another.</li>
+      </ul>
 
       <h2>9.3 Bugs the agent will fix wrong (and why)</h2>
-      <p>Agents don't maliciously produce wrong fixes. They pattern-match to common resolutions and optimise for making the immediate test pass. Here are the recurring failure modes:</p>
+      <p>Agents don't maliciously produce wrong fixes — they pattern-match to common resolutions and optimise for making the immediate test pass. The table below shows the recurring failure modes.</p>
+
 
       <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin:1.2rem 0;">
         <thead>
@@ -3569,10 +3828,17 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
         </tbody>
       </table>
 
-      <p>The tell for all of these: the agent says "fixed" and the immediately-failing test goes green — but you haven't seen the agent read and reason about the function body. Push back: "Show me which line was wrong and why. Do not show me the diff yet."</p>
+      <h4 class="ph">The universal tell — and the pushback</h4>
+      <ul>
+        <li>For all of these: the agent says "fixed" and the immediately-failing test goes green — but you haven't seen the agent read and reason about the function body.</li>
+        <li>Push back: "Show me which line was wrong and why. Do not show me the diff yet."</li>
+      </ul>
 
       <h2>9.4 Root cause vs patch — keeping the agent honest</h2>
-      <p>A <strong>patch</strong> silences the symptom. A <strong>root cause fix</strong> corrects the invariant that was violated. The test may go green in both cases. Only one of them has actually fixed the bug.</p>
+      <h4 class="ph">Patch vs. root cause fix</h4>
+      <ul>
+        <li>A <strong>patch</strong> silences the symptom. A <strong>root cause fix</strong> corrects the invariant that was violated. The test may go green in both cases — only one has actually fixed the bug.</li>
+      </ul>
       <p>The technique for forcing root cause work is the <strong>"why?" cascade</strong>. After the agent names a cause, ask "why?" until you reach an invariant — a property of the system that should always hold but was violated:</p>
       <pre><code>Agent: "The count is 1 instead of 2 because the boundary commit is excluded."
 You:   "Why is it excluded?"
@@ -3582,23 +3848,31 @@ Agent: "The initial implementation assumed exclusive lower bound."
 You:   "What is the correct invariant?"
 Agent: "start_date is inclusive. Commits on start_date must be included."
 You:   "That is the root cause. Now show me the minimal fix."</code></pre>
-      <p>The cascade stops when the agent can state an invariant — a design decision that was either wrong or correctly specified but incorrectly implemented. Everything above that level in the cascade is symptom, not cause.</p>
-      <p>Signs you have a patch, not a fix: the fix adds a special case, wraps in a try/except, modifies the test, or is larger than 3 lines for a bug the cascade traced to a single operator. A root cause fix for an off-by-one is one character. If the agent's proposed diff is 30 lines, ask: "Is this the root cause fix or a workaround?"</p>
+      <h4 class="ph">When to stop the cascade — and how to spot a patch</h4>
+      <ul>
+        <li>The cascade stops when the agent can state an invariant — a design decision that was either wrong or correctly specified but incorrectly implemented. Everything above that level is symptom, not cause.</li>
+        <li>Signs you have a patch, not a fix: the fix adds a special case, wraps in a try/except, modifies the test, or is larger than 3 lines for a bug the cascade traced to a single operator.</li>
+        <li>A root cause fix for an off-by-one is one character. If the agent's proposed diff is 30 lines, ask: "Is this the root cause fix or a workaround?"</li>
+      </ul>
 
       <h2>9.5 Reading the agent's hypotheses critically</h2>
       <p>When you paste a bug into an agent, it will generate hypotheses. These are often plausible and frequently wrong. Reading them critically is a skill.</p>
-      <p><strong>What to look for:</strong></p>
+      <h4 class="ph">What to look for</h4>
       <ul>
         <li><strong>Evidence vs. assertion.</strong> "The bug is in <code>parse_date</code>" — did the agent read <code>parse_date</code>? Ask: "Show me the line in parse_date that supports this hypothesis." If the agent can't cite a specific line, it's guessing.</li>
         <li><strong>Confident tone on uncertain reasoning.</strong> Agents express hypotheses with the same fluency regardless of confidence. A confident-sounding hypothesis with no cited evidence is a signal to verify, not accept.</li>
         <li><strong>First hypothesis bias.</strong> Agents tend to anchor on their first hypothesis. If you push back once, they adjust. If you push back twice, they often return to the original hypothesis. This is a sign to run the experiment yourself: test the hypothesis by deliberate insertion of a print statement or assertion.</li>
         <li><strong>Hypothesis count.</strong> An agent that lists 5 possible causes for a single failing test is diffusing responsibility. Ask it to rank them by likelihood and provide evidence for the top one before moving on.</li>
       </ul>
-      <p>The rule: treat agent hypotheses as test candidates, not conclusions. Each hypothesis is a prediction: "if this is the cause, then changing X should make the test pass." Test the prediction. If it fails, the hypothesis was wrong — regardless of how confident the agent sounded.</p>
+      <h4 class="ph">The rule: hypotheses are test candidates, not conclusions</h4>
+      <ul>
+        <li>Treat agent hypotheses as predictions: "if this is the cause, then changing X should make the test pass." Test the prediction.</li>
+        <li>If it fails, the hypothesis was wrong — regardless of how confident the agent sounded.</li>
+      </ul>
 
       <h2>9.6 Bisecting with the agent's help</h2>
       <p>When you don't know <em>when</em> a bug was introduced, <code>git bisect</code> is the most reliable tool. Agents can help run and interpret it, but you must stay in control of the process.</p>
-      <p><strong>git bisect workflow with an agent:</strong></p>
+      <h4 class="ph">git bisect workflow with an agent</h4>
       <pre><code>git bisect start
 git bisect bad                        # current commit is broken
 git bisect good &lt;known-good-sha&gt;       # last commit known to pass the test
@@ -3607,9 +3881,13 @@ git bisect good &lt;known-good-sha&gt;       # last commit known to pass the tes
 # If PASS: git bisect good
 # If FAIL: git bisect bad
 # Repeat until git bisect prints the first-bad commit</code></pre>
-      <p>The agent's role is: run the test at each bisect step, report pass/fail, and tell you which <code>git bisect good/bad</code> to issue. Your role is to issue the command and read the final output. Do not let the agent issue <code>git bisect reset</code> or skip steps — it may miss the true first-bad commit.</p>
-      <p><strong>Binary search of inputs</strong> is bisect for data, not commits. When a function fails on large input but passes on small input, cut the input in half, run the test, and recurse into the failing half. Agents can help generate the halved inputs and run the tests, but you must frame the search correctly: "Does the function fail on the first half or the second half of this list?"</p>
-      <p><strong>Narrowing checklist:</strong></p>
+      <h4 class="ph">Roles in bisect</h4>
+      <ul>
+        <li>The agent's role: run the test at each bisect step, report pass/fail, tell you which <code>git bisect good/bad</code> to issue.</li>
+        <li>Your role: issue the command and read the final output. Do not let the agent issue <code>git bisect reset</code> or skip steps — it may miss the true first-bad commit.</li>
+        <li><strong>Binary search of inputs</strong> is bisect for data, not commits. When a function fails on large input but passes on small input, cut the input in half and recurse into the failing half. Frame the search: "Does the function fail on the first half or the second half of this list?"</li>
+      </ul>
+      <h4 class="ph">Narrowing checklist</h4>
       <ul>
         <li>Start with the full failing case confirmed.</li>
         <li>Remove half the variables. Does it still fail?</li>
@@ -3618,26 +3896,26 @@ git bisect good &lt;known-good-sha&gt;       # last commit known to pass the tes
       </ul>
 
       <h2>9.7 Logs, traces, stack frames — feeding evidence</h2>
-      <p>An agent debugging without evidence is reasoning in a vacuum. The quality of the debug session is directly proportional to the quality of evidence you feed it. Here is what to provide and how.</p>
-      <p><strong>What to paste verbatim:</strong></p>
+      <p>An agent debugging without evidence is reasoning in a vacuum. The quality of the debug session is directly proportional to the quality of evidence you feed it.</p>
+      <h4 class="ph">What to paste verbatim</h4>
       <ul>
         <li>The full pytest failure output, including the assertion error and the traceback. Do not truncate.</li>
         <li>The relevant stack frame — the line in your code (not a library) where execution was when the assertion failed.</li>
         <li>The actual vs. expected values from the assertion message (if present).</li>
       </ul>
-      <p><strong>What to summarise:</strong></p>
+      <h4 class="ph">What to summarise</h4>
       <ul>
         <li>Long log files — paste only the lines around the error (±10 lines of context).</li>
         <li>Repeated identical stack frames — paste one instance and note "repeated N times."</li>
         <li>Long configuration files — paste only the section relevant to the failing behaviour.</li>
       </ul>
-      <p><strong>What to leave out:</strong></p>
+      <h4 class="ph">What to leave out</h4>
       <ul>
         <li>Library internals that are not part of your codebase (e.g., deep pytest or stdlib frames).</li>
         <li>Passing test output — only the failures are evidence of the bug.</li>
         <li>Unrelated error messages from previous sessions.</li>
       </ul>
-      <p><strong>Concrete example — good evidence paste:</strong></p>
+      <h4 class="ph">Concrete example — good evidence paste</h4>
       <pre><code>FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
 
 AssertionError: Expected 2 commits (boundary + after), got 1.
@@ -3649,11 +3927,14 @@ Traceback (most recent call last):
   File "tests/test_gitlog.py", line 58, in test_date_filter_excludes_commits_before_start_date
     assert result["Alice"]["commit_count"] == 2, (...)
 AssertionError</code></pre>
-      <p>This evidence tells the agent: what test failed, what the assertion was, what the actual vs. expected values were, and which line in your code triggered it. That is sufficient. More is noise.</p>
+      <h4 class="ph">Why this evidence is sufficient</h4>
+      <ul>
+        <li>This evidence tells the agent: what test failed, what the assertion was, what the actual vs. expected values were, and which line in your code triggered it. That is sufficient. More is noise.</li>
+      </ul>
 
       <h2>9.8 When to step in yourself</h2>
       <p>Agents get stuck. The diagnostic signal is: <strong>3 iterations with no forward progress</strong>. If the agent has proposed 3 different fixes, all of which still fail the same test with the same error, the agent is in a pattern-matching loop with insufficient context. Stepping in is not a failure — it is the correct response.</p>
-      <p><strong>Signs to stop the agent and intervene:</strong></p>
+      <h4 class="ph">Signs to stop the agent and intervene</h4>
       <ul>
         <li>The same test fails with the same error after 3 agent iterations.</li>
         <li>The agent's proposed diffs are getting larger with each iteration (scope creep under pressure).</li>
@@ -3661,7 +3942,7 @@ AssertionError</code></pre>
         <li>The agent reports a fix as successful but doesn't show the passing test output.</li>
         <li>The agent introduces a new failure while fixing the original one, and then focuses on the new failure instead.</li>
       </ul>
-      <p><strong>What to do when you step in:</strong></p>
+      <h4 class="ph">What to do when you step in</h4>
       <ol>
         <li>Stop the agent: "Stop. Do not produce any more code."</li>
         <li>Read the function body yourself. Not the diff — the function as it currently exists.</li>
@@ -3669,18 +3950,22 @@ AssertionError</code></pre>
         <li>Identify the exact line. State it to the agent: "The bug is on line 47. The condition is <code>commit_date &gt; start_date</code>. It should be <code>commit_date &gt;= start_date</code>. Make only that change."</li>
         <li>Verify the result yourself.</li>
       </ol>
-      <p>The agent is most useful for the exploration and verification phases. The isolation step — reading code and following the execution path — is sometimes faster to do yourself than to explain to an agent in enough detail that it can do it correctly.</p>
+      <h4 class="ph">Division of labor</h4>
+      <ul>
+        <li>The agent is most useful for the exploration and verification phases.</li>
+        <li>The isolation step — reading code and following the execution path — is sometimes faster to do yourself than to explain to an agent in enough detail that it can do it correctly.</li>
+      </ul>
 
       <h2>9.9 Debugging the agent (not the code) — when prompts go bad</h2>
-      <p>Sometimes the bug is not in the code. The bug is in the prompt — the instructions you gave the agent that caused it to generate the wrong code in the first place.</p>
-      <p><strong>Signs that the prompt is the bug:</strong></p>
+      <p>Sometimes the bug is not in the code — it is in the prompt: the instructions you gave the agent that caused it to generate the wrong code in the first place.</p>
+      <h4 class="ph">Signs that the prompt is the bug</h4>
       <ul>
         <li>The agent generates subtly wrong code every time you ask for the same feature, even after multiple corrections.</li>
         <li>The agent misunderstands a key term you use (e.g., you say "date filter" and the agent consistently interprets it as exclusive lower bound).</li>
         <li>The agent adds code you didn't ask for, repeatedly.</li>
         <li>Fixes to the code keep reverting to the buggy pattern in subsequent sessions.</li>
       </ul>
-      <p>The debugging process for a bad prompt mirrors the systematic loop for code bugs:</p>
+      <h4 class="ph">Debugging a bad prompt — same 5-stage loop</h4>
       <ol>
         <li><strong>Reproduce:</strong> Identify the prompt fragment that consistently produces the wrong output.</li>
         <li><strong>Isolate:</strong> Remove context from the prompt until you find the minimal fragment that triggers the wrong behaviour.</li>
@@ -3688,12 +3973,28 @@ AssertionError</code></pre>
         <li><strong>Fix:</strong> Rewrite the ambiguous fragment. Add the missing constraint. Remove the contradiction.</li>
         <li><strong>Verify:</strong> Run the corrected prompt against the same inputs that produced the bug. Confirm the output is now correct.</li>
       </ol>
-      <p>Common prompt bugs: under-specified acceptance criteria (the agent fills gaps with assumptions), absent negative constraints ("do not modify the test file" missing), and ambiguous terminology that the agent resolves differently in different sessions. The fix is always the same: make the constraint explicit, not implicit.</p>
+      <h4 class="ph">Common prompt bugs</h4>
+      <ul>
+        <li>Under-specified acceptance criteria — the agent fills gaps with assumptions.</li>
+        <li>Absent negative constraints — "do not modify the test file" missing.</li>
+        <li>Ambiguous terminology — the agent resolves the same term differently in different sessions.</li>
+        <li>The fix is always the same: make the constraint explicit, not implicit.</li>
+      </ul>
 
       <h2>9.10 The systematic-debugging skill and Kilo Debug mode</h2>
-      <p><strong>Claude Code</strong> has no built-in <code>/debug</code> slash command. Do not look for one — it does not exist. The correct path is the <code>superpowers:systematic-debugging</code> skill. Invoke it via the Skill tool or by typing the skill name in a Claude Code session. The skill enforces the 5-stage cycle (§9.1), requires evidence at each stage, and prevents the agent from advancing to Fix without a stated root cause. It is the structured alternative to ad-hoc debugging.</p>
-      <p><strong>Kilo Code</strong> provides a dedicated <strong>Debug mode</strong> — designed for targeted diagnostics. In practice, Debug mode encodes the diagnostic-before-fix discipline by surfacing tools and prompts oriented around reading, tracing, and root-cause analysis rather than writing fixes. <strong>Verify exact enforcement guarantees against current Kilo Code docs</strong>, as mode constraints evolve across versions. The pedagogical value is the same regardless: switching to Debug mode is a signal to yourself (and the agent) to slow down and diagnose before patching.</p>
-      <p><strong>Patterns and limits (both tools):</strong></p>
+      <h4 class="ph">Claude Code: no /debug command — use the skill</h4>
+      <ul>
+        <li>Claude Code has no built-in <code>/debug</code> slash command — do not look for one.</li>
+        <li>The correct path is the <code>superpowers:systematic-debugging</code> skill. Invoke via the Skill tool or by typing the skill name in a Claude Code session.</li>
+        <li>The skill enforces the 5-stage cycle (§9.1), requires evidence at each stage, and prevents the agent from advancing to Fix without a stated root cause. It is the structured alternative to ad-hoc debugging.</li>
+      </ul>
+      <h4 class="ph">Kilo Code: dedicated Debug mode</h4>
+      <ul>
+        <li>Kilo Code provides a dedicated <strong>Debug mode</strong> designed for targeted diagnostics. It surfaces tools and prompts oriented around reading, tracing, and root-cause analysis rather than writing fixes.</li>
+        <li><strong>Verify exact enforcement guarantees against current Kilo Code docs</strong> — mode constraints evolve across versions.</li>
+        <li>The pedagogical value is the same regardless: switching to Debug mode signals to yourself (and the agent) to slow down and diagnose before patching.</li>
+      </ul>
+      <h4 class="ph">Patterns and limits (both tools)</h4>
       <ul>
         <li>Both tools work best when fed the evidence described in §9.7 — full test output, relevant stack frame, minimal reproducer.</li>
         <li>Neither tool can read your mind about what "correct" means. You must state the expected behaviour explicitly.</li>
@@ -3778,6 +4079,7 @@ PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_dat
       <h2>10.1 The three review layers — pre-merge, code, security</h2>
       <p>Every non-trivial change should pass through three distinct review layers before merge. Each layer has a different scope, different tooling, and catches a different class of defect. Treating them as one combined "review" means each one is done shallowly — you need the distinctions.</p>
 
+
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; margin:1.4rem 0;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem;">
           <p style="font-weight:700; color:var(--accent); margin:0 0 0.5rem;">Layer 1 · Pre-merge (you)</p>
@@ -3805,12 +4107,19 @@ PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_dat
         <div class="flv"><div class="flv-name">Security review (specialized)</div><div class="flv-desc">Purpose-built scan for injection vectors, secret leaks, insecure defaults, and dangerous API usage. Runs independently — security reviewers are not thinking about naming conventions. Tool: <code>/security-review</code>.</div></div>
       </div>
 
-      <p>The most common mistake is collapsing all three into a single "does this look good?" pass. Layer 2 reviewers are not thinking about injection vectors; Layer 3 reviewers are not thinking about naming conventions. Keep the scopes clean.</p>
+      <h4 class="ph">Keep the scopes clean</h4>
+      <ul>
+        <li>The most common mistake is collapsing all three into a single "does this look good?" pass.</li>
+        <li>Layer 2 reviewers are not thinking about injection vectors; Layer 3 reviewers are not thinking about naming conventions.</li>
+      </ul>
 
       <h2>10.2 Code review with agents — beyond rubber-stamping</h2>
-      <p>An agent doing code review is not automatically trustworthy. Without guidance, the agent will trend toward politeness: it will notice obvious issues but hedge, praise structure before raising concerns, and stop after two or three findings even when more exist. The default output is a rubber-stamp with footnotes.</p>
-
-      <p>To get real code review, you need a <strong>skeptic stance prompt</strong>. The difference:</p>
+      <h4 class="ph">The default is a rubber-stamp</h4>
+      <ul>
+        <li>Without guidance, an agent will trend toward politeness: it will notice obvious issues but hedge, praise structure before raising concerns, and stop after two or three findings even when more exist.</li>
+        <li>To get real code review, you need a <strong>skeptic stance prompt</strong>.</li>
+      </ul>
+      <p>The difference:</p>
       <pre><code># Rubber-stamp prompt (don't use)
 "Review this code for me."
 
@@ -3822,14 +4131,16 @@ or behave differently under concurrent load.
 Be terse. Be ruthless. Do not praise anything.
 Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
 
-      <p><strong>Reviewing the review (recursion).</strong> The agent's review is itself an artifact that can contain errors. Agents hallucinate findings — flagging non-existent bugs, citing APIs incorrectly, or misreading control flow. Before acting on a finding, verify it manually: read the actual line the agent cited. Does the code actually do what the agent says it does? If the finding cites a function — does that function exist and does it have that signature?</p>
-
-      <p>The <strong>skeptic stance toward the reviewer</strong>: treat every finding as a hypothesis, not a fact. Confirm before you fix.</p>
+      <h4 class="ph">Reviewing the review (recursion)</h4>
+      <ul>
+        <li>The agent's review is itself an artifact that can contain errors. Agents hallucinate findings — flagging non-existent bugs, citing APIs incorrectly, or misreading control flow.</li>
+        <li>Before acting on a finding, verify it manually: read the actual line the agent cited. Does the code actually do what the agent says it does? Does the cited function exist with that signature?</li>
+        <li><strong>Skeptic stance toward the reviewer:</strong> treat every finding as a hypothesis, not a fact. Confirm before you fix.</li>
+      </ul>
 
       <h2>10.3 /security-review deep dive</h2>
       <p>The <code>/security-review</code> skill in Claude Code runs a security-focused analysis pass on your codebase or diff. It is distinct from code review: it does not comment on architecture or naming — it looks for attack surface.</p>
-
-      <p><strong>What it scans:</strong></p>
+      <h4 class="ph">What it scans</h4>
       <ul>
         <li><strong>Injection patterns</strong> — SQL injection, shell injection (subprocess with untrusted input), template injection, path traversal.</li>
         <li><strong>Secret leakage</strong> — hardcoded credentials, tokens in source, secrets in log statements.</li>
@@ -3838,7 +4149,7 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         <li><strong>OWASP-adjacent patterns</strong> — missing authentication checks, direct object references, missing rate limiting.</li>
       </ul>
 
-      <p><strong>What it misses (calibration required):</strong></p>
+      <h4 class="ph">What it misses (calibration required)</h4>
       <ul>
         <li><strong>Business logic flaws</strong> — "user A can see user B's data" depends on your domain model, not the code shape. The scanner cannot reason about intent.</li>
         <li><strong>Auth boundary correctness</strong> — it can spot a missing <code>@require_auth</code> decorator but cannot verify your auth model is sound end-to-end.</li>
@@ -3846,10 +4157,15 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         <li><strong>Configuration-layer vulnerabilities</strong> — IAM policies, firewall rules, Kubernetes RBAC. These live outside the code the scanner reads.</li>
       </ul>
 
-      <p>Run <code>/security-review</code> before every merge to a main branch. It runs locally, in-terminal, synchronously. Results appear inline.</p>
+      <h4 class="ph">When and how to run</h4>
+      <ul>
+        <li>Run <code>/security-review</code> before every merge to a main branch.</li>
+        <li>It runs locally, in-terminal, synchronously. Results appear inline.</li>
+      </ul>
 
       <h2>10.4 /ultrareview — multi-agent deep review</h2>
       <p>The <code>/ultrareview</code> skill is fundamentally different from <code>/code-review</code> or <code>/security-review</code>. Understanding these differences is required before using it.</p>
+
 
       <div style="background:var(--surface); border:2px solid var(--accent); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
         <p style="font-weight:700; margin:0 0 0.8rem;">Critical: /ultrareview is cloud-based, paid, and asynchronous</p>
@@ -3860,20 +4176,29 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         </ul>
       </div>
 
-      <p><strong>What /ultrareview does:</strong> it spawns multiple parallel subagents with different review lenses — correctness, performance, security, architecture, test coverage — and synthesises their findings into a structured report. Because multiple independent agents review the same code, it catches things a single-pass review misses: agents disagree, and disagreements surface ambiguities in the code that no single reviewer would flag.</p>
-
-      <p><strong>When to use it:</strong></p>
+      <h4 class="ph">What /ultrareview does</h4>
+      <ul>
+        <li>Spawns multiple parallel subagents with different review lenses — correctness, performance, security, architecture, test coverage — and synthesises their findings into a structured report.</li>
+        <li>Because multiple independent agents review the same code, it catches things a single-pass review misses: agents disagree, and disagreements surface ambiguities no single reviewer would flag.</li>
+      </ul>
+      <h4 class="ph">When to use it</h4>
       <ul>
         <li>Before a production release or a release candidate branch merge.</li>
         <li>When a significant refactor touches security boundaries (auth, payments, data access).</li>
         <li>When you want a second opinion on a complex design decision before it gets load-bearing.</li>
       </ul>
 
-      <p><strong>When not to use it:</strong> routine feature work, documentation changes, small bug fixes. The cost and latency are not justified. Use <code>/code-review</code> instead.</p>
+      <h4 class="ph">When not to use it</h4>
+      <ul>
+        <li>Routine feature work, documentation changes, small bug fixes — the cost and latency are not justified. Use <code>/code-review</code> instead.</li>
+      </ul>
 
       <h2>10.5 Verification-before-completion — running the thing you built</h2>
-      <p>The most common error in AI-assisted development is claiming done without running the thing. An agent can generate code that looks complete, passes a mental model check, and even passes static analysis — and still fail at runtime in the first smoke test. "I've implemented the feature" is a claim about behaviour. Behaviour is only observable by running the code.</p>
-
+      <h4 class="ph">The most common error: claiming done without running the thing</h4>
+      <ul>
+        <li>An agent can generate code that looks complete, passes a mental model check, and even passes static analysis — and still fail at runtime in the first smoke test.</li>
+        <li>"I've implemented the feature" is a claim about behaviour. Behaviour is only observable by running the code.</li>
+      </ul>
       <p>The <code>superpowers:verification-before-completion</code> skill encodes this as a non-negotiable gate. The pattern it enforces:</p>
 
       <pre><code># Verification-before-completion pattern
@@ -3891,14 +4216,16 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
 
 4. CLAIM   — only after 1, 2, 3 pass can you write "done" or "implemented"</code></pre>
 
-      <p>Invoke the skill with <code>/verification-before-completion</code> in Claude Code. It will ask you to produce evidence for each stage. The agent cannot skip stages. This discipline is especially important after refactoring — it's easy to rename a function, forget one call site, and produce code that passes code review but crashes on first use.</p>
-
-      <p><strong>The evidence rule:</strong> every "done" claim must be backed by at least one piece of concrete evidence — a test run output, a screenshot of the feature working, a copy of the smoke test output. "It should work" is not evidence.</p>
+      <h4 class="ph">How to use the skill</h4>
+      <ul>
+        <li>Invoke with <code>/verification-before-completion</code> in Claude Code. It asks you to produce evidence for each stage. The agent cannot skip stages.</li>
+        <li>Especially important after refactoring — it's easy to rename a function, forget one call site, and produce code that passes code review but crashes on first use.</li>
+        <li><strong>The evidence rule:</strong> every "done" claim must be backed by at least one piece of concrete evidence — a test run output, a screenshot of the feature working, a copy of the smoke test output. "It should work" is not evidence.</li>
+      </ul>
 
       <h2>10.6 Hallucinations in code — APIs that don't exist, imports that fail</h2>
-      <p>Code hallucination is qualitatively different from text hallucination. In a sentence, a hallucinated fact is detectable by cross-referencing. In code, a hallucinated API looks syntactically identical to a real one. The code is well-formed, passes linting, and reads naturally — until it is run.</p>
-
-      <p><strong>Common hallucination patterns:</strong></p>
+      <p>Code hallucination is qualitatively different from text hallucination. In a sentence, a hallucinated fact is detectable by cross-referencing. In code, a hallucinated API looks syntactically identical to a real one — the code is well-formed, passes linting, and reads naturally, until it is run.</p>
+      <h4 class="ph">Common hallucination patterns</h4>
       <ul>
         <li><strong>Made-up library functions:</strong> <code>pandas.read_sql_smart()</code>, <code>requests.get_cached()</code>, <code>os.path.resolve_relative()</code> — functions that sound like they should exist but don't.</li>
         <li><strong>Wrong method signatures:</strong> calling a real function with arguments it doesn't accept, or in an order it doesn't expect.</li>
@@ -3906,7 +4233,8 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         <li><strong>Version mismatch:</strong> a real API that existed in an older version and was removed or renamed — the agent's training data included it.</li>
       </ul>
 
-      <p><strong>The Read-then-Edit verification pattern:</strong> before accepting any agent-generated code that uses an API you didn't write yourself, verify the API exists. The pattern:</p>
+      <h4 class="ph">The Read-then-Edit verification pattern</h4>
+      <p>Before accepting any agent-generated code that uses an API you didn't write yourself, verify the API exists. The pattern:</p>
 
       <pre><code># Read-then-Edit verification pattern
 # Before: agent generates code using an API
@@ -3926,10 +4254,14 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
 # Do NOT: assume "it looks plausible" means it works.
 # Do NOT: run the code as the first verification step — read first.</code></pre>
 
-      <p>For external libraries: use the <code>WebFetch</code> tool to pull the actual documentation page, not the agent's memory of it. The agent's training data has a cutoff; the library may have changed since then.</p>
+      <h4 class="ph">For external libraries</h4>
+      <ul>
+        <li>Use the <code>WebFetch</code> tool to pull the actual documentation page, not the agent's memory of it.</li>
+        <li>The agent's training data has a cutoff; the library may have changed since then.</li>
+      </ul>
 
       <h2>10.7 The "looks right vs is right" gap</h2>
-      <p>Code can simultaneously satisfy all of the following and still be wrong:</p>
+      <h4 class="ph">Code can pass every check and still be wrong</h4>
       <ul>
         <li>Compiles without errors.</li>
         <li>Passes a linter at zero warnings.</li>
@@ -3938,18 +4270,20 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         <li>Passes a casual code review.</li>
       </ul>
 
-      <p>The gap between "looks right" and "is right" is where most AI-assisted bugs live. They don't look like bugs. They look like working code that has a subtle behavioural error — an off-by-one on an edge case, a missing <code>await</code>, a silent integer overflow, a dictionary lookup that returns <code>None</code> silently instead of raising.</p>
-
-      <p><strong>The type-checks-pass, tests-fail case</strong> is the most dangerous variant: the type system confirms that types are consistent but cannot verify that the logic is correct. A function typed as <code>(int, int) -&gt; int</code> that returns <code>a * b</code> instead of <code>a + b</code> passes every type check. Only a test that checks the actual output catches it.</p>
-
-      <p>This is why the verification discipline (§10.5) requires a smoke test, not just a build pass. And it's why the TDD discipline from Ch 8 is protective: if you write the test before the implementation, the test codifies what "right" means before "looks right" code can be accepted.</p>
-
-      <p><strong>Practical heuristic:</strong> if a code change is more than 20 lines and has no corresponding test change, the "is right" question is unanswered. Don't merge it without asking why.</p>
+      <h4 class="ph">Where AI-assisted bugs live</h4>
+      <ul>
+        <li>The gap between "looks right" and "is right" is where most AI-assisted bugs live. They don't look like bugs — they look like working code with a subtle behavioural error: an off-by-one on an edge case, a missing <code>await</code>, a silent integer overflow, a dictionary lookup that returns <code>None</code> silently instead of raising.</li>
+        <li><strong>The type-checks-pass, tests-fail case</strong> is the most dangerous variant: the type system confirms type consistency but cannot verify logic correctness. A function typed as <code>(int, int) -&gt; int</code> that returns <code>a * b</code> instead of <code>a + b</code> passes every type check — only a test catches it.</li>
+        <li>This is why the verification discipline (§10.5) requires a smoke test, not just a build pass. And it's why TDD from Ch 8 is protective: writing the test before implementation codifies what "right" means before "looks right" code can be accepted.</li>
+      </ul>
+      <h4 class="ph">Practical heuristic</h4>
+      <ul>
+        <li>If a code change is more than 20 lines and has no corresponding test change, the "is right" question is unanswered. Don't merge it without asking why.</li>
+      </ul>
 
       <h2>10.8 Receiving code review gracefully</h2>
       <p>Receiving code review — whether from an agent or a human — is a skill. The default response to negative feedback is defensive: discount the finding, reframe the code so the finding no longer applies, or implement a surface-level change that satisfies the letter of the review without addressing the concern. All of these responses make code worse.</p>
-
-      <p>The <code>superpowers:receiving-code-review</code> skill provides a structured framework for processing review findings. The core discipline:</p>
+      <h4 class="ph">Core discipline (superpowers:receiving-code-review)</h4>
 
       <ol>
         <li><strong>Assume the reviewer is right until proven otherwise.</strong> Disagreement is a signal that something is unclear — either the code is unclear, or the reviewer misread it. Both outcomes need resolution.</li>
@@ -3958,12 +4292,15 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         <li><strong>Distinguish BLOCKER from MINOR.</strong> Not all findings are equal. A BLOCKER (correctness bug, security hole) must be resolved before merge. A MINOR (naming preference, style suggestion) can be deferred or declined with explanation.</li>
       </ol>
 
-      <p>The receiving-code-review discipline applies equally to agent reviewers. Don't implement every suggestion the agent makes without reading the finding. Agents make incorrect review comments. Read the finding, check the code it references, and make your own judgment.</p>
+      <h4 class="ph">Applies equally to agent reviewers</h4>
+      <ul>
+        <li>Don't implement every suggestion the agent makes without reading the finding. Agents make incorrect review comments.</li>
+        <li>Read the finding, check the code it references, and make your own judgment.</li>
+      </ul>
 
       <h2>10.9 Self-review prompts — getting the agent to critique itself</h2>
       <p>Before requesting external review, you can get the agent to critique its own output. This catches a class of errors the agent is aware of but didn't surface during generation — it knows about edge cases it didn't handle, APIs it wasn't sure about, and assumptions it made.</p>
-
-      <p><strong>High-value self-review prompts:</strong></p>
+      <h4 class="ph">High-value self-review prompts</h4>
 
       <pre><code># Prompt 1: find a bug
 "Find a bug in the code you just wrote.
@@ -3987,12 +4324,16 @@ State the assumption explicitly and suggest how to guard against it."
 "What test case is missing from the test suite that, if it existed,
 would fail right now?"</code></pre>
 
-      <p>The key is specificity: vague prompts get vague responses. "Is there anything wrong with this?" elicits reassurance. "Find a bug" forces the agent to search. "What inputs does this not handle?" forces enumeration of failure modes rather than confirmation of success modes.</p>
-
-      <p>Run at least Prompt 2 and Prompt 3 on every non-trivial code generation before accepting the output.</p>
+      <h4 class="ph">Why specificity matters — and which to always run</h4>
+      <ul>
+        <li>Vague prompts get vague responses: "Is there anything wrong with this?" elicits reassurance. "Find a bug" forces the agent to search.</li>
+        <li>"What inputs does this not handle?" forces enumeration of failure modes rather than confirmation of success modes.</li>
+        <li>Run at least Prompt 2 and Prompt 3 on every non-trivial code generation before accepting the output.</li>
+      </ul>
 
       <h2>10.10 Sign-off gates — what blocks a "done" claim</h2>
-      <p>A "done" claim is a commitment. Before making it, the following gates must pass. This is not a suggestion — each gate catches a real class of defect that the previous gate does not catch.</p>
+      <p>A "done" claim is a commitment. The gates below must pass — this is not a suggestion. Each gate catches a real class of defect that the previous gate does not catch.</p>
+
 
       <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
         <p style="font-weight:700; margin:0 0 1rem;">Sign-off checklist</p>
@@ -4007,7 +4348,11 @@ would fail right now?"</code></pre>
         </ul>
       </div>
 
-      <p>These gates are sequential, not parallel: if tests fail, the smoke test result is not meaningful (the code you smoked isn't the code that's shipping). If the build doesn't pass, the tests don't reflect reality.</p>
+      <h4 class="ph">Gates are sequential, not parallel</h4>
+      <ul>
+        <li>If tests fail, the smoke test result is not meaningful — the code you smoked isn't the code that's shipping.</li>
+        <li>If the build doesn't pass, the tests don't reflect reality.</li>
+      </ul>
 
       <h2>10.11 Mini-walkthrough: full review pass</h2>
       <div class="walkthrough">
@@ -4089,36 +4434,51 @@ would fail right now?"</code></pre>
 
       <h2>11.1 When one agent isn't enough</h2>
       <p>A single agent working sequentially has two fundamental limits: <strong>context window saturation</strong> and <strong>wall-clock time</strong>. When a task has genuinely independent sub-problems, forcing one agent through them sequentially wastes both.</p>
-
-      <p>Three signals that you need more than one agent:</p>
+      <h4 class="ph">Three signals that you need more than one agent</h4>
       <ul>
         <li><strong>Independent investigation.</strong> You need to research three unrelated APIs simultaneously. Each investigation has no dependency on the others. A single agent would context-switch, losing depth; parallel agents each work the full window on one problem.</li>
         <li><strong>Large context dilution.</strong> A 200-file codebase plus test suite plus documentation saturates the main session. Farming sub-problems to subagents preserves the orchestrator's context for integration work, not retrieval.</li>
         <li><strong>Specialized roles.</strong> One agent reads the spec, a second writes the implementation, a third reviews it. Each agent's prompt is tuned for one job. The reviewer agent receives no implementation bias — it read the spec first and forms its own expectations.</li>
       </ul>
 
-      <p>The cost of going parallel is coordination overhead: you need to decompose cleanly, manage worktrees or shared state explicitly, and integrate results. If the sub-problems are not truly independent, you pay coordination cost without the throughput benefit — worse than sequential. Rule: <strong>only parallelize at clean dependency boundaries</strong>.</p>
+      <h4 class="ph">The coordination cost</h4>
+      <ul>
+        <li>Going parallel requires decomposing cleanly, managing worktrees or shared state explicitly, and integrating results.</li>
+        <li>If sub-problems are not truly independent, you pay coordination cost without the throughput benefit — worse than sequential.</li>
+        <li>Rule: <strong>only parallelize at clean dependency boundaries</strong>.</li>
+      </ul>
 
       <h2>11.2 Subagents in Claude Code — the Agent tool</h2>
-      <p>Claude Code exposes an internal <strong>Agent tool</strong> that the model can call to spawn subagents within the same session. When the orchestrating agent issues multiple Agent tool calls in a single response, Claude Code dispatches them in parallel — each subagent gets its own context, its own tool access, and runs concurrently.</p>
-
-      <p>The Agent tool accepts a <code>prompt</code> parameter (what the subagent should do) and an optional description. The orchestrator receives each subagent's final output as a tool result and integrates them.</p>
-
-      <p><strong>Subagent type identifiers.</strong> Claude Code also exposes named agent types that map to specialized behaviors. The exact identifiers and their casing are subject to Claude Code version changes — <em>always verify against the current Claude Code documentation before scripting against them</em>. At time of writing, commonly referenced identifiers include:</p>
+      <h4 class="ph">How the Agent tool works</h4>
+      <ul>
+        <li>Claude Code exposes an internal <strong>Agent tool</strong> the model can call to spawn subagents within the same session.</li>
+        <li>When the orchestrating agent issues multiple Agent tool calls in a single response, Claude Code dispatches them in parallel — each subagent gets its own context, its own tool access, and runs concurrently.</li>
+        <li>The Agent tool accepts a <code>prompt</code> parameter (what the subagent should do) and an optional description. The orchestrator receives each subagent's final output as a tool result and integrates them.</li>
+      </ul>
+      <h4 class="ph">Subagent type identifiers</h4>
+      <ul>
+        <li>Claude Code also exposes named agent types that map to specialized behaviors. The exact identifiers and their casing are subject to Claude Code version changes — <em>always verify against the current Claude Code documentation before scripting against them</em>.</li>
+        <li>At time of writing, commonly referenced identifiers include:</li>
+      </ul>
       <ul>
         <li><code>general-purpose</code> — default; reads, writes, runs commands</li>
         <li><code>code-reviewer</code> — review-focused, no writes</li>
         <li><code>Explore</code> — read-only codebase exploration</li>
         <li><code>Plan</code> — spec analysis and decomposition, no execution</li>
       </ul>
-      <p><em>Note: Verify exact identifiers and casing against current Claude Code docs before use. These may differ between Claude Code versions.</em></p>
-
-      <p>In practice, most parallel work dispatches unnamed subagents via the Agent tool with a well-scoped prompt. Named types are useful when you want Claude Code to enforce role constraints (e.g., a review agent that cannot write files).</p>
+      <h4 class="ph">Named types vs. unnamed dispatch</h4>
+      <ul>
+        <li><em>Verify exact identifiers and casing against current Claude Code docs before use — these may differ between Claude Code versions.</em></li>
+        <li>In practice, most parallel work dispatches unnamed subagents via the Agent tool with a well-scoped prompt.</li>
+        <li>Named types are useful when you want Claude Code to enforce role constraints (e.g., a review agent that cannot write files).</li>
+      </ul>
 
       <h2>11.3 Dispatching parallel subagents — rules of thumb</h2>
-      <p>The critical prerequisite: <strong>parallel dispatch is only safe when the subagents' work is genuinely independent</strong>. Two agents editing the same file simultaneously produce a merge conflict at best and silent data corruption at worst.</p>
-
-      <p><strong>How dispatch works in Claude Code:</strong> When you issue a single message with multiple Agent tool calls (or the model decides to dispatch multiple agents in one turn), Claude Code runs them concurrently. Each subagent gets its own context window seeded with the prompt you provide. They do not share context — they cannot "see" each other's in-progress work.</p>
+      <h4 class="ph">Critical prerequisite</h4>
+      <ul>
+        <li><strong>Parallel dispatch is only safe when the subagents' work is genuinely independent.</strong> Two agents editing the same file simultaneously produce a merge conflict at best and silent data corruption at worst.</li>
+        <li>When you issue a single message with multiple Agent tool calls, Claude Code runs them concurrently. Each subagent gets its own context window seeded with the prompt you provide — they do not share context and cannot "see" each other's in-progress work.</li>
+      </ul>
 
       <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
         <p style="font-weight:700; margin:0 0 0.8rem;">Rules of thumb for parallel dispatch</p>
@@ -4131,19 +4491,26 @@ would fail right now?"</code></pre>
         </ul>
       </div>
 
-      <p>This parallelism is what happens in real-time when this guide is built: an orchestrator agent dispatches multiple subagents — one per chapter — in a single turn. Each agent writes its section independently. The orchestrator then integrates the outputs.</p>
+      <h4 class="ph">Live example — this guide's own build</h4>
+      <ul>
+        <li>This is what happens in real-time when this guide is built: an orchestrator agent dispatches multiple subagents — one per chapter — in a single turn. Each agent writes its section independently. The orchestrator then integrates the outputs.</li>
+      </ul>
 
       <h2>11.4 Worktrees for isolation — git worktree patterns</h2>
       <p>When parallel agents need to write code (not just read), shared file state is the primary failure mode. The solution is <strong>git worktrees</strong>: one checkout per agent, all pointing at the same underlying repo.</p>
+
 
       <pre><code># Create three worktrees for three parallel agents
 git worktree add ../gitlog-feat -b polish/json
 git worktree add ../gitlog-tests -b polish/tests
 git worktree add ../gitlog-docs -b polish/docs</code></pre>
 
-      <p>Each agent is dispatched with an explicit working directory. Agent A works in <code>../gitlog-feat</code>, Agent B in <code>../gitlog-tests</code>, Agent C in <code>../gitlog-docs</code>. No agent ever touches another's tree. When all three complete, you review each branch independently, then merge.</p>
-
-      <p><strong>Lifecycle:</strong></p>
+      <h4 class="ph">How it works</h4>
+      <ul>
+        <li>Each agent is dispatched with an explicit working directory: Agent A works in <code>../gitlog-feat</code>, Agent B in <code>../gitlog-tests</code>, Agent C in <code>../gitlog-docs</code>.</li>
+        <li>No agent ever touches another's tree. When all three complete, you review each branch independently, then merge.</li>
+      </ul>
+      <h4 class="ph">Lifecycle</h4>
       <ol>
         <li>Create worktrees before dispatching agents (<code>git worktree add</code>).</li>
         <li>Dispatch agents with their worktree path in the prompt.</li>
@@ -4152,10 +4519,15 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
         <li>Clean up: <code>git worktree remove ../gitlog-feat</code> after merge.</li>
       </ol>
 
-      <p>The <code>superpowers:using-git-worktrees</code> skill automates this setup. It handles the worktree creation, branch naming, and teardown — invoke it before dispatching parallel agents on any non-trivial task to ensure clean isolation from the current workspace.</p>
+      <h4 class="ph">Using the skill</h4>
+      <ul>
+        <li>The <code>superpowers:using-git-worktrees</code> skill automates this setup — handles worktree creation, branch naming, and teardown.</li>
+        <li>Invoke it before dispatching parallel agents on any non-trivial task to ensure clean isolation from the current workspace.</li>
+      </ul>
 
       <h2>11.5 /loop — recurring tasks and polling</h2>
       <p>The <code>/loop</code> skill runs a prompt or slash command on a recurring interval, or lets the model self-pace between iterations. It is designed for polling external state — CI status, deploy health, rate-limited APIs — without you manually re-issuing the same command.</p>
+
 
       <pre><code># Check CI every 5 minutes until green
 /loop 5m "check if CI is passing on the current branch and report status"
@@ -4163,7 +4535,7 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
 # Self-paced loop — model decides when to run again based on output
 /loop /babysit-prs</code></pre>
 
-      <p><strong>When to use <code>/loop</code>:</strong></p>
+      <h4 class="ph">When to use /loop</h4>
       <ul>
         <li>Polling a deploy pipeline until it completes or fails.</li>
         <li>Watching a test suite for new failures during active development.</li>
@@ -4171,10 +4543,15 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
         <li>Running a recurring quality check (lint, typecheck) at a fixed interval during a long coding session.</li>
       </ul>
 
-      <p><strong>When not to use <code>/loop</code>:</strong> one-shot tasks. <code>/loop</code> is overhead for anything you only need once. Also avoid loops that generate large output per iteration — token consumption compounds quickly with recurring agents.</p>
+      <h4 class="ph">When not to use /loop</h4>
+      <ul>
+        <li>One-shot tasks — <code>/loop</code> is overhead for anything you only need once.</li>
+        <li>Avoid loops that generate large output per iteration — token consumption compounds quickly with recurring agents.</li>
+      </ul>
 
       <h2>11.6 /schedule — cron-style remote agents</h2>
       <p>The <code>/schedule</code> skill creates, updates, and lists <strong>remote agent routines</strong> that execute on a cron schedule — they run independently of your local Claude Code session. You close your terminal; they keep running.</p>
+
 
       <pre><code># Run a daily standup summary at 9am
 /schedule "every day at 9am, summarize the last 24h of commits across all branches"
@@ -4182,16 +4559,22 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
 # One-time scheduled run
 /schedule "run the security-review skill at 3pm today"</code></pre>
 
-      <p>Under the hood, schedules are registered routines that trigger a remote Claude Code agent at the specified time. The <strong><code>ScheduleWakeup</code> tool</strong> is the underlying mechanism — it registers a wakeup event that fires the agent on schedule. You can inspect and delete schedules via <code>/schedule list</code> and <code>/schedule delete</code>.</p>
-
-      <p><strong>Use cases:</strong> nightly security scans, automated PR summaries, daily dependency checks, recurring test runs on a staging branch, automated standup generation.</p>
-
-      <p><strong>Constraints:</strong> scheduled agents run with the permissions and context available at schedule-creation time. They cannot interactively ask you for clarification. Design scheduled agent prompts to be self-contained and to handle ambiguity gracefully (e.g., "if no new commits, output 'nothing to report' and stop").</p>
+      <h4 class="ph">How it works under the hood</h4>
+      <ul>
+        <li>Schedules are registered routines that trigger a remote Claude Code agent at the specified time.</li>
+        <li>The <strong><code>ScheduleWakeup</code> tool</strong> is the underlying mechanism — it registers a wakeup event that fires the agent on schedule.</li>
+        <li>Inspect and delete schedules via <code>/schedule list</code> and <code>/schedule delete</code>.</li>
+      </ul>
+      <h4 class="ph">Use cases and constraints</h4>
+      <ul>
+        <li><strong>Use cases:</strong> nightly security scans, automated PR summaries, daily dependency checks, recurring test runs on a staging branch, automated standup generation.</li>
+        <li><strong>Constraints:</strong> scheduled agents run with the permissions and context available at schedule-creation time. They cannot interactively ask for clarification.</li>
+        <li>Design scheduled agent prompts to be self-contained and handle ambiguity gracefully (e.g., "if no new commits, output 'nothing to report' and stop").</li>
+      </ul>
 
       <h2>11.7 Agent-of-agents — the orchestrator pattern</h2>
       <p>The <strong>orchestrator pattern</strong> is the highest-leverage multi-agent structure: one parent agent decomposes a problem, dispatches subagents in parallel to work independent sub-problems, then integrates their outputs into a unified result.</p>
-
-      <p><strong>Signature pattern:</strong></p>
+      <h4 class="ph">Signature pattern: four steps</h4>
       <ol>
         <li><strong>Decompose.</strong> Parent agent reads the task and identifies N independent sub-problems. Independence check: "Can sub-problem A be solved without knowing the output of sub-problem B?" If yes: parallel. If no: sequential.</li>
         <li><strong>Dispatch.</strong> Parent agent issues N Agent tool calls in a single turn. Each subagent prompt includes: the sub-problem scope, all necessary context (file paths, relevant code, constraints), the output format expected, and what NOT to do (write to shared files, make network calls outside scope, etc.).</li>
@@ -4213,8 +4596,7 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
 
       <h2>11.8 Kilo Code Orchestrator mode</h2>
       <p>Kilo Code (VS Code extension, Chapter 12) implements the orchestrator pattern in IDE-resident form via its <strong>Orchestrator mode</strong>. Rather than manually issuing Agent tool calls, you switch Kilo Code into Orchestrator mode and describe the high-level task — Kilo Code decomposes it, dispatches subagents (called "boomerang tasks" in Kilo Code's terminology), and integrates their results.</p>
-
-      <p><strong>Multi-mode coordination in Kilo Code:</strong></p>
+      <h4 class="ph">Multi-mode coordination in Kilo Code</h4>
       <ul>
         <li><strong>Orchestrator mode</strong> — decomposes and delegates. Does not write code directly.</li>
         <li><strong>Code mode</strong> — the default subagent mode. Implements a specific task.</li>
@@ -4223,18 +4605,31 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
         <li><strong>Debug mode</strong> — specialized for root-cause analysis.</li>
       </ul>
 
-      <p>A typical Kilo Code orchestrated flow: switch to Orchestrator mode → describe the feature → Orchestrator mode spawns an Architect subagent to write the spec, then two Code subagents (implementation + tests) in parallel, then a Debug subagent if tests fail. The user interacts only with the Orchestrator; subagents are dispatched automatically.</p>
-
-      <p>The key advantage over manual Agent tool calls: Kilo Code tracks subagent state in a visible boomerang task panel, making it easier to see which subagents are in-flight, which completed, and which need attention.</p>
+      <h4 class="ph">A typical orchestrated flow</h4>
+      <ul>
+        <li>Switch to Orchestrator mode → describe the feature → Orchestrator mode spawns an Architect subagent to write the spec, then two Code subagents (implementation + tests) in parallel, then a Debug subagent if tests fail.</li>
+        <li>The user interacts only with the Orchestrator; subagents are dispatched automatically.</li>
+        <li>Key advantage over manual Agent tool calls: Kilo Code tracks subagent state in a visible boomerang task panel, making it easier to see which subagents are in-flight, which completed, and which need attention.</li>
+      </ul>
 
       <h2>11.9 When parallel hurts — shared state, races, context fragmentation</h2>
       <p>Multi-agent is not a universal speedup. Three failure modes are common enough that you need to recognize them before reaching for parallelism.</p>
-
-      <p><strong>Shared state races.</strong> Two agents dispatched to "add error handling to the codebase" will both modify the same utility files — one agent's writes overwrite the other's. Result: silent data loss or a broken repo. Prevention: enforce one-file-per-agent and use worktrees.</p>
-
-      <p><strong>Context fragmentation.</strong> Each subagent has a partial view of the system. Agent A knows the API layer. Agent B knows the database layer. Neither knows both. When Agent A makes an assumption about database behavior that contradicts Agent B's implementation, you get a coherent-looking but internally inconsistent result. Prevention: the orchestrator must hold the full-system context and inject relevant cross-cutting constraints into every subagent prompt. Do not assume subagents will "figure out" what they don't know.</p>
-
-      <p><strong>Coordination tax exceeding parallelism gain.</strong> For tasks that take 5 minutes sequentially: creating worktrees, crafting 3 well-scoped prompts, dispatching, integrating, and resolving conflicts may take longer. Parallelism wins at scale — large tasks with clear decomposition boundaries. It loses on small tasks and tasks with implicit coupling.</p>
+      <h4 class="ph">Shared state races</h4>
+      <ul>
+        <li>Two agents dispatched to "add error handling to the codebase" will both modify the same utility files — one agent's writes overwrite the other's.</li>
+        <li>Result: silent data loss or a broken repo. Prevention: enforce one-file-per-agent and use worktrees.</li>
+      </ul>
+      <h4 class="ph">Context fragmentation</h4>
+      <ul>
+        <li>Each subagent has a partial view of the system. Agent A knows the API layer; Agent B knows the database layer. Neither knows both.</li>
+        <li>When Agent A makes an assumption about database behavior that contradicts Agent B's implementation, you get a coherent-looking but internally inconsistent result.</li>
+        <li>Prevention: the orchestrator must hold the full-system context and inject relevant cross-cutting constraints into every subagent prompt. Do not assume subagents will "figure out" what they don't know.</li>
+      </ul>
+      <h4 class="ph">Coordination tax exceeding parallelism gain</h4>
+      <ul>
+        <li>For tasks that take 5 minutes sequentially: creating worktrees, crafting 3 well-scoped prompts, dispatching, integrating, and resolving conflicts may take longer.</li>
+        <li>Parallelism wins at scale — large tasks with clear decomposition boundaries. It loses on small tasks and tasks with implicit coupling.</li>
+      </ul>
 
       <div style="background:var(--surface); border:2px solid var(--red); border-radius:8px; padding:1.2rem; margin:1.4rem 0;">
         <p style="font-weight:700; color:var(--red); margin:0 0 0.6rem;">Anti-patterns</p>
@@ -4247,7 +4642,8 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
       </div>
 
       <h2>11.10 The token math of multi-agent</h2>
-      <p>Multi-agent is not free. Each subagent consumes tokens independently. The cost model:</p>
+      <p>Multi-agent is not free — each subagent consumes tokens independently. The cost model:</p>
+
 
       <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.4rem; margin:1.4rem 0;">
         <p style="font-weight:700; margin:0 0 0.8rem;">Token cost formula</p>
@@ -4264,7 +4660,8 @@ Where:
                    all N outputs</code></pre>
       </div>
 
-      <p><strong>Example:</strong> You dispatch 3 subagents. Each receives a 4 000-token prompt, does 8 000 tokens of work, and returns a 2 000-token result. The orchestrator reads all three results (6 000 tokens) and produces a 3 000-token integration.</p>
+      <h4 class="ph">Worked example: 3 subagents</h4>
+      <p>You dispatch 3 subagents. Each receives a 4 000-token prompt, does 8 000 tokens of work, and returns a 2 000-token result. The orchestrator reads all three results (6 000 tokens) and produces a 3 000-token integration.</p>
       <pre><code>Subagent cost: 3 × (4 000 + 8 000 + 2 000) = 42 000 tokens
 Orchestrator:  6 000 (input) + 3 000 (output) = 9 000 tokens
 Total:                                          51 000 tokens
@@ -4276,7 +4673,12 @@ But wall-clock time: 3 × sequential → 1 × parallel (if tasks are truly indep
 Break-even: the 82% token overhead is justified if the work takes > ~15 min sequentially
             and you need the result in < 5 min.</code></pre>
 
-      <p>Multi-agent amortizes only when the tasks are <em>genuinely</em> parallel and the wall-clock savings matter. For background tasks where you don't care about latency, sequential is almost always cheaper. For interactive workflows where you need results fast, the token overhead is often worth paying.</p>
+      <h4 class="ph">When the overhead is worth paying</h4>
+      <ul>
+        <li>Multi-agent amortizes only when the tasks are <em>genuinely</em> parallel and the wall-clock savings matter.</li>
+        <li>For background tasks where you don't care about latency, sequential is almost always cheaper.</li>
+        <li>For interactive workflows where you need results fast, the token overhead is often worth paying.</li>
+      </ul>
 
       <h2>11.11 Mini-walkthrough: gitlog-report polish pass in parallel</h2>
 
