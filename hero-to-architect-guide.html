@@ -1951,6 +1951,23 @@ per-author contribution summary.
         </tbody>
       </table>
 
+      <div class="cmp">
+        <div class="cmp-c">
+          <h4 style="color:var(--blue);">OpenSpec</h4>
+          <p style="font-size:13px;"><strong>Git-native.</strong> Specs live as versioned files under <code>openspec/specs/</code>; the git history is the audit trail.</p>
+          <p style="font-size:13px;"><strong>Manual authoring.</strong> You write and edit spec files directly; CLI commands (<code>openspec validate</code>, <code>openspec archive</code>) enforce structure.</p>
+          <p style="font-size:13px;"><strong>Tool-agnostic.</strong> Any AI tool — Claude Code, Cursor, Gemini CLI — can read the spec files. No slash-command dependency.</p>
+          <p style="font-size:13px;"><strong>Change proposals.</strong> Each spec change goes through a formal proposal + archive lifecycle, preserving the rationale for every decision.</p>
+        </div>
+        <div class="cmp-c">
+          <h4 style="color:var(--orange);">SpecKit</h4>
+          <p style="font-size:13px;"><strong>Slash-command-driven.</strong> <code>/specify → /plan → /tasks → /implement</code> walks the full chain; each command produces one artifact file.</p>
+          <p style="font-size:13px;"><strong>Guided pipeline.</strong> The skill scaffolds spec, plan, and task files automatically — lower setup friction than OpenSpec.</p>
+          <p style="font-size:13px;"><strong>Claude / Gemini-first.</strong> Designed for environments with slash-command support; commands may not work in other AI tools.</p>
+          <p style="font-size:13px;"><strong>Approval-gated.</strong> Each stage waits for human sign-off before proceeding, keeping you in control at every transition.</p>
+        </div>
+      </div>
+
       <h2>6.8 Decision matrix — when OpenSpec fits, when SpecKit fits</h2>
       <p>Neither system is universally superior. The right choice depends on your team size, workflow maturity, tooling preferences, and how much process overhead is acceptable for the project's scale.</p>
       <table class="tbl">
@@ -2312,6 +2329,12 @@ gitlog-report [--path &lt;dir&gt;] [--format json|md]
       </ol>
       <p>The five-point check takes two to five minutes. It reliably prevents sessions that go sideways at step 3 and require a full replan. Pay the two minutes.</p>
 
+      <div class="stp"><div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Right files?</div></div><p>Every task names the exact files it will touch. Verify each exists (for modifications) or makes sense at that path (for new files). A plan that edits <code>cli.py</code> but never mentions its test file is incomplete.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n org">2</div><div class="stp-t">Right order?</div></div><p>Read the dependency chain forward: Task N must not import or call something that only Task N+2 creates. Agents get ordering wrong more often than you'd expect.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Complete code in steps?</div></div><p>Key function signatures, command invocations, and config snippets must appear in the task body — not delegated to the agent's judgment at execution time. "Implement the parser" is vague; <code>parse_git_log(path: str) → list[Commit]</code> is actionable.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n grn">4</div><div class="stp-t">No placeholders?</div></div><p>Scan for <code>TODO</code>, <code>...</code>, <code>&lt;fill in&gt;</code>, "as appropriate." Placeholders in a plan become agent hallucinations during execution. Fill them now or mark the task as requiring human input before the agent reaches it.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n pur">5</div><div class="stp-t">Verification steps?</div></div><p>Every task needs a concrete check: a test command to run, an output to grep for, a file to confirm exists. "Verify the feature works" is not a verification step. "Run <code>pytest tests/test_parser.py -v</code> and confirm all 4 tests pass" is.</p></div>
+
       <h2>7.7 Mid-plan replanning when reality changes</h2>
       <p>Even a well-reviewed plan will sometimes collide with reality. The codebase was in a different state than expected. A dependency has a breaking API change. The chosen approach reveals a design flaw that wasn't visible from the spec. When this happens, you have two options — amend or abandon — and the choice depends on how far the collision propagates.</p>
       <p><strong>Amend</strong> when the reality change is local: the current task and at most one successor need to change, but the overall structure and commit plan remain valid. Update the affected tasks in the plan file, commit the updated plan with a message like <code>plan(gitlog-report): amend task 3 — use argparse subcommands</code>, then continue. The agent re-reads the updated plan.</p>
@@ -2609,6 +2632,14 @@ def test_golden_multi_author():
       <p>Integration tests are slower but they test the actual contract. An agent that breaks the real <code>git log</code> interaction will be caught by an integration test and will not be caught by a mock-based unit test.</p>
       <p>The exceptions: external services with rate limits, expensive third-party APIs, non-deterministic services. For these, record real responses once (using a tool like <code>vcrpy</code> or <code>msw</code>) and replay them. This is fundamentally different from hand-writing mocks — the recorded response is real truth, not agent-constructed fiction.</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Golden tests</div><div class="flv-desc">Hand-curated input + fixed expected output. Best for parsers, formatters, and report generators where truth can be written down; fragile if output is legitimately non-deterministic.</div></div>
+        <div class="flv"><div class="flv-name">Snapshot tests</div><div class="flv-desc">Auto-capture output on first run, fail on change. Good for catching unexpected regressions; dangerous with agents — they'll run <code>--updateSnapshot</code> and silently accept wrong output as truth.</div></div>
+        <div class="flv"><div class="flv-name">Integration tests</div><div class="flv-desc">Exercise real dependencies (filesystem, subprocess, in-memory DB). Best for catching contract mismatches agents introduce when they mock what they wrote; slower than unit tests.</div></div>
+        <div class="flv"><div class="flv-name">Unit tests</div><div class="flv-desc">Isolate a single function against mocked dependencies. Fast and precise, but agents mock the thing they just wrote — passing trivially while the real implementation breaks.</div></div>
+        <div class="flv"><div class="flv-name">Eval loops</div><div class="flv-desc">Run the actual prompt against fixed inputs and check against expected outputs. Only type that catches prompt regressions and model-version drift; expensive (real LLM calls) so run on slow path only.</div></div>
+      </div>
+
       <h2>8.8 Eval loops — tests for the prompt, not just the code</h2>
       <p>When your system includes an LLM call — a prompt that asks the model to extract, classify, summarise, or decide — the code around it may be correct while the <em>prompt itself</em> is producing wrong outputs. Unit tests on the code will not catch this. You need an <strong>eval loop</strong>: a test that runs the actual prompt against a fixed set of inputs and checks the outputs against fixed expected values.</p>
       <p>An eval loop has the same structure as a golden test (§8.5), except the "function under test" is a prompt-plus-model call rather than a pure function:</p>
@@ -2851,6 +2882,12 @@ FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
       </ol>
       <p>The skill enforces this order. You cannot skip to stage 4 (Fix) without the agent having produced evidence at stages 2 and 3. This constraint is deliberate: it prevents the most common agent failure mode — applying a patch that silences the symptom while leaving the root cause in place.</p>
       <p>To invoke: in Claude Code, type <code>/systematic-debugging</code> (via the skill). Describe the bug. The agent will ask you to complete each stage before advancing. Resist the urge to skip ahead.</p>
+
+      <div class="stp"><div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Reproduce</div></div><p>Confirm the bug is deterministically triggerable. Write the reproduction recipe — exact steps, preconditions, expected vs. actual output — before touching any code. No reproduction, no debugging.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n org">2</div><div class="stp-t">Isolate</div></div><p>Narrow from "the system is broken" to "this specific input to this specific function produces this specific wrong output." Produce the minimal failing case. Agents will skip this and jump to the full system — don't let them.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n">3</div><div class="stp-t">Root cause</div></div><p>Read the actual code. State a falsifiable hypothesis: "The bug is line 47 of <code>parser.py</code> — the condition uses <code>&gt;</code> instead of <code>&gt;=</code>." Not the symptom. The cause.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n grn">4</div><div class="stp-t">Fix</div></div><p>Apply the minimal change that corrects the root cause. Not the symptom. If the fix touches more than 3 lines, question whether it's truly minimal or whether it's bundling unrelated cleanup.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n pur">5</div><div class="stp-t">Verify</div></div><p>Rerun the failing test (green), then rerun the full suite (no regressions). Fixes that introduce regressions traded one bug for another — both are failures.</p></div>
 
       <h2>9.2 Reproduce → isolate → root cause → fix → verify</h2>
       <p><strong>Reproduce reliably first.</strong> If you cannot reproduce the bug on demand, your fix is a hope. A fix applied to an unreproducible bug may appear to work — the bug simply didn't trigger — and will resurface later under conditions you didn't anticipate.</p>
@@ -3141,6 +3178,12 @@ PASSED  tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_dat
           <p style="font-size:0.88rem; margin:0 0 0.6rem;"><strong>Catches:</strong> injection vectors, secret leaks, insecure defaults, dangerous API usage.</p>
           <p style="font-size:0.88rem; margin:0;"><strong>How:</strong> purpose-built scan focused on attack surface, not correctness. Runs independently of code review.</p>
         </div>
+      </div>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Pre-merge (you)</div><div class="flv-desc">Author-run before anyone else sees it. Catches obvious blunders, missing tests, incomplete diffs, debug logs left in, and unintended scope creep. Tool: <code>git diff HEAD</code>.</div></div>
+        <div class="flv"><div class="flv-name">Code review (agent)</div><div class="flv-desc">Agent or peer reviews logic, edge cases, naming, and architectural drift. Use a skeptic-stance prompt — not "review this" but "find every place this could fail silently." Tool: <code>/code-review</code>.</div></div>
+        <div class="flv"><div class="flv-name">Security review (specialized)</div><div class="flv-desc">Purpose-built scan for injection vectors, secret leaks, insecure defaults, and dangerous API usage. Runs independently — security reviewers are not thinking about naming conventions. Tool: <code>/security-review</code>.</div></div>
       </div>
 
       <p>The most common mistake is collapsing all three into a single "does this look good?" pass. Layer 2 reviewers are not thinking about injection vectors; Layer 3 reviewers are not thinking about naming conventions. Keep the scopes clean.</p>
@@ -3536,6 +3579,11 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
         <li><strong>Wait.</strong> Claude Code runs all N subagents concurrently. Parent agent is blocked until all complete.</li>
         <li><strong>Integrate.</strong> Parent agent receives N results. It reconciles conflicts, fills gaps, resolves dependencies between sub-results, and produces the final artifact.</li>
       </ol>
+
+      <div class="stp"><div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Decompose into independent tasks</div></div><p>Parent agent reads the task and identifies N sub-problems. Independence check: "Can sub-problem A be solved without knowing the output of sub-problem B?" If yes: parallel. If no: sequential. Only parallelize at clean dependency boundaries.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n org">2</div><div class="stp-t">Dispatch subagents in parallel</div></div><p>Issue N Agent tool calls in a single turn. Each prompt includes: sub-problem scope, all necessary context (file paths, relevant code, constraints), expected output format, and explicit boundaries — what NOT to touch.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n grn">3</div><div class="stp-t">Each works in isolation (worktree)</div></div><p>Claude Code runs all N subagents concurrently. Each gets its own context window and (ideally) its own git worktree. Agents do not share context — they cannot see each other's in-progress work. Enforce one-file-per-agent.</p></div>
+      <div class="stp"><div class="stp-h"><div class="stp-n pur">4</div><div class="stp-t">Integrate results</div></div><p>Parent agent receives N outputs. It reconciles conflicts, fills gaps, resolves cross-sub-result dependencies, and produces the final artifact. Budget a full turn for this — integration is real work, not a no-op.</p></div>
 
       <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.2rem; margin:1.4rem 0; font-size:0.92rem;">
         <p style="font-weight:700; margin:0 0 0.6rem;">Orchestrator design principles</p>
