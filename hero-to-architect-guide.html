@@ -776,6 +776,23 @@
 </code></pre>
 
         <p>Notice the pattern: every act is immediately followed by an observe before the next act. The model cannot "fire and forget" — it waits for each result before deciding the next step (unless it fires parallel tool calls, in which case it waits for all of them together). This sequential dependency is why agentic tasks are slower than chat: real I/O is happening at every step.</p>
+
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Prompt arrives</div></div>
+          <p>The full context — system prompt, conversation history, tool schemas, and all prior tool results — is assembled and delivered to the model as a single structured input document.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Model plans (optional extended thinking)</div></div>
+          <p>The model reads the context and reasons about the next action. When extended thinking is enabled, this phase produces internal chain-of-thought tokens before the visible response; otherwise planning is implicit in the generation.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Tool calls execute</div></div>
+          <p>The model emits one or more tool-call blocks. The harness (Claude Code, Kilo Code, Gemini CLI) intercepts them, runs the actual code or I/O, and captures the result. The model itself never runs tools directly.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n pur">4</div><div class="stp-t">Results return — loop continues</div></div>
+          <p>Tool results are injected back into the context as structured messages. The model re-evaluates: task done → emit final response; task incomplete → return to step 2 and plan the next action. The loop repeats until the goal is met or a stop condition is hit.</p>
+        </div>
       </div>
 
       <!-- 1.4 -->
@@ -977,6 +994,15 @@
       </table>
       <p>The practical implication: on a long task in Claude Code, tool output and read-file content often dominate the context — not your messages. Tools that return verbose JSON or full file contents on every call are the biggest budget leaks.</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">System prompt</div><div class="flv-desc">Your CLAUDE.md, persona rules, and project conventions — loaded on every session start; keep it lean and stable to maximise cache hits.</div></div>
+        <div class="flv"><div class="flv-name">Tool schemas</div><div class="flv-desc">Every registered tool's JSON definition is sent on every turn. MCP servers with many tools can add 10 000+ tokens here without any user action.</div></div>
+        <div class="flv"><div class="flv-name">Conversation history</div><div class="flv-desc">Every past user and assistant message is re-sent on each new turn. Long sessions pay a compounding cost for older, often irrelevant turns.</div></div>
+        <div class="flv"><div class="flv-name">Prior tool results</div><div class="flv-desc">Grep output, test logs, build traces — all stay in context until compacted. A single verbose grep can add 5 000+ tokens that persist for the whole session.</div></div>
+        <div class="flv"><div class="flv-name">Current message</div><div class="flv-desc">Your actual prompt — usually the smallest contributor. Don't over-invest in brevity here; invest in trimming the categories above instead.</div></div>
+        <div class="flv"><div class="flv-name">Model response</div><div class="flv-desc">Output tokens are the most expensive category (often 3–5× the input rate). Verbose responses, long reasoning traces, and over-explained answers all cost here.</div></div>
+      </div>
+
       <h2>2.3 The token economy — input vs output vs cached</h2>
       <p>Providers charge differently for three token categories: uncached input, cached input, and output. Cache reads are typically ~10× cheaper than uncached input; cache writes cost ~1.25× the base input rate on Anthropic (the write premium amortizes over subsequent cache hits). Output tokens are the most expensive category — often 3–5× the per-token input rate.</p>
 
@@ -1152,6 +1178,15 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       <p><strong>Grep</strong> searches file contents by pattern. It is faster than <code>Bash grep</code> for simple cases because the harness can short-circuit it without spawning a shell. Use it when you want the first occurrence in a large codebase — the tool returns matches with file paths and line numbers ready for a follow-up Read.</p>
       <p><strong>Glob</strong> lists files matching a pattern. Use it to discover structure — <code>**/*.ts</code>, <code>src/**/index.{ts,tsx}</code> — before deciding which files to read. It is strictly non-mutating and can always be auto-approved.</p>
 
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Read</div><div class="flv-desc">When you need file contents with line-number context — always read before editing so the harness tracks state and Edit diffs stay unambiguous.</div></div>
+        <div class="flv"><div class="flv-name">Edit</div><div class="flv-desc">When you need a surgical string replacement in a known file — cheaper than Write for large files because it sends only the diff, not the whole content.</div></div>
+        <div class="flv"><div class="flv-name">Write</div><div class="flv-desc">When creating a new file from scratch or when a complete rewrite is cheaper than a sequence of Edits — requires a prior Read on existing files.</div></div>
+        <div class="flv"><div class="flv-name">Bash</div><div class="flv-desc">When you need to run a shell command the other tools can't express — prefer narrow, read-only invocations; reserve destructive commands for explicit intent.</div></div>
+        <div class="flv"><div class="flv-name">Grep</div><div class="flv-desc">When you need the first occurrence of a pattern across a codebase — faster than Bash grep for simple cases; returns file paths and line numbers ready for Read.</div></div>
+        <div class="flv"><div class="flv-name">Glob</div><div class="flv-desc">When you need to discover file structure before deciding what to read — strictly non-mutating, always safe to auto-approve.</div></div>
+      </div>
+
       <h2>3.3 How agents pick which tool to call</h2>
       <p>The model selects a tool by weighing three signals: the tool's description (the primary signal), the shape of the input schema (does the data I have fit?), and the prior turn context (what has already been read, what partial state exists). A model that has just done a Read on a file will prefer Edit over Write for the same file because the context signal says "partial knowledge" matches Edit's stated contract.</p>
       <p>This selection is not rule-based lookup — it is inference. The practical implication: if your tool description says "use this for X" and the model keeps using it for Y, the description is wrong or the schema is too permissive. Descriptions that include explicit anti-patterns ("do not use this if the file is larger than 100 lines") are not pedantry — they are steering prompts baked into the tool manifest. This becomes critical when you build your own MCP tools (Chapter 16): bad descriptions cause agent thrash that wastes tokens and time.</p>
@@ -1295,6 +1330,16 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
         </tbody>
       </table>
       <p>The open-weight tier deserves a separate note: Llama 4 (Meta), Qwen 3 (Alibaba), and DeepSeek R2 are the three families worth tracking in 2026. At Q4/Q8 quantization on a modern consumer GPU (RTX 4090 or Apple M3 Ultra), 70B-class models produce output that competes with 2024-era frontier on coding tasks. The capability gap against today's frontier Opus/GPT-5 class is real but shrinking — and the cost gap is absolute zero once the hardware is amortized.</p>
+
+      <div class="flv-grid">
+        <div class="flv"><div class="flv-name">Claude Opus</div><div class="flv-desc">Best for architecture, deep code review, complex multi-step reasoning, and any task where a wrong answer has high recovery cost.</div></div>
+        <div class="flv"><div class="flv-name">Claude Sonnet</div><div class="flv-desc">Best for daily coding, medium-complexity tasks, and interactive sessions — fast enough to stay in flow, capable enough for 90% of coding work.</div></div>
+        <div class="flv"><div class="flv-name">Claude Haiku</div><div class="flv-desc">Best for classification, intent parsing, short-form generation, and any pipeline step that runs thousands of times per hour.</div></div>
+        <div class="flv"><div class="flv-name">GPT-5</div><div class="flv-desc">Best when broadest ecosystem integration matters — most SaaS products and off-the-shelf agents default to the OpenAI API shape.</div></div>
+        <div class="flv"><div class="flv-name">Gemini 3 Pro</div><div class="flv-desc">Best for very-large-context tasks (500K–1M token fills) and free-tier experimentation via Google AI Studio.</div></div>
+        <div class="flv"><div class="flv-name">Gemini 3 Flash</div><div class="flv-desc">Best for real-time UI applications and high-throughput pipelines where low latency matters more than maximum reasoning depth.</div></div>
+        <div class="flv"><div class="flv-name">Local (Ollama / LM Studio)</div><div class="flv-desc">Best when data cannot leave the device (privacy, compliance, air-gap) or when high-volume throughput makes cloud per-token cost prohibitive.</div></div>
+      </div>
 
       <h2>4.2 The three dials — capability vs cost vs latency</h2>
       <p>Every model selection decision reduces to three dials you cannot maximize simultaneously. <strong>Capability</strong> is the model's ability to reason correctly on hard tasks — long context coherence, multi-step planning, subtle bug detection. <strong>Cost</strong> is the dollar price of input and output tokens. <strong>Latency</strong> is time-to-first-token and total generation time. Turning one dial up typically turns at least one other down.</p>
@@ -1461,6 +1506,23 @@ npx @google/gemini-cli
       <p>IDE-resident tools shine when the feedback loop is visual and iterative. Inline diff review — where each proposed change appears highlighted in the exact line it modifies — is genuinely faster than reading a patch in the terminal when you are editing a single file or a small cluster of related files. IDE tools also benefit from zero context-setup cost: the tool already knows which file you have open, what your cursor is on, and what the compiler is currently complaining about. For developers new to agentic coding, the IDE surface reduces the learning curve because the interaction feels like pair programming rather than CLI operations.</p>
       <p>Terminal-resident tools have a different set of strengths that compound over time. They are scriptable: you can drive them from shell scripts, Makefiles, GitHub Actions, or any orchestration layer without a GUI. They compose with existing Unix tooling — pipe output to <code>grep</code>, chain them with <code>&&</code>, background them with <code>&amp;</code>. They run headlessly in CI pipelines, enabling automated code review, security scanning, or documentation generation on every pull request. They also tend to give the user more explicit control over context, which matters for large codebases where automated context injection can bloat token costs.</p>
       <p>A practical heuristic: reach for the IDE tool when you are actively editing and want to stay in flow; reach for the terminal tool when you want to automate, batch, run in CI, or operate across multiple repositories at once.</p>
+
+      <div class="cmp">
+        <div class="cmp-c">
+          <h4 style="color:var(--blue);">IDE-resident strengths</h4>
+          <p style="font-size:13px;"><strong>Visual diffs:</strong> Proposed changes appear inline in the exact line they modify — faster to review than reading a patch in the terminal, especially for single-file or small-cluster edits.<br><br>
+          <strong>Inline edits:</strong> Accept or reject each change without leaving the editor; the feedback loop runs at keypress speed rather than CLI round-trip speed.<br><br>
+          <strong>Tab context:</strong> The tool already knows which file is open, what the cursor is on, and what the compiler is currently flagging — zero setup cost for the most common in-flow tasks.<br><br>
+          <strong>Best for:</strong> Active editing sessions, visual diff review, staying in developer flow, single-project work where context injection is automatic.</p>
+        </div>
+        <div class="cmp-c">
+          <h4 style="color:var(--orange);">Terminal-resident strengths</h4>
+          <p style="font-size:13px;"><strong>Scriptable:</strong> Drive agents from shell scripts, Makefiles, GitHub Actions, or any orchestration layer — no GUI required, fully composable with Unix tooling.<br><br>
+          <strong>Headless &amp; CI:</strong> Run in CI pipelines for automated code review, security scanning, or doc generation on every pull request without a human in the loop.<br><br>
+          <strong>Multi-session:</strong> Invoke multiple agents across repos simultaneously, background them with <code>&amp;</code>, pipe output to <code>grep</code>, or chain with <code>&amp;&amp;</code> — patterns impossible in an IDE panel.<br><br>
+          <strong>Best for:</strong> Automation, batch tasks, cross-repo operations, CI pipelines, and any workflow that needs to run reproducibly without a human present.</p>
+        </div>
+      </div>
 
       <h2>5.7 Claude Code vs Gemini CLI — the terminal-vs-terminal choice</h2>
       <p>Both Claude Code and Gemini CLI are terminal-resident agentic coding tools, and they overlap significantly in capability. Both can read your codebase, write code, run shell commands, and execute multi-step tasks. The practical differences come down to model family, context window, billing model, and ecosystem integration.</p>
