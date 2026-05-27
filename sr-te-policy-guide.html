@@ -3949,6 +3949,16 @@
       <div class="sec-title">Protection &amp; Convergence</div>
       <p class="sec-sub">How SR-TE policies survive failures — from sub-50ms TI-LFA repair to PCE re-optimization</p>
 
+      <div class="info orange">
+        <strong>Two layers of protection — don't conflate them</strong><br><br>
+        SR-TE networks have two independent protection layers that operate at different scopes and timescales. They stack — both are active simultaneously — but they address completely different failure modes.
+        <ul style="margin:10px 0 4px 0;padding-left:18px;">
+          <li style="margin-bottom:8px;"><strong>FRR layer (IGP fast reroute / TI-LFA):</strong> Protects individual <em>segments</em> in the SID list against local link, node, or SRLG failures. Sub-50ms, pre-computed in the FIB at each transit hop. The repair is entirely local to the Point of Local Repair (PLR) — the SR Policy headend is never notified, no policy state changes, and the segment-list itself is never touched. Operates <em>below</em> the SR Policy layer.</li>
+          <li style="margin-bottom:8px;"><strong>SR-Policy layer (candidate-path protection):</strong> Protects the <em>end-to-end policy</em> against path-level failures — when a segment in the active segment-list becomes unresolvable, or a candidate path fails BSID liveness or PCE validation, the headend fails over to the next-preferred candidate path. Timescale: seconds (or PCE re-optimization). Operates <em>above</em> the data plane.</li>
+          <li><strong>They stack:</strong> A single link failure is typically absorbed by TI-LFA in under 50ms, with the SR Policy completely unaware. SR-Policy-layer failover only activates for failures TI-LFA cannot repair — for example, when the P-Q node itself fails (removing TI-LFA's repair anchor), or when a constraint violation invalidates the entire segment-list regardless of local repair.</li>
+        </ul>
+      </div>
+
       <div class="card">
         <h2>TI-LFA + SR-TE Interaction</h2>
         <p>TI-LFA and SR-TE work at <strong>different layers of protection</strong>. TI-LFA protects individual segments within a segment-list, while SR-TE policy mechanisms protect the policy as a whole. Understanding where each kicks in is critical for designing resilient networks.</p>
