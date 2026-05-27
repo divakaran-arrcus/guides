@@ -1170,6 +1170,110 @@
           <strong>SR-MPLS comparison:</strong> In SR-MPLS TI-LFA, the PLR pushes additional labels on top of the existing stack. The packet stays as one flat label stack. In SRv6, the PLR creates an entirely new outer IPv6+SRH around the original — creating a nested structure that requires full decapsulation at the repair endpoint.
         </div>
       </div>
+
+      <!-- ========== NEW: TI-LFA Algorithmic Depth ========== -->
+
+      <div class="card">
+        <h2>TI-LFA Protection: How the Repair Path Is Computed</h2>
+        <p>The sections above explain <em>how</em> the repair packet looks (H.Encaps outer SRH). This section explains <em>how the repair path is found</em> — the P/Q-space IGP computation, protection scoping, repair-list sizing, and convergence budget. The algorithm is identical to SR-MPLS TI-LFA (<a href="sr-mpls-guide.html" target="_blank">see the SR-MPLS Complete Guide</a> for the full derivation); what changes in SRv6 is the <em>encoding</em> of the result.</p>
+
+        <h3>Step 1 — P-space, Q-space, and PQ-node</h3>
+        <p>The PLR (Point of Local Repair) runs a modified SPF on the post-convergence topology — the topology that will exist <em>after</em> the protected element (link, node, SRLG) is removed:</p>
+
+        <table class="tbl">
+          <tr><th>Space</th><th>Definition</th><th>SRv6 encoding</th></tr>
+          <tr><td><strong>P-space</strong></td><td>Nodes reachable from the PLR without using the protected element</td><td>Their uN SIDs are reachable via the native forwarding table — no extra segment needed</td></tr>
+          <tr><td><strong>Q-space</strong></td><td>Nodes that can reach the destination without using the protected element (reverse SPF from destination)</td><td>Traffic arriving at a Q-node will naturally reach the destination post-convergence</td></tr>
+          <tr><td><strong>PQ-node</strong></td><td>A node in both P-space and Q-space — the ideal single repair target</td><td>The PQ-node's <strong>uN SID</strong> is the complete repair list (1 SID)</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>SRv6 translation of the key insight:</strong> In SR-MPLS the PQ-node becomes a Node-SID pushed on the label stack. In SRv6 the PQ-node becomes a <strong>uN SID</strong> placed as the OUTER IPv6 DA in the H.Encaps repair header. The computation to find the PQ-node is byte-for-byte the same algorithm — only the identifier format differs.
+        </div>
+
+        <h3>Topology example</h3>
+        <p>Consider a 5-node ring: PLR → A → <strong>B (protected link PLR→B fails)</strong> → C → D → Destination.</p>
+
+        <div class="pkt">
+          <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">PLR</div><div class="v">fcbb:bb01:0001::</div></div>
+          <div class="pkt-c bg-seg" style="flex:1;"><div class="l">→ A (P)</div><div class="v">fcbb:bb01:0002:: (reachable w/o PLR→B)</div></div>
+          <div class="pkt-c bg-tilfa" style="flex:1;"><div class="l">→ C (PQ)</div><div class="v">fcbb:bb01:0003:: (P∩Q — ideal repair target)</div></div>
+          <div class="pkt-c bg-pay" style="flex:1;"><div class="l">→ Dest</div><div class="v">fcbb:bb01:0007::</div></div>
+        </div>
+        <div class="ann">PLR→A→C is in P-space; C can reach Dest without crossing PLR→B (Q-space). C is the PQ-node. Repair = H.Encaps with OUTER DA = uN(C).</div>
+      </div>
+
+      <div class="card">
+        <h2>Protection Scope: Link, Node, and SRLG</h2>
+        <p>The P/Q-space computation changes based on what element is being protected. This is identical to SR-MPLS — SRv6 inherits the same scoping:</p>
+
+        <table class="tbl">
+          <tr><th>Protection type</th><th>What is removed from topology for P/Q computation</th><th>Typical use</th></tr>
+          <tr><td><strong>Link protection</strong></td><td>Only the failed link (PLR↔next-hop). The next-hop node itself is still in the topology.</td><td>Single link failure — lowest overhead, most common default</td></tr>
+          <tr><td><strong>Node protection</strong></td><td>The entire next-hop node <em>and</em> all its links. More conservative P/Q computation.</td><td>Protects against next-hop router failure — preferred for critical transit nodes</td></tr>
+          <tr><td><strong>SRLG protection</strong></td><td>All links sharing the same Shared Risk Link Group as the protected link.</td><td>Diverse physical paths (shared fiber, DWDM, power domain)</td></tr>
+        </table>
+
+        <div class="info orange">
+          <strong>Node protection in SRv6:</strong> When protecting against next-hop node failure, the PQ-node must be reachable <em>entirely bypassing</em> the protected node. The repair SID list may be longer (2+ uN SIDs) if no single PQ-node exists beyond the protected node.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Repair-List Sizing: 1, 2, or 3 SIDs — in uSID Terms</h2>
+        <p>Not every topology has a convenient PQ-node. When P-space and Q-space don't overlap, the repair needs intermediate SIDs to bridge the gap. The number of extra SIDs required determines the repair-list depth:</p>
+
+        <table class="tbl">
+          <tr><th>Segments needed</th><th>Situation</th><th>uSID encoding impact</th></tr>
+          <tr><td><strong>1 SID</strong></td><td>A PQ-node exists. One uN SID in OUTER DA, SRH may be omitted (H.Encaps.Red with single SID).</td><td>No SRH overhead — just an outer IPv6 DA = uN(PQ). Minimal MTU impact.</td></tr>
+          <tr><td><strong>2 SIDs</strong></td><td>No PQ-node; P-node and Q-node are adjacent. Two uN SIDs required: uN(P) then uN(Q).</td><td>H.Encaps.Red: OUTER DA = uN(P), SRH SL[0] = uN(Q). If both fit in a uSID carrier block (same /32 prefix), they pack into one 128-bit SID (16 + 16 bits), saving a full 128-bit SRH entry.</td></tr>
+          <tr><td><strong>3 SIDs</strong></td><td>Rare — large diameter topologies or tight SRLG constraints. Three uN SIDs to steer from P-space through intermediate node to Q-space.</td><td>H.Encaps.Red: OUTER DA = uN(P1), SRH [uN(P2), uN(Q)]. uSID compression can pack all three into a single 128-bit carrier if the uSID block is shared — 3 × 16-bit micro-SIDs = 48 bits, still fits in one 128-bit segment list entry.</td></tr>
+        </table>
+
+        <div class="info">
+          <strong>uSID compression recap (see uSID section):</strong> Multiple 16-bit micro-SIDs pack into a single 128-bit IPv6 DA. A 3-SID uSID repair list may therefore add <em>zero extra SRH entries</em> compared to a 1-SID repair — all three micro-SIDs ride in the same 128-bit carrier. This is a significant advantage over SR-MPLS where each extra label adds 4 bytes to the stack.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Protected vs Unprotected uA / End.X</h2>
+        <p>An SRv6 adjacency SID (uA or End.X) can be advertised as <strong>protected</strong> or <strong>unprotected</strong> — the SRv6 equivalent of the SR-MPLS B-flag (backup eligible).</p>
+
+        <table class="tbl">
+          <tr><th>SID type</th><th>TI-LFA protected?</th><th>SR-MPLS analog</th><th>When to use</th></tr>
+          <tr><td>uN (node SID)</td><td><span class="tag t-g">Always protected</span></td><td>Node-SID (always B-flag eligible)</td><td>Normal transit forwarding; PLR installs a backup for all uN-destined traffic automatically</td></tr>
+          <tr><td>uA / End.X <em>(protected)</em></td><td><span class="tag t-g">Protected</span></td><td>Adj-SID with B-flag set</td><td>Traffic-engineered adjacency path that should survive a link failure via backup</td></tr>
+          <tr><td>uA / End.X <em>(unprotected)</em></td><td><span class="tag t-r">Not protected</span></td><td>Adj-SID with B-flag unset</td><td>Intentional single-path steering (latency pinning, policy); FRR backup is suppressed</td></tr>
+        </table>
+
+        <div class="info orange">
+          <strong>Operator implication:</strong> If an SR-Policy or Flex-Algo path uses uA SIDs, verify that each uA is advertised as protected if fast-reroute is expected. An unprotected uA will black-hole traffic on link failure until IGP reconverges (~1–2 s) — there is no sub-50 ms FRR for unprotected adjacency SIDs.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Convergence Budget</h2>
+        <p>The same timing breakdown applies to SRv6 TI-LFA as to SR-MPLS TI-LFA — the algorithm, IGP flooding, and FIB programming steps are identical. The only SRv6-specific delta is a small FIB overhead for the nested H.Encaps entry vs a flat label-stack entry.</p>
+
+        <table class="tbl">
+          <tr><th>Phase</th><th>Mechanism</th><th>Typical duration</th><th>Target</th></tr>
+          <tr><td><strong>Failure detection</strong></td><td>BFD (async mode, 3 × 10 ms default) or link-down signal</td><td>10 – 50 ms</td><td>&lt; 50 ms</td></tr>
+          <tr><td><strong>FRR activation</strong></td><td>PLR switches to pre-installed TI-LFA backup (H.Encaps repair entry already in FIB)</td><td>&lt; 1 ms (hardware swap)</td><td><strong>Sub-50 ms total to here</strong></td></tr>
+          <tr><td><strong>IGP LSA/LSP flood</strong></td><td>IS-IS LSP or OSPF LSA generated and flooded</td><td>10 – 100 ms</td><td>–</td></tr>
+          <tr><td><strong>SPF computation</strong></td><td>Router runs full SPF on updated LSDB</td><td>1 – 50 ms (incremental SPF)</td><td>–</td></tr>
+          <tr><td><strong>Post-convergence install</strong></td><td>New primary FIB entries replace TI-LFA backup entries</td><td>10 – 200 ms (scale-dependent)</td><td>–</td></tr>
+          <tr><td><strong>Total to post-convergence</strong></td><td>Detection + flood + SPF + FIB install</td><td>200 – 500 ms</td><td>–</td></tr>
+        </table>
+
+        <div class="info green">
+          <strong>The two-phase model:</strong> TI-LFA delivers sub-50 ms protection by pre-installing the backup path before any failure — no waiting for flooding or SPF. The IGP reconvergence happens in the background and eventually replaces the repair path with an optimal post-convergence path. Traffic sees a brief (potentially sub-ms) switchover to the backup, then a second quiet switchover to the optimal path.
+        </div>
+
+        <div class="ann">BFD timer tuning is the primary knob for detection latency; SPF throttle timers control the post-convergence phase. Both are configured identically for SR-MPLS and SRv6.</div>
+      </div>
+
+      <!-- ========== END NEW ========== -->
+
     </div>
 
     <!-- ==================== ECMP ==================== -->
