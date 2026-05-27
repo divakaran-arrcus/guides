@@ -158,6 +158,8 @@
 
   .card h3 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--blue); }
   .card h4 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: var(--purple); }
+  .card h4.ph { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 16px 0 6px; display: flex; align-items: center; gap: 7px; }
+  .card h4.ph::before { content: '\25B8'; color: var(--accent); font-size: 11px; flex-shrink: 0; }
   .card p { font-size: 14px; line-height: 1.75; margin-bottom: 8px; }
   .card ul { padding-left: 18px; margin: 6px 0 10px; }
   .card li { font-size: 14px; margin-bottom: 4px; line-height: 1.65; }
@@ -695,9 +697,27 @@
       <!-- 1.1 -->
       <div class="card">
         <h2>1.1 From chat to agent — the fundamental shift</h2>
-        <p>Chat is a ping-pong game: you send one message, the model sends one message back, you respond. The conversation accumulates but <em>nothing happens</em> unless you copy text out and do something with it yourself. The model has no hands. It observes the world only through your keystrokes, and it acts on the world only through your clipboard.</p>
-        <p>An agent breaks that contract. You give it a goal — not a question — and it loops: it inspects its environment (reads files, runs commands, browses docs), it decides what to do next, it executes, it reads the results, and it decides again. This continues until it believes the goal is complete, hits a resource limit, or asks for your help. The model <em>does have hands</em>, in the form of tool calls.</p>
-        <p>The shift matters because your mental model has to change. In chat you are the executor; you parse the response and act. In an agent loop the model is the executor; you are the goal-setter, reviewer, and interrupt handler. The skills transfer poorly. "Just ask it better" is a chat reflex. "Give it a tighter spec and review the plan before it runs" is an agent reflex. This guide is about building the second kind of muscle memory.</p>
+        <p>The fundamental difference between chat and an agent comes down to one thing: who holds the hands.</p>
+        <h4 class="ph">What chat is</h4>
+        <ul>
+          <li>Ping-pong: you send one message, the model sends one message back, you respond.</li>
+          <li>The conversation accumulates but <em>nothing happens</em> unless you copy text out and do something with it yourself.</li>
+          <li>The model has no hands — it observes the world only through your keystrokes, and it acts on the world only through your clipboard.</li>
+        </ul>
+        <h4 class="ph">What an agent does</h4>
+        <ul>
+          <li>You give it a goal — not a question — and it loops.</li>
+          <li>It inspects its environment (reads files, runs commands, browses docs), decides what to do next, executes, reads the results, and decides again.</li>
+          <li>Continues until it believes the goal is complete, hits a resource limit, or asks for your help.</li>
+          <li>The model <em>does have hands</em>, in the form of tool calls.</li>
+        </ul>
+        <h4 class="ph">Why the shift matters</h4>
+        <ul>
+          <li>Your mental model has to change: in chat you are the executor — you parse the response and act.</li>
+          <li>In an agent loop the model is the executor; you are the goal-setter, reviewer, and interrupt handler.</li>
+          <li>The skills transfer poorly: "Just ask it better" is a chat reflex; "Give it a tighter spec and review the plan before it runs" is an agent reflex.</li>
+          <li>This guide is about building the second kind of muscle memory.</li>
+        </ul>
         <div class="info"><strong>v1 contrast:</strong> v1's "What is an AI Agent" section is the map — it tells you what an agent is and where it fits. This chapter is the depth — it tells you what's actually happening inside the loop so you can steer it, stop it, and diagnose it when it goes wrong.</div>
       </div>
 
@@ -729,17 +749,41 @@
           </div>
         </div>
 
-        <p><strong>Plan:</strong> The model reads its full context — system prompt, conversation history, tool definitions, and any previous tool results — and generates text that either answers directly or announces a tool call. When extended thinking is enabled, this phase is longer and more deliberate; the model can reason about multi-step consequences before committing to an action.</p>
-        <p><strong>Act:</strong> The model emits one or more tool calls (file reads, shell commands, web fetches, editor edits). Most agents can fire multiple tools in parallel if they're independent. The model is not running the tools itself; the host process (Claude Code, Kilo Code, Gemini CLI) intercepts the output, executes the tools, and appends the results.</p>
-        <p><strong>Observe:</strong> Tool results come back into the context as a structured message. The model now sees what happened: file contents, command output, error messages, anything the tool returned. This is where ground truth enters — the model's plan might have been wrong, and the observation corrects it.</p>
-        <p><strong>Repeat:</strong> The model decides whether the goal is met. If not, it plans the next action. This loop continues until the model calls a "done" tool, the user interrupts, or the maximum turn limit is hit. Understanding that this is a loop — not a one-shot completion — is the single most important mental model shift in this guide.</p>
+        <h4 class="ph">Plan</h4>
+        <ul>
+          <li>The model reads its full context — system prompt, conversation history, tool definitions, and any previous tool results.</li>
+          <li>Generates text that either answers directly or announces a tool call.</li>
+          <li>When extended thinking is enabled, this phase is longer and more deliberate; the model can reason about multi-step consequences before committing to an action.</li>
+        </ul>
+        <h4 class="ph">Act</h4>
+        <ul>
+          <li>The model emits one or more tool calls (file reads, shell commands, web fetches, editor edits).</li>
+          <li>Most agents can fire multiple tools in parallel if they're independent.</li>
+          <li>The model is not running the tools itself; the host process (Claude Code, Kilo Code, Gemini CLI) intercepts the output, executes the tools, and appends the results.</li>
+        </ul>
+        <h4 class="ph">Observe</h4>
+        <ul>
+          <li>Tool results come back into the context as a structured message.</li>
+          <li>The model now sees what happened: file contents, command output, error messages, anything the tool returned.</li>
+          <li>This is where ground truth enters — the model's plan might have been wrong, and the observation corrects it.</li>
+        </ul>
+        <h4 class="ph">Repeat</h4>
+        <ul>
+          <li>The model decides whether the goal is met; if not, it plans the next action.</li>
+          <li>The loop continues until the model calls a "done" tool, the user interrupts, or the maximum turn limit is hit.</li>
+          <li>Understanding that this is a loop — not a one-shot completion — is the single most important mental model shift in this guide.</li>
+        </ul>
       </div>
 
       <!-- 1.3 -->
       <div class="card">
         <h2>1.3 Anatomy of one agent turn</h2>
         <p>Within a single turn, here is the typical sequence of events. The model receives its context, may produce reasoning tokens (if extended thinking is on), then emits text and/or tool calls. Each tool call gets executed and its result injected back before the next generation step.</p>
-        <p>The following is an annotated JSONL-style trace of a real three-tool turn: the agent reads a file, edits it, and runs a test to verify. This is a compressed representation of the actual protocol messages — real tool calls are wrapped in slightly different structures depending on the SDK, but the semantic content is identical.</p>
+        <h4 class="ph">About this trace</h4>
+        <ul>
+          <li>Annotated JSONL-style trace of a real three-tool turn: the agent reads a file, edits it, and runs a test to verify.</li>
+          <li>Compressed representation of actual protocol messages — real tool calls are wrapped in slightly different structures depending on the SDK, but the semantic content is identical.</li>
+        </ul>
 
 <pre><code>// Turn N — context arrives
 { "role": "user", "content": "Add a --verbose flag to the CLI parser in cli.py, then run the tests." }
@@ -775,7 +819,12 @@
 { "role": "assistant", "content": "Done. Added --verbose flag. All 3 tests pass." }
 </code></pre>
 
-        <p>Notice the pattern: every act is immediately followed by an observe before the next act. The model cannot "fire and forget" — it waits for each result before deciding the next step (unless it fires parallel tool calls, in which case it waits for all of them together). This sequential dependency is why agentic tasks are slower than chat: real I/O is happening at every step.</p>
+        <h4 class="ph">What this trace shows</h4>
+        <ul>
+          <li>Every act is immediately followed by an observe before the next act — the model cannot "fire and forget."</li>
+          <li>It waits for each result before deciding the next step (unless it fires parallel tool calls, in which case it waits for all of them together).</li>
+          <li>This sequential dependency is why agentic tasks are slower than chat: real I/O is happening at every step.</li>
+        </ul>
 
         <div class="stp">
           <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Prompt arrives</div></div>
@@ -799,11 +848,21 @@
       <div class="card">
         <h2>1.4 What the agent "sees" vs what you see</h2>
         <p>This is where most early-agent confusion lives. The model's actual input is a large, structured document: system prompt + conversation history + tool definitions + all tool results from this and previous turns. You see a terminal or an IDE panel. The two views are very different, and the mismatch is a reliable source of debugging headaches.</p>
-        <p>Consider: the model might have a <code>&lt;system-reminder&gt;</code> block injected by the harness telling it about available skills, recent memory, or permission grants. You don't see that unless you specifically ask to dump the context. The model's "beliefs" about what tools it has, what files it has read, and what was previously said are all locked inside that context document — which grows silently with every turn.</p>
+        <h4 class="ph">What's hidden in the model's view</h4>
+        <ul>
+          <li>The model might have a <code>&lt;system-reminder&gt;</code> block injected by the harness telling it about available skills, recent memory, or permission grants.</li>
+          <li>You don't see that unless you specifically ask to dump the context.</li>
+          <li>The model's "beliefs" about what tools it has, what files it has read, and what was previously said are all locked inside that context document — which grows silently with every turn.</li>
+        </ul>
         <div class="info orange">
           <strong>Concrete example:</strong> Claude Code injects a <code>&lt;system-reminder&gt;</code> with the current list of approved permissions, deferred tools, and active skills at the top of each turn. If a skill was loaded three turns ago, the model still "sees" it and can invoke it — even though your terminal shows no sign of it. If you're confused why the model is doing something, the first debugging step is: what is actually in its context right now?
         </div>
-        <p>The practical implication: agents can appear to behave inconsistently because their context has changed, not because the model is random. A long conversation where tool results accumulate, old decisions drift in and out of the context window, and injected reminders come and go will produce behavior that looks non-deterministic to a user watching only the terminal. Learning to reason about what is in the context — not just what you've typed — is a core skill.</p>
+        <h4 class="ph">The practical implication</h4>
+        <ul>
+          <li>Agents can appear to behave inconsistently because their context has changed, not because the model is random.</li>
+          <li>A long conversation where tool results accumulate, old decisions drift in and out of the context window, and injected reminders come and go will produce behavior that looks non-deterministic to a user watching only the terminal.</li>
+          <li>Learning to reason about what is in the context — not just what you've typed — is a core skill.</li>
+        </ul>
       </div>
 
       <!-- 1.5 -->
@@ -811,16 +870,39 @@
         <h2>1.5 Determinism, non-determinism, and the temperature knob</h2>
         <p>Temperature is the sampling parameter that controls how "creative" the model's output is. At temperature 0 (greedy), the model always picks the highest-probability next token. At higher values it samples more broadly, producing more varied output. This matters for agentic coding: you usually want low temperature for tool-call generation (you want the model to reliably call the right tool with the right arguments), but sometimes higher temperature for initial brainstorming or architecture ideation.</p>
         <div class="info purple"><strong>Important caveat:</strong> Claude Code and Gemini CLI do not expose temperature as a CLI surface-level parameter. It's fixed or invisible in those tools. The temperature dial matters when you're calling the underlying APIs directly — e.g., through the Anthropic SDK or the Google Gen AI SDK — where you control the sampling parameters yourself. For everyday CLI use, don't look for this knob; it isn't there.</div>
-        <p>But temperature is only one source of non-determinism. Parallel tool calls introduce ordering ambiguity: if two tools fire simultaneously and both modify state, the outcome depends on which result arrives first. Race conditions in shell commands are real. File system ordering, network latency in web-fetch tools, and even OS scheduling can affect which observation the model receives first. When you see "flaky" agent behavior that can't be explained by temperature, look at the tool execution layer, not the model.</p>
-        <p>The practical rule: for agentic coding, treat the output as probabilistic but reviewable. The model will usually do the right thing on the first attempt. When it doesn't, the loop gives it a chance to self-correct via the observe phase — provided you've given it enough context to recognize the error.</p>
+        <h4 class="ph">Other sources of non-determinism</h4>
+        <ul>
+          <li>Temperature is only one source — parallel tool calls introduce ordering ambiguity: if two tools fire simultaneously and both modify state, the outcome depends on which result arrives first.</li>
+          <li>Race conditions in shell commands are real.</li>
+          <li>File system ordering, network latency in web-fetch tools, and even OS scheduling can affect which observation the model receives first.</li>
+          <li>When you see "flaky" agent behavior that can't be explained by temperature, look at the tool execution layer, not the model.</li>
+        </ul>
+        <h4 class="ph">The practical rule</h4>
+        <ul>
+          <li>For agentic coding, treat the output as probabilistic but reviewable.</li>
+          <li>The model will usually do the right thing on the first attempt.</li>
+          <li>When it doesn't, the loop gives it a chance to self-correct via the observe phase — provided you've given it enough context to recognize the error.</li>
+        </ul>
       </div>
 
       <!-- 1.6 -->
       <div class="card">
         <h2>1.6 The control problem</h2>
         <p>The loop runs until it stops. The three main stop conditions are: (1) the model calls a terminal/done tool signalling completion, (2) the max-turn or token-budget limit is hit, or (3) the user interrupts. Understanding these is essential for working safely with agentic tools — especially when the agent has permission to write files, run commands, or make network calls.</p>
-        <p>Human-in-the-loop patterns are your primary control mechanism. The simplest form: the agent surfaces a plan as text before executing it, and you approve or modify before it runs. This is the "plan-then-confirm" gate, and it's built into most tools in some form. Claude Code's Plan Mode produces a text proposal and waits; Kilo Code's Architect mode thinks before switching to Code mode for execution. The gate does not prevent errors — it just moves them earlier, when they're cheaper to fix.</p>
-        <p>A subtler control pattern: granularity of permission. You can grant "approve all file reads" while requiring approval for each shell command, or vice versa. The right granularity depends on your trust in the task: for well-understood, reversible operations (reading files, writing new files), broad permission is fine. For operations with external effects (network calls, <code>git push</code>, database writes), tight granularity keeps you in the loop.</p>
+        <h4 class="ph">Human-in-the-loop patterns</h4>
+        <ul>
+          <li>Human-in-the-loop patterns are your primary control mechanism.</li>
+          <li>The simplest form: the agent surfaces a plan as text before executing it, and you approve or modify before it runs — the "plan-then-confirm" gate, built into most tools in some form.</li>
+          <li>Claude Code's Plan Mode produces a text proposal and waits; Kilo Code's Architect mode thinks before switching to Code mode for execution.</li>
+          <li>The gate does not prevent errors — it just moves them earlier, when they're cheaper to fix.</li>
+        </ul>
+        <h4 class="ph">Granularity of permission</h4>
+        <ul>
+          <li>A subtler control pattern: granularity of permission.</li>
+          <li>You can grant "approve all file reads" while requiring approval for each shell command, or vice versa.</li>
+          <li>The right granularity depends on your trust in the task: for well-understood, reversible operations (reading files, writing new files), broad permission is fine.</li>
+          <li>For operations with external effects (network calls, <code>git push</code>, database writes), tight granularity keeps you in the loop.</li>
+        </ul>
         <div class="info red"><strong>The most common control failure:</strong> granting broad "auto-accept" and then leaving the room while the agent runs a long task. The agent can't tell you it's confused halfway through — it will keep going, making decisions you would have caught if you'd been watching. Stay close for the first few turns of any novel task.</div>
       </div>
 
@@ -875,9 +957,24 @@
       <div class="card">
         <h2>1.8 Anatomy of a bad loop</h2>
         <p>Most agent failures aren't dramatic crashes — they're subtle drifts that compound over several turns until the output is wrong in ways that are hard to trace back. Knowing the failure archetypes lets you catch them early.</p>
-        <p><strong>The rathole:</strong> The agent picks up on a tangent inside the task and goes deep on it, forgetting the original goal. A classic example: asked to add a feature, it notices a linting error, fixes it, notices the linter flagged three more files, fixes those, and is now three directories deep in style cleanup while the feature is untouched. Early-warning sign: tool calls whose file paths have diverged from the original scope.</p>
-        <p><strong>Drift:</strong> The goal shifts gradually across many turns as the context window fills and early instructions lose effective weight. The model isn't ignoring you — it's weighting more recent context more heavily and has "forgotten" the preamble. Early-warning sign: output that technically satisfies the last thing you said but not the original intent stated five turns ago.</p>
-        <p><strong>Premature claim-of-done:</strong> The model announces completion when the task is only partly finished. This often happens when the model observes a partial success signal (tests pass, no errors printed) and treats it as full success. Early-warning sign: the model says "Done" but the diff is smaller than expected, or the output doesn't include all the deliverables you asked for.</p>
+        <h4 class="ph">The rathole</h4>
+        <ul>
+          <li>The agent picks up on a tangent inside the task and goes deep on it, forgetting the original goal.</li>
+          <li>Classic example: asked to add a feature, it notices a linting error, fixes it, notices the linter flagged three more files, fixes those, and is now three directories deep in style cleanup while the feature is untouched.</li>
+          <li>Early-warning sign: tool calls whose file paths have diverged from the original scope.</li>
+        </ul>
+        <h4 class="ph">Drift</h4>
+        <ul>
+          <li>The goal shifts gradually across many turns as the context window fills and early instructions lose effective weight.</li>
+          <li>The model isn't ignoring you — it's weighting more recent context more heavily and has "forgotten" the preamble.</li>
+          <li>Early-warning sign: output that technically satisfies the last thing you said but not the original intent stated five turns ago.</li>
+        </ul>
+        <h4 class="ph">Premature claim-of-done</h4>
+        <ul>
+          <li>The model announces completion when the task is only partly finished.</li>
+          <li>This often happens when the model observes a partial success signal (tests pass, no errors printed) and treats it as full success.</li>
+          <li>Early-warning sign: the model says "Done" but the diff is smaller than expected, or the output doesn't include all the deliverables you asked for.</li>
+        </ul>
         <div class="info yellow"><strong>The 3-turn heuristic:</strong> If after three tool-call turns you can't see clear forward progress toward the original goal, stop the agent and re-prompt with a sharper scope. Don't let it continue hoping it will self-correct — it usually won't without fresh direction.</div>
       </div>
 
@@ -885,8 +982,21 @@
       <div class="card">
         <h2>1.9 Mental model: agents are interns with very fast hands</h2>
         <p>The most useful mental model for working with agentic coding tools: imagine a junior engineer who is extremely fast, broadly knowledgeable, eager to help, and occasionally confidently wrong. They can read a thousand-line file in the time it takes you to type a command. They know most standard library APIs. They will attempt any task you give them without hesitation.</p>
-        <p>But they need clear specs. Vague instructions produce vague results. They will make reasonable-sounding decisions about ambiguous edge cases without flagging the ambiguity to you — because they are fast and eager and don't know they should pause. They can get lost in a large codebase without a map. And they can be confidently wrong about something domain-specific that isn't in their training data (your internal API, your company's deployment process, the specific invariants of your codebase).</p>
-        <p>The intern framing predicts the right management style: write specs as if you're briefing a smart engineer who doesn't know your system. Review every diff before merging. Give them small, bounded tasks rather than open-ended explorations. Check in after three turns. And don't be surprised when they do something sensible but not quite what you meant — that's not a model failure, that's a spec failure.</p>
+        <h4 class="ph">Their weaknesses</h4>
+        <ul>
+          <li>They need clear specs — vague instructions produce vague results.</li>
+          <li>They will make reasonable-sounding decisions about ambiguous edge cases without flagging the ambiguity to you — because they are fast and eager and don't know they should pause.</li>
+          <li>They can get lost in a large codebase without a map.</li>
+          <li>They can be confidently wrong about something domain-specific that isn't in their training data (your internal API, your company's deployment process, the specific invariants of your codebase).</li>
+        </ul>
+        <h4 class="ph">The management style this predicts</h4>
+        <ul>
+          <li>Write specs as if you're briefing a smart engineer who doesn't know your system.</li>
+          <li>Review every diff before merging.</li>
+          <li>Give them small, bounded tasks rather than open-ended explorations.</li>
+          <li>Check in after three turns.</li>
+          <li>Don't be surprised when they do something sensible but not quite what you meant — that's not a model failure, that's a spec failure.</li>
+        </ul>
       </div>
 
       <!-- 1.10 -->
