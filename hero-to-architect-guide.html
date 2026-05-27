@@ -6987,7 +6987,11 @@ if __name__ == "__main__":
         <li>Completes under 5 seconds on a 10,000-commit repository</li>
         <li>Tested: at minimum the four test cases from Ch 8.11 (empty repo, single author, multi-author, date filter)</li>
       </ul>
-      <p>These eight bullets are the acceptance criteria. All three passes below must satisfy all eight. Any pass that ships without satisfying them is incomplete — that is the point of writing them down before touching code.</p>
+      <h4 class="ph">Why written criteria matter</h4>
+      <ul>
+        <li>These eight bullets are the acceptance criteria — all three passes below must satisfy all eight.</li>
+        <li>Any pass that ships without satisfying them is incomplete — that is the point of writing them down before touching code.</li>
+      </ul>
 
       <h2>17.2 Why multiple passes — different surfaces, different lessons</h2>
       <div class="flv-grid">
@@ -6995,8 +6999,19 @@ if __name__ == "__main__":
         <div class="flv"><div class="flv-name">Pass 2 · Claude Code</div><div class="flv-desc">Terminal, parallel subagents + worktrees, /ultrareview.</div></div>
         <div class="flv"><div class="flv-name">Pass 3 · Gemini CLI</div><div class="flv-desc">Free tier, 1M context window, highlights vs Pass 2.</div></div>
       </div>
-      <p>The same feature built with three different tools exposes things a single-tool walkthrough cannot. Kilo Code is IDE-embedded, mode-switching, and optimised for tight edit-test loops inside a project that is already open. Claude Code is terminal-first, operates on the whole repository without an IDE host, and has first-class multi-agent dispatch. Gemini CLI has a free-tier cost model and a 1M-token context window that changes how you think about compaction and context strategy. No tool dominates on all three dimensions: cost, speed, and ergonomics. That is the lesson the comparison table in §17.13 is designed to make concrete.</p>
-      <p>The secondary reason for multiple passes is that real engineering teams are not monolithic. Some teammates live in their IDE; some live in the terminal; some are on free-tier accounts. Showing the same feature end-to-end in each environment means this chapter is relevant regardless of which tool you reach for. The methodology — spec first, plan before coding, TDD as the control rod, review before merge, parallel only when truly independent — is identical in all three passes. Only the surface syntax changes.</p>
+      <h4 class="ph">What each tool uniquely exposes</h4>
+      <ul>
+        <li>Kilo Code is IDE-embedded, mode-switching, and optimised for tight edit-test loops inside a project that is already open.</li>
+        <li>Claude Code is terminal-first, operates on the whole repository without an IDE host, and has first-class multi-agent dispatch.</li>
+        <li>Gemini CLI has a free-tier cost model and a 1M-token context window that changes how you think about compaction and context strategy.</li>
+        <li>No tool dominates on all three dimensions — cost, speed, and ergonomics. That is the lesson the comparison table in §17.13 is designed to make concrete.</li>
+      </ul>
+      <h4 class="ph">Why the same feature in all three environments</h4>
+      <ul>
+        <li>Real engineering teams are not monolithic — some teammates live in their IDE; some live in the terminal; some are on free-tier accounts.</li>
+        <li>Showing the same feature end-to-end in each environment means this chapter is relevant regardless of which tool you reach for.</li>
+        <li>The methodology — spec first, plan before coding, TDD as the control rod, review before merge, parallel only when truly independent — is identical in all three passes. Only the surface syntax changes.</li>
+      </ul>
 
       <div class="stp"><div class="stp-h"><div class="stp-n grn">1</div><div class="stp-t">Brainstorm + Spec</div></div><p>Write the acceptance criteria before touching code. Architect mode or <code>superpowers:brainstorming</code> → OpenSpec / SpecKit output.</p></div>
       <div class="stp"><div class="stp-h"><div class="stp-n">2</div><div class="stp-t">Plan</div></div><p>Decompose into TDD-ordered tasks naming exact files and verification commands. Review with the five-point checklist from Ch 7.6.</p></div>
@@ -7006,15 +7021,31 @@ if __name__ == "__main__":
       <div class="stp"><div class="stp-h"><div class="stp-n grn">6</div><div class="stp-t">Ship</div></div><p>Open PR with <code>gh pr create</code>, confirm CI green, merge. Capture wall-clock time and token cost for the pass comparison.</p></div>
 
       <h2>17.3 Pass 1 (Kilo Code) — brainstorm + spec + plan</h2>
-      <p>Open your project in VS Code with the Kilo Code extension active. The acceptance criteria from §17.1 are already written (they came from the Ch 6.11 walkthrough, which produced <code>openspec/specs/gitlog-report.md</code>). Switch Kilo Code to <strong>Architect mode</strong> — the mode designed for design-level work without direct file edits. The relevant mode mechanics are covered in Ch 12; the short version is: Architect mode can read all files but will not write them without your approval. Paste the brief:</p>
+      <h4 class="ph">Setup and mode context</h4>
+      <ul>
+        <li>Open your project in VS Code with the Kilo Code extension active.</li>
+        <li>The acceptance criteria from §17.1 are already written — they came from the Ch 6.11 walkthrough, which produced <code>openspec/specs/gitlog-report.md</code>.</li>
+        <li>Switch Kilo Code to <strong>Architect mode</strong> — the mode designed for design-level work without direct file edits.</li>
+        <li>The relevant mode mechanics are covered in Ch 12; the short version: Architect mode can read all files but will not write them without your approval.</li>
+      </ul>
+      <p>Paste the brief:</p>
       <pre><code>You are in Architect mode. Read openspec/specs/gitlog-report.md.
 Produce a numbered implementation plan (PLAN.md) for the gitlog-report CLI.
 Decompose into tasks suitable for TDD order:
   - write the failing test → run it (confirm it fails) → implement → verify → commit.
 Each task should name the exact files touched and the verification command.
 Do not write any implementation code yet.</code></pre>
-      <p>Kilo Code's Architect agent reads the spec, reads the existing repo structure, and produces <code>PLAN.md</code>. Review it using the five-point checklist from <strong>Ch 7.6</strong>: right files? right order? complete code in steps? no placeholders? verification steps? The typical Architect output will have 6–8 tasks. You should see tasks roughly matching: (1) scaffold <code>gitlog_report/</code> package, (2) implement <code>parse_gitlog()</code> with the four Ch 8.11 tests, (3) implement the CLI entry point with argparse, (4) JSON + Markdown formatter, (5) <code>--include-merges</code> flag, (6) performance validation.</p>
-      <p>Once you approve the plan (close Architect, open Code mode), the agent will not re-read the spec — it will read <code>PLAN.md</code>. This is intentional: the spec is the contract; the plan is the recipe. The agent executes the recipe. Keep them separate.</p>
+      <h4 class="ph">Reviewing the Architect output</h4>
+      <ul>
+        <li>Kilo Code's Architect agent reads the spec, reads the existing repo structure, and produces <code>PLAN.md</code>.</li>
+        <li>Review it using the five-point checklist from <strong>Ch 7.6</strong>: right files? right order? complete code in steps? no placeholders? verification steps?</li>
+        <li>The typical Architect output will have 6–8 tasks, roughly: (1) scaffold <code>gitlog_report/</code> package, (2) implement <code>parse_gitlog()</code> with the four Ch 8.11 tests, (3) implement the CLI entry point with argparse, (4) JSON + Markdown formatter, (5) <code>--include-merges</code> flag, (6) performance validation.</li>
+      </ul>
+      <h4 class="ph">Spec vs plan — keeping them separate</h4>
+      <ul>
+        <li>Once you approve the plan (close Architect, open Code mode), the agent will not re-read the spec — it will read <code>PLAN.md</code>.</li>
+        <li>This is intentional: the spec is the contract; the plan is the recipe. The agent executes the recipe. Keep them separate.</li>
+      </ul>
       <pre><code># openspec/changes/add-gitlog-report/ already exists from Ch 6.11 workflow
 # Accept and archive the change so the spec is canonical:
 openspec accept add-gitlog-report
@@ -7022,38 +7053,77 @@ openspec archive add-gitlog-report
 # → openspec/specs/gitlog-report.md is now the live spec</code></pre>
 
       <h2>17.4 Pass 1 — TDD in Code mode</h2>
-      <p>Switch Kilo Code to <strong>Code mode</strong> and feed it the plan. Code mode can read and write files — this is where the implementation happens. The agent will work through PLAN.md task by task. Your job is to watch, gate each task's output, and intervene if it deviates from the plan.</p>
-      <p>Task 2 in the plan is the TDD task. The four tests from <strong>Ch 8.11</strong> are the scaffold — they already exist in <code>tests/test_gitlog.py</code> from the walkthrough. The agent should confirm they fail before writing any implementation:</p>
+      <h4 class="ph">Switching to Code mode</h4>
+      <ul>
+        <li>Switch Kilo Code to <strong>Code mode</strong> and feed it the plan.</li>
+        <li>Code mode can read and write files — this is where the implementation happens.</li>
+        <li>The agent works through PLAN.md task by task; your job is to watch, gate each task's output, and intervene if it deviates from the plan.</li>
+      </ul>
+      <h4 class="ph">Task 2 — confirm tests fail first</h4>
+      <ul>
+        <li>Task 2 in the plan is the TDD task.</li>
+        <li>The four tests from <strong>Ch 8.11</strong> are the scaffold — they already exist in <code>tests/test_gitlog.py</code> from the walkthrough.</li>
+        <li>The agent should confirm they fail before writing any implementation:</li>
+      </ul>
       <pre><code>$ pytest tests/test_gitlog.py -v
 FAILED tests/test_gitlog.py::test_empty_repo_returns_empty_dict - ImportError: No module named 'gitlog_report'
 FAILED tests/test_gitlog.py::test_single_author_commit_count - ImportError
 FAILED tests/test_gitlog.py::test_multi_author_counts - ImportError
 FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date - ImportError
 4 failed in 0.12s</code></pre>
-      <p>All four failing — correct. The agent implements <code>gitlog_report/parser.py</code> with <code>parse_gitlog()</code> using <code>subprocess</code> to call <code>git log --numstat</code>, aggregating per-author stats into a dict. After implementation, the test run should show all green:</p>
+      <h4 class="ph">Implementation and green confirmation</h4>
+      <ul>
+        <li>All four failing — correct.</li>
+        <li>The agent implements <code>gitlog_report/parser.py</code> with <code>parse_gitlog()</code> using <code>subprocess</code> to call <code>git log --numstat</code>, aggregating per-author stats into a dict.</li>
+        <li>After implementation, the test run should show all green:</li>
+      </ul>
       <pre><code>$ pytest tests/test_gitlog.py -v
 PASSED tests/test_gitlog.py::test_empty_repo_returns_empty_dict
 PASSED tests/test_gitlog.py::test_single_author_commit_count
 PASSED tests/test_gitlog.py::test_multi_author_counts
 PASSED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
 4 passed in 0.83s</code></pre>
-      <p>The agent continues through the remaining plan tasks: CLI entry point (<code>gitlog_report/__main__.py</code>), JSON and Markdown formatters (<code>gitlog_report/formatters.py</code>), the <code>--include-merges</code> flag, and the performance test. Commit SHA after Task 6 completes: <code>a3f82c1</code>. Token usage at this point: approximately 88,000 tokens consumed across the Code-mode session.</p>
+      <h4 class="ph">Remaining tasks and token cost</h4>
+      <ul>
+        <li>The agent continues through the remaining plan tasks: CLI entry point (<code>gitlog_report/__main__.py</code>), JSON and Markdown formatters (<code>gitlog_report/formatters.py</code>), the <code>--include-merges</code> flag, and the performance test.</li>
+        <li>Commit SHA after Task 6 completes: <code>a3f82c1</code>.</li>
+        <li>Token usage at this point: approximately 88,000 tokens consumed across the Code-mode session.</li>
+      </ul>
 
       <h2>17.5 Pass 1 — inject a bug, debug it in Debug mode</h2>
-      <p>This step mirrors <strong>Ch 9.11</strong> exactly, because the point is to practice the debugging loop in the context of a real ship cycle, not just as an isolated exercise. Inject the off-by-one bug from Ch 9.11 into <code>parser.py</code>:</p>
+      <h4 class="ph">Why inject a real bug here</h4>
+      <ul>
+        <li>This step mirrors <strong>Ch 9.11</strong> exactly — the point is to practice the debugging loop in the context of a real ship cycle, not just as an isolated exercise.</li>
+      </ul>
+      <p>Inject the off-by-one bug from Ch 9.11 into <code>parser.py</code>:</p>
       <pre><code># BEFORE (correct)
 if commit_date &gt;= start_date:
 
 # AFTER (injected bug — off-by-one, boundary commit excluded)
 if commit_date &gt; start_date:</code></pre>
-      <p>Run the tests. Three pass; one fails — exactly the date-filter boundary test from Ch 8.11, because it was written specifically on the boundary condition:</p>
+      <h4 class="ph">What the bug triggers</h4>
+      <ul>
+        <li>Run the tests — three pass; one fails.</li>
+        <li>The failure is exactly the date-filter boundary test from Ch 8.11, because it was written specifically on the boundary condition:</li>
+      </ul>
       <pre><code>FAILED tests/test_gitlog.py::test_date_filter_excludes_commits_before_start_date
 AssertionError: Expected author Alice with 2 commits in window [2024-01-10, None].
 Got: {'Alice': {'commit_count': 1, ...}}</code></pre>
-      <p>Switch Kilo Code to <strong>Debug mode</strong>. Debug mode in Kilo is a read-only-first mode — it analyses before proposing edits, which matches the systematic debugging loop. Feed it the failing test output and walk it through the five stages from Ch 9: Reproduce → Isolate → Root Cause → Fix → Verify. The agent should identify the root cause (single character difference) without needing more than two turns. The fix is one character: <code>&gt;</code> to <code>&gt;=</code>. Verify all four tests pass. Commit SHA: <code>b7d14e2</code>. This debug cycle consumed approximately 18,000 tokens in Kilo's Debug mode.</p>
+      <h4 class="ph">Debug mode walkthrough and resolution</h4>
+      <ul>
+        <li>Switch Kilo Code to <strong>Debug mode</strong> — a read-only-first mode that analyses before proposing edits, matching the systematic debugging loop.</li>
+        <li>Feed it the failing test output and walk it through the five stages from Ch 9: Reproduce → Isolate → Root Cause → Fix → Verify.</li>
+        <li>The agent identifies the root cause (single character difference) without needing more than two turns.</li>
+        <li>The fix is one character: <code>&gt;</code> to <code>&gt;=</code>. Verify all four tests pass.</li>
+        <li>Commit SHA: <code>b7d14e2</code>. This debug cycle consumed approximately 18,000 tokens in Kilo's Debug mode.</li>
+      </ul>
 
       <h2>17.6 Pass 1 — review pass</h2>
-      <p>Switch to <strong>Architect mode</strong> (or a dedicated Reviewer mode if your Kilo Code configuration exposes one — both work for read-only review). The review methodology from <strong>Ch 7.6</strong>'s five-point plan-review checklist applies here too, extended by the three-layer review stack from Ch 10: automated static analysis, agent review, and manual spot-check.</p>
+      <h4 class="ph">Review mode setup</h4>
+      <ul>
+        <li>Switch to <strong>Architect mode</strong> — or a dedicated Reviewer mode if your Kilo Code configuration exposes one; both work for read-only review.</li>
+        <li>The review methodology from <strong>Ch 7.6</strong>'s five-point plan-review checklist applies here too, extended by the three-layer review stack from Ch 10: automated static analysis, agent review, and manual spot-check.</li>
+      </ul>
       <p>Run the review with the Ch 10.11 three-layer approach:</p>
       <pre><code># Layer 1: automated
 ruff check gitlog_report/ tests/
@@ -7067,7 +7137,13 @@ openspec/specs/gitlog-report.md have a test and an implementation?
 is not a git repo? (3) performance — will this handle 10,000 commits
 under 5 seconds? (4) security — any shell injection risks in the
 subprocess calls? (5) completeness — any missing edge cases?"</code></pre>
-      <p>The agent review surfaces one real finding in this run: the <code>subprocess.run(["git", "log", ...], shell=False)</code> call correctly avoids shell injection, but the <code>--path</code> argument is not validated before being passed to git — a path with special characters will produce an unhelpful git error rather than a clean user-facing message. Add a <code>Path(args.path).is_dir()</code> check before the subprocess call. Commit SHA after fix: <code>c9a3d05</code>. Total Pass 1 token count: approximately 148,000 tokens.</p>
+      <h4 class="ph">Agent review finding and fix</h4>
+      <ul>
+        <li>The agent review surfaces one real finding: the <code>subprocess.run(["git", "log", ...], shell=False)</code> call correctly avoids shell injection, but the <code>--path</code> argument is not validated before being passed to git.</li>
+        <li>A path with special characters will produce an unhelpful git error rather than a clean user-facing message.</li>
+        <li>Fix: add a <code>Path(args.path).is_dir()</code> check before the subprocess call.</li>
+        <li>Commit SHA after fix: <code>c9a3d05</code>. Total Pass 1 token count: approximately 148,000 tokens.</li>
+      </ul>
 
       <h2>17.7 Pass 1 — ship the PR</h2>
       <p>With the implementation complete, tests green, and the review finding addressed, ship the PR:</p>
@@ -7101,7 +7177,11 @@ gh pr merge --squash</code></pre>
       <p>Merge SHA: <code>d1f6b38</code>. Pass 1 is complete. Wall-clock time from blank branch to merged PR: approximately 47 minutes, including the deliberate debug cycle.</p>
 
       <h2>17.8 Pass 2 (Claude Code) — brainstorm + spec + plan</h2>
-      <p>Reset to a fresh branch. Pass 2 uses Claude Code exclusively — terminal-first, no IDE. The methodology difference from Pass 1 is the front end: instead of Kilo Code's Architect mode for the brainstorm, we use the <code>superpowers:brainstorming</code> skill explicitly, then SpecKit's <code>/specify</code> for the spec, then Claude Code's plan mode for the plan.</p>
+      <h4 class="ph">Pass 2 setup and methodology difference</h4>
+      <ul>
+        <li>Reset to a fresh branch — Pass 2 uses Claude Code exclusively: terminal-first, no IDE.</li>
+        <li>The methodology difference from Pass 1 is the front end: instead of Kilo Code's Architect mode for the brainstorm, we use the <code>superpowers:brainstorming</code> skill explicitly, then SpecKit's <code>/specify</code> for the spec, then Claude Code's plan mode for the plan.</li>
+      </ul>
       <pre><code>git checkout main
 git checkout -b feat/gitlog-report-pass2
 claude  # open Claude Code session</code></pre>
@@ -7110,14 +7190,33 @@ claude  # open Claude Code session</code></pre>
 per-author contribution summaries (commit_count, files_changed,
 insertions, deletions, top_files). JSON + Markdown output.
 Date range filters. Handles empty repo. Tested.</code></pre>
-      <p>The <code>superpowers:brainstorming</code> skill runs a structured exploration: it identifies ambiguities (how do we handle author email deduplication? what is "top files" sorted by?), proposes design options (subprocess vs. Python's <code>gitpython</code> library — recommend subprocess for zero-dependency portability), and surfaces three edge cases not in the initial brief (binary files, unborn HEAD, unicode in author names). After the brainstorm settles, run SpecKit:</p>
+      <h4 class="ph">What the brainstorm skill surfaces</h4>
+      <ul>
+        <li>The <code>superpowers:brainstorming</code> skill runs a structured exploration — it identifies ambiguities (how do we handle author email deduplication? what is "top files" sorted by?).</li>
+        <li>It proposes design options: subprocess vs. Python's <code>gitpython</code> library — recommends subprocess for zero-dependency portability.</li>
+        <li>It surfaces three edge cases not in the initial brief: binary files, unborn HEAD, unicode in author names.</li>
+      </ul>
+      <p>After the brainstorm settles, run SpecKit:</p>
       <pre><code>/specify gitlog-report</code></pre>
-      <p>SpecKit produces <code>specs/001-gitlog-report/spec.md</code> — identical in structure to the Ch 6.11 output because the acceptance criteria are the same contract. The difference is that the brainstorm added the three edge cases to the spec's edge-cases section. Now switch to plan mode:</p>
+      <h4 class="ph">SpecKit output and transition to plan mode</h4>
+      <ul>
+        <li>SpecKit produces <code>specs/001-gitlog-report/spec.md</code> — identical in structure to the Ch 6.11 output because the acceptance criteria are the same contract.</li>
+        <li>The difference: the brainstorm added the three edge cases to the spec's edge-cases section.</li>
+      </ul>
+      <p>Now switch to plan mode:</p>
       <pre><code>/plan implement gitlog-report according to specs/001-gitlog-report/spec.md</code></pre>
-      <p>Claude Code's plan mode produces a numbered task list. Apply the Ch 7.6 five-point review. Approve.</p>
+      <h4 class="ph">Plan review and approval</h4>
+      <ul>
+        <li>Claude Code's plan mode produces a numbered task list.</li>
+        <li>Apply the Ch 7.6 five-point review. Approve.</li>
+      </ul>
 
       <h2>17.9 Pass 2 — execute via parallel subagents</h2>
-      <p>Pass 2's implementation phase uses <strong>parallel subagents</strong> from the outset — not as a polish pass (as in Ch 11.11), but for the initial implementation itself. This is appropriate here because the three major deliverables (core library, test suite, CLI + docs) are genuinely independent: they touch different files, have no shared mutable state during development, and can be integrated cleanly at the end.</p>
+      <h4 class="ph">Why parallel subagents for initial implementation</h4>
+      <ul>
+        <li>Pass 2's implementation phase uses <strong>parallel subagents</strong> from the outset — not as a polish pass (as in Ch 11.11), but for the initial implementation itself.</li>
+        <li>This is appropriate because the three major deliverables (core library, test suite, CLI + docs) are genuinely independent: they touch different files, have no shared mutable state during development, and can be integrated cleanly at the end.</li>
+      </ul>
       <p>Create three worktrees using the <code>superpowers:using-git-worktrees</code> skill:</p>
       <pre><code>git worktree add ../gitlog-feat   -b pass2/feat
 git worktree add ../gitlog-tests  -b pass2/tests
@@ -7152,7 +7251,12 @@ Agent C — worktree ../gitlog-docs (branch pass2/docs):
   output schema description, and contributing notes.
   Write CHANGELOG.md with initial 0.1.0 entry.
   Do NOT modify source or tests. Commit when complete."</code></pre>
-      <p>All three agents run concurrently. Typical wall-clock for this dispatch: approximately 6 minutes (bounded by the longest agent — Agent A). The orchestrator waits, then integrates:</p>
+      <h4 class="ph">Dispatch timing and integration</h4>
+      <ul>
+        <li>All three agents run concurrently.</li>
+        <li>Typical wall-clock for this dispatch: approximately 6 minutes (bounded by the longest agent — Agent A).</li>
+        <li>The orchestrator waits, then integrates:</li>
+      </ul>
       <pre><code>cd ../gitlog-feat && git log --oneline -3
 # a91f3c7 feat: implement parser.py and CLI entry point
 # ... (2 earlier scaffold commits)
@@ -7162,7 +7266,12 @@ cd ../gitlog-tests && git log --oneline -3
 
 cd ../gitlog-docs && git log --oneline -3
 # e57c901 docs: add README.md and CHANGELOG.md</code></pre>
-      <p>Merge integration order: docs first (zero conflict risk), tests second (test files only), feat last (source changes). Raise three PRs, merge in order, resolve any rebase conflicts on the feat branch before final merge. Integration commit SHA: <code>f2e0c14</code>.</p>
+      <h4 class="ph">Merge integration order</h4>
+      <ul>
+        <li>Merge in order: docs first (zero conflict risk), tests second (test files only), feat last (source changes).</li>
+        <li>Raise three PRs, merge in order, resolve any rebase conflicts on the feat branch before final merge.</li>
+        <li>Integration commit SHA: <code>f2e0c14</code>.</li>
+      </ul>
 
       <h2>17.10 Pass 2 — verification, /security-review, /ultrareview</h2>
       <p>After integration, the full test suite runs:</p>
@@ -7175,11 +7284,31 @@ PASSED test_binary_files_excluded_from_line_counts
 PASSED test_unicode_author_names_handled
 PASSED test_10k_mock_completes_under_5s
 7 passed in 4.11s</code></pre>
-      <p>All seven tests pass, including the 10K performance mock. Now run the two review layers that Ch 10 calls out for production work.</p>
-      <p><strong>Layer 1 — <code>/security-review</code> (local, synchronous).</strong> Run this inside the active Claude Code session against the integrated branch. It reads the full diff and checks for injection risks, secret exposure, and unsafe subprocess patterns. The finding it surfaces: <code>str(path)</code> is passed to <code>subprocess.run</code> without <code>resolve()</code>, so a symlink pointing outside the repo could be followed silently. Fix: <code>Path(args.path).resolve(strict=True)</code>. One-line change. Commit SHA: <code>g3f71a2</code>.</p>
-      <p><strong>Layer 2 — <code>/ultrareview</code> (cloud, asynchronous).</strong> Dispatch the deep review as a background cloud agent — it runs independently and delivers results to your inbox when done. In Claude Code:</p>
+      <h4 class="ph">Full test suite after integration</h4>
+      <ul>
+        <li>All seven tests pass, including the 10K performance mock.</li>
+      </ul>
+      <h4 class="ph">Layer 1 — /security-review (local, synchronous)</h4>
+      <ul>
+        <li>Run inside the active Claude Code session against the integrated branch — reads the full diff and checks for injection risks, secret exposure, and unsafe subprocess patterns.</li>
+        <li>Finding: <code>str(path)</code> is passed to <code>subprocess.run</code> without <code>resolve()</code>, so a symlink pointing outside the repo could be followed silently.</li>
+        <li>Fix: <code>Path(args.path).resolve(strict=True)</code>. One-line change. Commit SHA: <code>g3f71a2</code>.</li>
+      </ul>
+      <h4 class="ph">Layer 2 — /ultrareview (cloud, asynchronous)</h4>
+      <ul>
+        <li>Dispatch the deep review as a background cloud agent — it runs independently and delivers results to your inbox when done.</li>
+      </ul>
+      <p>In Claude Code:</p>
       <pre><code>/ultrareview --target feat/gitlog-report-pass2 --async --notify</code></pre>
-      <p>The ultrareview agent runs a multi-pass analysis: architecture fit, spec compliance, test coverage gap analysis, performance, and documentation completeness. Results arrive approximately 4 minutes later. Key finding: the <code>top_files</code> computation is O(n·log n) per author but is called inside a loop — for 10K commits with 50 authors it is fine, but the finding notes it could be O(n) with a heap. Accept the finding as a known non-blocking improvement and note it in CHANGELOG.md. Ultrareview result: one blocking finding (already fixed — the <code>resolve(strict=True)</code>), one non-blocking suggestion (heap optimisation). Mark both. Commit SHA after addressing: <code>h4b92c3</code>.</p>
+      <h4 class="ph">Ultrareview findings and resolution</h4>
+      <ul>
+        <li>The ultrareview agent runs a multi-pass analysis: architecture fit, spec compliance, test coverage gap analysis, performance, and documentation completeness.</li>
+        <li>Results arrive approximately 4 minutes later.</li>
+        <li>Key finding: the <code>top_files</code> computation is O(n·log n) per author but is called inside a loop — for 10K commits with 50 authors it is fine, but the finding notes it could be O(n) with a heap.</li>
+        <li>Accept the finding as a known non-blocking improvement and note it in CHANGELOG.md.</li>
+        <li>Ultrareview result: one blocking finding (already fixed — the <code>resolve(strict=True)</code>), one non-blocking suggestion (heap optimisation). Mark both.</li>
+        <li>Commit SHA after addressing: <code>h4b92c3</code>.</li>
+      </ul>
 
       <h2>17.11 Pass 2 — ship the PR</h2>
       <pre><code>gh pr create \
@@ -7271,7 +7400,13 @@ gh pr merge --squash</code></pre>
           </tr>
         </tbody>
       </table>
-      <p>The headline finding: if you are on a budget, Gemini CLI's free tier is genuinely useful for solo work and the 1M context is a real ergonomic advantage for large repositories. If you need the deepest review pipeline (<code>/ultrareview</code>, <code>/security-review</code>, superpowers skills), Claude Code is the right tool. If you spend most of your day in the IDE, Kilo Code's mode-switching architecture and inline diff workflow reduce context switching. None of these is wrong; they are different cost-capability points on the same design space.</p>
+      <h4 class="ph">Headline finding — which tool for which context</h4>
+      <ul>
+        <li>If you are on a budget, Gemini CLI's free tier is genuinely useful for solo work and the 1M context is a real ergonomic advantage for large repositories.</li>
+        <li>If you need the deepest review pipeline (<code>/ultrareview</code>, <code>/security-review</code>, superpowers skills), Claude Code is the right tool.</li>
+        <li>If you spend most of your day in the IDE, Kilo Code's mode-switching architecture and inline diff workflow reduce context switching.</li>
+        <li>None of these is wrong — they are different cost-capability points on the same design space.</li>
+      </ul>
 
       <h2>17.14 Lessons learned</h2>
       <p>Six patterns to repeat and four antipatterns to avoid, drawn from all three passes.</p>
