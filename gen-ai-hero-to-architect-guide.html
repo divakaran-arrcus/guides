@@ -158,8 +158,9 @@
 
   .card h3 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--blue); }
   .card h4 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: var(--purple); }
-  .card h4.ph { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 16px 0 6px; display: flex; align-items: center; gap: 7px; }
-  .card h4.ph::before { content: '\25B8'; color: var(--accent); font-size: 11px; flex-shrink: 0; }
+  .card h4.ph { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 16px 0 6px; }
+  .card h4.ph::before { content: '\25B8'; color: var(--accent); font-size: 11px; margin-right: 7px; }
+  .card h4.ph code { font-family: 'JetBrains Mono', monospace; font-size: 0.92em; }
   .card h4.ph + ul { padding-left: 38px; }
   .card p { font-size: 14px; line-height: 1.75; margin-bottom: 8px; }
   .card ul { padding-left: 18px; margin: 6px 0 10px; }
@@ -360,18 +361,6 @@
   .try-this-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--green); margin-bottom: 8px; }
   .try-this p { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
 
-  /* Custom: timeline */
-  .timeline { position: relative; padding-left: 24px; margin: 12px 0; }
-  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
-  .tl-item { position: relative; margin-bottom: 16px; }
-  .tl-item::before { content: ''; position: absolute; left: -20px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--blue); border: 2px solid var(--surface); }
-  .tl-item.tl-green::before { background: var(--green); }
-  .tl-item.tl-orange::before { background: var(--orange); }
-  .tl-item.tl-purple::before { background: var(--purple); }
-  .tl-item.tl-cyan::before { background: var(--cyan); }
-  .tl-item.tl-red::before { background: var(--red); }
-  .tl-year { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--blue); }
-  .tl-text { font-size: 13px; color: var(--text-dim); }
 
   /* Tool-alt callout */
   aside.tool-alt {
@@ -1194,7 +1183,7 @@
         <li>The summarization step condenses many tokens into fewer, but nuance is lost — specific function signatures, exact error messages, intermediate reasoning.</li>
         <li>If you need to preserve something precisely across a compaction boundary, write it to a file or add it to your memory file (CLAUDE.md, GEMINI.md, etc.) before the compact runs.</li>
       </ul>
-      <h4 class="ph">What happens after /compact in Claude Code</h4>
+      <h4 class="ph">What happens after <code>/compact</code> in Claude Code</h4>
       <ul>
         <li>The session continues with a synthesized summary in place of the raw history.</li>
         <li>The model receives this as a user message prefixed with the compaction notice.</li>
@@ -3982,7 +3971,7 @@ AssertionError</code></pre>
       </ul>
 
       <h2>9.10 The systematic-debugging skill and Kilo Debug mode</h2>
-      <h4 class="ph">Claude Code: no /debug command — use the skill</h4>
+      <h4 class="ph">Claude Code: no <code>/debug</code> command — use the skill</h4>
       <ul>
         <li>Claude Code has no built-in <code>/debug</code> slash command — do not look for one.</li>
         <li>The correct path is the <code>superpowers:systematic-debugging</code> skill. Invoke via the Skill tool or by typing the skill name in a Claude Code session.</li>
@@ -4176,7 +4165,7 @@ Rate each finding: BLOCKER | MAJOR | MINOR."</code></pre>
         </ul>
       </div>
 
-      <h4 class="ph">What /ultrareview does</h4>
+      <h4 class="ph">What <code>/ultrareview</code> does</h4>
       <ul>
         <li>Spawns multiple parallel subagents with different review lenses — correctness, performance, security, architecture, test coverage — and synthesises their findings into a structured report.</li>
         <li>Because multiple independent agents review the same code, it catches things a single-pass review misses: agents disagree, and disagreements surface ambiguities no single reviewer would flag.</li>
@@ -4535,7 +4524,7 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
 # Self-paced loop — model decides when to run again based on output
 /loop /babysit-prs</code></pre>
 
-      <h4 class="ph">When to use /loop</h4>
+      <h4 class="ph">When to use <code>/loop</code></h4>
       <ul>
         <li>Polling a deploy pipeline until it completes or fails.</li>
         <li>Watching a test suite for new failures during active development.</li>
@@ -4543,7 +4532,7 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
         <li>Running a recurring quality check (lint, typecheck) at a fixed interval during a long coding session.</li>
       </ul>
 
-      <h4 class="ph">When not to use /loop</h4>
+      <h4 class="ph">When not to use <code>/loop</code></h4>
       <ul>
         <li>One-shot tasks — <code>/loop</code> is overhead for anything you only need once.</li>
         <li>Avoid loops that generate large output per iteration — token consumption compounds quickly with recurring agents.</li>
@@ -5494,13 +5483,13 @@ When this skill is invoked, do the following:
         <li>The programmatic primitive: a skill can call <code>ScheduleWakeup</code> to schedule follow-up work (e.g., "check if this CI job passed in 10 minutes").</li>
         <li>Operates within the current machine's session lifecycle.</li>
       </ul>
-      <h4 class="ph">/loop — dynamic interval runner</h4>
+      <h4 class="ph"><code>/loop</code> — dynamic interval runner</h4>
       <ul>
         <li>Takes a prompt or slash command and an interval specification and repeatedly executes that command at the given cadence within a running Claude Code session.</li>
         <li>Interactive — you run it in a live session and it keeps running until you stop it; use for monitoring tasks, polling a status endpoint, or repeatedly running a check while actively working.</li>
         <li>The interval can be model-paced (Claude decides when enough time has passed) or fixed-clock; does not persist across session restarts.</li>
       </ul>
-      <h4 class="ph">/schedule — persistent cross-session scheduler</h4>
+      <h4 class="ph"><code>/schedule</code> — persistent cross-session scheduler</h4>
       <ul>
         <li>Creates "remote agents" — cron-like scheduled tasks that run on a schedule, survive session restarts, and execute even when you are not at the keyboard.</li>
         <li>Configure with a cron expression or natural language schedule.</li>
@@ -5820,7 +5809,7 @@ Node.js 20, Postgres 15, Stripe SDK v12.
         <li>In Claude Code, skills are discovered at session start from the filesystem and loaded proactively — available skills appear in the <code>system-reminder</code> context and can be invoked immediately.</li>
         <li>In Gemini CLI, the primary activation path is the <code>activate_skill</code> tool: the agent calls this tool with a skill name or path, which loads the skill's SKILL.md into context and makes its capabilities available — an <strong>explicit pull model</strong> rather than an implicit push model.</li>
       </ul>
-      <h4 class="ph">Wiring skills via GEMINI.md</h4>
+      <h4 class="ph">Wiring skills via <code>GEMINI.md</code></h4>
       <ul>
         <li>The agent needs to know what skills exist (typically via GEMINI.md listing them) and then activate the relevant ones for a task.</li>
         <li>A common pattern: list available skills in project GEMINI.md with short descriptions so the model can recognize when a task maps to a skill and call <code>activate_skill</code> appropriately.</li>
@@ -6164,7 +6153,7 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       </ul>
 
       <h2>15.6 The Claude Code skill machinery — format, discovery, Skill tool</h2>
-      <h4 class="ph">SKILL.md format</h4>
+      <h4 class="ph"><code>SKILL.md</code> format</h4>
       <ul>
         <li>A Claude Code skill is a directory containing a <code>SKILL.md</code> file (and optionally supporting scripts or configuration).</li>
         <li>The SKILL.md format has a <strong>frontmatter YAML block</strong> at the top followed by a <strong>Markdown body</strong>.</li>
@@ -6263,7 +6252,7 @@ customInstructions: |
 
       <h2>15.10 Adapting to Gemini CLI — GEMINI.md and activate_skill</h2>
       <p>Gemini CLI's skill system uses the same SKILL.md format, but the integration requires explicit wiring via GEMINI.md.</p>
-      <h4 class="ph">Registering skills in GEMINI.md</h4>
+      <h4 class="ph">Registering skills in <code>GEMINI.md</code></h4>
       <p>The first step is registering the skills so the agent knows they exist. In your project GEMINI.md (or global <code>~/.gemini/GEMINI.md</code>), add a section that lists your methodology skills with short descriptions:</p>
 
       <pre><code>## Available Methodology Skills
@@ -7288,13 +7277,13 @@ PASSED test_10k_mock_completes_under_5s
       <ul>
         <li>All seven tests pass, including the 10K performance mock.</li>
       </ul>
-      <h4 class="ph">Layer 1 — /security-review (local, synchronous)</h4>
+      <h4 class="ph">Layer 1 — <code>/security-review</code> (local, synchronous)</h4>
       <ul>
         <li>Run inside the active Claude Code session against the integrated branch — reads the full diff and checks for injection risks, secret exposure, and unsafe subprocess patterns.</li>
         <li>Finding: <code>str(path)</code> is passed to <code>subprocess.run</code> without <code>resolve()</code>, so a symlink pointing outside the repo could be followed silently.</li>
         <li>Fix: <code>Path(args.path).resolve(strict=True)</code>. One-line change. Commit SHA: <code>g3f71a2</code>.</li>
       </ul>
-      <h4 class="ph">Layer 2 — /ultrareview (cloud, asynchronous)</h4>
+      <h4 class="ph">Layer 2 — <code>/ultrareview</code> (cloud, asynchronous)</h4>
       <ul>
         <li>Dispatch the deep review as a background cloud agent — it runs independently and delivers results to your inbox when done.</li>
       </ul>
