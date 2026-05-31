@@ -1973,6 +1973,144 @@
   </div>
 </div>
 
+<div id="gw-stitching" class="section">
+  <div class="sec-title">13. Route-Type Stitching Mechanics</div>
+  <p class="sec-sub">The gateway is a stitching / re-origination PE — intra-fabric, not an ASBR. Same AS, encap boundary.</p>
+
+  <div class="info">The gateway is functionally an EVPN re-origination PE within the same AS. The term "ASBR" implies an inter-AS boundary and does NOT apply here — the gateway sits at an encapsulation boundary, not an autonomous-system boundary. Route-type translation is purely a control-plane operation: the gateway withdraws the route received on the VXLAN side and re-originates a new NLRI with its own next-hop and SRv6-specific attributes into the SRv6 BGP-EVPN domain (and vice versa).</div>
+
+  <div class="card">
+    <p>Every EVPN route type carries encap-specific payload in its BGP attributes. Stitching means the gateway terminates the incoming BGP session, inspects those attributes, translates the encap-specific fields, rewrites the next-hop to itself, and re-advertises the route into the far domain. RD and RT values are preserved unless an explicit export/import policy rewrites them for domain separation. The five EVPN route types each require a different attribute translation — Type 3 is the most operationally significant because it governs BUM replication membership.</p>
+
+    <h4 class="ph">The stitching pattern</h4>
+    <ul>
+      <li><strong>Receive:</strong> The gateway has a BGP-EVPN session toward the VXLAN domain and imports routes matching the configured import RT into a local RIB.</li>
+      <li><strong>Translate:</strong> Per-route-type logic rewrites the encap-specific attributes (BGP Encapsulation Extended Community / VNI label field ↔ BGP Prefix-SID + SRv6 Service TLV) and installs the translated route in a re-origination table.</li>
+      <li><strong>Re-originate:</strong> The gateway advertises the re-originated route into the SRv6 BGP-EVPN domain with its own loopback as next-hop. The route appears to SRv6 PEs as if the gateway were a native SRv6 PE.</li>
+      <li><strong>Symmetry:</strong> The same three-step process runs in the SRv6→VXLAN direction simultaneously. Both directions share the same gateway box — it is two logical PEs sharing one forwarding ASIC.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>The Generic Stitching Pipeline</h2>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n">1</div>
+        <div class="stp-t">Receive route in encap A's BGP-EVPN domain</div>
+      </div>
+      <p>The gateway's VXLAN-side BGP session receives the NLRI. Attributes present: BGP Encapsulation Extended Community (RFC 9012, type 8) carrying the VXLAN encap indicator; VNI encoded in the MPLS Label field of the NLRI. RD/RT as advertised by the originating VXLAN PE. Next-hop = originating PE's VTEP IP.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">2</div>
+        <div class="stp-t">Translate per-route-type attributes (swap VNI/label for SID, rewrite next-hop)</div>
+      </div>
+      <p>The gateway applies per-route-type translation logic (detailed below). The BGP Encapsulation Extended Community is replaced by the BGP Prefix-SID attribute (RFC 8669) carrying an SRv6 Service TLV (RFC 9252) with the appropriate service SID sub-TLV (type 5 for L3 / type 6 for L2). The gateway's own SRv6 loopback becomes the new BGP next-hop. VNI/label values are discarded; the service SID (uDT2U, uDT2M, uDT4/uDT6, or ES SID) encodes the equivalent service identity in the SRv6 domain.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n org">3</div>
+        <div class="stp-t">Re-originate into encap B's BGP-EVPN domain</div>
+      </div>
+      <p>The translated NLRI is advertised into the SRv6-side BGP-EVPN domain. SRv6 PEs receive a route that looks like it was originated by a native SRv6 PE — next-hop is the gateway's SRv6 loopback, the Prefix-SID attribute is present, and the SRv6 Service TLV specifies the correct service SID. The RT exported on the re-originated route must match the import RT configured on SRv6 PEs for the target EVI/VRF; RD is rewritten to the gateway's own RD for the re-originated route.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 class="ph">Type 1 (Ethernet A-D) stitching</h4>
+    <ul>
+      <li><strong>VXLAN side:</strong> ESI label encoded in MPLS Label field; BGP Encapsulation EC type 8 (RFC 9012). Two sub-types: per-EVI (Ethernet A-D per EVI) and per-ES (Ethernet A-D per ES).</li>
+      <li><strong>SRv6 side:</strong> ES SID replaces the ESI label; BGP Prefix-SID attribute (RFC 8669) + SRv6 Service TLV (RFC 9252) type 6 sub-TLV (L2 service). The ES SID is a local SID allocated per ESI on the gateway.</li>
+      <li><strong>Aliasing semantics preserved:</strong> The per-EVI A-D route advertised by the gateway allows SRv6 PEs to perform aliasing (load-balance toward the ES even when a Type 2 was learned from a different PE). The gateway re-originates per-EVI A-D routes for each ESI it has stitched.</li>
+      <li><strong>Mass-withdrawal:</strong> When the gateway receives a mass-withdrawal (per-ES A-D withdraw with ESI label 0), it propagates the withdrawal into the SRv6 domain using the same semantic. SRv6 PEs flush MAC entries for that ESI without needing per-MAC withdrawals — the semantics survive the encap translation.</li>
+    </ul>
+
+    <h4 class="ph">Type 2 (MAC/IP) stitching</h4>
+    <ul>
+      <li><strong>VXLAN side:</strong> L2 VNI in MPLS Label field 1; L3 VNI (if IP present) in Label field 2; BGP Encapsulation EC type 8.</li>
+      <li><strong>SRv6 side:</strong> uDT2U service SID in the SRv6 Service TLV (RFC 9252, type 6 sub-TLV). The uDT2U SID encodes L2 unicast forwarding for the EVI. If an IP route is also present (MAC+IP route), an additional SRv6 Service TLV carrying a uDT4 or uDT6 SID (type 5 sub-TLV) may be included for the L3 component.</li>
+      <li><strong>MAC unchanged:</strong> The MAC address in the NLRI is carried verbatim across the encap boundary — it identifies the same host on both sides.</li>
+      <li><strong>MAC mobility sequence number:</strong> The MAC Mobility Extended Community and its sequence number are preserved exactly across the translation. The gateway must not reset or increment the sequence number — doing so would trigger unnecessary MAC flushes on SRv6 PEs. The sequence number is a property of the MAC entry, not the encap.</li>
+      <li><strong>Local preference and MED:</strong> Retained unless overridden by explicit policy. Preserve them to avoid unintentional traffic-engineering changes across the encap boundary.</li>
+    </ul>
+
+    <h4 class="ph">Type 3 (IMET) stitching</h4>
+    <ul>
+      <li><strong>VXLAN side:</strong> PMSI Tunnel attribute (RFC 6514) present; tunnel type typically Ingress Replication (type 6) with the VTEP's IP in the Tunnel Identifier field; VNI in the MPLS label field of the PMSI attribute. BGP Encapsulation EC type 8.</li>
+      <li><strong>SRv6 side:</strong> PMSI Tunnel attribute (RFC 6514) is rewritten — tunnel type remains Ingress Replication, but the Tunnel Identifier is replaced with the gateway's SRv6 loopback, and the MPLS label field carries the uDT2M service SID. BGP Encapsulation EC is replaced with the BGP Prefix-SID attribute carrying the SRv6 Service TLV (type 6 sub-TLV, uDT2M).</li>
+      <li><strong>Replication list recomputed:</strong> SRv6 PEs build their BUM replication list for the EVI from all received Type 3 routes. The gateway's re-originated Type 3 represents the entire VXLAN domain behind it — SRv6 PEs send BUM traffic to the gateway, which then replicates it into the VXLAN domain using the VTEP-side PMSI attribute.</li>
+      <li><strong>VXLAN→SRv6 BUM path:</strong> VXLAN PEs replicate BUM to the gateway's VTEP IP. The gateway receives, decapsulates, and re-encapsulates for each SRv6 PE in the EVI's SRv6-side replication list. This is the IR-to-IR bridging case — no multicast underlay required on either side.</li>
+    </ul>
+
+    <h4 class="ph">Type 4 (ES route) stitching</h4>
+    <ul>
+      <li><strong>VXLAN side:</strong> ESI in the NLRI; DF Election Extended Community present; BGP Encapsulation EC type 8 with ESI label.</li>
+      <li><strong>SRv6 side:</strong> ES SID replaces the ESI label in the re-originated Type 4; BGP Prefix-SID attribute (RFC 8669) with SRv6 Service TLV type 6 sub-TLV. DF Election Extended Community is carried across verbatim.</li>
+      <li><strong>DF election on combined view:</strong> SRv6 PEs run DF election across all Type 4 routes they receive for an ESI, including the gateway's re-originated route. The outcome is consistent as long as the ESI and DF Election community values are preserved faithfully.</li>
+      <li><strong>Gateway is NOT a DF candidate:</strong> The gateway does not originate Type 4 routes for ESIs it is stitching — it only re-originates Type 4 routes from the VXLAN PEs. The gateway itself does not have a multi-homed segment on that ESI; inserting itself as a DF candidate would corrupt the election for the actual multi-homed PEs.</li>
+    </ul>
+
+    <h4 class="ph">Type 5 (IP Prefix) stitching</h4>
+    <ul>
+      <li><strong>VXLAN side:</strong> IP prefix in NLRI; GW IP and GW MAC fields present (or zero for pure L3VPN semantics); L3 VNI in MPLS Label field; BGP Encapsulation EC type 8.</li>
+      <li><strong>SRv6 side:</strong> Simplest translation of all five route types. GW IP is rewritten to the gateway's own IP; GW MAC is rewritten to the gateway's MAC (or zeroed if not needed). L3 VNI label is replaced by uDT4 (IPv4) or uDT6 (IPv6) service SID in the SRv6 Service TLV (RFC 9252, type 5 sub-TLV = L3 service).</li>
+      <li><strong>Route target carries over:</strong> The VRF RT must match on both sides for the prefix to be imported into the correct VRF on SRv6 PEs. If the VXLAN and SRv6 domains use different RT assignment schemes, the gateway's export policy must remap the RT at re-origination time.</li>
+      <li><strong>No PMSI, no ES involvement:</strong> Type 5 has no BUM or multi-homing attributes — the translation is attribute-for-attribute and straightforward relative to Types 1–4.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Route-Type Translation Matrix</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Route Type</th>
+          <th>VXLAN side encoding</th>
+          <th>SRv6 side encoding</th>
+          <th>What the gateway changes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Type 1</strong><br>Ethernet A-D</td>
+          <td>BGP Encapsulation EC (RFC 9012, type 8); ESI label in MPLS Label field</td>
+          <td>BGP Prefix-SID (RFC 8669) + SRv6 Service TLV (RFC 9252) type 6 sub-TLV; ES SID</td>
+          <td>Swap ESI label → ES SID; replace Encapsulation EC with Prefix-SID; rewrite next-hop; preserve aliasing and mass-withdrawal semantics</td>
+        </tr>
+        <tr>
+          <td><strong>Type 2</strong><br>MAC/IP</td>
+          <td>BGP Encapsulation EC (RFC 9012, type 8); L2 VNI in Label 1; L3 VNI in Label 2 (if IP present)</td>
+          <td>BGP Prefix-SID (RFC 8669) + SRv6 Service TLV (RFC 9252) type 6 sub-TLV; uDT2U SID (L2 unicast); uDT4/uDT6 SID for L3 component (type 5 sub-TLV)</td>
+          <td>Swap VNI → uDT2U SID; MAC address unchanged; MAC Mobility sequence number preserved exactly; rewrite next-hop</td>
+        </tr>
+        <tr>
+          <td><strong>Type 3</strong><br>IMET</td>
+          <td>BGP Encapsulation EC (RFC 9012, type 8); PMSI Tunnel attr (RFC 6514) type 6 IR; VNI in PMSI label field</td>
+          <td>BGP Prefix-SID (RFC 8669) + SRv6 Service TLV (RFC 9252) type 6 sub-TLV; uDT2M SID (L2 BUM); PMSI Tunnel attr (RFC 6514) rewritten</td>
+          <td>Rewrite PMSI Tunnel Identifier to gateway SRv6 loopback; swap VNI → uDT2M SID in PMSI label; replace Encapsulation EC with Prefix-SID; recompute replication targets</td>
+        </tr>
+        <tr>
+          <td><strong>Type 4</strong><br>ES route</td>
+          <td>BGP Encapsulation EC (RFC 9012, type 8); ESI label in MPLS Label field; DF Election EC present</td>
+          <td>BGP Prefix-SID (RFC 8669) + SRv6 Service TLV (RFC 9252) type 6 sub-TLV; ES SID; DF Election EC carried verbatim</td>
+          <td>Swap ESI label → ES SID; replace Encapsulation EC with Prefix-SID; rewrite next-hop; DF Election EC preserved; gateway does NOT inject itself as DF candidate</td>
+        </tr>
+        <tr>
+          <td><strong>Type 5</strong><br>IP Prefix</td>
+          <td>BGP Encapsulation EC (RFC 9012, type 8); L3 VNI in MPLS Label field; GW IP / GW MAC in NLRI</td>
+          <td>BGP Prefix-SID (RFC 8669) + SRv6 Service TLV (RFC 9252) type 5 sub-TLV (L3 service); uDT4 SID (IPv4) or uDT6 SID (IPv6)</td>
+          <td>Swap L3 VNI → uDT4/uDT6 SID; rewrite GW IP to gateway's own IP; rewrite GW MAC; replace Encapsulation EC with Prefix-SID; remap RT if domain RT schemes differ</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info orange">The gateway must run BGP-EVPN sessions BOTH as a VXLAN PE AND as an SRv6 PE — effectively two logical PEs in one box, glued by a re-origination policy. RD/RT design must allow re-originated routes to be imported on the far side: SRv6 PEs must carry import RTs that match the RTs exported by the gateway on its SRv6-side re-originated routes, and VXLAN PEs must similarly match the gateway's VXLAN-side re-originated routes. A common failure mode is deploying the gateway correctly but misconfiguring the RT on one side, causing silently dropped routes with no traffic — verify with <code>show bgp l2vpn evpn route-type</code> on both sides of the boundary.</div>
+</div>
+
   </main>
 </div>
 
