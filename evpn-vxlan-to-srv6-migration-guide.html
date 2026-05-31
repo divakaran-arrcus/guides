@@ -611,7 +611,7 @@
     <h4 class="ph">Service identifier</h4>
     <ul>
       <li>VXLAN: 24-bit VNI identifies the Layer-2 or VRF service instance. The VNI is carried in the VXLAN header.</li>
-      <li>SRv6: service SID carries both the endpoint and the action. L2 MAC-VRF uses <code>uDT2U</code> (unknown unicast) or <code>End.DT2U</code>; L3 VRF uses <code>uDT4</code>/<code>End.DT4</code> (IPv4) and <code>uDT6</code>/<code>End.DT6</code> (IPv6).</li>
+      <li>SRv6: service SID carries both the endpoint and the action. L2 MAC-VRF unicast uses <code>uDT2U</code>/<code>End.DT2U</code> (decap + unicast MAC lookup in the bridge domain); L2 BUM uses <code>uDT2M</code>/<code>End.DT2M</code>; L3 VRF uses <code>uDT4</code>/<code>End.DT4</code> (IPv4) and <code>uDT6</code>/<code>End.DT6</code> (IPv6).</li>
       <li>The SID is programmed per leaf per service — unlike VNI, it is not fabric-wide flat; it encodes the destination node.</li>
     </ul>
 
@@ -644,7 +644,7 @@
           <li>Outer IPv6 only (no UDP)</li>
           <li>40-byte IPv6 header; SRH optional</li>
           <li>Endpoint = SRv6 node locator + SID</li>
-          <li>40 bytes overhead (no SRH path)</li>
+          <li>54 bytes total outer overhead on the no-SRH path (14 B outer Eth + 40 B IPv6); the 40 B IPv6 header carries the destination service SID</li>
           <li>Service ID: 128-bit SID (node-scoped)</li>
           <li>Native TE via segment list in DA or SRH</li>
           <li>IPv6 underlay required</li>
@@ -711,7 +711,7 @@
   <p class="sec-sub">Used in every packet walk and migration scenario. Read once, refer back.</p>
 
   <div class="card">
-    <p>A 2-spine / 4-leaf iBGP-EVPN fabric is the canonical target. Spine-1 and Spine-2 act as iBGP route-reflectors for all EVPN sessions; leaves peer upward to both spines as RR clients. This choice reflects the dominant deployment pattern and keeps the RR-on-spines rationale explicit.</p>
+    <p>A 2-spine / 4-leaf iBGP-EVPN fabric is the canonical target, with Spine-1 and Spine-2 acting as iBGP route-reflectors for all EVPN sessions (leaves peer upward to both spines as RR clients). This RR-on-spines pattern is the dominant DC deployment model.</p>
 
     <h4 class="ph">Fabric nodes</h4>
     <ul>
