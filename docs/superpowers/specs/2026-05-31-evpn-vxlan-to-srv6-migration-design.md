@@ -29,24 +29,24 @@ Assumes the reader has working knowledge of: BGP-EVPN with VXLAN (covered in `bg
 - Not an SRv6 tutorial — SID structure, micro-SIDs, behaviors are in `srv6-complete-guide`.
 - Not a vendor configuration manual — examples are vendor-neutral pseudocode.
 - Not an MPLS-EVPN migration guide — that's a different starting state (covered partially in `mpls-to-srv6-migration-guide`).
-- No SR-MPLS-EVPN coverage (different data plane; flagged in §11 if relevant, not a focus).
+- No SR-MPLS-EVPN coverage (different data plane; mentioned only in passing where relevant, not a focus).
 
 ## 4. Positioning vs existing guides
 
 | | This guide | bgp-evpn | dc-fabric | srv6-complete | mpls-to-srv6-migration |
 |---|---|---|---|---|---|
 | Topic | VXLAN→SRv6 migration of EVPN | EVPN over VXLAN | Leaf-spine + overlay | SRv6 fundamentals + EVPN brief | MPLS→SRv6 migration |
-| EVPN treatment | Both encaps, side-by-side + playbook | VXLAN encap only | VXLAN encap (overlay context) | One section (EVPN with SRv6) | One section (EVPN-SRv6 migration) |
+| EVPN treatment | Both encaps, side-by-side + playbook | VXLAN encap only | VXLAN encap (overlay context) | One section (L2VPN and EVPN with SRv6) | Three short EVPN-specific h2 sections (EVPN with SRv6 underlay; VXLAN coexistence in the DC; EVPN migration steps) plus an SRv6-L2-forwarding section |
 | Reader's starting state | Has EVPN-VXLAN running | Learning EVPN | Designing a fabric | Learning SRv6 | Has MPLS running |
 | Output | Migration playbook + comparison | Reference | Reference | Reference | Migration playbook |
 
-The new guide is genuinely net-new: no existing guide treats VXLAN→SRv6 migration as the main subject. The closest overlap is `mpls-to-srv6-migration-guide` (3 short EVPN sections, total ~17 mentions), which this guide complements rather than duplicates.
+The new guide is genuinely net-new: no existing guide treats VXLAN→SRv6 migration of EVPN as its primary subject. The closest overlap is `mpls-to-srv6-migration-guide`, which has three EVPN-specific h2 sections plus an SRv6-L2-forwarding section — but those are sub-topics inside an MPLS→SRv6 narrative, not a VXLAN→SRv6 DC playbook. This guide complements rather than duplicates that material.
 
 ## 5. Framing rules (apply throughout)
 
 1. **All body prose is point-wise from the start.** Each `<h2>` section has a short prose lede setting context, then `<h4 class="ph">` mini-headings with bullet lists for everything else. No dense paragraphs.
 2. **Visual components carry weight wherever they shine:** `.pkt` byte-box diagrams for headers and packet walks, `.cmp` two-column for VXLAN-vs-SRv6 side-by-sides, `.stp` for sequential flows (migration steps, packet hops, debug procedures), `.flv-grid` for sets (route types, service callouts, design options), `.info`/`.info.green`/`.info.orange`/`.info.red`/`.info.yellow` callouts for guidance, gotchas, and warnings.
-3. **Phase-organized playbook (hybrid).** Top-level structure is the four migration phases (coexistence → gateway → per-service → cutover). The gateway phase gets extra depth (4 of 9 playbook sections). Service callouts appear *inside* each phase so a service-targeted reader can navigate by service too.
+3. **Phase-organized playbook (hybrid).** Top-level structure is the four migration phases (coexistence → gateway → per-service → cutover). The gateway phase gets extra depth (4 of 9 playbook sections). Service callouts appear in **Phase 1 (§11, light-touch service-callout index)** and **Phase 3 (§17, deep per-service playbooks)** so a service-targeted reader can navigate by service too. The gateway and cutover phases are deliberately service-agnostic.
 4. **uSID-primary for SRv6 examples.** Modern SRv6 deployments use uSID (compressed SRv6). Classic SRv6 SRH treatment appears as a variant where relevant, not as the default.
 5. **Vendor-neutral pseudocode** for any CLI examples; consistent with the rest of the series.
 
@@ -71,7 +71,7 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 
 ### Part 2 — Comparison (6 sections)
 - **§4. Header math.** VXLAN stack vs SRv6 stack bytes; header-tax table. `.pkt` byte-box diagrams (3 stacks) + `.tbl` matrix.
-- **§5. Route-type behavior across encaps.** Type 2/3/4/5 per-encap attributes. `.cmp` or 4-row `.tbl` + `.info` callout on next-hop encoding.
+- **§5. Route-type behavior across encaps.** Type 1/2/3/4/5 per-encap attributes — Type 1 (Ethernet A-D, per-ES and per-EVI; carries ES Label / ES SID for mass-withdrawal and aliasing); Type 2 (MAC/IP); Type 3 (IMET); Type 4 (ES route); Type 5 (IP Prefix). 5-row `.tbl` + `.info` callout on next-hop encoding.
 - **§6. Packet walk 1 — Type 2 MAC/IP, side-by-side.** `.cmp` two-column with `.stp` + `.pkt` per side. Foundational walk.
 - **§7. Packet walk 2 — Type 5 IP Prefix, side-by-side.** `.cmp` two-column with `.stp` + `.pkt`. `.info.green` "safe first cut."
 - **§8. Packet walk 3 — Type 3 IMET / BUM.** Topology flood diagram + per-encap `.pkt`. `.info.yellow` on PIM underlay.
@@ -81,11 +81,11 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 
 **Phase 1 · Coexistence (2)**
 - **§10. Coexistence baseline — dual-stack fabric design.** Topology State M + `.cmp` BGP attributes + `.info.yellow` next-hop gotcha.
-- **§11. Coexistence — per-service callouts.** `.flv-grid` 5 cards (L2, L3, IRB, multi-homing, DCI) + `.info` "pick one service to lead."
+- **§11. Coexistence — per-service callouts.** `.flv-grid` with 4 service cards (L2, L3, IRB, multi-homing) plus a 5th "DCI (deployment-topology cross-cut)" card noted explicitly as a topology dimension rather than a peer service; `.info` "pick one service to lead." This framing keeps the reader's service-targeted navigation while preventing the categorization confusion.
 
 **Phase 2 · Gateway / border node (4 — the depth cluster)**
 - **§12. Gateway design.** Border-leaf vs spine-as-gateway vs dedicated DCI. `.cmp` three-column + `.tbl` decision matrix + inline topology diagrams.
-- **§13. Route-type stitching mechanics.** Gateway as EVPN ASBR. `.stp` generic stitching pipeline + `.tbl` per-route-type translation + `.info.orange` BGP session callout.
+- **§13. Route-type stitching mechanics.** Gateway as a stitching / re-origination PE (intra-fabric, not an ASBR — same AS, encap boundary). `.stp` generic stitching pipeline + `.tbl` per-route-type translation + `.info.orange` BGP session callout.
 - **§14. ESI + MAC mobility + ARP/ND across encaps.** Operational hazards. `.stp` MAC mobility traversal + `.info.red` 3 pitfalls.
 - **§15. Gateway packet walks — VXLAN host → Gateway → SRv6 host (forward + return).** `.cmp` two-column with `.stp` + `.pkt` per direction + topology diagram. **Packet walks 4–5.**
 
@@ -103,7 +103,7 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 ### Reference (3 sections)
 - **§21. Decision matrix — migrate now / later / stay.** `.tbl` signal×outcome + `.flv-grid` 3 outcomes.
 - **§22. VXLAN vs SRv6 cheat sheet.** Dense `.tbl` reference — encap headers, show commands, route attrs, capture filters, common SID functions.
-- **§23. Glossary delta.** `<dl class="glossary">` of terms specific to this guide: Encapsulation Ext Community, ES Label/SID, End.DT2U/2M/4/6, Gateway/border-leaf, IMET, PMSI Tunnel attr, Re-origination, Service SID, SRv6 SID Tunnel attribute, Stitching, uN, uA, VNI/Service SID mapping, VTEP/SRv6 endpoint equivalence.
+- **§23. Glossary delta.** `<dl class="glossary">` of terms specific to this guide: BGP Encapsulation Extended Community (RFC 9012), BGP Prefix-SID attribute (RFC 8669), SRv6 Service TLV (RFC 9252), ES Label / ES SID, End.DT2U, End.DT2M, End.DT4, End.DT6, Gateway / border-leaf, IMET (Inclusive Multicast Ethernet Tag), PMSI Tunnel attribute (RFC 6514), Route re-origination, Service SID, Stitching, uN, uA, VNI ↔ Service SID mapping, VTEP / SRv6 endpoint equivalence.
 
 ## 8. Sections-and-walks summary
 
@@ -117,14 +117,14 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 | Reference | Decision matrix · Cheat sheet · Glossary | 3 |
 | **Total** | | **25** |
 
-**Total packet walks:** 5 (Type 2 in 2 encaps + Type 5 in 2 encaps + Type 3 BUM + gateway forward+return as one section with two walks inside).
+**Total packet walks:** 5 — Walk 1 (§6, Type 2 MAC/IP shown side-by-side in VXLAN and SRv6); Walk 2 (§7, Type 5 IP Prefix shown side-by-side); Walk 3 (§8, Type 3 IMET / BUM); Walks 4–5 (§15, gateway forward + return).
 
 ## 9. Cross-cutting threads
 
 1. **Reference topology threads through every walk and migration scenario.** Defined in §3 (states A/B/M), referenced by §6/§7/§8/§15.
 2. **Service callouts** appear in two places: light-touch index callouts inside Phase 1 (§11) and per-service deep playbooks in Phase 3 (§17). Cross-linked.
 3. **Point-wise format throughout** — every body prose section is `.ph` mini-headings + bullets after a short prose lede. No dense paragraphs.
-4. **Side-by-side comparison pattern** (`.cmp` two-column) repeats in §2, §4, §6, §7, §9, §12, §15, §19 — a consistent visual cue for "VXLAN-side / SRv6-side."
+4. **Side-by-side comparison pattern** — `.cmp` two-column where prose-heavy (§2, §6, §7, §12, §15, §19); `.tbl` matrix where the comparison is attribute-dense (§4 header-tax matrix, §9 dimension × encap matrix). Both serve the same "VXLAN-side / SRv6-side" visual cue.
 
 ## 10. Out-of-scope deferrals (candidates for future guides)
 
