@@ -1077,7 +1077,7 @@
       <h4 class="ph">What the window holds</h4>
       <ul>
         <li>The CPU (the model) can only operate on what fits in RAM right now; anything outside it is simply invisible.</li>
-        <li>Current window sizes (verify current at time of reading): Claude Sonnet 4.6 and Opus 4.7 both offer a 200K-token default context with a 1M-token extended tier available on request; Gemini 2.5 Pro supports 1M tokens natively; GPT-4o and o3 top out around 128K tokens.</li>
+        <li>Current window sizes (verify current at time of reading): Claude Sonnet 4.7 and Opus 4.7 both offer a 200K-token default context with a 1M-token extended tier available on request; Gemini 3 Pro supports 1M tokens natively; GPT-5 offers its own large-context tier (verify the current ceiling).</li>
         <li>Bigger windows don't mean free — everything in the window costs input tokens on every turn, even content that hasn't changed.</li>
       </ul>
       <h4 class="ph">The binary nature of "in context"</h4>
@@ -1137,7 +1137,7 @@
      + (uncached_remainder × P_input)
      + (output × P_output)</code></pre>
 
-        <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2026: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a different cache pricing model — context caching charges a per-token-per-hour storage fee for cached prefixes rather than a write-multiplier (<strong>verify exact pricing against <code>ai.google.dev</code> before writing — the model evolves</strong>); OpenAI prompt caching for GPT-4o is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
+        <p style="margin-top:0.75rem;margin-bottom:0">Multipliers vary by provider. As of mid-2026: Anthropic charges 1.25× for cache writes and 0.1× for cache reads; Google (Gemini API) uses a different cache pricing model — context caching charges a per-token-per-hour storage fee for cached prefixes rather than a write-multiplier (<strong>verify exact pricing against <code>ai.google.dev</code> before writing — the model evolves</strong>); OpenAI prompt caching for GPT-5 is automatic at 0.5× for cached reads. Always verify against current provider pricing pages before building cost models.</p>
       </div>
 
       <h4 class="ph">Strategic takeaway</h4>
@@ -1293,7 +1293,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <li>Run <code>/compact</code>. Run <code>/cost</code> after the next turn — note the drop in total input tokens and the cache-miss cost of the compaction summary entering as new content.</li>
           <li>Check <code>/context</code> before and after <code>/compact</code> to see the window usage drop.</li>
         </ol>
-        <strong>What to look for:</strong> the ratio of cached vs uncached input; the spike when files are read; the post-compaction cache reset. If you have <code>ccusage</code> installed (<code>npm i -g ccusage</code>), run it after the session for a per-model cost breakdown.
+        <strong>What to look for:</strong> the ratio of cached vs uncached input; the spike when files are read; the post-compaction cache reset. Run <code>npx ccusage</code> after the session for a per-model cost breakdown.
       </div>
 
       <div class="see-also">
@@ -1363,7 +1363,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       </ul>
       <h4 class="ph">Grep</h4>
       <ul>
-        <li>Searches file contents by pattern. Faster than <code>Bash grep</code> for simple cases because the harness can short-circuit it without spawning a shell.</li>
+        <li>Searches file contents by pattern. Backed by ripgrep, returning structured matches (file paths + line numbers) the agent can act on directly, with no shell to spawn.</li>
         <li>Returns matches with file paths and line numbers ready for a follow-up Read.</li>
       </ul>
       <h4 class="ph">Glob</h4>
@@ -1377,7 +1377,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
         <div class="flv"><div class="flv-name">Edit</div><div class="flv-desc">When you need a surgical string replacement in a known file — cheaper than Write for large files because it sends only the diff, not the whole content.</div></div>
         <div class="flv"><div class="flv-name">Write</div><div class="flv-desc">When creating a new file from scratch or when a complete rewrite is cheaper than a sequence of Edits — requires a prior Read on existing files.</div></div>
         <div class="flv"><div class="flv-name">Bash</div><div class="flv-desc">When you need to run a shell command the other tools can't express — prefer narrow, read-only invocations; reserve destructive commands for explicit intent.</div></div>
-        <div class="flv"><div class="flv-name">Grep</div><div class="flv-desc">When you need the first occurrence of a pattern across a codebase — faster than Bash grep for simple cases; returns file paths and line numbers ready for Read.</div></div>
+        <div class="flv"><div class="flv-name">Grep</div><div class="flv-desc">When you need to find occurrences of a pattern across a codebase — returns file paths and line numbers ready for Read.</div></div>
         <div class="flv"><div class="flv-name">Glob</div><div class="flv-desc">When you need to discover file structure before deciding what to read — strictly non-mutating, always safe to auto-approve.</div></div>
       </div>
 
@@ -1791,7 +1791,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
           <tbody>
             <tr><td>Kilo Code</td><td>Settings UI → Modes → per-mode model selector; or edit <code>.kilocode/</code> workspace config / <code>.roomodes</code> file (verify current path)</td><td>Per mode — Architect, Code, Ask, Debug, etc.</td></tr>
             <tr><td>Claude Code</td><td><code>CLAUDE.md</code> model preference line or skill-specific <code>SKILL.md</code> model directive; CLI flag <code>--model claude-...</code> per invocation</td><td>Per session or per skill; no native per-task routing without a wrapper</td></tr>
-            <tr><td>Gemini CLI</td><td><code>--model gemini-3-pro</code> or <code>--model gemini-flash</code> flag at launch (verify current flag names against Gemini CLI docs)</td><td>Per CLI invocation; no mid-session switching</td></tr>
+            <tr><td>Gemini CLI</td><td><code>--model gemini-3-pro</code> or <code>--model gemini-3-flash</code> flag at launch (verify current flag names against Gemini CLI docs)</td><td>Per CLI invocation; no mid-session switching</td></tr>
           </tbody>
         </table>
       </aside>
@@ -1886,7 +1886,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
       <ul>
         <li>Claude 4.7 Sonnet, 12 turns, average 4,000 input tokens/turn and 800 output tokens/turn.</li>
         <li>At approximately $3/million input tokens and $15/million output tokens (verify at docs.anthropic.com): input ≈ $0.144; output ≈ $0.144; total ≈ $0.29 per endpoint.</li>
-        <li>With prompt caching hitting 80% of input tokens at a 90% discount: input drops to ~$0.032 — total with caching ≈ $0.18 per endpoint.</li>
+        <li>With prompt caching hitting 80% of input tokens at a 90% discount: input drops to ~$0.04 — total with caching ≈ $0.18 per endpoint.</li>
       </ul>
       <h4 class="ph">Scaling to a feature sprint</h4>
       <ul>
@@ -2000,7 +2000,7 @@ Long session, model confusing state? → /clear, re-brief</code></pre>
 │  Kilo Code  ▼ Code  │ Architect │ Ask │ Debug │
 ├──────────────────────────────────────────┤
 │  Context: main.py (active) + workspace   │
-│  Provider: Anthropic · claude-sonnet-4-6 │
+│  Provider: Anthropic · claude-sonnet-4-7 │
 │  [Send message...]                       │
 └──────────────────────────────────────────┘
       </pre>
@@ -2202,8 +2202,8 @@ npx @google/gemini-cli
 
         <div class="tool-card">
           <h4>Codex CLI</h4>
-          <p><strong>What it is:</strong> OpenAI's open-source terminal agent, backed by the GPT-4o model family. Codex CLI runs in a sandboxed environment with configurable approval modes — from full auto to manual approval for every action. Written in TypeScript and available via npm.</p>
-          <p><strong>Who it's for:</strong> Developers in the OpenAI ecosystem, or anyone who wants an open-source terminal agent with sandbox-first safety controls and GPT-4o model access.</p>
+          <p><strong>What it is:</strong> OpenAI's open-source terminal agent, backed by the GPT-5 model family. Codex CLI runs in a sandboxed environment with configurable approval modes — from full auto to manual approval for every action. Written in TypeScript and available via npm.</p>
+          <p><strong>Who it's for:</strong> Developers in the OpenAI ecosystem, or anyone who wants an open-source terminal agent with sandbox-first safety controls and GPT-5 model access.</p>
           <p><strong>Key strength:</strong> Strong safety story: the sandboxed execution model and granular approval modes make it well-suited for environments where you want tight control over what the agent can do.</p>
           <p><strong>Why not deep here:</strong> This guide is structured around the Anthropic and Google ecosystems. Codex CLI's concepts map directly — the mental models transfer once you have hands-on experience with Claude Code or Gemini CLI.</p>
           <div class="tool-meta">→ docs at <code>github.com/openai/codex</code></div>
@@ -2763,13 +2763,13 @@ per-author contribution summary.
 
         <p><strong>Acceptance criteria:</strong></p>
         <ul>
-          <li>Reads <code>git log</code> from the current directory, or from a path specified via <code>--path &lt;dir&gt;</code></li>
-          <li>Produces per-author: commit count, days active, commits per day, lines added, lines removed</li>
-          <li>Lists the top 5 most-touched files per author (by total line change delta)</li>
-          <li>Outputs JSON by default; Markdown report via <code>--format md</code></li>
-          <li>Supports <code>--since &lt;date&gt;</code> and <code>--until &lt;date&gt;</code> date range filters (ISO 8601 format)</li>
-          <li>Handles an empty repository (no commits) gracefully: zero-row output, exit code 0</li>
-          <li>Handles merge commits consistently: counted in commit total, lines excluded by default (opt-in via <code>--include-merges</code>)</li>
+          <li><strong>AC1</strong> — Reads <code>git log</code> from the current directory, or from a path specified via <code>--path &lt;dir&gt;</code></li>
+          <li><strong>AC2</strong> — Produces per-author: commit count, days active, commits per day, lines added, lines removed</li>
+          <li><strong>AC3</strong> — Lists the top 5 most-touched files per author (by total line change delta)</li>
+          <li><strong>AC4</strong> — Outputs JSON by default; Markdown report via <code>--format md</code></li>
+          <li><strong>AC5</strong> — Supports <code>--since &lt;date&gt;</code> and <code>--until &lt;date&gt;</code> date range filters (ISO 8601 format)</li>
+          <li><strong>AC6</strong> — Handles an empty repository (no commits) gracefully: zero-row output, exit code 0</li>
+          <li><strong>AC7</strong> — Handles merge commits consistently: counted in commit total, lines excluded by default (opt-in via <code>--include-merges</code>)</li>
         </ul>
 
         <p><strong>OpenSpec proposal snippet</strong> — what the file at <code>openspec/changes/add-gitlog-report/proposal.md</code> looks like after <code>/opsx:propose add-gitlog-report</code>:</p>
@@ -3239,7 +3239,7 @@ Steps:
      days-active, commits/day (float), lines+/-, top-5 files
   2. Run tests (all fail)
   3. Implement aggregate(commits: list[Commit]) -&gt; list[AuthorStats]
-     AuthorStats: author, email, commits, days_active, commits_per_day,
+     AuthorStats: author, email, commit_count, days_active, commits_per_day,
                   lines_added, lines_removed, top_files[5]
   4. Run tests (all pass)
 Verify: pytest tests/test_aggregate.py -v — all tests pass
@@ -3413,7 +3413,10 @@ GOLDEN_EXPECTED = {
 }
 
 def test_golden_multi_author():
-    result = parse_gitlog(GOLDEN_GIT_LOG)
+    # parse_log_text() parses captured `git log` output into the per-author
+    # summary — the pure-parsing layer beneath parse_gitlog(repo_path, ...),
+    # which shells out to git first and then calls this same parser.
+    result = parse_log_text(GOLDEN_GIT_LOG)
     assert result == GOLDEN_EXPECTED</code></pre>
       <h4 class="ph">Rules for golden tests</h4>
       <ul>
@@ -3576,7 +3579,7 @@ def test_author_extraction_eval():
           <tr style="background:var(--surface);">
             <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Spec-untraceable test</td>
             <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Test covers behaviour not in the spec</td>
-            <td style="padding:0.6rem 1pm; border:1px solid var(--border);">Agent inventing requirements; may conflict with real spec</td>
+            <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Agent inventing requirements; may conflict with real spec</td>
           </tr>
           <tr>
             <td style="padding:0.6rem 1rem; border:1px solid var(--border);">Soft assertion</td>
@@ -3598,7 +3601,7 @@ def test_author_extraction_eval():
       <div class="walkthrough">
         <h3>Mini-walkthrough · gitlog-report — write the failing tests</h3>
         <p>This walkthrough builds on the acceptance criteria from <strong>Ch 6.11</strong> (spec for gitlog-report) and the task breakdown from <strong>Ch 7.11</strong> (PLAN.md Tasks 1–2: parse git log, aggregate per-author stats). We write the failing tests <em>before</em> any implementation. The agent's job in Ch 9 will be to make them pass.</p>
-        <p>All four tests below are in <code>tests/test_gitlog.py</code>. The module under test is <code>gitlog_report/parser.py</code>, which does not exist yet — that is the point. These tests are the specification in executable form.</p>
+        <p>All four tests below are in <code>tests/test_parser.py</code>. The module under test is <code>src/gitlog_report/parser.py</code>, which does not exist yet — that is the point. These tests are the specification in executable form. (The spec's <code>--since</code>/<code>--until</code> CLI flags map to the <code>start_date</code>/<code>end_date</code> parameters of <code>parse_gitlog</code>.)</p>
 
         <h4>Setup — temporary git repo fixture</h4>
         <pre><code>import subprocess, textwrap, os, pytest
@@ -3634,7 +3637,7 @@ def _make_commit(repo: Path, author: str, date: str, message: str):
     )</code></pre>
 
         <h4>Test 1 — empty repository</h4>
-        <pre><code># Acceptance criterion (Ch 6.11 §3.1):
+        <pre><code># Acceptance criterion (Ch 6.11, AC6 — empty repository):
 #   Given a repo with no commits, the report returns an empty dict.
 
 def test_empty_repo_returns_empty_dict(tmp_git_repo):
@@ -3642,7 +3645,7 @@ def test_empty_repo_returns_empty_dict(tmp_git_repo):
     assert result == {}, f"Expected empty dict, got {result!r}"</code></pre>
 
         <h4>Test 2 — single author</h4>
-        <pre><code># Acceptance criterion (Ch 6.11 §3.2):
+        <pre><code># Acceptance criterion (Ch 6.11, AC2 — per-author commit count):
 #   Given a repo with N commits from one author,
 #   the report lists that author with commit_count == N.
 
@@ -3657,7 +3660,7 @@ def test_single_author_commit_count(tmp_git_repo):
     assert result["Alice"]["commit_count"] == 3</code></pre>
 
         <h4>Test 3 — multiple authors</h4>
-        <pre><code># Acceptance criterion (Ch 6.11 §3.3):
+        <pre><code># Acceptance criterion (Ch 6.11, AC2 — per-author commit count):
 #   Given commits from multiple authors, each author appears
 #   in the report with their own correct commit count.
 
@@ -3675,7 +3678,7 @@ def test_multi_author_counts(tmp_git_repo):
     assert result["Carol"]["commit_count"] == 1</code></pre>
 
         <h4>Test 4 — date filter (THE test Ch 9.11 will use to catch the injected bug)</h4>
-        <pre><code># Acceptance criterion (Ch 6.11 §3.4):
+        <pre><code># Acceptance criterion (Ch 6.11, AC5 — date range filter):
 #   Given a start_date, commits before that date are excluded.
 #
 # *** NOTE: This is the test that Ch 9.11 deliberately breaks by injecting
@@ -4551,7 +4554,7 @@ git worktree add ../gitlog-docs -b polish/docs</code></pre>
       <h4 class="ph">How it works under the hood</h4>
       <ul>
         <li>Schedules are registered routines that trigger a remote Claude Code agent at the specified time.</li>
-        <li>The <strong><code>ScheduleWakeup</code> tool</strong> is the underlying mechanism — it registers a wakeup event that fires the agent on schedule.</li>
+        <li>The <strong><code>ScheduleWakeup</code> tool</strong> is the underlying mechanism — it registers a wakeup event that fires the agent on schedule. (Verify the exact tool name against current Claude Code docs — internal tool identifiers change between releases.)</li>
         <li>Inspect and delete schedules via <code>/schedule list</code> and <code>/schedule delete</code>.</li>
       </ul>
       <h4 class="ph">Use cases and constraints</h4>
@@ -4702,7 +4705,7 @@ git worktree add ../gitlog-docs   -b polish/docs</code></pre>
 
 Agent A — working in ../gitlog-feat (branch polish/json):
   Add a --json flag to gitlog-report. When passed, output the report as a
-  JSON array of objects {author, commits, insertions, deletions} instead of
+  JSON array of objects {author, commit_count, insertions, deletions} instead of
   the plain-text table. No other changes. Commit to polish/json.
 
 Agent B — working in ../gitlog-tests (branch polish/tests):
@@ -4861,17 +4864,17 @@ git push --force-with-lease origin polish/json</code></pre>
       "maxTokens": 8192
     },
     "code": {
-      "model": "claude-sonnet-4-6",
+      "model": "claude-sonnet-4-7",
       "provider": "anthropic",
       "maxTokens": 8192
     },
     "ask": {
-      "model": "gemini-2.0-flash",
+      "model": "gemini-3-flash",
       "provider": "google",
       "maxTokens": 4096
     },
     "debug": {
-      "model": "claude-sonnet-4-6",
+      "model": "claude-sonnet-4-7",
       "provider": "anthropic",
       "maxTokens": 8192
     },
@@ -5347,7 +5350,7 @@ When this skill is invoked, do the following:
       </ul>
       <h4 class="ph">Installing from the marketplace</h4>
       <ul>
-        <li>Two-step process: first use <code>/plugin marketplace add &lt;plugin-name&gt;</code> to search the marketplace and stage the plugin for installation; then run <code>/plugin</code> (the interactive plugin management flow) to confirm, configure, and activate it.</li>
+        <li>Two-step process: first use <code>/plugin marketplace add &lt;marketplace&gt;</code> (a marketplace source — typically a GitHub repo such as <code>obra/superpowers-marketplace</code>) to register the marketplace; then run <code>/plugin</code> (the interactive plugin management flow) to browse, install, configure, and activate plugins from it — or install one directly with <code>/plugin install &lt;name&gt;@&lt;marketplace&gt;</code>.</li>
         <li>Installed plugins are tracked in your Claude Code settings; their components (skills, commands, hooks) are registered automatically.</li>
         <li><em>Verify this flow against current Claude Code documentation — the plugin system is evolving and the exact command sequence may differ in newer releases.</em></li>
       </ul>
@@ -5450,7 +5453,7 @@ When this skill is invoked, do the following:
       <h2>13.9 Output styles</h2>
       <h4 class="ph">What output styles control</h4>
       <ul>
-        <li>Named presets (concise, verbose, technical, explanatory, bullet-heavy) that adjust how Claude structures its text output without modifying CLAUDE.md.</li>
+        <li>Named presets (concise, verbose, technical, explanatory, bullet-heavy) that adjust how Claude structures its text output without modifying CLAUDE.md. (The exact preset set is version-specific — verify current options.)</li>
         <li>Distinct from capability changes (which modes and tools are active) — output styles affect presentation only.</li>
         <li>Set at the session level via the <code>/config</code> command or through settings.</li>
       </ul>
@@ -5494,7 +5497,7 @@ When this skill is invoked, do the following:
         <li>Creates "remote agents" — cron-like scheduled tasks that run on a schedule, survive session restarts, and execute even when you are not at the keyboard.</li>
         <li>Configure with a cron expression or natural language schedule.</li>
         <li>Right primitive for daily standup generation, nightly report emails, weekly code quality scans, or any task that should run reliably on a calendar-based cadence.</li>
-        <li>The three primitives form a hierarchy: /schedule for persistent recurring jobs, /loop for in-session monitoring, ScheduleWakeup for programmatic one-shot delays.</li>
+        <li>The three primitives form a hierarchy: /schedule for persistent recurring jobs, /loop for in-session monitoring, ScheduleWakeup for programmatic one-shot delays. (<code>ScheduleWakeup</code> is an internal tool name — verify it against current docs.)</li>
       </ul>
 
       <h2>13.12 Settings and permissions — .claude/settings.json</h2>
@@ -5566,7 +5569,7 @@ When this skill is invoked, do the following:
       </ul>
 
       <h2>13.14 Hands-on: configure Claude Code for your daily workflow</h2>
-      <p>This walkthrough takes you from a fresh Claude Code installation to a fully configured daily workflow in six steps. Each step is independently valuable — you can stop after any step and have a meaningfully improved setup.</p>
+      <p>This walkthrough takes you from a fresh Claude Code installation to a fully configured daily workflow in six steps. (If you haven't installed it yet, do that first: <code>npm install -g @anthropic-ai/claude-code</code>.) Each step is independently valuable — you can stop after any step and have a meaningfully improved setup.</p>
 
       <div class="walkthrough">
         <h3>Walkthrough · Configure Claude Code for your daily workflow</h3>
@@ -5643,8 +5646,8 @@ EOF</code></pre>
         </li>
 
         <li>
-          <strong>Install a plugin from the marketplace.</strong> Open Claude Code and run:
-          <pre><code>/plugin marketplace add superpowers</code></pre>
+          <strong>Register a marketplace, then install a plugin.</strong> Open Claude Code and run:
+          <pre><code>/plugin marketplace add obra/superpowers-marketplace</code></pre>
           Then complete the interactive installation:
           <pre><code>/plugin</code></pre>
           Follow the prompts to confirm and activate. After installation, <code>/help</code> will show the new skills and commands the plugin registered. <em>Verify the superpowers plugin name against the current marketplace — plugin identifiers may differ from skill names.</em>
@@ -6134,7 +6137,7 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       <h2>15.5 The Claude Code plugin — installation and auto-invocation</h2>
       <h4 class="ph">Installation</h4>
       <ul>
-        <li>Install via the <code>/plugin</code> interactive flow — either through the official marketplace (<code>/plugin install superpowers@claude-plugins-official</code> or equivalent) or via the obra fork (<code>/plugin marketplace add obra/superpowers-marketplace</code> then <code>/plugin</code>).</li>
+        <li>Install via the <code>/plugin</code> interactive flow — either through the official marketplace (<code>/plugin install superpowers@claude-plugins-official</code> or equivalent) or via the canonical obra marketplace (<code>/plugin marketplace add obra/superpowers-marketplace</code> then <code>/plugin</code>).</li>
         <li><strong>Verify the current canonical install path against the Superpowers README at github.com/obra/superpowers before scripting against it.</strong></li>
         <li>To view installed plugins and confirm the installation succeeded, run <code>/plugin</code> on its own.</li>
         <li>After installation, skills are available immediately in the current session and all subsequent sessions; the plugin manager handles versioning and updates.</li>
@@ -6229,7 +6232,7 @@ Node.js 20, Postgres 15, Stripe SDK v12.
       <pre><code># .kilocode/modes/systematic-debugging.yaml
 name: "Systematic Debugging"
 slug: systematic-debugging
-model: claude-opus-4-5           # reasoning-heavy: root cause analysis benefits from depth
+model: claude-opus-4-7           # reasoning-heavy: root cause analysis benefits from depth
 roleDefinition: |
   You are a systematic debugger. When diagnosing bugs, you follow the
   hypothesis cycle: (1) read the failing output and form ONE specific
@@ -6415,7 +6418,7 @@ Do not skip any step, even for small PRs.</code></pre>
 
         <pre><code>name: "Create PR"
 slug: create-pr
-model: claude-sonnet-4-5
+model: claude-sonnet-4-7
 roleDefinition: |
   You are the team's PR creation assistant. Your job is to ensure
   every pull request meets the team's quality bar before it is opened.
@@ -6617,7 +6620,7 @@ activate_skill("create-pr") before starting.</code></pre>
       <h4 class="ph">Python</h4>
       <ul>
         <li>Natural choice when your server needs to interact with ML models, data science libraries, internal Python-based systems, or when the team is primarily Python-fluent.</li>
-        <li>Install with <code>pip install mcp</code>; requires Python 3.10+.</li>
+        <li>Install with <code>pip install mcp</code>; requires Python 3.10+ (verify the current package and version on PyPI).</li>
         <li>Programming model uses <code>async def</code> handlers decorated with SDK decorators — familiar to anyone who has written FastAPI or asyncio code.</li>
         <li>Because most AI-adjacent tooling (LangChain, HuggingFace, custom model wrappers) lives in the Python ecosystem, Python MCP servers tend to be the right fit for ML-adjacent integrations.</li>
       </ul>
@@ -6710,7 +6713,7 @@ if __name__ == "__main__":
       <h4 class="ph">Implementation</h4>
       <ul>
         <li>Implement <code>@app.list_resources()</code> to return a list of available URIs and <code>@app.read_resource()</code> to return content for a given URI.</li>
-        <li>Content can be text or binary (base64-encoded); use <code>TextContent</code> for text and <code>BlobResourceContents</code> for binary.</li>
+        <li>Content can be text or binary (base64-encoded); use <code>TextContent</code> for text and <code>BlobResourceContents</code> for binary (class names track the SDK version — check the current <code>mcp</code> types).</li>
       </ul>
 
       <h2>16.10 Authoring prompts — guided workflows</h2>
@@ -6723,7 +6726,7 @@ if __name__ == "__main__":
       <h4 class="ph">Implementation and example</h4>
       <ul>
         <li>Implement <code>@app.list_prompts()</code> to return available prompt templates and <code>@app.get_prompt()</code> to return the rendered messages for a given prompt name and arguments.</li>
-        <li>Example: a well-designed standup generator prompt accepts a <code>since</code> date parameter and returns a system message instructing the agent to fetch recent commits, recent Jira completions, and current blockers, then format them in the team's standup format — the user types <code>/standup since=yesterday</code> rather than having to remember and type all of that.</li>
+        <li>Example: a well-designed standup generator prompt accepts a <code>since</code> date parameter and returns a system message instructing the agent to fetch recent commits, recent Jira completions, and current blockers, then format them in the team's standup format — the user types <code>/standup since=yesterday</code> rather than having to remember and type all of that — though the exact argument syntax (positional vs <code>key=value</code>) is host-specific.</li>
       </ul>
       <h4 class="ph">Harness integration</h4>
       <ul>
@@ -6965,10 +6968,11 @@ if __name__ == "__main__":
 
       <h2>17.1 The brief — what we're building (gitlog-report)</h2>
       <p>Across Ch 6–11 you have seen <code>gitlog-report</code> appear in six mini-walkthroughs: specced in Ch 6, planned in Ch 7, test-driven in Ch 8, debugged in Ch 9, reviewed in Ch 10, and polished in parallel in Ch 11. This chapter runs all three passes of the full development lifecycle on the same codebase, from first commit to merged PR, so you can see exactly how the methodology layers nest.</p>
-      <p>The acceptance criteria from the spec produced in <strong>Ch 6.11</strong>, restated here as the authoritative contract all three passes must satisfy:</p>
+      <p>The seven acceptance criteria from the spec produced in <strong>Ch 6.11</strong> (AC1–AC7), restated here — and extended with two delivery criteria (performance and test coverage) — as the authoritative contract all three passes must satisfy:</p>
       <ul>
         <li>Reads <code>git log</code> from the current directory or <code>--path &lt;dir&gt;</code></li>
-        <li>Per-author summary: <code>commit_count</code>, <code>files_changed</code>, <code>insertions</code>, <code>deletions</code>, <code>top_files</code> (top 5 most-touched files by total line delta)</li>
+        <li>Per-author summary: <code>commit_count</code>, <code>files_changed</code>, <code>insertions</code>, <code>deletions</code></li>
+        <li>Top 5 most-touched files per author by total line delta (<code>top_files</code>)</li>
         <li>JSON output by default; Markdown report via <code>--format md</code></li>
         <li><code>--since &lt;ISO-date&gt;</code> and <code>--until &lt;ISO-date&gt;</code> date range filters</li>
         <li>Merge commits: counted in commit total, excluded from line counts by default (opt-in via <code>--include-merges</code>)</li>
@@ -6978,7 +6982,7 @@ if __name__ == "__main__":
       </ul>
       <h4 class="ph">Why written criteria matter</h4>
       <ul>
-        <li>These eight bullets are the acceptance criteria — all three passes below must satisfy all eight.</li>
+        <li>These nine bullets — the seven criteria from Ch 6.11 plus the performance and test-coverage criteria — are the acceptance contract; all three passes below must satisfy all nine.</li>
         <li>Any pass that ships without satisfying them is incomplete — that is the point of writing them down before touching code.</li>
       </ul>
 
@@ -7157,7 +7161,7 @@ gh pr create \
 - [x] Manual smoke: \`gitlog-report --path . --format md\`
 
 ## Reviewers
-Addresses all 8 acceptance criteria in openspec/specs/gitlog-report.md
+Addresses all 9 acceptance criteria in openspec/specs/gitlog-report.md
 EOF
 )"
 
@@ -7175,7 +7179,7 @@ gh pr merge --squash</code></pre>
 git checkout -b feat/gitlog-report-pass2
 claude  # open Claude Code session</code></pre>
       <p>In the Claude Code session, invoke the brainstorming skill:</p>
-      <pre><code>/brainstorm gitlog-report: a CLI that reads git log and produces
+      <pre><code>/brainstorming gitlog-report: a CLI that reads git log and produces
 per-author contribution summaries (commit_count, files_changed,
 insertions, deletions, top_files). JSON + Markdown output.
 Date range filters. Handles empty repo. Tested.</code></pre>
@@ -7308,7 +7312,7 @@ PASSED test_10k_mock_completes_under_5s
 ## Summary
 - Implements gitlog-report with parallel subagent development:
   3 worktrees (feat / tests / docs) dispatched in a single orchestrator turn
-- Acceptance criteria: all 8 from specs/001-gitlog-report/spec.md satisfied
+- Acceptance criteria: all 9 from specs/001-gitlog-report/spec.md satisfied
 - Security: /security-review clean (path.resolve(strict=True) added)
 - Deep review: /ultrareview — 1 blocking finding addressed, 1 non-blocking noted
 
@@ -7818,7 +7822,7 @@ Is the task trivial? (single file, &lt; 5 lines, zero risk)
       <div class="flv-grid">
         <div class="flv"><div class="flv-name">Kilo Code</div><div class="flv-desc">Install, modes, custom mode YAML, MCP wiring.</div></div>
         <div class="flv"><div class="flv-name">Claude Code</div><div class="flv-desc">CLI flags, slash commands, skills, subagent dispatch.</div></div>
-        <div class="flv"><div class="flv-name">Gemini CLI</div><div class="flv-desc">Install, /chat vs /code, context flags, free-tier limits.</div></div>
+        <div class="flv"><div class="flv-name">Gemini CLI</div><div class="flv-desc">Install, slash commands, context flags, free-tier limits.</div></div>
         <div class="flv"><div class="flv-name">MCP</div><div class="flv-desc">Server config, tool call anatomy, auth patterns.</div></div>
         <div class="flv"><div class="flv-name">OpenSpec</div><div class="flv-desc">Spec file layout, <code>openspec accept/archive</code> commands.</div></div>
         <div class="flv"><div class="flv-name">SpecKit</div><div class="flv-desc">/specify workflow, template fields, diff review loop.</div></div>
@@ -7880,7 +7884,7 @@ customInstructions: |
           <tr><td><code>/context</code></td><td>Display what files/content are currently in context.</td></tr>
           <tr><td><code>/init</code></td><td>Bootstrap <code>CLAUDE.md</code> for the current project.</td></tr>
           <tr><td><code>/plan</code></td><td>Enter plan mode (read-only exploration, no file writes).</td></tr>
-          <tr><td><code>/review</code></td><td>Code-review the current diff (skill).</td></tr>
+          <tr><td><code>/review</code></td><td>Code-review the current diff — thin wrapper for the <code>code-review</code> skill.</td></tr>
           <tr><td><code>/security-review</code></td><td>Security-focused review of the current diff (skill).</td></tr>
           <tr><td><code>/help</code></td><td>List available slash commands.</td></tr>
           <tr><td><code>/plugin</code></td><td>Manage installed MCP plugins.</td></tr>
@@ -8017,7 +8021,7 @@ gemini extensions install --source &lt;git-url&gt;</code></pre>
       <table class="tbl">
         <thead><tr><th>Limit</th><th>Value (verify at <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank">ai.google.dev rate limits</a>)</th></tr></thead>
         <tbody>
-          <tr><td>Context window</td><td>Up to 1M tokens (Gemini 1.5 Pro)</td></tr>
+          <tr><td>Context window</td><td>Up to 1M tokens (Gemini 3 Pro)</td></tr>
           <tr><td>Free requests/day</td><td>~1 000 req/day on free tier — <em>subject to change; check current quota page.</em></td></tr>
           <tr><td>Paid tier</td><td>Per-token pricing via Google AI Studio or Vertex AI.</td></tr>
         </tbody>
@@ -8371,7 +8375,7 @@ gemini extensions install --source &lt;git-url&gt;</code></pre>
         <dd>A <code>/keyword</code> typed in the Claude Code (or Gemini CLI) prompt that invokes a built-in feature or installed skill. Built-in slash commands include <code>/plan</code>, <code>/compact</code>, and <code>/clear</code>; skill-based ones are user-defined. <a onclick="go('ch13-claude')">→ Ch 13</a></dd>
 
         <dt><strong>SpecKit</strong></dt>
-        <dd>A Claude Code skill suite that provides <code>/specify</code>, <code>/plan</code>, <code>/tasks</code>, and <code>/implement</code> slash commands to walk a feature from requirements to code in a structured, approval-gated pipeline. <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
+        <dd>A Claude Code skill suite that provides <code>/specify</code>, <code>/plan</code>, <code>/tasks</code>, and <code>/implement</code> slash commands to walk a feature from requirements to code in a structured, approval-gated pipeline. (Conventions are still stabilizing — verify current commands against the official source.) <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
 
         <dt><strong>spec-driven dev</strong></dt>
         <dd>A development methodology in which a formal specification (requirements, constraints, acceptance criteria) is written and approved before any implementation begins. The spec becomes the authoritative contract that the agent's code must satisfy. <a onclick="go('ch6-spec')">→ Ch 6</a></dd>
