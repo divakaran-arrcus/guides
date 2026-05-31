@@ -810,6 +810,292 @@
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- §4 — HEADER MATH                                            -->
+<!-- ============================================================ -->
+<div id="header-math" class="section">
+  <div class="sec-title">4. Header Math — VXLAN Stack vs SRv6 Stack</div>
+  <p class="sec-sub">Every migration starts by understanding the bytes you're swapping.</p>
+
+  <div class="card">
+    <h4 class="ph">VXLAN encap stack</h4>
+    <ul>
+      <li>Outer Ethernet (14 B) + outer IP (20 B IPv4 / 40 B IPv6) + UDP (8 B) + VXLAN header (8 B) + inner Ethernet frame.</li>
+      <li>Total overhead: <strong>50 B</strong> with IPv4 outer; <strong>70 B</strong> with IPv6 outer.</li>
+      <li>The 8-byte VXLAN header carries the 24-bit VNI in the low 3 bytes; the remaining 5 bytes are flags/reserved.</li>
+      <li>UDP destination port 4789 (IANA); source port is typically entropy-hashed for ECMP.</li>
+    </ul>
+
+    <h4 class="ph">SRv6 encap stack</h4>
+    <ul>
+      <li>Outer Ethernet (14 B) + outer IPv6 header (40 B) + optional SRH + payload (inner Ethernet or IP packet).</li>
+      <li>No UDP, no fixed tunnel header — the IPv6 destination address <em>is</em> the forwarding instruction.</li>
+      <li>uSID no-SRH path (single segment, most EVPN flows): <strong>54 B</strong> total outer overhead (14 + 40).</li>
+      <li>SRH is pushed only when the active segment list exceeds what fits in the 128-bit DA. SRH base = 8 B; each additional SID = 16 B.</li>
+      <li>SRH + 1 segment: 54 B outer + 8 B SRH base + 16 B = <strong>~78 B</strong>. SRH + 2 segments: ~94 B.</li>
+    </ul>
+
+    <h4 class="ph">Header-tax comparison</h4>
+    <ul>
+      <li>SRv6 uSID (54 B) sits between VXLAN-v4 (50 B) and VXLAN-v6 (70 B) — the difference is 4 bytes on the common IPv4-outer VXLAN path.</li>
+      <li>Jumbo-MTU fabric (9000 B or 9216 B) absorbs all encap cases without fragmentation or MTU reduction on host-facing SVIs.</li>
+      <li>The hard constraint is 1500-byte host MTU: all encap variants reduce the effective inner MTU by their overhead; ensure host MSS clamping or PMTUD is active.</li>
+      <li>SRH path (78 B+) costs meaningfully more; avoid SRH in the EVPN data plane unless explicit TE policy requires it.</li>
+    </ul>
+
+    <h4 class="ph">What's the same</h4>
+    <ul>
+      <li>The original Ethernet frame (L2 service) or IP packet (L3 service) is carried unchanged as the inner payload — neither encap touches the inner header or payload bytes.</li>
+      <li>Inner VLAN tags, IP TTL, DSCP markings, and TCP flags are preserved end-to-end.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>The Three Encapsulation Stacks</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">All byte counts approximate; inner frame not shown to scale.</p>
+
+    <p style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Stack A — VXLAN with IPv4 outer</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:68px;">
+        <div class="l">Outer Eth</div>
+        <div class="v">14 B</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:72px;">
+        <div class="l">Outer IPv4</div>
+        <div class="v">20 B</div>
+      </div>
+      <div class="pkt-c bg-mpls" style="min-width:60px;">
+        <div class="l">UDP</div>
+        <div class="v">8 B</div>
+      </div>
+      <div class="pkt-c bg-vpn" style="min-width:80px;">
+        <div class="l">VXLAN (VNI)</div>
+        <div class="v">8 B</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner Eth Frame</div>
+        <div class="v">≥ 64 B</div>
+      </div>
+    </div>
+    <div class="ann">Total outer overhead: <strong>50 B</strong> (14 + 20 + 8 + 8). Most common VXLAN deployment; IPv4 underlay.</div>
+
+    <div style="height:16px;"></div>
+
+    <p style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Stack B — SRv6 uSID, no SRH (single segment)</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:68px;">
+        <div class="l">Outer Eth</div>
+        <div class="v">14 B</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:160px;">
+        <div class="l">Outer IPv6 (DA = service SID)</div>
+        <div class="v">40 B</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner Eth Frame</div>
+        <div class="v">≥ 64 B</div>
+      </div>
+    </div>
+    <div class="ann">Total outer overhead: <strong>54 B</strong> (14 + 40). No SRH; uSID service action encoded in the 128-bit DA (uDT2U / uDT4 / uDT6 function).</div>
+
+    <div style="height:16px;"></div>
+
+    <p style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Stack C — SRv6 with SRH, 1 additional segment</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:68px;">
+        <div class="l">Outer Eth</div>
+        <div class="v">14 B</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:100px;">
+        <div class="l">Outer IPv6</div>
+        <div class="v">40 B</div>
+      </div>
+      <div class="pkt-c bg-srh" style="min-width:90px;">
+        <div class="l">SRH (base)</div>
+        <div class="v">8 B</div>
+      </div>
+      <div class="pkt-c bg-seg" style="min-width:80px;">
+        <div class="l">SID[0]</div>
+        <div class="v">16 B</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner Eth Frame</div>
+        <div class="v">≥ 64 B</div>
+      </div>
+    </div>
+    <div class="ann">Total outer overhead: <strong>~78 B</strong> (14 + 40 + 8 + 16). SRH appears when TE policy forces a multi-hop segment list beyond what fits in the 128-bit DA.</div>
+  </div>
+
+  <div class="card">
+    <h2>Header-Tax Matrix</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Encap variant</th>
+          <th>Outer Eth</th>
+          <th>Outer IP / tunnel headers</th>
+          <th>Total overhead</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>VXLAN + IPv4 outer</strong></td>
+          <td>14 B</td>
+          <td>20 B IPv4 + 8 B UDP + 8 B VXLAN = 36 B</td>
+          <td style="color:var(--blue);font-weight:700;">50 B</td>
+          <td>Most common; IPv4 underlay</td>
+        </tr>
+        <tr>
+          <td><strong>VXLAN + IPv6 outer</strong></td>
+          <td>14 B</td>
+          <td>40 B IPv6 + 8 B UDP + 8 B VXLAN = 56 B</td>
+          <td style="color:var(--blue);font-weight:700;">70 B</td>
+          <td>IPv6-only underlay; uncommon</td>
+        </tr>
+        <tr>
+          <td><strong>SRv6 uSID, no SRH</strong></td>
+          <td>14 B</td>
+          <td>40 B IPv6 = 40 B</td>
+          <td style="color:var(--green);font-weight:700;">54 B</td>
+          <td>Typical EVPN path; no TE policy</td>
+        </tr>
+        <tr>
+          <td><strong>SRv6 SRH + 1 segment</strong></td>
+          <td>14 B</td>
+          <td>40 B IPv6 + 8 B SRH base + 16 B SID = 64 B</td>
+          <td style="color:var(--orange);font-weight:700;">~78 B</td>
+          <td>TE path; single waypoint SID</td>
+        </tr>
+        <tr>
+          <td><strong>SRv6 SRH + 2 segments</strong></td>
+          <td>14 B</td>
+          <td>40 B IPv6 + 8 B SRH base + 32 B SIDs = 80 B</td>
+          <td style="color:var(--orange);font-weight:700;">~94 B</td>
+          <td>TE path; two waypoint SIDs</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="ann">Jumbo-MTU fabric (9000 B or 9216 B) accommodates all variants without fragmentation. Host MSS clamping or PMTUD required when host MTU is 1500 B.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- §5 — ROUTE-TYPE BEHAVIOR                                    -->
+<!-- ============================================================ -->
+<div id="route-types" class="section">
+  <div class="sec-title">5. Route-Type Behavior Across Encaps</div>
+  <p class="sec-sub">Same route types, different per-encap attributes.</p>
+
+  <div class="info">
+    <strong>Scope:</strong> §1 named the route types and confirmed they survive the migration. This section compares the per-encap BGP attributes for each route type — specifically where the VTEP/Next-Hop, Tunnel Encap community, and SID encoding differ between VXLAN and SRv6. See §1 for the "unchanged" summary.
+  </div>
+
+  <div class="card">
+    <h4 class="ph">Type 1 — Ethernet Auto-Discovery (per-ES and per-EVI)</h4>
+    <ul>
+      <li>Drives two mechanisms: per-ES A-D (mass-withdrawal on ES failure) and per-EVI A-D (aliasing — remote PEs load-balance to multi-homed leaf).</li>
+      <li>VXLAN encoding: ES Label field carries a label value signalling the ES (VXLAN repurposes the MPLS label field as a VNI/label placeholder); Tunnel Encap attr = <code>VXLAN</code> (type 8, RFC 9012).</li>
+      <li>SRv6 encoding: ES Label field is replaced by an ES SID — a per-ES SRv6 SID allocated on the PE; BGP Prefix-SID attr (RFC 8669) carries the SRv6 Service TLV (RFC 9252).</li>
+      <li>DF-election algorithm and timers are identical — the <code>DF-Election Extended Community</code> is unchanged; only the SID/label encoding differs.</li>
+    </ul>
+
+    <h4 class="ph">Type 2 — MAC/IP Advertisement</h4>
+    <ul>
+      <li>Primary route for host MAC learning and host-route injection into VRFs.</li>
+      <li>VXLAN encoding: MPLS Label1 field repurposed as the L2 VNI (24 bits, e.g., VNI-10100); MPLS Label2 (when IP+MAC) carries the L3 VNI (e.g., VNI-10300 for VRF green).</li>
+      <li>SRv6 encoding: Label1 → <code>uDT2U</code>/<code>End.DT2U</code> service SID for L2 unicast MAC lookup in the bridge domain; Label2 → L3 service SID (<code>uDT4</code>/<code>End.DT4</code> for IPv4 VRF; <code>uDT6</code>/<code>End.DT6</code> for IPv6 VRF).</li>
+      <li>MAC Mobility sequence number is carried in the <code>MAC Mobility Extended Community</code> — identical in both encaps; sticky-MAC behavior unchanged.</li>
+    </ul>
+
+    <h4 class="ph">Type 3 — Inclusive Multicast Ethernet Tag (IMET)</h4>
+    <ul>
+      <li>Signals BUM flooding membership per EVI; every PE for an EVI originates one Type 3 per EVI.</li>
+      <li>PMSI Tunnel attribute (RFC 6514) carries the replication mode: Ingress Replication (IR) is the most common mode for both VXLAN and SRv6 fabrics.</li>
+      <li>VXLAN IMET: PMSI tunnel-type = Ingress Replication; tunnel identifier = VTEP IP + VNI.</li>
+      <li>SRv6 IMET: PMSI tunnel-type = Ingress Replication; tunnel identifier = SRv6 endpoint IP; additionally, SRv6 supports <code>uDT2M</code>/<code>End.DT2M</code> as a native-multicast BUM action in the data plane (no need for a separate replication tunnel IP).</li>
+    </ul>
+
+    <h4 class="ph">Type 4 — Ethernet Segment Route</h4>
+    <ul>
+      <li>Originated by every PE attached to a given ESI; used by remote PEs to discover all members of a multi-homed ES for DF election.</li>
+      <li>VXLAN encoding: ES Label field carries a label value identifying the ES; Tunnel Encap attr = type 8 (VXLAN).</li>
+      <li>SRv6 encoding: ES Label → ES SID (same SID structure as Type 1); BGP Prefix-SID attr with SRv6 Service TLV (RFC 9252).</li>
+      <li>DF-election algorithm (highest-IP wins by default, or W-ECMP/modulo) and all associated timers run identically regardless of encap.</li>
+    </ul>
+
+    <h4 class="ph">Type 5 — IP Prefix Route</h4>
+    <ul>
+      <li>L3 VRF prefix advertisement for symmetric IRB; the cleanest route type to migrate first — no MAC state, pure IP prefix + next-hop.</li>
+      <li>VXLAN encoding: GW IP field carries the IP next-hop for the prefix inside the VRF; MPLS label = L3 VNI (e.g., VNI-10300); GW MAC = anycast gateway MAC on the originating leaf.</li>
+      <li>SRv6 encoding: GW IP / GW MAC handling unchanged; MPLS label → <code>uDT4</code> SID (IPv4 VRF) or <code>uDT6</code> SID (IPv6 VRF); BGP Prefix-SID attr with SRv6 L3 Service TLV (RFC 9252, type 5 sub-TLV).</li>
+      <li>Recommended first migration target: stand up SRv6 leaf, advertise Type 5 routes with SRv6 encoding, verify L3 reachability before touching L2 (Type 2/3) routes.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>How the Encap Is Signalled in BGP</h2>
+    <h4 class="ph">VXLAN side</h4>
+    <ul>
+      <li>BGP Encapsulation Extended Community (RFC 9012): type value <strong>8</strong> = VXLAN. Carried on all EVPN NLRI originated by a VXLAN PE.</li>
+      <li>MPLS Label fields in the EVPN NLRI (Types 1, 2, 4, 5) are repurposed as VNI containers — the 20-bit MPLS label field carries the 24-bit VNI with a right-shift or direct mapping depending on implementation.</li>
+      <li>No BGP Prefix-SID attribute is present on VXLAN routes.</li>
+    </ul>
+
+    <h4 class="ph">SRv6 side</h4>
+    <ul>
+      <li>BGP Prefix-SID attribute (RFC 8669) is added to the EVPN NLRI, carrying the <strong>SRv6 Service TLV</strong> (RFC 9252).</li>
+      <li>For L3 services (Type 5, Type 2 with IP, VRF lookup): <strong>Type 5 sub-TLV</strong> — SRv6 L3 Service TLV — encodes the <code>uDT4</code> or <code>uDT6</code> SID and the transposition offset/length for packing the SID into the label field.</li>
+      <li>For L2 services (Type 2 MAC, Type 3 IMET, Type 1 A-D): <strong>Type 6 sub-TLV</strong> — SRv6 L2 Service TLV — encodes the <code>uDT2U</code> or <code>uDT2M</code> SID.</li>
+      <li>BGP Encapsulation Extended Community type 14 = SRv6 L3 Service; type 15 = SRv6 L2 Service (RFC 9012).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Route-Type Translation at a Glance</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Route Type</th>
+          <th>VXLAN encoding</th>
+          <th>SRv6 (uSID) encoding</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Type 1</strong> — Ethernet A-D</td>
+          <td>ES Label (VNI placeholder); Tunnel Encap type 8 (RFC 9012)</td>
+          <td>ES SID; BGP Prefix-SID attr (RFC 8669); SRv6 L2 Service TLV type 6 sub-TLV (RFC 9252)</td>
+        </tr>
+        <tr>
+          <td><strong>Type 2</strong> — MAC/IP Adv</td>
+          <td>Label1 = L2 VNI; Label2 = L3 VNI (if IP+MAC); Tunnel Encap type 8</td>
+          <td>Label1 → <code>uDT2U</code> SID; Label2 → <code>uDT4</code>/<code>uDT6</code> SID; SRv6 L2 Service TLV type 6 sub-TLV</td>
+        </tr>
+        <tr>
+          <td><strong>Type 3</strong> — IMET</td>
+          <td>PMSI Tunnel attr (RFC 6514) IR; tunnel-id = VTEP IP + VNI; Tunnel Encap type 8</td>
+          <td>PMSI Tunnel attr IR; tunnel-id = SRv6 node IP; <code>uDT2M</code> SID optional for native BUM; SRv6 L2 Service TLV type 6 sub-TLV</td>
+        </tr>
+        <tr>
+          <td><strong>Type 4</strong> — ES Route</td>
+          <td>ES Label; Tunnel Encap type 8; DF-Election Ext Community unchanged</td>
+          <td>ES SID; BGP Prefix-SID attr; SRv6 L2 Service TLV type 6 sub-TLV; DF-Election Ext Community unchanged</td>
+        </tr>
+        <tr>
+          <td><strong>Type 5</strong> — IP Prefix</td>
+          <td>GW IP/MAC; MPLS label = L3 VNI; Tunnel Encap type 8</td>
+          <td>GW IP/MAC unchanged; label → <code>uDT4</code>/<code>uDT6</code> SID; SRv6 L3 Service TLV type 5 sub-TLV (RFC 9252)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info orange">
+    <strong>Next-hop encoding gotcha:</strong> If a receiving leaf has not negotiated SRv6 encap capability, it installs the route with a valid next-hop but programs the forwarding entry with no valid SID resolution — the route is <em>installed</em> in the RIB but <em>silently unusable</em> in the FIB. Traffic blackholes without a BGP-level error. <strong>Audit encap capability on every PE before enabling dual-stack:</strong> verify <code>show bgp l2vpn evpn neighbor &lt;ip&gt; detail</code> shows SRv6 capability negotiated, and spot-check <code>show evpn evi detail</code> to confirm SIDs are resolved.
+  </div>
+</div>
+
   </main>
 </div>
 
