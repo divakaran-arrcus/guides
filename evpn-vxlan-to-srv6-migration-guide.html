@@ -2111,6 +2111,101 @@
   <div class="info orange">The gateway must run BGP-EVPN sessions BOTH as a VXLAN PE AND as an SRv6 PE — effectively two logical PEs in one box, glued by a re-origination policy. RD/RT design must allow re-originated routes to be imported on the far side: SRv6 PEs must carry import RTs that match the RTs exported by the gateway on its SRv6-side re-originated routes, and VXLAN PEs must similarly match the gateway's VXLAN-side re-originated routes. A common failure mode is deploying the gateway correctly but misconfiguring the RT on one side, causing silently dropped routes with no traffic — verify with <code>show bgp l2vpn evpn route-type</code> on both sides of the boundary.</div>
 </div>
 
+<div id="gw-esi-mac" class="section">
+  <div class="sec-title">14. ESI + MAC Mobility + ARP/ND Across Encaps</div>
+  <p class="sec-sub">The operationally subtle hazards live here — not in single-flow forwarding, but in events.</p>
+
+  <div class="card">
+    <p>Single-flow forwarding across the gateway is mechanical. The hazards emerge in events: a host moves, a link fails, an ARP cache goes stale, or an anycast gateway MAC drifts. Each event crosses the encap boundary carrying state that the gateway must preserve or coordinate — and each has a distinct failure mode if it does not.</p>
+
+    <h4 class="ph">ESI consistency across encaps</h4>
+    <ul>
+      <li>An Ethernet Segment spanning VXLAN leaves and SRv6 leaves — or spanning leaves on both sides of the gateway — MUST advertise the <strong>same ESI value</strong> on both encap domains. The ESI is a 10-byte identifier assigned by the operator (or auto-derived from LACP system ID); it is not invented or modified by the gateway.</li>
+      <li>If the ESI value differs between the VXLAN-side Type 1/4 routes and the SRv6-side re-originated routes, DF election on the SRv6 domain will treat them as unrelated segments, producing incorrect DF results and potentially dual-active flooding where only one forwarder was intended.</li>
+      <li>In the reference topology, Host-D is dual-homed to Leaf-3 (SRv6) and Leaf-4 (gateway-adjacent). The ESI assigned to Host-D's bond interface must be identical in the SRv6-side Type 4 origination and the VXLAN-side re-originated Type 4 — the gateway carries it verbatim (see §13 Type 4 stitching). Verify with <code>show bgp l2vpn evpn route-type ethernet-segment esi &lt;value&gt;</code> on both sides.</li>
+      <li>Auto-derived ESIs from LACP system IDs are stable as long as LACP system priority and system MAC do not change. Any bond reconfiguration on Host-D that changes these values generates a new ESI and must be coordinated across all leaves simultaneously.</li>
+    </ul>
+
+    <h4 class="ph">MAC mobility events</h4>
+    <ul>
+      <li>When a host moves from a VXLAN leaf to an SRv6 leaf, the new leaf originates a Type 2 MAC/IP route carrying a MAC Mobility Extended Community with an <strong>incremented sequence number</strong> (seq = N+1). All PEs that receive a Type 2 for the same MAC with a higher sequence number withdraw their lower-sequence entry — this is the standard RFC 7432 MAC mobility mechanism.</li>
+      <li>The gateway MUST propagate the sequence number from the incoming Type 2 into the re-originated Type 2 on the far domain. If the gateway resets the sequence number to zero (e.g., due to a misconfigured re-origination policy that strips the MAC Mobility EC), PEs on the VXLAN side see seq=0 against the existing seq=N entry and do not withdraw — the old entry persists alongside the new one, causing a MAC flap loop between the two paths.</li>
+      <li>The converse direction applies equally: a host moving from SRv6 Leaf-3 to VXLAN Leaf-1 generates seq=N+1 on the VXLAN side; the gateway re-originates into the SRv6 domain with seq=N+1. SRv6 PEs flush the old SRv6-originated entry.</li>
+      <li>The gateway is never the <em>originator</em> of a MAC mobility event — it is a passive carrier of the sequence number. The sequence number is a property of the MAC entry's ownership, not of the encapsulation.</li>
+    </ul>
+
+    <h4 class="ph">ARP/ND across the encap boundary</h4>
+    <ul>
+      <li>ARP-suppression caches on VXLAN PEs and ND-suppression caches on SRv6 PEs must remain coherent across the gateway. A cache hit on the wrong side of the boundary (stale entry pointing to a host that has moved) produces silent unicast black-holing — traffic is encapsulated to the old leaf, not flooded, so the failure is invisible until the cache TTL expires.</li>
+      <li>When a host on the VXLAN side ARPs for a host on the SRv6 side, the gateway proxies the ARP reply using the MAC/IP binding it learned from the SRv6-side Type 2 route. Proxy-ARP is only safe if the gateway's MAC/IP table is current — a stale Type 2 (e.g., not yet withdrawn after a host move) causes the gateway to proxy the wrong MAC.</li>
+      <li>If proxy-ARP is not configured or not safe (e.g., the IP is shared across multiple MACs via HSRP/VRRP), the gateway falls back to flooding the ARP request into the far bridge domain and forwarding the response back — this is correct but adds latency and BUM load on the gateway.</li>
+      <li>For IPv6, the equivalent is Neighbor Solicitation proxying across the encap boundary. The same coherence requirement applies; NS/NA flooding fallback works identically to ARP.</li>
+      <li>Keep Type 2 route TTLs and hold-timers consistent on both sides of the gateway. A VXLAN PE with a shorter MAC aging timer will withdraw Type 2 routes before the SRv6 side does, leaving a stale proxy-ARP entry on the gateway. Align BGP route hold-times and MAC aging across both domains.</li>
+    </ul>
+
+    <h4 class="ph">Symmetric IRB consistency</h4>
+    <ul>
+      <li>Both encap domains use symmetric IRB (§8) with an anycast gateway IP + MAC per EVI. The anycast gateway MAC and IP must be <strong>identical</strong> on all PEs across both encaps — VXLAN leaves and SRv6 leaves must advertise the same anycast gateway MAC for a given EVI.</li>
+      <li>If the anycast gateway MAC drifts (e.g., the VXLAN leaves use one MAC and SRv6 leaves use another), hosts that move across the boundary learn a different gateway MAC after the move. The old gateway MAC entry ages out of the host's ARP cache at the platform default (often 4 hours), and until then the host sends L2 frames toward the wrong MAC, which are dropped. The symptom is intermittent connectivity after a host move, resolving only after ARP cache expiry.</li>
+      <li>The gateway itself uses its own L3 interface MAC for inter-subnet routing between the two domains — this is distinct from the anycast gateway MAC used intra-domain. Do not confuse the two: the anycast gateway MAC is a per-EVI shared value; the gateway's own MAC is its router interface MAC used for inter-domain traffic only.</li>
+      <li>Audit anycast gateway MAC consistency with <code>show bgp l2vpn evpn route-type mac-ip</code> filtering on the gateway IP — all Type 2 routes for that IP should carry the same MAC across all PEs in both domains.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>A MAC Mobility Event Across the Gateway</h2>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n">1</div>
+        <div class="stp-t">Host was on VXLAN Leaf-1 — seq=N in both domains</div>
+      </div>
+      <p>Host-A's MAC is active on VXLAN Leaf-1. Leaf-1 has originated a Type 2 MAC/IP route with MAC Mobility Extended Community seq=N. The gateway has re-originated this into the SRv6 domain with seq=N (carried verbatim). All SRv6 PEs, including Leaf-3 and Leaf-4, have installed the route pointing toward the gateway → Leaf-1 path. VXLAN PEs have installed the Type 2 locally as a normal intra-VXLAN entry.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">2</div>
+        <div class="stp-t">Host moves to SRv6 Leaf-3 — Leaf-3 originates Type 2 seq=N+1</div>
+      </div>
+      <p>Host-A connects to SRv6 Leaf-3. Leaf-3 detects the MAC (via data-plane learning or gratuitous ARP) and originates a new Type 2 MAC/IP route with MAC Mobility EC seq=N+1. This route is advertised into the SRv6 BGP-EVPN domain with Leaf-3's SRv6 loopback as next-hop and a uDT2U service SID. All SRv6 PEs with a higher-sequence route now prefer Leaf-3 as the MAC owner.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n org">3</div>
+        <div class="stp-t">Gateway sees both old (VXLAN, seq=N) and new (SRv6, seq=N+1) Type 2 routes</div>
+      </div>
+      <p>The gateway holds the re-originated VXLAN-side Type 2 (seq=N) and has now received Leaf-3's SRv6-side Type 2 (seq=N+1). Per RFC 7432, seq=N+1 wins. The gateway withdraws its previously re-originated VXLAN-side Type 2 from the VXLAN domain and re-originates Leaf-3's Type 2 (next-hop = gateway's VTEP IP, VNI encoded, seq=N+1 MAC Mobility EC preserved) into the VXLAN BGP-EVPN domain.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n pur">4</div>
+        <div class="stp-t">VXLAN PEs receive withdrawal + new Type 2 seq=N+1 pointing to gateway</div>
+      </div>
+      <p>VXLAN Leaf-1 receives the withdrawal of its own Type 2 reflected back (or sees the higher-seq Type 2 from the gateway) and flushes its local MAC entry for Host-A. All VXLAN PEs install the new Type 2 pointing to the gateway's VTEP IP as next-hop. Traffic toward Host-A from the VXLAN domain now flows: VXLAN PE → gateway (VXLAN decap) → SRv6 encap to Leaf-3.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">5</div>
+        <div class="stp-t">Both domains converge — old entry withdrawn, forwarding is clean</div>
+      </div>
+      <p>Leaf-1's VXLAN-side Type 2 (seq=N) is withdrawn from the VXLAN domain (Leaf-1 no longer owns the MAC). The gateway's re-originated entry is the only VXLAN-side advertisement for Host-A's MAC. SRv6 domain already has Leaf-3's direct Type 2 (seq=N+1). Forwarding in both directions is consistent: SRv6→Host-A goes directly to Leaf-3; VXLAN→Host-A goes through the gateway to Leaf-3. No MAC flap, no duplicate entries — because seq=N+1 was preserved at every hop.</p>
+    </div>
+  </div>
+
+  <div class="info red">
+    <strong>Three most common operational pitfalls in this section:</strong>
+    <ol>
+      <li><strong>MAC flap loop from sequence-number reset at the gateway.</strong> A re-origination policy that strips or zeroes the MAC Mobility Extended Community causes the re-originated Type 2 to carry seq=0. PEs on the far side see seq=0 competing with the existing seq=N entry; neither wins definitively, and both entries oscillate. The symptom is a rapid MAC flap log on multiple PEs simultaneously, resolving only when one side withdraws. Fix: verify the re-origination policy explicitly passes through the MAC Mobility EC unchanged — do not rely on default pass-through; test with a deliberate host-move in a lab before production cutover.</li>
+      <li><strong>Duplicate-address / DAD storms from incoherent ARP-suppression caches.</strong> When a host moves from one encap domain to the other, the old ARP-suppression cache entry on the origin domain's PEs may persist beyond the BGP withdrawal (cache TTL outlasts the BGP convergence event). During that window, a new host connecting with the same IP triggers proxy-ARP responses from both the origin PE (stale cache) and the gateway (fresh Type 2). The result is two ARP replies with different MACs for the same IP — the host's ARP cache flips between them, and IPv6 hosts may trigger DAD storms. Fix: align ARP/ND cache aging timers with BGP hold-down timers; flush ARP caches on the origin PEs as part of the host-move procedure; do not set cache TTLs longer than the BGP session hold-time.</li>
+      <li><strong>Silent-host visibility gaps when a quiet host is only known to one encap.</strong> A host that has not sent or received traffic for an extended period may have its Type 2 route aged out by MAC aging on its local leaf. If the host is only reachable from the far encap domain (e.g., an SRv6 host that has been silent), VXLAN-side PEs have no Type 2 entry and no proxy-ARP mapping. An ARP from a VXLAN host is flooded to the gateway, which floods it into the SRv6 BUM replication list — but if the SRv6 leaf's ARP-suppression cache has also aged out, the solicitation must reach the host directly to get a response. If the host is in a deep power-save state or has a restrictive host firewall, no response is generated, and the VXLAN host concludes the destination is unreachable. Fix: set MAC aging timers conservatively (longer than the expected quiescent period for silent hosts), or use gratuitous-ARP refresh mechanisms on the host side; monitor for Type 2 route counts per EVI on both sides of the gateway and alert on unexpected drops.</li>
+    </ol>
+  </div>
+</div>
+
   </main>
 </div>
 
