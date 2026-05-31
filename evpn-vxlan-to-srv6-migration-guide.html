@@ -1418,7 +1418,7 @@
     <h4 class="ph">Control plane — Type 3 IMET</h4>
     <ul>
       <li>Each leaf with members in an EVI advertises a <strong>BGP-EVPN Type 3 (Inclusive Multicast Ethernet Tag, IMET) route</strong> per (EVI, Ethernet Tag). The NLRI carries the originating router's loopback as the replication endpoint.</li>
-      <li>Every Type 3 route carries a <strong>PMSI Tunnel attribute</strong> (RFC 6514) that declares the leaf's BUM replication mode. For ingress replication, Tunnel Type = 6 (Ingress Replication); the Tunnel Identifier field carries the leaf's VTEP address (VXLAN) or its SRv6 uDT2M service SID.</li>
+      <li>Every Type 3 route carries a <strong>PMSI Tunnel attribute</strong> (RFC 6514) that declares the leaf's BUM replication mode. For ingress replication, Tunnel Type = 6 (Ingress Replication) and the Tunnel Identifier carries the leaf's <em>node IP</em> on both encaps. On the SRv6 side the per-flood <code>uDT2M</code> service SID is signalled separately in the SRv6 Services TLV (RFC 9252), not in the PMSI tunnel-id — consistent with the §5 route-type table.</li>
       <li>On receiving Type 3 routes from Leaf-2, Leaf-3, and Leaf-4, Leaf-1 builds a <strong>flood list</strong> for VNI-10100: one entry per remote leaf, keyed on the PMSI Tunnel Identifier. When a BUM frame arrives from Host-A, Leaf-1 iterates this list and creates one encapsulated copy per entry.</li>
       <li>ARP-suppression caches (populated from Type 2 MAC/IP routes) may suppress ARP flooding for known targets, but unknown targets — including first-time ARPs and anycast gateways not yet learned — still hit the BUM path.</li>
     </ul>
@@ -1459,14 +1459,14 @@
                     │              Leaf-1                  │
                     │   (ingress PE — receives ARP from    │
                     │    Host-A on VLAN-100 / VNI-10100)   │
-                    └──────────────┬──────────────────────-┘
+                    └──────────────┬───────────────────────┘
                                    │
                ┌───────────────────┴──────────────────┐
                │        Spines (unicast transit)       │
                │        Spine-1        Spine-2         │
                └──┬──────────────┬────────────┬───────┘
                   │              │            │
-              <span style="color:#93c5fd;">Leaf-2</span>         <span style="color:#6ee7b7;">Leaf-3</span>      <span style="color:#fed7aa;">Leaf-4</span>
+              <span style="color:var(--blue);">Leaf-2</span>         <span style="color:var(--green);">Leaf-3</span>      <span style="color:var(--orange);">Leaf-4</span>
           VXLAN dst .2      dst .3       dst .4
           SRv6 DA e800::2   DA e800::3   DA e800::4
           (uDT2M)
