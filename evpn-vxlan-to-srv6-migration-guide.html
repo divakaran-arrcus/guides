@@ -515,6 +515,301 @@
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- §1 — WHAT STAYS THE SAME                                    -->
+<!-- ============================================================ -->
+<div id="stays-same" class="section">
+  <div class="sec-title">1. What Stays the Same — BGP-EVPN Control Plane</div>
+  <p class="sec-sub">The control plane is invariant. The data plane is what changes.</p>
+
+  <div class="card">
+    <p>BGP-EVPN was designed as an encapsulation-agnostic control plane. Swapping VXLAN for SRv6 means replacing what rides inside the outer header — the BGP session topology, route types, and service semantics are untouched.</p>
+
+    <h4 class="ph">BGP-EVPN AFI/SAFI is unchanged</h4>
+    <ul>
+      <li>AFI 25 / SAFI 70 (<code>l2vpn evpn</code>) is the same on both encapsulations.</li>
+      <li>Route Distinguisher and Route Target semantics, format, and import/export policy logic carry over without modification.</li>
+      <li>Route-reflector placement (spines as RRs) and BGP session topology are identical.</li>
+      <li>The only BGP attribute that changes is the Tunnel Encapsulation attribute (RFC 9012) — value changes from <code>VXLAN</code> (8) to <code>SRv6 L3 Service</code> (14) or <code>SRv6 L2 Service</code> (15).</li>
+    </ul>
+
+    <h4 class="ph">Route types still mean the same thing</h4>
+    <ul>
+      <li><strong>Type 2 (MAC/IP Advertisement)</strong> — carries host MAC and optionally IP; used for L2 MAC learning and L3 host-route injection into VRFs. Role unchanged.</li>
+      <li><strong>Type 3 (Inclusive Multicast Ethernet Tag / IMET)</strong> — signals BUM flooding membership per EVI. Role unchanged; the encap-specific attribute is what differs.</li>
+      <li><strong>Type 4 (Ethernet Segment)</strong> — per-ES DF election; mechanism and timer behavior unchanged.</li>
+      <li><strong>Type 5 (IP Prefix Route)</strong> — L3 VRF prefix advertisement for symmetric IRB; role unchanged.</li>
+      <li>Type 1 (ES per-EAD) encap-specific attribute differences are covered in §5.</li>
+    </ul>
+
+    <h4 class="ph">MAC/IP learning is unchanged</h4>
+    <ul>
+      <li>Bridge-domain MAC learning still runs in the dataplane; BGP-EVPN still distributes those MAC/IP bindings to remote PEs.</li>
+      <li>ARP/ND suppression — local proxy reply from the PE's ARP/ND cache — works identically; suppression is decoupled from encapsulation.</li>
+      <li>MAC Mobility sequence numbers and sticky MAC semantics are carried in the same BGP extended community, unchanged.</li>
+    </ul>
+
+    <h4 class="ph">EVPN config shape</h4>
+    <ul>
+      <li>VRF definitions, VNI-to-EVI bindings, RD/RT policy, and MAC-VRF templates remain structurally the same.</li>
+      <li>Anycast gateway MAC address assignments on SVIs are unchanged.</li>
+      <li>Only the underlay forwarding context changes: VTEP IP → SRv6 locator; VNI → service SID.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>What's Preserved Across the Migration</h2>
+    <div class="flv-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--cyan)">AFI/SAFI</div>
+        <div class="flv-desc">L2VPN EVPN (AFI 25 / SAFI 70) — same neighbor config, same RR design, same route policy framework.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue)">Route Types</div>
+        <div class="flv-desc">Type 2, 3, 4, 5 — same semantics, same extended communities, same import/export logic. Encap-specific attrs differ (§5).</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green)">MAC/IP Learning</div>
+        <div class="flv-desc">Bridge-domain dataplane learning, ARP/ND suppression, MAC mobility sequence numbers — all unchanged.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--purple)">Config Shape</div>
+        <div class="flv-desc">VRF/MAC-VRF structure, RD/RT assignments, anycast GW MAC, EVI numbering — structurally identical pre- and post-migration.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <strong>Scope boundary:</strong> §1 names the route types and confirms they survive the migration. §5 compares the per-encap BGP attributes for each route type — specifically where the VTEP/Next-Hop, Tunnel Encap community, and SID encoding differ between VXLAN and SRv6.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- §2 — WHAT CHANGES                                           -->
+<!-- ============================================================ -->
+<div id="what-changes" class="section">
+  <div class="sec-title">2. What Changes — Encap, Endpoint, Service ID</div>
+  <p class="sec-sub">Three layers of change: the encapsulation header, the endpoint identity, the service identifier.</p>
+
+  <div class="card">
+    <p>Everything that changes lives at or below the outer IP header. The BGP control plane passes the same routes; what changes is how the forwarding plane interprets and applies the reachability information those routes carry.</p>
+
+    <h4 class="ph">Encapsulation header</h4>
+    <ul>
+      <li>VXLAN: outer Ethernet + outer IPv4/v6 + UDP (dst 4789) + 8-byte VXLAN header containing the 24-bit VNI. Total overhead: ~50 bytes (IPv4 outer).</li>
+      <li>SRv6 uSID: outer Ethernet + outer IPv6 header (40 bytes). The destination address <em>is</em> the forwarding instruction. No UDP, no fixed tunnel header.</li>
+      <li>SRH (Segment Routing Header) is present only when the active segment list has more than one entry — for most single-hop EVPN data-plane flows, the SRH is absent.</li>
+    </ul>
+
+    <h4 class="ph">Endpoint identity</h4>
+    <ul>
+      <li>VXLAN: endpoint is a VTEP identified by an IPv4 (or IPv6) loopback address. The BGP Next-Hop in the EVPN route is the VTEP IP.</li>
+      <li>SRv6: endpoint is the SRv6 node identified by its locator prefix. The BGP Next-Hop is the node's IPv6 loopback; the service SID encodes both the node and the service action.</li>
+      <li>uN locator (<code>fc00:0:N::/48</code> in this guide) acts as the VTEP-equivalent for reachability; each leaf's per-leaf locator (<code>fc00:0:1:N::/64</code>) hosts service SIDs.</li>
+    </ul>
+
+    <h4 class="ph">Service identifier</h4>
+    <ul>
+      <li>VXLAN: 24-bit VNI identifies the Layer-2 or VRF service instance. The VNI is carried in the VXLAN header.</li>
+      <li>SRv6: service SID carries both the endpoint and the action. L2 MAC-VRF uses <code>uDT2U</code> (unknown unicast) or <code>End.DT2U</code>; L3 VRF uses <code>uDT4</code>/<code>End.DT4</code> (IPv4) and <code>uDT6</code>/<code>End.DT6</code> (IPv6).</li>
+      <li>The SID is programmed per leaf per service — unlike VNI, it is not fabric-wide flat; it encodes the destination node.</li>
+    </ul>
+
+    <h4 class="ph">Where uSID fits</h4>
+    <ul>
+      <li>uSID compresses the segment list into the 128-bit IPv6 destination address — typically 32-bit micro-segments packed into the lower 96 bits.</li>
+      <li>For most EVPN flows (single destination, no TE policy), the DA contains exactly one uSID and no SRH is pushed, keeping overhead at 40 bytes.</li>
+      <li>When a TE path is required (multi-hop segment list), additional uSIDs are packed into the same DA; an SRH is added only when the list overflows 128 bits.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>VXLAN vs SRv6 at a Glance</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">VXLAN</h4>
+        <ul style="padding-left:16px;font-size:13px;line-height:1.7;">
+          <li>Outer IPv4 or IPv6 + UDP (4789)</li>
+          <li>8-byte VXLAN header; 24-bit VNI</li>
+          <li>VTEP = IPv4/v6 loopback</li>
+          <li>~50 bytes overhead (IPv4 outer)</li>
+          <li>Service ID: flat 24-bit VNI (fabric-wide)</li>
+          <li>No native TE; UDP src hash for ECMP</li>
+          <li>IPv4 and IPv6 underlay supported</li>
+        </ul>
+      </div>
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">SRv6 (uSID)</h4>
+        <ul style="padding-left:16px;font-size:13px;line-height:1.7;">
+          <li>Outer IPv6 only (no UDP)</li>
+          <li>40-byte IPv6 header; SRH optional</li>
+          <li>Endpoint = SRv6 node locator + SID</li>
+          <li>40 bytes overhead (no SRH path)</li>
+          <li>Service ID: 128-bit SID (node-scoped)</li>
+          <li>Native TE via segment list in DA or SRH</li>
+          <li>IPv6 underlay required</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The Two Encapsulations</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">VXLAN outer stack (left) vs. SRv6 uSID outer stack (right). Byte counts are approximate for a 1500-byte inner Ethernet frame.</p>
+
+    <p style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">VXLAN — outer encapsulation</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:70px;">
+        <div class="l">Outer Eth</div>
+        <div class="v">14 B</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:80px;">
+        <div class="l">Outer IPv4</div>
+        <div class="v">20 B</div>
+      </div>
+      <div class="pkt-c bg-mpls" style="min-width:65px;">
+        <div class="l">UDP</div>
+        <div class="v">8 B</div>
+      </div>
+      <div class="pkt-c bg-vpn" style="min-width:80px;">
+        <div class="l">VXLAN (VNI)</div>
+        <div class="v">8 B</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner Eth Frame</div>
+        <div class="v">≥ 64 B</div>
+      </div>
+    </div>
+    <div class="ann">Total outer overhead: 50 bytes (14 + 20 + 8 + 8). Inner frame MTU budget reduced by 50 bytes; fabric MTU typically set to 9216 to accommodate.</div>
+
+    <div style="height:14px;"></div>
+
+    <p style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">SRv6 uSID — outer encapsulation (no SRH, single segment)</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:70px;">
+        <div class="l">Outer Eth</div>
+        <div class="v">14 B</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:140px;">
+        <div class="l">Outer IPv6 (DA = service SID)</div>
+        <div class="v">40 B</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner Eth Frame</div>
+        <div class="v">≥ 64 B</div>
+      </div>
+    </div>
+    <div class="ann">Total outer overhead: 54 bytes (14 + 40). SRH absent for single-segment paths. DA encodes both the destination node (uN locator) and the service action (uDT2U / uDT4 function bits).</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- §3 — REFERENCE TOPOLOGY                                     -->
+<!-- ============================================================ -->
+<div id="ref-topology" class="section">
+  <div class="sec-title">3. Reference Topology</div>
+  <p class="sec-sub">Used in every packet walk and migration scenario. Read once, refer back.</p>
+
+  <div class="card">
+    <p>A 2-spine / 4-leaf iBGP-EVPN fabric is the canonical target. Spine-1 and Spine-2 act as iBGP route-reflectors for all EVPN sessions; leaves peer upward to both spines as RR clients. This choice reflects the dominant deployment pattern and keeps the RR-on-spines rationale explicit.</p>
+
+    <h4 class="ph">Fabric nodes</h4>
+    <ul>
+      <li><strong>Spine-1, Spine-2</strong> — pure transit (no host-facing ports); iBGP RRs for the EVPN address family. No SIDs assigned to spines.</li>
+      <li><strong>Leaf-1, Leaf-2, Leaf-3, Leaf-4</strong> — EVPN PEs; all carry VTEP function (State A) or SRv6 endpoint function (State B/M).</li>
+      <li>All nodes share a common iBGP AS (65000). Underlay runs IS-IS or eBGP/IGP; only loopback reachability is required.</li>
+    </ul>
+
+    <h4 class="ph">Hosts and services</h4>
+    <ul>
+      <li><strong>Host-A</strong> — single-homed to Leaf-1, VLAN-100.</li>
+      <li><strong>Host-B</strong> — single-homed to Leaf-3, VLAN-100. (Same L2 segment as Host-A across the fabric.)</li>
+      <li><strong>Host-C</strong> — single-homed to Leaf-1, VLAN-200.</li>
+      <li><strong>Host-D</strong> — dual-homed to Leaf-3 and Leaf-4 via an Ethernet Segment (ESI = 0x0001:0001:0001:0001:0001), VLAN-200. DF election applies.</li>
+      <li><strong>VRF "green"</strong> — L3 VRF spanning VLAN-100 and VLAN-200 on all leaves, symmetric IRB. Both SVIs are VRF members; inter-subnet routing is local at each leaf's anycast gateway.</li>
+    </ul>
+
+    <h4 class="ph">VLAN / VNI map</h4>
+    <ul>
+      <li>VLAN-100 → VNI-10100 → EVI 100</li>
+      <li>VLAN-200 → VNI-10200 → EVI 200</li>
+      <li>VRF "green" → L3 VNI-10300 (VXLAN) / <code>uDT4</code> SID (SRv6)</li>
+    </ul>
+
+    <h4 class="ph">Three topology states</h4>
+    <ul>
+      <li><strong>State A — pure VXLAN</strong>: all four leaves are VTEP nodes. All EVPN routes carry the VXLAN Tunnel Encap attribute. This is the "before" baseline.</li>
+      <li><strong>State B — pure SRv6 uSID</strong>: all four leaves are SRv6 endpoints. All EVPN routes carry SRv6 Service TLVs with uSID-based SIDs. This is the "after" target.</li>
+      <li><strong>State M — mid-migration, dual-encap</strong>: Leaf-1 and Leaf-3 remain VXLAN; Leaf-2 and Leaf-4 have migrated to SRv6. Leaf-2 and Leaf-4 act as redundant border-leaves (gateway nodes) that stitch between the two encapsulations. Leaf-4 is dual-homed with Host-D, making it a gateway that also participates in ESI DF election.</li>
+    </ul>
+
+    <h4 class="ph">Address conventions</h4>
+    <ul>
+      <li><strong>IPv4 loopbacks</strong>: Leaf-1 = <code>203.0.113.1/32</code>, Leaf-2 = <code>203.0.113.2/32</code>, Leaf-3 = <code>203.0.113.3/32</code>, Leaf-4 = <code>203.0.113.4/32</code>.</li>
+      <li><strong>IPv6 loopbacks</strong>: Leaf-1 = <code>2001:db8:1::1/128</code>, Leaf-2 = <code>2001:db8:1::2/128</code>, Leaf-3 = <code>2001:db8:1::3/128</code>, Leaf-4 = <code>2001:db8:1::4/128</code>.</li>
+      <li><strong>uN locator block</strong>: <code>fc00:0:1::/48</code> — allocated to this fabric.</li>
+      <li><strong>Per-leaf locator</strong>: <code>fc00:0:1:N::/64</code> where N = leaf number (1–4). Service SIDs are allocated within this /64.</li>
+      <li><strong>Service SIDs</strong>:
+        <ul>
+          <li>Leaf-3 uDT2U for VNI-10100 (EVI 100): <code>fc00:0:1:3:e000::</code></li>
+          <li>Per-leaf uDT2U for VNI-10200 (EVI 200): <code>fc00:0:1:N:e001::</code></li>
+          <li>Per-leaf uDT4 for VRF green (IPv4): <code>fc00:0:1:N:e100::</code></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Topology Diagram</h2>
+    <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:20px 24px;font-size:12px;overflow-x:auto;line-height:1.9;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">
+                 iBGP RR (AS 65000)
+          ┌──────────────────────────────┐
+          │  Spine-1        Spine-2      │
+          │  (RR)           (RR)         │
+          └──┬──┬──┬──┬────┬──┬──┬──┬───┘
+             │  │  │  │    │  │  │  │
+         ┌───┘  │  │  └──┐ └──┘  │  └───┐
+         │      │  └──┐  │    ┌──┘      │
+       <span style="color:var(--blue);">Leaf-1</span>  <span style="color:var(--blue);">Leaf-2</span> <span style="color:var(--orange);">Leaf-3</span> <span style="color:var(--orange);">Leaf-4</span>
+      203.0.113.1 .2  .3     .4
+   2001:db8:1::1  ::2 ::3    ::4
+   fc00:0:1:1::/64   ::2::/64   ::3::/64   ::4::/64
+
+     Host-A     (gw)  Host-B  Host-D (ESI dual-homed
+    VLAN-100         VLAN-100  VLAN-200   to Leaf-3+Leaf-4)
+     Host-C
+    VLAN-200
+
+  VRF "green" spans VLAN-100 + VLAN-200 (symmetric IRB) on all leaves.
+
+  State A (before): all leaves = VTEP; VXLAN encap.
+  State B (after) : all leaves = SRv6 endpoint; uSID encap.
+  State M (mid)   : Leaf-1/Leaf-3 = VXLAN; Leaf-2/Leaf-4 = SRv6 gateway/border-leaf.</pre>
+  </div>
+
+  <div class="card">
+    <h2>Three Topology States</h2>
+    <div class="flv-grid">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue)">State A</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong style="color:var(--text);">Pure VXLAN — Before.</strong><br>All leaves: VTEP. EVPN routes carry VXLAN Tunnel Encap attr. VNI-10100, VNI-10200, L3 VNI-10300 in use.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange)">State B</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong style="color:var(--text);">Pure SRv6 uSID — After.</strong><br>All leaves: SRv6 endpoint. Service SIDs <code>fc00:0:1:N:e000::</code> / <code>e001::</code> / <code>e100::</code> in use. No VXLAN remain.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green)">State M</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong style="color:var(--text);">Dual-Encap — Mid-migration.</strong><br>Leaf-2 + Leaf-4 = SRv6 border-leaves. Leaf-1 + Leaf-3 = VXLAN. Gateway stitching active (§12–§14).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info green">
+    <strong>Cross-reference contract:</strong> Every packet walk (§6, §7, §8) and gateway walk (§15) uses these exact identifiers. Every migration playbook step (§16, §17) refers to Leaf-1..4, Host-A/B/C/D, and the SIDs above. Do not rename or renumber without updating all downstream sections.
+  </div>
+</div>
+
   </main>
 </div>
 
