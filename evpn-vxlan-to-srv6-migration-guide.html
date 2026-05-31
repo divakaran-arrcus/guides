@@ -470,7 +470,7 @@
   <p class="sec-sub">Why move a perfectly working VXLAN fabric to SRv6?</p>
 
   <div class="card">
-    <p>VXLAN works. If your fabric is stable and hitting no hard limits, "because SRv6 is newer" is not an engineering justification. This section lays out the real reasons operators migrate — and the equally important reasons not to.</p>
+    <p>VXLAN works — "because SRv6 is newer" is not an engineering justification. This section lays out the real reasons operators migrate, and the equally important reasons not to.</p>
 
     <h4 class="ph">Header tax and scale</h4>
     <ul>
@@ -496,7 +496,7 @@
 
     <h4 class="ph">Vendor and silicon roadmap pressure</h4>
     <ul>
-      <li>New ASIC generations (Cisco Silicon One, Broadcom Jericho3-AI, Marvell Teralynx 10) are SRv6-first; VXLAN feature parity on the latest pipelines is increasingly an afterthought.</li>
+      <li>New ASIC generations (e.g., Cisco Silicon One, Broadcom Jericho3-AI, Marvell Teralynx) are increasingly SRv6-first; VXLAN feature parity on the latest pipelines is becoming an afterthought. (Verify current silicon SRv6 support against vendor data sheets.)</li>
       <li>Some vendor product lines have already sunset VXLAN feature development; bug fixes continue but new capabilities (Enhanced EVPN, per-flow TE) land on SRv6 first.</li>
       <li>If your refresh cycle aligns with the next ASIC generation, designing for SRv6 now avoids a second migration later.</li>
     </ul>
