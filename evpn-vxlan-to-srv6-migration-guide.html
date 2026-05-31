@@ -415,8 +415,104 @@
   <main class="main">
 
 <div id="welcome" class="section active">
-  <div class="sec-title">EVPN-VXLAN → EVPN-SRv6</div>
-  <p class="sec-sub">Migration guide — scaffold pending content.</p>
+  <div class="sec-title">Welcome</div>
+  <p class="sec-sub">Moving your data-center overlay from VXLAN to SRv6 — the comparison and the playbook.</p>
+
+  <div class="card">
+    <p>EVPN-VXLAN is mature, widely deployed, and well understood. EVPN-SRv6 is where the silicon and toolchain investment is heading. This guide covers both the technical delta between the two encapsulations and the step-by-step mechanics of migrating a live fabric without a maintenance window.</p>
+
+    <h4 class="ph">Who this is for</h4>
+    <ul>
+      <li>Network operators running a production EVPN-VXLAN leaf-spine fabric who need a concrete migration path to SRv6.</li>
+      <li>DC architects evaluating VXLAN vs. SRv6 encapsulation for a new build or a next-generation overlay design.</li>
+    </ul>
+
+    <h4 class="ph">What you need to know first</h4>
+    <ul>
+      <li>BGP-EVPN control plane — route types, MP-BGP attributes, RT/RD semantics: <a href="bgp-evpn-guide.html">bgp-evpn-guide</a>.</li>
+      <li>Leaf-spine DC fabric design — ECMP underlay, anycast gateway, BFD, VRF-lite basics: <a href="dc-fabric-design-guide.html">dc-fabric-design-guide</a>.</li>
+      <li>SRv6 and uSID fundamentals — Locator/Function/Argument structure, uSID block, SID programming, SRH: <a href="srv6-complete-guide.html">srv6-complete-guide</a>.</li>
+    </ul>
+
+    <h4 class="ph">How to read this guide</h4>
+    <ul>
+      <li><strong>Textbook path</strong> — read front-to-back; Parts 1–2 build the conceptual foundation, Parts 3–4 are the operational playbook.</li>
+      <li><strong>Reference path</strong> — jump directly to <a onclick="go('route-types',event)" style="cursor:pointer;color:var(--cyan)">§5 Route-Type Behavior table</a>, <a onclick="go('cheat-sheet',event)" style="cursor:pointer;color:var(--cyan)">§22 Cheat Sheet</a>, or <a onclick="go('glossary',event)" style="cursor:pointer;color:var(--cyan)">§23 Glossary</a>.</li>
+      <li><strong>Decision-first path</strong> — if you haven't committed to migrating yet, start at <a onclick="go('decision-matrix',event)" style="cursor:pointer;color:var(--cyan)">§21 Decision Matrix</a>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>What's Inside</h2>
+    <div class="flv-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--cyan)">Comparison</div>
+        <div class="flv-desc">Part 2 (§4–§9) — VXLAN vs. SRv6 for EVPN: header math, route-type behavior deltas, and side-by-side packet walks for Type 2, Type 5, and BUM traffic.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue)">Playbook</div>
+        <div class="flv-desc">Part 3 (§10–§18) — coexistence baseline → gateway design and stitching → per-service cutover → final cleanup. Concrete CLI, rollback steps, and verification checks throughout.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green)">Operational</div>
+        <div class="flv-desc">Part 4 (§19–§20) — troubleshooting methodology and monitoring/telemetry strategy across a mixed VXLAN+SRv6 fabric and after full cutover.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange)">Reference</div>
+        <div class="flv-desc">§21 Decision Matrix, §22 Cheat Sheet (condensed CLI and SID patterns), §23 Glossary. Designed to be printed or kept open in a second tab during migration.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="migration-question" class="section">
+  <div class="sec-title">The Migration Question</div>
+  <p class="sec-sub">Why move a perfectly working VXLAN fabric to SRv6?</p>
+
+  <div class="card">
+    <p>VXLAN works. If your fabric is stable and hitting no hard limits, "because SRv6 is newer" is not an engineering justification. This section lays out the real reasons operators migrate — and the equally important reasons not to.</p>
+
+    <h4 class="ph">Header tax and scale</h4>
+    <ul>
+      <li>VXLAN carries an 8-byte VXLAN header plus a full UDP/IP outer — 50 bytes of overhead per packet before the inner Ethernet frame.</li>
+      <li>SRv6 with a uSID-only path (no SRH in the data plane) adds only a 40-byte IPv6 header; the entire forwarding instruction is encoded inside the DA.</li>
+      <li>VXLAN VNI is 24 bits — 16 million identifiers. SRv6 SID space is 128 bits; identifier exhaustion is not a practical concern at any fabric scale.</li>
+      <li>uSID compression means multiple segment instructions fit in a single 128-bit address, keeping MTU impact flat even for multi-hop TE paths.</li>
+    </ul>
+
+    <h4 class="ph">Unifying SP + DC underlay</h4>
+    <ul>
+      <li>If your DC connects to a service-provider or WAN backbone that already runs SRv6, a SRv6 DC overlay lets the same IPv6/SRv6 underlay span both domains — no encap boundary at the DC edge.</li>
+      <li>One technology means one skill set, one set of tooling (path computation, telemetry collectors, verification scripts), and one operational model across campus, DC, and WAN.</li>
+      <li>End-to-end SRv6 eliminates the VXLAN-to-MPLS (or VXLAN-to-SRv6) hand-off stitching that today lives on a dedicated border or DCI node.</li>
+    </ul>
+
+    <h4 class="ph">Service insertion and traffic engineering</h4>
+    <ul>
+      <li>SR Policy and Flex-Algo are first-class constructs in SRv6 — low-latency paths, disjoint paths, and color-based steering are native.</li>
+      <li>Bolting TE onto a VXLAN fabric requires overlay tricks (VXLAN policy maps, DSCP remarking) that are brittle and hard to verify end-to-end.</li>
+      <li>SRv6 service function chaining (SFC) inserts middleboxes by placing their SID in the segment list — no bump-in-the-wire VLAN gymnastics.</li>
+    </ul>
+
+    <h4 class="ph">Vendor and silicon roadmap pressure</h4>
+    <ul>
+      <li>New ASIC generations (Cisco Silicon One, Broadcom Jericho3-AI, Marvell Teralynx 10) are SRv6-first; VXLAN feature parity on the latest pipelines is increasingly an afterthought.</li>
+      <li>Some vendor product lines have already sunset VXLAN feature development; bug fixes continue but new capabilities (Enhanced EVPN, per-flow TE) land on SRv6 first.</li>
+      <li>If your refresh cycle aligns with the next ASIC generation, designing for SRv6 now avoids a second migration later.</li>
+    </ul>
+
+    <h4 class="ph">What's NOT a reason to migrate</h4>
+    <ul>
+      <li>Your fabric is pure DC with no SP/WAN integration story — the "unified underlay" argument doesn't apply, and VXLAN operational simplicity may outweigh any benefit.</li>
+      <li>You are at moderate scale (sub-10k VNIs, no cross-DC TE requirements) and VXLAN is meeting all SLAs — the overhead delta is immaterial.</li>
+      <li>Your operations team has deep VXLAN expertise and no SRv6 familiarity — a forced migration under time pressure is a risk, not an improvement.</li>
+      <li>If any of these apply, read <a onclick="go('decision-matrix',event)" style="cursor:pointer;color:var(--cyan)">§21 Decision Matrix</a> before proceeding.</li>
+    </ul>
+  </div>
+
+  <div class="info">
+    <strong>Note:</strong> This guide assumes you've decided to migrate (or are seriously considering it). If you haven't, jump to <a onclick="go('decision-matrix',event)" style="cursor:pointer;color:var(--cyan)">§21 Decision Matrix</a> first — it walks through the evaluation criteria so you can make the call with data.
+  </div>
 </div>
 
   </main>
