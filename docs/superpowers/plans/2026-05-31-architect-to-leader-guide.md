@@ -24,7 +24,7 @@ No other files. Embedded CSS + JS in the HTML (matches the repo's other guides).
 ## Conventions used in this plan
 
 **Each "chapter task" follows the same pattern:**
-1. Add chapter `<section id="ch..">` scaffold: `<h1>`, a lens tag (`<span class="lens-tag ..">`), a "What you'll learn" preamble, and `<h2>` placeholders for each subsection.
+1. Add chapter `<section id="ch.." class="section">` scaffold: `<h1>`, a lens tag (`<span class="lens-tag ..">`), a "What you'll learn" preamble, and `<h2>` placeholders for each subsection. **The `class="section"` is required** — the SPA hides every `.section` by default (`display:none`) and `go()` shows one via `.section.active`; a `<section>` without the class renders always-visible and is never hidden on navigation. Write the opening tag as `id="…" class="section"` on a single line so the Task 22 integrity check (which matches that exact attribute order) sees it. (Every section in this guide carries `class="section"`; `welcome` keeps `class="section active"`.)
 2. Fill subsection content in groups of 2–4 (one step per group). Each subsection = 2–4 paragraphs / point-wise lists, following the per-chapter brief in the task.
 3. Add the Meridian case-study scene box (`<div class="case">`) where the task specifies one.
 4. Add the "See also →" cross-link grid (`<div class="see-also">`) with the targets listed in the task.
@@ -41,16 +41,16 @@ No other files. Embedded CSS + JS in the HTML (matches the repo's other guides).
 
 **Commit convention:** scaffolding/nav tasks use `feat(architect-to-leader): …`; content tasks use `docs(architect-to-leader): …`; fix-ups use `fix(architect-to-leader): …`.
 
-**Verification convention (used in every render step):** after editing, run the integrity check:
+**Verification convention (per render step):** the full sidebar (all 23 `go()` targets) is built once in Task 2, but sections are added one task at a time — so a whole-file nav↔section parity check would report every *not-yet-built* section as unlinked until the build finishes. That full parity check therefore lives in **Task 22**. Per task, run only the div-balance check and confirm the id(s) you built *this task* now resolve:
 ```bash
 cd /Users/divakaran/arrcus_workspace/guides
 f=gen-ai-architect-to-leader-guide.html
 o=$(grep -o "<div" "$f"|wc -l); c=$(grep -o "</div>" "$f"|wc -l); echo "div $o/$c"
-grep -oE "go\('[a-z0-9-]+'\)" "$f"|sed "s/go('//;s/')//"|sort -u > /tmp/n.txt
-grep -oE 'id="[a-z0-9-]+" class="section' "$f"|sed 's/id="//;s/" class.*//'|sort -u > /tmp/s.txt
-echo "broken nav: $(comm -23 /tmp/n.txt /tmp/s.txt | tr '\n' ' ')"
+for id in <ids-built-this-task>; do
+  grep -q "id=\"$id\" class=\"section" "$f" && echo "ok $id" || echo "MISSING $id"
+done
 ```
-Expected: `div N/N` (balanced) and `broken nav:` (empty) once nav + the section exist.
+Expected: `div N/N` (balanced), and `ok <id>` for every section built this task. Not-yet-built sections remaining unlinked is expected until Task 22 runs the full parity check.
 
 ---
 
@@ -89,16 +89,23 @@ Add after the existing `.info` rules:
 .lens-tag.people     { color:var(--green);  border-color:var(--green); }
 .lens-tag.platform   { color:var(--blue);   border-color:var(--blue); }
 .lens-tag.governance { color:var(--orange); border-color:var(--orange); }
-.case { border-left:3px solid var(--accent); background:rgba(45,212,191,0.06);
+.case { border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 6%, transparent);
   padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0; }
 .case-label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
   color:var(--accent); margin-bottom:6px; }
-body.light .case { background:rgba(13,148,136,0.05); }
 ```
 
-- [ ] **Step 5: Strip Part 2's content sections, keeping the shell**
+- [ ] **Step 5: Reduce `<main>` to a welcome stub**
 
-Delete every `<section ...>…</section>` inside `<main>` EXCEPT the `welcome` section (keep it as a stub to retitle in Task 3). Leave intact: `<head>`/`<style>`, the `<nav class="sidebar">` shell (its nav-groups will be replaced in Task 2), `<main>` open/close, and the `<script>` block (the `go()`, theme toggle, etc.).
+Goal: keep `<head>`/`<style>`, the `<nav class="sidebar">` shell (nav-groups replaced in Task 2), `<main>` open/close, the `welcome` section (stub to retitle in Task 3), and the `<script>` block. Remove every other `<section>…</section>`.
+
+Do it mechanically, not by eyeballing 8,600 lines:
+1. Map the boundaries: `grep -n '<section\|</section>\|</main>' gen-ai-architect-to-leader-guide.html`
+2. The first `<section id="welcome"` … its matching `</section>` is the stub — keep it. Everything from the *next* `<section` up to (but not including) `</main>` is content to remove.
+3. Delete those blocks **bottom-up** (highest line numbers first) so earlier line numbers stay valid as you go. Each delete spans a full `<section …>` … `</section>` pair — never a partial block.
+4. After each delete (or at the end), run the div-balance check: `o=$(grep -o "<div" gen-ai-architect-to-leader-guide.html|wc -l); c=$(grep -o "</div>" gen-ai-architect-to-leader-guide.html|wc -l); echo "div $o/$c"`. It must stay balanced. If it doesn't, you cut a partial block — revert that delete and redo on full `<section>…</section>` boundaries.
+
+(If a clean strip proves fiddly, the equivalent fallback is to author `<main>` fresh: keep the copied `<head>`/`<nav>`/`<script>` and replace the entire `<main>…</main>` body with just the `welcome` stub section.)
 
 - [ ] **Step 6: Verify the shell loads**
 
@@ -160,7 +167,7 @@ Retitle to "Welcome to Gen AI: Architect to Leader". Content (cards):
 
 - [ ] **Step 2: Build the `map` section — the maturity model**
 
-A `<section id="map">`: a `.pkt`-style 5-stage diagram (Ad-hoc → Pilot → Team → Org → Enterprise) and a `.tbl` with columns Stage / Name / Shape / Primary risk (content from spec §6).
+A `<section id="map" class="section">`: a `.pkt`-style 5-stage diagram (Ad-hoc → Pilot → Team → Org → Enterprise) and a `.tbl` with columns Stage / Name / Shape / Primary risk (content from spec §6).
 
 - [ ] **Step 3: Add the lenses + Meridian intro to `map`**
 
@@ -169,7 +176,7 @@ A `<section id="map">`: a `.pkt`-style 5-stage diagram (Ad-hoc → Pilot → Tea
 
 - [ ] **Step 4: Render & verify**
 
-Run the integrity check (Conventions). Expected: balanced divs, no broken nav for `welcome`/`map`. Browser: both sections render, stage diagram + table legible in dark/light.
+Run the per-step check (Conventions) with `<ids-built-this-task>` = `welcome map`. Expected: balanced divs, `ok welcome` and `ok map`. Browser: both sections render, stage diagram + table legible in dark/light.
 
 - [ ] **Step 5: Commit**
 
@@ -407,9 +414,9 @@ git commit -m "docs(architect-to-leader): front matter — Welcome + The Map"
 
 **Files:** Modify the HTML.
 
-- [ ] **Step 1: Build `ref-scorecard`** — a `<section>` with a `.tbl` scoring each of the three lenses 0–4 (rows = lens, columns = stage descriptors), plus a short "how to score yourself" intro and a "where to jump next" mapping from score → Part.
-- [ ] **Step 2: Build `ref-checklists`** — a `<section>` with one checklist block per stage transition (0→1 … 3→4); each is a point-wise `<ul>` of concrete "have you done X" items drawn from the matching chapters.
-- [ ] **Step 3: Render & verify** (integrity check + browser).
+- [ ] **Step 1: Build `ref-scorecard`** — a `<section id="ref-scorecard" class="section">` with a `.tbl` scoring each of the three lenses 0–4 (rows = lens, columns = stage descriptors), plus a short "how to score yourself" intro and a "where to jump next" mapping from score → Part.
+- [ ] **Step 2: Build `ref-checklists`** — a `<section id="ref-checklists" class="section">` with one checklist block per stage transition (0→1 … 3→4); each is a point-wise `<ul>` of concrete "have you done X" items drawn from the matching chapters.
+- [ ] **Step 3: Render & verify** (per-step check with `<ids-built-this-task>` = `ref-scorecard ref-checklists`; + browser).
 - [ ] **Step 4: Commit** — `docs(architect-to-leader): reference — maturity scorecard + checklists`.
 
 ---
@@ -421,7 +428,7 @@ git commit -m "docs(architect-to-leader): front matter — Welcome + The Map"
 - [ ] **Step 1: Build `ref-metrics`** — a `.tbl` catalog: metric / what it measures / how to instrument / failure mode (gaming). Derived from Ch 7.
 - [ ] **Step 2: Build `ref-glossary`** — a `<dl>` of org-adoption terms (maturity stage, paved road, golden config, capability registry, blast radius, human-in-the-loop, showback/chargeback, escape hatch, …), each with a chapter cross-link.
 - [ ] **Step 3: Build `ref-reading`** — a labeled, hedged links list (DORA/engineering-effectiveness research, platform-engineering refs, AI-governance frameworks) with "verify current" framing.
-- [ ] **Step 4: Render & verify; Commit** — `docs(architect-to-leader): reference — metrics catalog, glossary, further reading`.
+- [ ] **Step 4: Render & verify** (per-step check with `<ids-built-this-task>` = `ref-metrics ref-glossary ref-reading`; + browser); **Commit** — `docs(architect-to-leader): reference — metrics catalog, glossary, further reading`.
 
 ---
 
@@ -442,7 +449,7 @@ o=$(grep -o "<div" "$f"|wc -l); c=$(grep -o "</div>" "$f"|wc -l); echo "div $o/$
 ```
 Expected: both `comm` outputs empty; divs balanced. Fix any mismatch (typo'd id, missing section, stray see-also target).
 
-- [ ] **Step 2: Verify all 21 sections present** — `grep -c 'class="section' "$f"` should be 23 (welcome, map, 16 chapters, 5 reference). Fix if short.
+- [ ] **Step 2: Verify all 23 sections present** — `grep -c 'class="section' gen-ai-architect-to-leader-guide.html` should be 23 (welcome, map, 16 chapters, 5 reference). Fix if short.
 - [ ] **Step 3: Commit** (only if fixes were made) — `fix(architect-to-leader): cross-link + section integrity`.
 
 ---
@@ -474,7 +481,7 @@ Expected: both `comm` outputs empty; divs balanced. Fix any mismatch (typo'd id,
 
 **Files:** the HTML (fix-ups), plus a review doc.
 
-- [ ] **Step 1: Run the `super-review` skill** on `gen-ai-architect-to-leader-guide.html` with criteria: technical accuracy, internal consistency (Meridian timeline numbers, stage names, lens tags, cross-links), tool-agnostic adherence, alignment with Parts 1-2 conventions and the model-version convention.
+- [ ] **Step 1 (manual/assisted — invoke the skill interactively, not a shell command): Run the `super-review` skill** on `gen-ai-architect-to-leader-guide.html` with criteria: technical accuracy, internal consistency (Meridian timeline numbers, stage names, lens tags, cross-links), tool-agnostic adherence, alignment with Parts 1-2 conventions and the model-version convention.
 - [ ] **Step 2: Apply confirmed fixes** (HIGH → MEDIUM → LOW), re-verifying integrity after.
 - [ ] **Step 3: Final commit** — `docs(architect-to-leader): R1 review fixes`. (Review doc `REVIEW-*.md` is gitignored.)
 
