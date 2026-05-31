@@ -490,6 +490,7 @@
         <p>You've heard the buzz. Maybe you've typed a question into ChatGPT and got a surprisingly good answer. But you still feel like everyone else got the memo and you're catching up. Sound familiar?</p>
         <p>This guide is for <strong>anyone who understands code</strong> &mdash; whether you're a junior developer writing your first production feature or a senior engineer with 20 years of experience who's never had a reason to dig into AI until now.</p>
         <div class="info green"><strong>No math required.</strong> We'll explain everything with analogies, diagrams, and examples. When there's jargon, we'll define it on the spot.</div>
+        <div class="info purple"><strong>Part 1 of a series.</strong> When you're ready to go deeper — the agentic coding loop, context engineering, spec/plan/TDD-driven workflows, multi-agent orchestration, and MCP — continue to Part 2: <a href="gen-ai-hero-to-architect-guide.html">Gen AI for Developers: Hero to Architect</a>.</div>
       </div>
 
       <div class="card">
@@ -1185,9 +1186,9 @@
           <tr><th>Model</th><th>Context Window</th><th>Equivalent</th></tr>
           <tr><td>GPT-3.5</td><td>4,096 tokens</td><td>~5 pages</td></tr>
           <tr><td>GPT-4</td><td>128,000 tokens</td><td>~200 pages</td></tr>
-          <tr><td>Claude 3.5 Sonnet</td><td>200,000 tokens</td><td>~300 pages</td></tr>
+          <tr><td>Claude Sonnet 4.7</td><td>200,000 tokens</td><td>~300 pages</td></tr>
           <tr><td>Claude (via Claude Code)</td><td>up to 1,000,000 tokens</td><td>~1,500 pages</td></tr>
-          <tr><td>Gemini 1.5 Pro</td><td>2,000,000 tokens</td><td>~3,000 pages</td></tr>
+          <tr><td>Gemini 3 Pro</td><td>1,000,000 tokens</td><td>~1,500 pages</td></tr>
         </table>
 
         <div class="info orange"><strong>Important:</strong> The context window includes EVERYTHING &mdash; your message, the system prompt, the entire conversation history, and the model's response. A long conversation gradually fills up the window. When it's full, the oldest messages get dropped.</div>
@@ -1316,8 +1317,8 @@
         <table class="tbl">
           <tr><th>Company</th><th>Models</th><th>Known For</th></tr>
           <tr><td><strong>Anthropic</strong></td><td>Claude Opus, Sonnet, Haiku</td><td>Safety-focused, strong at coding &amp; analysis, large context window</td></tr>
-          <tr><td><strong>OpenAI</strong></td><td>GPT-4o, o1, o3</td><td>First mover, broad ecosystem, ChatGPT</td></tr>
-          <tr><td><strong>Google</strong></td><td>Gemini Pro, Ultra, Flash</td><td>Multimodal (text + image + video), massive context</td></tr>
+          <tr><td><strong>OpenAI</strong></td><td>GPT-5, o-series</td><td>First mover, broad ecosystem, ChatGPT</td></tr>
+          <tr><td><strong>Google</strong></td><td>Gemini 3 Pro, Flash</td><td>Multimodal (text + image + video), massive context</td></tr>
           <tr><td><strong>Meta</strong></td><td>Llama 3, 3.1, 3.2</td><td>Best open-source models, free to use</td></tr>
           <tr><td><strong>Mistral AI</strong></td><td>Mistral, Mixtral</td><td>Efficient small models, European AI leader</td></tr>
           <tr><td><strong>xAI</strong></td><td>Grok</td><td>Integrated with X (Twitter), real-time data</td></tr>
@@ -1329,8 +1330,8 @@
         <p>Most providers now offer a family of models at different sizes and price points:</p>
 
         <div class="pkt" style="min-height:60px;">
-          <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Flagship</div><div class="v">Opus / GPT-4o</div></div>
-          <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Balanced</div><div class="v">Sonnet / GPT-4-mini</div></div>
+          <div class="pkt-c bg-srh" style="flex:1;"><div class="l">Flagship</div><div class="v">Opus / GPT-5</div></div>
+          <div class="pkt-c bg-ipv6" style="flex:1;"><div class="l">Balanced</div><div class="v">Sonnet / GPT-5 mini</div></div>
           <div class="pkt-c bg-seg" style="flex:1;"><div class="l">Fast &amp; Cheap</div><div class="v">Haiku / Flash</div></div>
         </div>
         <div class="ann">Bigger models = smarter but slower and more expensive. Smaller models = faster and cheaper but less capable. Pick based on your task.</div>
@@ -1428,7 +1429,7 @@
         <h2>What You Can Do Today</h2>
         <table class="tbl">
           <tr><th>Capability</th><th>Example</th><th>Models</th></tr>
-          <tr><td>Image &rarr; Text</td><td>Upload a screenshot and ask "What's wrong with this UI?"</td><td>Claude, GPT-4o, Gemini</td></tr>
+          <tr><td>Image &rarr; Text</td><td>Upload a screenshot and ask "What's wrong with this UI?"</td><td>Claude, GPT-5, Gemini</td></tr>
           <tr><td>Text &rarr; Image</td><td>"Generate a diagram of a microservices architecture"</td><td>DALL-E 3, Midjourney</td></tr>
           <tr><td>Audio &rarr; Text</td><td>Transcribe a meeting recording</td><td>Whisper, Gemini</td></tr>
           <tr><td>Text &rarr; Audio</td><td>Generate realistic speech from text</td><td>ElevenLabs, OpenAI TTS</td></tr>
@@ -2962,13 +2963,13 @@ Can you spot the issue?"</pre>
 
         <table class="tbl">
           <tr><th>Model</th><th>Input (per 1M tokens)</th><th>Output (per 1M tokens)</th><th>~Cost per page</th></tr>
-          <tr><td>Claude Haiku</td><td>$0.25</td><td>$1.25</td><td>&lt; $0.001</td></tr>
-          <tr><td>Claude Sonnet</td><td>$3.00</td><td>$15.00</td><td>~$0.005</td></tr>
-          <tr><td>Claude Opus</td><td>$15.00</td><td>$75.00</td><td>~$0.02</td></tr>
+          <tr><td>Claude Haiku 4.5</td><td>$0.25</td><td>$1.25</td><td>&lt; $0.001</td></tr>
+          <tr><td>Claude Sonnet 4.7</td><td>$3.00</td><td>$15.00</td><td>~$0.005</td></tr>
+          <tr><td>Claude Opus 4.7</td><td>$15.00</td><td>$75.00</td><td>~$0.02</td></tr>
           <tr><td>GPT-4o</td><td>$2.50</td><td>$10.00</td><td>~$0.004</td></tr>
           <tr><td>GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>&lt; $0.001</td></tr>
         </table>
-        <div class="ann">Prices as of early 2025. These change frequently &mdash; check provider websites for current pricing.</div>
+        <div class="ann">Illustrative rates. Pricing and model lineups (e.g. GPT-5, Gemini 3) change frequently &mdash; verify current models and rates at each provider's website.</div>
       </div>
 
       <div class="card">
@@ -3133,6 +3134,12 @@ curl http://localhost:11434/api/chat -d '{
           <div class="stp-h"><div class="stp-n org">4</div><div class="stp-t">Maintain your skills</div></div>
           <p>AI is a tool that amplifies your abilities. If you stop learning and let AI do everything, you lose the judgment needed to verify its work.</p>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Where to Next</h2>
+        <p>You've covered the foundations — how models work, prompting, RAG, agents, and Claude Code. The natural next step is turning that knowledge into a disciplined, production-grade agentic workflow.</p>
+        <div class="info purple"><strong>Continue to Part 2 &rarr;</strong> <a href="gen-ai-hero-to-architect-guide.html">Gen AI for Developers: Hero to Architect</a> — the agentic coding loop, context engineering, spec/plan/TDD with agents, multi-agent workflows, and MCP servers.</div>
       </div>
     </div>
 
