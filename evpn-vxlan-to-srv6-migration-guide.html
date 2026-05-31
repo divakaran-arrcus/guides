@@ -2206,6 +2206,165 @@
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- §15 — GATEWAY PACKET WALKS                                  -->
+<!-- ============================================================ -->
+<div id="gw-walks" class="section">
+  <div class="sec-title">15. Gateway Packet Walks — VXLAN Host ↔ SRv6 Host</div>
+  <p class="sec-sub">A packet that crosses the encap boundary. Forward + return.</p>
+
+  <div class="card">
+    <p>Host-A (on VXLAN-only Leaf-1) and Host-B (on SRv6-only Leaf-3) are in the same VNI-10100 / VLAN-100 segment. Neither leaf can reach the other: Leaf-1 speaks VXLAN exclusively; Leaf-3 speaks SRv6 exclusively. Gateway Leaf-2 is the dual-encap border-leaf (State M) that bridges the two data planes — it decapsulates inbound frames and re-encapsulates them in the far domain's format. Every cross-domain packet transits Leaf-2 in both directions.</p>
+    <h4 class="ph">Scenario</h4>
+    <ul>
+      <li>VNI 10100 is provisioned on Leaf-1 (VXLAN), Leaf-2 (gateway, both encaps), and Leaf-3 (SRv6).</li>
+      <li>Leaf-1 only understands VXLAN; Leaf-3 only understands SRv6 uSID. Neither side can directly reach the other.</li>
+      <li>Gateway Leaf-2 has re-originated Leaf-3's Type 2 routes into the VXLAN domain (next-hop = Leaf-2's VTEP 203.0.113.2). Leaf-1 therefore resolves Host-B's MAC via the gateway, not via Leaf-3 directly.</li>
+      <li>Symmetrically, Leaf-2 has re-originated Leaf-1's Type 2 routes into the SRv6 domain (next-hop = Leaf-2's uDT2U SID <code>fc00:0:1:2:e000::</code>). Leaf-3 resolves Host-A's MAC via the gateway.</li>
+      <li>Both directions require decap + re-encap at Leaf-2 — two encap operations per direction, six per round-trip.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Forward and Return</h2>
+    <div class="cmp">
+
+      <!-- ── FORWARD ── -->
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">Forward (VXLAN → Gateway → SRv6)</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-A originates — plain L2 frame</div>
+          </div>
+          <p>Host-A sends an Ethernet frame destined for Host-B's MAC. The frame is a standard L2 payload; no encap header. Leaf-1 receives it on the access port for VLAN 100.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-1 VXLAN-encaps toward the gateway (50 B overhead)</div>
+          </div>
+          <p>Leaf-1 looks up Host-B's MAC in its FIB. The Type 2 route for Host-B was re-originated by the gateway — so Leaf-1's next-hop is Leaf-2's VTEP <code>203.0.113.2</code>, not Leaf-3. Leaf-1 VXLAN-encaps the frame: outer IPv4 src <code>203.0.113.1</code> dst <code>203.0.113.2</code>, UDP dport 4789, VNI 10100.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:55px;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+            <div class="pkt-c bg-ipv6" style="min-width:100px;"><div class="l">IPv4 .1→.2</div><div class="v">20 B</div></div>
+            <div class="pkt-c bg-mpls" style="min-width:50px;"><div class="l">UDP 4789</div><div class="v">8 B</div></div>
+            <div class="pkt-c bg-vpn" style="min-width:80px;"><div class="l">VXLAN VNI 10100</div><div class="v">8 B</div></div>
+            <div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner L2</div><div class="v">≥64 B</div></div>
+          </div>
+          <div class="ann">50 B outer overhead (14+20+8+8). Dst = gateway VTEP, not Leaf-3.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Gateway decaps VXLAN → MAC-VRF lookup → SRv6-encaps</div>
+          </div>
+          <p>Leaf-2 matches VNI 10100, VXLAN-decaps to recover the inner L2 frame. L2 lookup in the MAC-VRF for VNI 10100 resolves Host-B's MAC to the SRv6 service SID <code>fc00:0:1:3:e000::</code> (Leaf-3's uDT2U SID for VNI 10100). Leaf-2 SRv6-encaps: outer IPv6 src <code>2001:db8:1::2</code> dst <code>fc00:0:1:3:e000::</code>. No SRH — single-segment uSID path.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">SRv6 packet in-flight toward Leaf-3 (54 B overhead)</div>
+          </div>
+          <p>The re-encapped packet traverses the fabric. Outer IPv6 DA encodes both the destination node (Leaf-3's uN locator) and the service function (uDT2U for VNI 10100). No SRH needed.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:55px;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+            <div class="pkt-c bg-ipv6" style="min-width:160px;"><div class="l">IPv6 ::2 → fc00:0:1:3:e000::</div><div class="v">40 B</div></div>
+            <div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner L2</div><div class="v">≥64 B</div></div>
+          </div>
+          <div class="ann">54 B outer overhead (14+40). DA = Leaf-3 uDT2U SID for VNI 10100.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">5</div>
+            <div class="stp-t">Leaf-3 uDT2U match → decap → deliver to Host-B</div>
+          </div>
+          <p>Leaf-3 matches <code>fc00:0:1:3:e000::</code> as its own uDT2U SID for VNI 10100. It decaps the outer IPv6 header, performs an L2 lookup in the VNI-10100 MAC-VRF, and forwards the inner frame out the access port to Host-B.</p>
+        </div>
+      </div><!-- /cmp-c forward -->
+
+      <!-- ── RETURN ── -->
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">Return (SRv6 → Gateway → VXLAN)</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-B originates — plain L2 frame</div>
+          </div>
+          <p>Host-B sends an Ethernet frame destined for Host-A's MAC. Standard L2; no encap. Leaf-3 receives it on the access port for VLAN 100.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-3 SRv6-encaps toward the gateway (54 B overhead)</div>
+          </div>
+          <p>Leaf-3 looks up Host-A's MAC. The Type 2 route for Host-A was re-originated by the gateway — so Leaf-3's next-hop is the gateway's uDT2U SID <code>fc00:0:1:2:e000::</code>, not any VXLAN address. Leaf-3 SRv6-encaps: outer IPv6 src <code>2001:db8:1::3</code> dst <code>fc00:0:1:2:e000::</code>.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:55px;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+            <div class="pkt-c bg-ipv6" style="min-width:160px;"><div class="l">IPv6 ::3 → fc00:0:1:2:e000::</div><div class="v">40 B</div></div>
+            <div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner L2</div><div class="v">≥64 B</div></div>
+          </div>
+          <div class="ann">54 B outer overhead (14+40). Dst = gateway uDT2U SID, not a VXLAN address.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Gateway uDT2U match → decap → MAC-VRF lookup → VXLAN-encaps</div>
+          </div>
+          <p>Leaf-2 matches <code>fc00:0:1:2:e000::</code> as its own uDT2U SID for VNI 10100. It decaps the outer IPv6 header and recovers the inner L2 frame. MAC-VRF lookup for Host-A's MAC resolves to Leaf-1's VTEP <code>203.0.113.1</code>. Leaf-2 VXLAN-encaps: outer IPv4 src <code>203.0.113.2</code> dst <code>203.0.113.1</code>, UDP dport 4789, VNI 10100.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">VXLAN packet in-flight toward Leaf-1 (50 B overhead)</div>
+          </div>
+          <p>The re-encapped packet traverses the underlay. Outer IPv4 DA is Leaf-1's loopback; VNI 10100 in the VXLAN header preserves the segment context.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:55px;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+            <div class="pkt-c bg-ipv6" style="min-width:100px;"><div class="l">IPv4 .2→.1</div><div class="v">20 B</div></div>
+            <div class="pkt-c bg-mpls" style="min-width:50px;"><div class="l">UDP 4789</div><div class="v">8 B</div></div>
+            <div class="pkt-c bg-vpn" style="min-width:80px;"><div class="l">VXLAN VNI 10100</div><div class="v">8 B</div></div>
+            <div class="pkt-c bg-pay" style="flex:1;"><div class="l">Inner L2</div><div class="v">≥64 B</div></div>
+          </div>
+          <div class="ann">50 B outer overhead (14+20+8+8). Src = gateway VTEP 203.0.113.2.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">5</div>
+            <div class="stp-t">Leaf-1 VXLAN-decap → L2 lookup → deliver to Host-A</div>
+          </div>
+          <p>Leaf-1 matches VNI 10100, VXLAN-decaps, performs an L2 lookup in the VNI-10100 bridge domain, and forwards the inner frame out the access port to Host-A.</p>
+        </div>
+      </div><!-- /cmp-c return -->
+
+    </div><!-- /cmp -->
+  </div><!-- /card forward+return -->
+
+  <div class="card">
+    <p>Each direction requires the gateway to execute two encap operations back-to-back: a decap of the incoming format followed immediately by a re-encap in the outgoing format. Across a round-trip, that is six encap operations total. This is not latency-free — each operation is a separate ASIC pipeline pass on most switching silicon.</p>
+    <h4 class="ph">What the walks expose</h4>
+    <ul>
+      <li><strong>6 encap operations per round-trip.</strong> Decap + re-encap at the gateway in each direction. The gateway is the most latency-sensitive node in the path; size ASIC pipeline throughput accordingly, and avoid daisy-chaining multiple gateways.</li>
+      <li><strong>MTU at the gateway must cover both encap formats.</strong> The gateway must handle VXLAN frames (50 B overhead) arriving and SRv6 frames (54 B overhead) arriving. Its fabric-facing interfaces must tolerate jumbo frames up to <code>inner MTU + 54 B</code>; if the gateway also generates SRv6 frames with an SRH (multi-segment path), the overhead is larger — always size for the worst case. A gateway configured for 9150-byte fabric MTU with 9100-byte inner frames leaves only 50 B of headroom — too tight for SRv6.</li>
+      <li><strong>Asymmetric-routing risk.</strong> Forward and return paths SHOULD traverse the same gateway instance. If an anycast gateway pair exists (Leaf-2 + Leaf-4 both in State M), misconfigured ECMP policy can route the forward flow through Leaf-2 and the return flow through Leaf-4. Stateful middleboxes (firewalls, load-balancers, DPI) that inspect both directions of a TCP session will see only half the conversation and either drop or mis-track the flow. Pin forward and return to the same gateway using consistent hashing on the five-tuple, or use flow-based ECMP with sticky affinity across the gateway pair.</li>
+    </ul>
+  </div>
+
+  <div class="info">
+    <strong>Always test forward AND return through the same gateway before per-service migration.</strong> Asymmetric paths — forward via Leaf-2, return via Leaf-4 — are a common misconfiguration that is invisible to a one-directional ping test but breaks stateful services (firewalls, load-balancers, NAT) immediately under real traffic. Verify with a bidirectional flow tool (e.g., <code>iperf3</code> or a stateful TCP probe) and confirm gateway ASIC counters increment on the same node for both directions before signing off on the migration.
+  </div>
+</div>
+
   </main>
 </div>
 
