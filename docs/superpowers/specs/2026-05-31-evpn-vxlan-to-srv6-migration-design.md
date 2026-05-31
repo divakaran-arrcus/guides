@@ -55,8 +55,8 @@ The new guide is genuinely net-new: no existing guide treats VXLAN→SRv6 migrat
 Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv6-complete`):
 - Sidebar navigation (left, fixed, flat h2 outline grouped by Part)
 - Dark/light mode toggle
-- Existing CSS components: `.pkt`/`.pkt-c` (byte boxes with `bg-ipv`, `bg-mpls`, `bg-seg`, `bg-srh`, `bg-pay`, `bg-vpn`, etc.), `.cmp`/`.cmp-c`, `.stp`/`.stp-h`/`.stp-n` (color variants `grn`/`org`/`red`/`pur`), `.flv-grid`/`.flv`, `.tbl`, `.info` family, `.ann`, `.card`, `.sec-title`/`.sec-sub`, `<dl class="glossary">`
-- The `.ph` mini-heading class (from `gen-ai-hero-to-architect-guide.html`) plus its block-layout + inline-`<code>` CSS — needed because *all* body prose in this guide is point-wise from the start.
+- Existing CSS components: `.pkt`/`.pkt-c` (byte boxes with `bg-ipv`, `bg-mpls`, `bg-seg`, `bg-srh`, `bg-pay`, `bg-vpn`, etc.), `.cmp`/`.cmp-c`, `.stp`/`.stp-h`/`.stp-n` (color variants `grn`/`org`/`red`/`pur`), `.flv-grid`/`.flv`, `.tbl`, `.info` family, `.ann`, `.card`, `.sec-title`/`.sec-sub`.
+- **CSS to port from `gen-ai-hero-to-architect-guide.html`** (not in the networking-guide chrome family today): (a) the `.ph` mini-heading class + its block-layout + inline-`<code>` CSS — needed because *all* body prose in this guide is point-wise from the start; (b) the `<dl class="glossary">` definition-list styling — used by §23 (the glossary is the first one in the networking-guide family).
 
 ## 7. Structure — 25 sections, flat h2 spine
 
@@ -71,7 +71,7 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 
 ### Part 2 — Comparison (6 sections)
 - **§4. Header math.** VXLAN stack vs SRv6 stack bytes; header-tax table. `.pkt` byte-box diagrams (3 stacks) + `.tbl` matrix.
-- **§5. Route-type behavior across encaps.** Type 1/2/3/4/5 per-encap attributes — Type 1 (Ethernet A-D, per-ES and per-EVI; carries ES Label / ES SID for mass-withdrawal and aliasing); Type 2 (MAC/IP); Type 3 (IMET); Type 4 (ES route); Type 5 (IP Prefix). 5-row `.tbl` + `.info` callout on next-hop encoding.
+- **§5. Route-type behavior across encaps.** Type 1/2/3/4/5 per-encap attributes — Type 1 (Ethernet A-D, per-ES and per-EVI; carries ES Label / ES SID for mass-withdrawal and aliasing); Type 2 (MAC/IP); Type 3 (IMET); Type 4 (ES route); Type 5 (IP Prefix). 5-row `.tbl` + `.info` callout on next-hop encoding. **Scope boundary vs §1:** §1 names the route types and confirms they survive the migration (same names, same semantics); §5 (here) compares the per-encap attributes for each — what differs in the data-plane identifier (VNI ↔ service SID), the label/SID field, and any PMSI/ESI-related encoding.
 - **§6. Packet walk 1 — Type 2 MAC/IP, side-by-side.** `.cmp` two-column with `.stp` + `.pkt` per side. Foundational walk.
 - **§7. Packet walk 2 — Type 5 IP Prefix, side-by-side.** `.cmp` two-column with `.stp` + `.pkt`. `.info.green` "safe first cut."
 - **§8. Packet walk 3 — Type 3 IMET / BUM.** Topology flood diagram + per-encap `.pkt`. `.info.yellow` on PIM underlay.
@@ -91,7 +91,7 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 
 **Phase 3 · Per-service migration (2)**
 - **§16. Migration order and approach.** Recommended order (L3 → IRB → L2 single-homed → L2 multi-homed → DCI). Cutover patterns (per-VRF / per-VLAN / per-tenant / per-leaf-group). Rollback design. `.stp` 5-step order + `.flv-grid` 4 patterns + `.info.green` "reversible without gateway reconfig."
-- **§17. Service-specific cutover playbooks.** One `<h4 class="ph">` per service with pre-check → cutover → validation → rollback. `.flv-grid` 5-card index + `.tbl` per service.
+- **§17. Service-specific cutover playbooks.** One `<h4 class="ph">` per service with pre-check → cutover → validation → rollback. `.flv-grid` 5-card index + `.tbl` per service. The 5th card is DCI — included here as a *migratable unit* even though §11 frames DCI as a deployment-topology cross-cut rather than a peer service. Operators in practice cut over inter-site connectivity as a discrete step, which is what this card captures.
 
 **Phase 4 · Cutover (1)**
 - **§18. Final cutover, rollback, cleanup.** Retire the gateway, VXLAN-specific cleanup, post-migration validation. `.stp` decom sequence + `.info.orange` rollback-after-cleanup warning.
@@ -107,6 +107,8 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 
 ## 8. Sections-and-walks summary
 
+> **Note on numbering:** all `§N` references below refer to **guide h2 sections** as defined in §7 above (the guide-side structure), not to sections of this spec document. So "§6" means the guide's §6 (Packet walk 1), not spec §6 (Visual style).
+
 | Part | Sections | h2 count |
 |------|----------|---------|
 | Front matter | Welcome, Migration question | 2 |
@@ -117,7 +119,7 @@ Match the existing networking-guide chrome family (`bgp-evpn`, `dc-fabric`, `srv
 | Reference | Decision matrix · Cheat sheet · Glossary | 3 |
 | **Total** | | **25** |
 
-**Total packet walks:** 5 — Walk 1 (§6, Type 2 MAC/IP shown side-by-side in VXLAN and SRv6); Walk 2 (§7, Type 5 IP Prefix shown side-by-side); Walk 3 (§8, Type 3 IMET / BUM); Walks 4–5 (§15, gateway forward + return).
+**Total packet walks:** 5 — Walk 1 (guide §6, Type 2 MAC/IP shown side-by-side in VXLAN and SRv6); Walk 2 (guide §7, Type 5 IP Prefix shown side-by-side); Walk 3 (guide §8, Type 3 IMET / BUM); Walks 4–5 (guide §15, gateway forward + return).
 
 ## 9. Cross-cutting threads
 
