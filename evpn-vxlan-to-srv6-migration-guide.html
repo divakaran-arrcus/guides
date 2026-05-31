@@ -360,7 +360,54 @@
       <span class="theme-toggle-label">Light mode</span>
     </div>
 
-    
+    <div class="nav-group">
+      <div class="nav-group-label">Front Matter</div>
+      <button class="nav-item active" onclick="go('welcome',event)">Welcome</button>
+      <button class="nav-item" onclick="go('migration-question',event)">The Migration Question</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 1 — Foundations</div>
+      <button class="nav-item" onclick="go('stays-same',event)">1. What Stays the Same</button>
+      <button class="nav-item" onclick="go('what-changes',event)">2. What Changes</button>
+      <button class="nav-item" onclick="go('ref-topology',event)">3. Reference Topology</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 2 — Comparison</div>
+      <button class="nav-item" onclick="go('header-math',event)">4. Header Math</button>
+      <button class="nav-item" onclick="go('route-types',event)">5. Route-Type Behavior</button>
+      <button class="nav-item" onclick="go('walk-type2',event)">6. Walk: Type 2 MAC/IP</button>
+      <button class="nav-item" onclick="go('walk-type5',event)">7. Walk: Type 5 IP Prefix</button>
+      <button class="nav-item" onclick="go('walk-bum',event)">8. Walk: Type 3 IMET / BUM</button>
+      <button class="nav-item" onclick="go('hw-scale',event)">9. Hardware, Scale, MTU, Tooling</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 3 — Migration Playbook</div>
+      <button class="nav-item" onclick="go('coex-baseline',event)">10. Coexistence Baseline</button>
+      <button class="nav-item" onclick="go('coex-services',event)">11. Coexistence Per-Service</button>
+      <button class="nav-item" onclick="go('gw-design',event)">12. Gateway Design</button>
+      <button class="nav-item" onclick="go('gw-stitching',event)">13. Route-Type Stitching</button>
+      <button class="nav-item" onclick="go('gw-esi-mac',event)">14. ESI, MAC Mobility, ARP/ND</button>
+      <button class="nav-item" onclick="go('gw-walks',event)">15. Gateway Packet Walks</button>
+      <button class="nav-item" onclick="go('mig-order',event)">16. Migration Order &amp; Approach</button>
+      <button class="nav-item" onclick="go('mig-playbooks',event)">17. Service Cutover Playbooks</button>
+      <button class="nav-item" onclick="go('final-cutover',event)">18. Final Cutover &amp; Cleanup</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 4 — Operational</div>
+      <button class="nav-item" onclick="go('troubleshooting',event)">19. Troubleshooting</button>
+      <button class="nav-item" onclick="go('monitoring',event)">20. Monitoring &amp; Telemetry</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <button class="nav-item" onclick="go('decision-matrix',event)">21. Decision Matrix</button>
+      <button class="nav-item" onclick="go('cheat-sheet',event)">22. Cheat Sheet</button>
+      <button class="nav-item" onclick="go('glossary',event)">23. Glossary</button>
+    </div>
 
   </nav>
 
