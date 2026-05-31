@@ -1096,6 +1096,158 @@
   </div>
 </div>
 
+<div id="walk-type2" class="section">
+  <div class="sec-title">6. Packet Walk 1 — Type 2 MAC/IP, Side-by-Side</div>
+  <p class="sec-sub">Host-A → Host-B unicast (same VNI, different leaves), traced in both encaps.</p>
+
+  <div class="card">
+    <p>A single unicast frame crossing two leaves in the same bridge domain is the most common forwarding event in a leaf-spine EVPN fabric. Walking it in parallel exposes exactly where the two encapsulations diverge — and how little the control plane cares.</p>
+    <h4 class="ph">Scenario</h4>
+    <ul>
+      <li>Host-A is attached to Leaf-1 on VLAN-100, mapped to VNI-10100.</li>
+      <li>Host-B is attached to Leaf-3 on the same VLAN-100 / VNI-10100 bridge domain.</li>
+      <li>Host-B's MAC has already been learned by Leaf-1 via a BGP-EVPN Type 2 advertisement from Leaf-3 — no ARP/ND flood required for this frame.</li>
+      <li>Both leaves run dual-stack underlays; Spine-1 and Spine-2 provide ECMP.</li>
+    </ul>
+    <h4 class="ph">Control plane — what each leaf installs</h4>
+    <ul>
+      <li><strong>Leaf-3 originates</strong> a BGP-EVPN Type 2 route for Host-B MAC, advertising its reachability in VNI-10100.</li>
+      <li><strong>VXLAN path:</strong> Leaf-1 installs a MAC-VRF entry — Host-B MAC → VTEP next-hop <code>203.0.113.3</code>, encap VNI <code>10100</code>.</li>
+      <li><strong>SRv6 path:</strong> Leaf-1 installs a MAC-VRF entry — Host-B MAC → service SID <code>fc00:0:1:3:e000::</code> (Leaf-3 uDT2U for VNI-10100), outer IPv6 src <code>2001:db8:1::1</code>.</li>
+      <li>No per-prefix SID is needed for the MAC itself; the SID encodes the entire EVI lookup on the egress PE.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px;font-weight:600;margin:0 0 14px;color:var(--cyan);">Data Plane — Side by Side</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">VXLAN data-plane</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-A → Leaf-1 (original L2 frame)</div>
+          </div>
+          <p>Host-A sends an Ethernet frame. Src MAC = Host-A, Dst MAC = Host-B. Frame arrives on Leaf-1's access port in VLAN-100.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-1 encapsulates VXLAN</div>
+          </div>
+          <p>MAC-VRF lookup hits Host-B → VTEP <code>203.0.113.3</code>, VNI <code>10100</code>. Leaf-1 builds the outer UDP/IP tunnel header and forwards to the underlay.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:60px;">
+              <div class="l">Outer</div>
+              <div class="v">Eth</div>
+            </div>
+            <div class="pkt-c bg-ipv6" style="min-width:130px;">
+              <div class="l">Outer IP (v4)</div>
+              <div class="v">src 203.0.113.1<br>dst 203.0.113.3</div>
+            </div>
+            <div class="pkt-c bg-vpn" style="min-width:70px;">
+              <div class="l">UDP</div>
+              <div class="v">dport 4789</div>
+            </div>
+            <div class="pkt-c bg-seg" style="min-width:80px;">
+              <div class="l">VXLAN</div>
+              <div class="v">VNI 10100</div>
+            </div>
+            <div class="pkt-c bg-pay" style="flex:1;">
+              <div class="l">Inner frame</div>
+              <div class="v">Host-A→Host-B</div>
+            </div>
+          </div>
+          <div class="ann">Outer overhead = <strong>50 B</strong> (Eth 14 + IPv4 20 + UDP 8 + VXLAN 8).</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Spine-1 / Spine-2 — underlay ECMP</div>
+          </div>
+          <p>Spines perform L3 forwarding on outer IP dst <code>203.0.113.3</code>. ECMP hashes on 5-tuple (src IP, dst IP, UDP src port, dst port, protocol). VXLAN payload is opaque to the spine.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">Leaf-3 decapsulates → Host-B</div>
+          </div>
+          <p>Leaf-3 matches UDP dport 4789, strips outer headers, reads VNI <code>10100</code> → selects MAC-VRF, performs inner L2 lookup for Host-B MAC, and forwards out the access port.</p>
+        </div>
+      </div>
+
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">SRv6 data-plane (uSID)</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-A → Leaf-1 (original L2 frame)</div>
+          </div>
+          <p>Identical originating frame. Src MAC = Host-A, Dst MAC = Host-B. Arrives on Leaf-1's access port in VLAN-100.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-1 encapsulates SRv6 uSID</div>
+          </div>
+          <p>MAC-VRF lookup hits Host-B → service SID <code>fc00:0:1:3:e000::</code>. Single uSID — no SRH needed. Leaf-1 prepends a plain IPv6 header and forwards.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:60px;">
+              <div class="l">Outer</div>
+              <div class="v">Eth</div>
+            </div>
+            <div class="pkt-c bg-ipv6" style="min-width:190px;">
+              <div class="l">Outer IPv6</div>
+              <div class="v">src 2001:db8:1::1<br>DA fc00:0:1:3:e000::</div>
+            </div>
+            <div class="pkt-c bg-pay" style="flex:1;">
+              <div class="l">Inner frame</div>
+              <div class="v">Host-A→Host-B</div>
+            </div>
+          </div>
+          <div class="ann">Outer overhead = <strong>54 B</strong> (Eth 14 + IPv6 40). No SRH — uSID destination carries full intent.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Spine — IPv6 longest-prefix forwarding</div>
+          </div>
+          <p>Spines forward on IPv6 DA <code>fc00:0:1:3:e000::</code>. The locator prefix <code>fc00:0:1:3::/64</code> is in the spine's IPv6 RIB via IS-IS/OSPF. ECMP hashes on IPv6 5-tuple.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">Leaf-3 matches local SID → Host-B</div>
+          </div>
+          <p>Leaf-3 matches DA <code>fc00:0:1:3:e000::</code> against its local SID table. Bound behavior = <strong>uDT2U</strong> for VNI-10100. Strips outer IPv6, selects MAC-VRF, performs L2 lookup for Host-B MAC, forwards to access port.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>The two walks produce identical L2 delivery to Host-B. The differences are entirely in the outer header and the egress lookup model.</p>
+    <h4 class="ph">What the side-by-side highlights</h4>
+    <ul>
+      <li><strong>Header tax near-parity:</strong> VXLAN overhead is 50 B (IPv4 outer); SRv6 uSID is 54 B (IPv6 outer, no SRH). SRv6 is 4 B heavier than VXLAN-over-v4, but 16 B <em>leaner</em> than VXLAN-over-v6 (70 B) — the typical migration target already runs dual-stack underlays.</li>
+      <li><strong>Egress lookup model diverges:</strong> VXLAN decap uses a two-step lookup — match UDP dport 4789, extract VNI, then look up VNI in a separate VNI→MAC-VRF binding table. SRv6 uses a single SID table hit — the 128-bit DA is matched directly against a local SID entry whose bound behavior (<code>uDT2U</code>) encodes both the EVI selection and the forwarding action.</li>
+      <li><strong>Control plane is identical:</strong> Both paths are populated by the same BGP-EVPN Type 2 advertisement from Leaf-3. The route distinguisher, RT, and MAC/IP payload are unchanged — only the NLRI encap attribute (<code>VXLAN</code> vs <code>SRv6 L2 Service</code>) differs.</li>
+    </ul>
+  </div>
+
+  <div class="info">
+    <strong>Same forwarding outcome, different lookup model.</strong> Both encapsulations deliver the L2 frame to Host-B with equivalent MAC learning and no per-flow state on the spines. The forwarding performance trade-off — SID table depth vs. VNI table depth — is a silicon implementation detail, not a protocol constraint. See <strong>§9</strong> for hardware offload considerations and ASIC lookup pipeline analysis.
+  </div>
+</div>
+
   </main>
 </div>
 
