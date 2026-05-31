@@ -1402,6 +1402,150 @@
   </div>
 </div>
 
+<div id="walk-bum" class="section">
+  <div class="sec-title">8. Packet Walk 3 — Type 3 IMET / BUM</div>
+  <p class="sec-sub">ARP/flood handling. Ingress replication is the common ground; SRv6 unlocks options VXLAN can't reach.</p>
+
+  <div class="card">
+    <p>Broadcast, Unknown-unicast, and Multicast (BUM) traffic is the one class that cannot be delivered with a single unicast tunnel — it must be replicated to every remote leaf that has members in the same bridge domain. This walk covers how both encapsulations handle that problem, using a concrete ARP-request flood as the example.</p>
+    <h4 class="ph">Scenario</h4>
+    <ul>
+      <li>Host-A sends an ARP request in VLAN-100 / VNI-10100 (EVI 100). Because the ARP target is unknown, Leaf-1 must flood to all other leaves with members in VNI-10100: <strong>Leaf-2, Leaf-3, and Leaf-4</strong>.</li>
+      <li>Leaf-1 ingress loopback: <code>203.0.113.1</code> (v4) / <code>2001:db8:1::1</code> (v6).</li>
+      <li>Remote member VTEPs (VXLAN): <code>203.0.113.2</code>, <code>203.0.113.3</code>, <code>203.0.113.4</code>.</li>
+      <li>Remote member uDT2M SIDs (SRv6): <code>fc00:0:1:2:e800::</code>, <code>fc00:0:1:3:e800::</code>, <code>fc00:0:1:4:e800::</code> — the <code>e800</code> block denotes the L2 BUM/multicast service function (distinct from <code>e000</code> uDT2U unicast and <code>e100</code> uDT4 L3).</li>
+    </ul>
+    <h4 class="ph">Control plane — Type 3 IMET</h4>
+    <ul>
+      <li>Each leaf with members in an EVI advertises a <strong>BGP-EVPN Type 3 (Inclusive Multicast Ethernet Tag, IMET) route</strong> per (EVI, Ethernet Tag). The NLRI carries the originating router's loopback as the replication endpoint.</li>
+      <li>Every Type 3 route carries a <strong>PMSI Tunnel attribute</strong> (RFC 6514) that declares the leaf's BUM replication mode. For ingress replication, Tunnel Type = 6 (Ingress Replication); the Tunnel Identifier field carries the leaf's VTEP address (VXLAN) or its SRv6 uDT2M service SID.</li>
+      <li>On receiving Type 3 routes from Leaf-2, Leaf-3, and Leaf-4, Leaf-1 builds a <strong>flood list</strong> for VNI-10100: one entry per remote leaf, keyed on the PMSI Tunnel Identifier. When a BUM frame arrives from Host-A, Leaf-1 iterates this list and creates one encapsulated copy per entry.</li>
+      <li>ARP-suppression caches (populated from Type 2 MAC/IP routes) may suppress ARP flooding for known targets, but unknown targets — including first-time ARPs and anycast gateways not yet learned — still hit the BUM path.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px;font-weight:600;margin:0 0 14px;color:var(--cyan);">Ingress Replication — Both Encaps</h2>
+    <p>Ingress replication is architecturally identical in VXLAN and SRv6: the ingress PE clones the frame once per remote member and sends each clone as a unicast packet. Only the outer header format differs. The source PE bears the full replication cost — one copy per remote leaf, N−1 copies for N leaves in the EVI.</p>
+    <h4 class="ph">The model (identical in spirit)</h4>
+    <ul>
+      <li>The ingress PE (Leaf-1) receives the BUM frame on the local access port.</li>
+      <li>It consults the per-EVI flood list, built from received Type 3 IMET PMSI Tunnel attributes.</li>
+      <li>For each remote member, it generates one unicast encapsulated copy. No multicast state is required in the underlay — spines forward each copy as ordinary unicast.</li>
+      <li>Egress leaves (Leaf-2, Leaf-3, Leaf-4) each receive their copy, decapsulate, and deliver the frame to local ports in VNI-10100.</li>
+    </ul>
+    <h4 class="ph">VXLAN copy</h4>
+    <ul>
+      <li>Leaf-1 produces 3 copies. Each copy: outer Eth + outer IPv4 src <code>203.0.113.1</code>, dst = the target leaf's VTEP (<code>.2</code>, <code>.3</code>, <code>.4</code> respectively) + UDP dport 4789 + VXLAN VNI <code>10100</code> + inner ARP frame.</li>
+      <li>The VNI is the same in every copy; only the outer IPv4 dst differs.</li>
+      <li>Outer overhead per copy: <strong>50 B</strong> (Eth 14 + IPv4 20 + UDP 8 + VXLAN 8).</li>
+    </ul>
+    <h4 class="ph">SRv6 copy</h4>
+    <ul>
+      <li>Leaf-1 produces 3 copies. Each copy: outer Eth + outer IPv6 src <code>2001:db8:1::1</code>, DA = the target leaf's uDT2M SID (<code>fc00:0:1:2:e800::</code>, <code>fc00:0:1:3:e800::</code>, <code>fc00:0:1:4:e800::</code> respectively) + inner ARP frame. No SRH — single uSID encodes both locator and BUM service function.</li>
+      <li>The SID encodes leaf identity and service type (uDT2M) simultaneously; the egress leaf matches the SID against its local SID table, decapsulates, and floods to the bridge domain.</li>
+      <li>Outer overhead per copy: <strong>54 B</strong> (Eth 14 + IPv6 40). No SRH overhead.</li>
+    </ul>
+
+    <div class="info" style="margin:16px 0 14px;">
+      <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px 22px;font-size:11.5px;overflow-x:auto;line-height:2.0;color:var(--text-dim);font-family:'JetBrains Mono',monospace;margin:0;">
+                    ┌─────────────────────────────────────┐
+         Flood list │    VNI-10100 / EVI 100              │
+         (built     │  Leaf-2  Leaf-3  Leaf-4             │
+          from      └─────────────────────────────────────┘
+          Type 3)            ↑  ↑  ↑
+                             │  │  │  3 unicast copies (ingress replication)
+                    ┌────────┴──┴──┴──────────────────────┐
+                    │              Leaf-1                  │
+                    │   (ingress PE — receives ARP from    │
+                    │    Host-A on VLAN-100 / VNI-10100)   │
+                    └──────────────┬──────────────────────-┘
+                                   │
+               ┌───────────────────┴──────────────────┐
+               │        Spines (unicast transit)       │
+               │        Spine-1        Spine-2         │
+               └──┬──────────────┬────────────┬───────┘
+                  │              │            │
+              <span style="color:#93c5fd;">Leaf-2</span>         <span style="color:#6ee7b7;">Leaf-3</span>      <span style="color:#fed7aa;">Leaf-4</span>
+          VXLAN dst .2      dst .3       dst .4
+          SRv6 DA e800::2   DA e800::3   DA e800::4
+          (uDT2M)
+              │              │            │
+          flood to       flood to     flood to
+          VNI-10100      VNI-10100    VNI-10100</pre>
+    </div>
+
+    <p style="font-size:13px;font-weight:600;color:var(--text-dim);margin:14px 0 6px;">VXLAN replicated copy — one of three (different outer dst per copy)</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:60px;">
+        <div class="l">Outer</div>
+        <div class="v">Eth</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:155px;">
+        <div class="l">Outer IPv4</div>
+        <div class="v">src 203.0.113.1<br>dst 203.0.113.N</div>
+      </div>
+      <div class="pkt-c bg-vpn" style="min-width:75px;">
+        <div class="l">UDP</div>
+        <div class="v">dport 4789</div>
+      </div>
+      <div class="pkt-c bg-seg" style="min-width:95px;">
+        <div class="l">VXLAN</div>
+        <div class="v">VNI 10100</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner ARP frame</div>
+        <div class="v">Who has 10.10.100.y?</div>
+      </div>
+    </div>
+    <div class="ann">Outer overhead = <strong>50 B</strong> (Eth 14 + IPv4 20 + UDP 8 + VXLAN 8). One of 3 identical-VNI copies; only the outer dst IPv4 address differs per copy.</div>
+
+    <p style="font-size:13px;font-weight:600;color:var(--text-dim);margin:14px 0 6px;">SRv6 uDT2M copy — one of three (different uDT2M SID per copy)</p>
+    <div class="pkt">
+      <div class="pkt-c bg-pay" style="min-width:60px;">
+        <div class="l">Outer</div>
+        <div class="v">Eth</div>
+      </div>
+      <div class="pkt-c bg-ipv6" style="min-width:230px;">
+        <div class="l">Outer IPv6</div>
+        <div class="v">src 2001:db8:1::1<br>DA fc00:0:1:N:e800:: (uDT2M)</div>
+      </div>
+      <div class="pkt-c bg-pay" style="flex:1;">
+        <div class="l">Inner ARP frame</div>
+        <div class="v">Who has 10.10.100.y?</div>
+      </div>
+    </div>
+    <div class="ann">Outer overhead = <strong>54 B</strong> (Eth 14 + IPv6 40). No SRH. One of 3 copies; the uDT2M SID per member is <code>fc00:0:1:2:e800::</code>, <code>fc00:0:1:3:e800::</code>, <code>fc00:0:1:4:e800::</code>.</div>
+  </div>
+
+  <div class="card">
+    <p>Beyond ingress replication, each encapsulation family offers an alternative BUM mechanism. VXLAN's alternative (PIM-based multicast underlay) is a legacy option that adds operational complexity. SRv6's alternative (in-fabric replication via uDT2M / End.DT2M at a designated replicator) is a net improvement and requires no underlay multicast state.</p>
+    <h4 class="ph">VXLAN-specific: PIM-based multicast underlay (legacy)</h4>
+    <ul>
+      <li>Instead of ingress replication, the underlay runs PIM (typically PIM-SSM or PIM-SM). Each VNI is mapped to a multicast group address; BUM traffic is delivered via the underlay tree rather than N unicast copies.</li>
+      <li>Advantage: ingress PE sends one copy; the multicast tree handles replication at the spines. For large EVIs (many leaves) this reduces egress bandwidth at the source PE.</li>
+      <li>Disadvantage: requires PIM on all spines and leaves; adds protocol complexity and per-group state in the underlay. In practice most modern DC deployments use ingress replication exclusively and avoid underlay multicast altogether.</li>
+      <li>Prevalence: uncommon in greenfield deployments; more likely in legacy brownfield fabrics that were built before ingress replication was widely deployed.</li>
+    </ul>
+    <h4 class="ph">SRv6-specific: in-fabric replication via uDT2M / End.DT2M</h4>
+    <ul>
+      <li>A designated fabric replicator node (e.g., a spine or a dedicated replicator leaf) is configured with an <strong>End.DT2M</strong> (or <strong>uDT2M</strong> in compressed uSID form) behavior. The ingress PE sends a single copy to the replicator's SID; the replicator expands and forwards to all member leaves.</li>
+      <li>This shifts the replication fan-out cost from the source PE to a purpose-built or over-provisioned replicator, reducing ingress PE compute and bandwidth for large EVIs.</li>
+      <li>No PIM, no underlay multicast state — replication is controlled entirely by the SRv6 policy and the replicator's SID table. Operationally cleaner than PIM-based underlay.</li>
+      <li>Not required for basic migration; ingress replication with uDT2M SIDs (as walked above) is the default and covers most deployments.</li>
+    </ul>
+    <h4 class="ph">Migration implication</h4>
+    <ul>
+      <li><strong>Default: use ingress replication on both sides.</strong> The PMSI Tunnel Type 6 (Ingress Replication) attribute is the same in both VXLAN and SRv6 BGP advertisements; only the Tunnel Identifier value changes (VTEP address → uDT2M SID). This minimizes migration risk and keeps the BUM plane structurally identical across the transition.</li>
+      <li><strong>If your VXLAN deployment uses PIM underlay:</strong> the PIM-to-ingress-replication shift is a separate workstream. Do not conflate it with the VXLAN→SRv6 encap migration. Retire the PIM underlay after validating ingress replication for all VNIs, ideally in a maintenance window before the SRv6 cutover.</li>
+      <li><strong>ARP suppression state:</strong> The suppression cache (populated from Type 2 routes) carries over to the SRv6 plane unchanged, since it lives in the BGP control plane. Unknown-target ARPs still exercise the BUM path; verify the uDT2M flood list on the new plane before completing the cutover.</li>
+    </ul>
+  </div>
+  <div class="info yellow">
+    <strong>PIM underlay retirement:</strong> If your VXLAN deployment uses a PIM multicast underlay for BUM delivery, migrating to SRv6 is also an opportunity to drop PIM entirely — uDT2M ingress replication (or in-fabric replication) requires zero underlay multicast state. However, plan the underlay-multicast retirement as a <em>separate workstream</em> from the encap migration. Conflating the two changes makes fault isolation harder and extends the maintenance window. Retire PIM per-VNI after validating ingress replication on the VXLAN plane first, then proceed with the SRv6 cutover.
+  </div>
+</div>
+
   </main>
 </div>
 
