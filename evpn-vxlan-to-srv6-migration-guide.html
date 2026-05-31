@@ -1248,6 +1248,160 @@
   </div>
 </div>
 
+<div id="walk-type5" class="section">
+  <div class="sec-title">7. Packet Walk 2 — Type 5 IP Prefix, Side-by-Side</div>
+  <p class="sec-sub">L3 VPN tenant, two subnets on two leaves — the cleanest service to migrate first.</p>
+
+  <div class="card">
+    <p>Where Walk 1 traced an L2 frame across a shared bridge domain, Walk 2 crosses a VRF boundary. The source and destination are in different subnets; each leaf performs an IRB route lookup, not a MAC lookup. This is the dominant traffic pattern for data-center east-west L3 traffic and the safest place to start a live migration.</p>
+    <h4 class="ph">Scenario</h4>
+    <ul>
+      <li>Host-A (<code>10.10.100.x</code>) is on Leaf-1, VLAN-100, VRF green.</li>
+      <li>Remote subnet <code>10.10.200.0/24</code> is on Leaf-3, VLAN-200, same VRF green.</li>
+      <li>No shared bridge domain — this is pure L3, symmetric IRB. Each leaf owns its local subnet and advertises it as a BGP-EVPN Type 5 IP Prefix route.</li>
+      <li>Both leaves run dual-stack underlays; Spine-1 and Spine-2 provide ECMP.</li>
+    </ul>
+    <h4 class="ph">Control plane — what each leaf installs</h4>
+    <ul>
+      <li><strong>Leaf-3 originates</strong> a BGP-EVPN Type 5 route for <code>10.10.200.0/24</code>, advertising its L3 reachability in VRF green.</li>
+      <li>The Type 5 NLRI carries a GW IP (Leaf-3's IRB address or loopback) and a GW MAC (Leaf-3 router-MAC). These are used by the ingress PE to rewrite the inner dst MAC before encapsulation.</li>
+      <li><strong>VXLAN path:</strong> Leaf-1 installs an IP route in VRF green — <code>10.10.200.0/24</code> → VTEP next-hop <code>203.0.113.3</code>, encap L3-VNI <code>50100</code>, inner dst MAC = Leaf-3 router-MAC.</li>
+      <li><strong>SRv6 path:</strong> Leaf-1 installs an IP route in VRF green — <code>10.10.200.0/24</code> → L3 service SID <code>fc00:0:1:3:e100::</code> (Leaf-3 uDT4 for VRF green). No router-MAC rewrite needed; the SID encodes the entire VRF lookup on the egress PE.</li>
+      <li>L3-VNI <code>50100</code> is the per-VRF L3-VNI for VRF green; it is distinct from the per-VLAN L2-VNIs (10100, 10200).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px;font-weight:600;margin:0 0 14px;color:var(--cyan);">Data Plane — Side by Side</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">VXLAN data-plane</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-A → Leaf-1 (ingress IRB)</div>
+          </div>
+          <p>Host-A sends an IPv4 packet destined for <code>10.10.200.x</code>. Leaf-1 receives the frame on the VLAN-100 access port, routes the inner packet in VRF green, and hits the Type 5 next-hop for <code>10.10.200.0/24</code>. Leaf-1 rewrites the inner dst MAC to Leaf-3's router-MAC (learned from the Type 5 NLRI GW MAC field).</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-1 VXLAN-encapsulates with L3-VNI</div>
+          </div>
+          <p>Leaf-1 builds the outer tunnel: src VTEP <code>203.0.113.1</code>, dst VTEP <code>203.0.113.3</code>, UDP dport 4789, VXLAN VNI = <code>50100</code> (the per-VRF L3-VNI for VRF green). The inner frame carries the rewritten router-MAC.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:60px;">
+              <div class="l">Outer</div>
+              <div class="v">Eth</div>
+            </div>
+            <div class="pkt-c bg-ipv6" style="min-width:130px;">
+              <div class="l">Outer IP (v4)</div>
+              <div class="v">src 203.0.113.1<br>dst 203.0.113.3</div>
+            </div>
+            <div class="pkt-c bg-vpn" style="min-width:70px;">
+              <div class="l">UDP</div>
+              <div class="v">dport 4789</div>
+            </div>
+            <div class="pkt-c bg-seg" style="min-width:100px;">
+              <div class="l">VXLAN</div>
+              <div class="v">L3-VNI 50100</div>
+            </div>
+            <div class="pkt-c bg-pay" style="flex:1;">
+              <div class="l">Inner IP pkt</div>
+              <div class="v">10.10.100.x→10.10.200.x</div>
+            </div>
+          </div>
+          <div class="ann">Outer overhead = <strong>50 B</strong> (Eth 14 + IPv4 20 + UDP 8 + VXLAN 8).</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Spines — underlay ECMP on outer IP dst</div>
+          </div>
+          <p>Spines forward on outer IP dst <code>203.0.113.3</code> (Leaf-3 loopback). ECMP hashes on the 5-tuple. The inner IP packet and VNI are opaque to the spine.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">Leaf-3 decaps → VRF green → egress IRB</div>
+          </div>
+          <p>Leaf-3 matches UDP dport 4789, strips outer headers, reads VNI <code>50100</code> → maps to VRF green. Performs an IPv4 route lookup in VRF green for <code>10.10.200.x</code>, resolves to the local VLAN-200 IRB, and forwards the frame to the host.</p>
+        </div>
+      </div>
+
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">SRv6 data-plane (uSID)</h4>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n">1</div>
+            <div class="stp-t">Host-A → Leaf-1 (ingress IRB)</div>
+          </div>
+          <p>Identical originating IP packet destined for <code>10.10.200.x</code>. Leaf-1 routes in VRF green, hits the Type 5 next-hop for <code>10.10.200.0/24</code>. No router-MAC rewrite required — the SRv6 service SID encodes the VRF on the egress PE.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n grn">2</div>
+            <div class="stp-t">Leaf-1 SRv6-encapsulates — uDT4, no SRH</div>
+          </div>
+          <p>Leaf-1 prepends a plain IPv6 outer header: src <code>2001:db8:1::1</code>, DA = <code>fc00:0:1:3:e100::</code> (Leaf-3 uDT4 service SID for VRF green). Single uSID — no SRH inserted.</p>
+          <div class="pkt">
+            <div class="pkt-c bg-pay" style="min-width:60px;">
+              <div class="l">Outer</div>
+              <div class="v">Eth</div>
+            </div>
+            <div class="pkt-c bg-ipv6" style="min-width:210px;">
+              <div class="l">Outer IPv6</div>
+              <div class="v">src 2001:db8:1::1<br>DA fc00:0:1:3:e100::</div>
+            </div>
+            <div class="pkt-c bg-pay" style="flex:1;">
+              <div class="l">Inner IP pkt</div>
+              <div class="v">10.10.100.x→10.10.200.x</div>
+            </div>
+          </div>
+          <div class="ann">Outer overhead = <strong>54 B</strong> (Eth 14 + IPv6 40). No SRH — uSID DA carries VRF identity.</div>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n org">3</div>
+            <div class="stp-t">Spines — IPv6 LPM on locator prefix</div>
+          </div>
+          <p>Spines forward on IPv6 DA <code>fc00:0:1:3:e100::</code>. The locator prefix <code>fc00:0:1:3::/64</code> is redistributed into the spine's IPv6 RIB via IS-IS/OSPF. ECMP hashes on IPv6 5-tuple. No SID-awareness required at the spine.</p>
+        </div>
+
+        <div class="stp">
+          <div class="stp-h">
+            <div class="stp-n pur">4</div>
+            <div class="stp-t">Leaf-3 matches SID → uDT4 → VRF green</div>
+          </div>
+          <p>Leaf-3 matches DA <code>fc00:0:1:3:e100::</code> in its local SID table. Bound behavior = <strong>uDT4</strong> (decap + IPv4 route lookup in VRF green). Strips the outer IPv6 header, performs an IPv4 route lookup for <code>10.10.200.x</code> in VRF green, resolves to the VLAN-200 IRB, and forwards to the host.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>Both walks deliver the inner IPv4 packet to the destination host identically. The VRF binding method — L3-VNI vs. uDT4 SID — is the only structural difference; the BGP-EVPN Type 5 control plane is shared.</p>
+    <h4 class="ph">Why this is the safe first cut</h4>
+    <ul>
+      <li><strong>No bridge-domain state to migrate:</strong> Type 5 routes carry no MAC, no ARP-suppression cache, no BUM state. There is nothing to synchronize or drain before flipping the encap.</li>
+      <li><strong>IRB cutover is VRF-scoped:</strong> Changing the encap on a Type 5 route affects only the L3 VRF forwarding entry on the ingress PE. The broadcast domain on either leaf is untouched. Hosts see no link-state change.</li>
+      <li><strong>Rollback is trivial:</strong> Re-advertise the prefix with the old encap (VXLAN), withdraw the new one (SRv6). Traffic reverts within BGP convergence time (~sub-second with BFD). No host-facing impact; no MAC flush; no ARP re-trigger.</li>
+      <li><strong>Verification is clean:</strong> A single <code>show bgp evpn route type 5</code> and a ping across the VRF confirm correct forwarding on both sides before and after the cut.</li>
+    </ul>
+  </div>
+
+  <div class="info green">
+    <strong>Start here.</strong> Type 5 (L3 prefix) is the recommended first cut in any VXLAN→SRv6 migration: no bridge-domain state, no MAC mobility events, no BUM suppression cache to keep coherent across the transition window. Rollback is a one-line BGP config change with zero host-facing impact. Migrate all L3-only VRFs first, validate, then proceed to L2/L3 combined services (Type 2).
+  </div>
+</div>
+
   </main>
 </div>
 
