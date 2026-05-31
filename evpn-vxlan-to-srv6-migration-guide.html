@@ -1668,6 +1668,183 @@
   </div>
 </div>
 
+<!-- §10 — COEXISTENCE BASELINE                                         -->
+<!-- ================================================================== -->
+<div id="coex-baseline" class="section">
+  <div class="sec-title">10. Coexistence Baseline — Dual-Stack Fabric Design</div>
+  <p class="sec-sub">Coexistence isn't transient — operators sit in it for months. Design it well.</p>
+
+  <div class="card">
+    <p>State M is not a brief waypoint. In real fabrics it persists for weeks or months while leaf upgrades, hardware audits, and per-service cutovers proceed rack by rack. That means the dual-encap state must be operationally stable, monitorable, and understood as a steady design — not a mistake to be escaped quickly.</p>
+
+    <h4 class="ph">What dual-stack means here</h4>
+    <ul>
+      <li>The same iBGP-EVPN fabric simultaneously advertises VXLAN routes and SRv6 routes. Both encap families are active on the control plane at the same time.</li>
+      <li>Leaves are categorised into three roles: <strong>VXLAN-only</strong> (not yet migrated), <strong>SRv6-only</strong> (fully migrated), and <strong>dual-encap gateway</strong> (Leaf-2 / Leaf-4 in State M) — can originate and terminate both encaps and stitch between them.</li>
+      <li>Control plane carries both attribute families: BGP Encapsulation Extended Community (RFC 9012, type 8) for VXLAN routes, and BGP Prefix-SID attribute (RFC 8669) carrying the SRv6 Service TLV (RFC 9252) for SRv6 routes. A leaf that understands only one family ignores the other's routes silently — this is expected and correct.</li>
+      <li>Traffic between a VXLAN-only leaf and an SRv6-only leaf must transit a gateway. Direct cross-encap forwarding is not possible without stitching at a dual-encap node.</li>
+    </ul>
+
+    <h4 class="ph">Underlay requirements</h4>
+    <ul>
+      <li><strong>IPv4 underlay stays intact for VXLAN:</strong> existing IPv4 loopbacks (<code>203.0.113.x/32</code>) and IS-IS/IGP sessions are unchanged. VTEP reachability remains on the IPv4 plane throughout State M.</li>
+      <li><strong>IPv6 underlay required for SRv6:</strong> each leaf being migrated must have an IPv6 loopback reachable fabric-wide (<code>2001:db8:1::N/128</code>) and a per-leaf locator prefix (<code>fc00:0:1:N::/64</code>) redistributed into the underlay IGP.</li>
+      <li><strong>uN locator block <code>fc00:0:1::/48</code></strong> must be allocated and summarised at the fabric boundary before the first leaf is migrated. Do not advertise per-leaf /64s externally — aggregate at the border.</li>
+      <li>IS-IS IPv6 multi-topology (or dual-stack OSPFv3) must be enabled on all spines and migrated leaves. VXLAN-only leaves do not need IPv6 IGP participation but must not filter IPv6 locator advertisements in transit.</li>
+      <li>MTU headroom: verify per §4 figures before migration. A 9000 B jumbo fabric accommodates all encap variants; a 1500 B fabric requires careful sizing even at State M.</li>
+    </ul>
+
+    <h4 class="ph">Control-plane design</h4>
+    <ul>
+      <li><strong>RR on Spine-1 and Spine-2</strong> (per §3) carry both AFI/SAFI for the EVPN address family. No additional AFI/SAFI configuration is required — EVPN (AFI 25, SAFI 70) carries both VXLAN and SRv6 NLRI in the same session.</li>
+      <li>iBGP <code>next-hop-unchanged</code> at the RR: spines must reflect EVPN next-hops unchanged so that leaves resolve VTEP IPv4 addresses and SRv6 IPv6 locators against their own underlay RIBs. Do not translate or modify next-hops at the RR.</li>
+      <li>No separate BGP session or peer-group is required for the coexistence period. VXLAN and SRv6 routes are distinguished entirely by per-route attributes (Encap Ext Community vs. Prefix-SID), not by session topology.</li>
+      <li>Route reflectors should have <strong>add-path</strong> enabled for EVPN if multiple paths per prefix are expected — relevant for anycast gateways and ESI multi-homing across encap domains.</li>
+    </ul>
+
+    <h4 class="ph">Pre-migration sanity checks</h4>
+    <ul>
+      <li><strong>No duplicate VNI/SID semantics:</strong> ensure that VNI assignments (VLAN-100 → VNI-10100, VLAN-200 → VNI-10200, VRF green → L3 VNI-10300) are consistent across all leaves before introducing SRv6 SIDs. A VNI mismatch discovered mid-migration is far harder to resolve under dual-encap.</li>
+      <li><strong>MTU headroom:</strong> confirm fabric MTU ≥ 1578 B (1500 B host + 78 B SRv6 SRH worst-case) end-to-end. Per §4 figures; no exceptions.</li>
+      <li><strong>Per-leaf hardware SRv6 support audit:</strong> per §9, every leaf to be migrated must pass the silicon audit — uSID compression, required End.* behaviors (uDT2U, uDT2M, uDT4), and SRH parsing depth. No leaf enters State M until its ASIC is confirmed capable.</li>
+      <li><strong>BGP encap capability awareness:</strong> inventory which leaves support which encap. A leaf that receives an SRv6-attributed route and lacks SRv6 capability will install the route but silently fail to forward — see the next-hop gotcha callout below.</li>
+      <li><strong>Locator allocation:</strong> allocate all per-leaf locators from the <code>fc00:0:1::/48</code> block up front, even for leaves that will not be migrated immediately. Avoids renumbering mid-migration.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>State M — The Dual-Encap Fabric</h2>
+    <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:20px 24px;font-size:12px;overflow-x:auto;line-height:1.9;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">
+               iBGP RR (AS 65000)  —  both VXLAN + SRv6 NLRI reflected
+        ┌────────────────────────────────────────┐
+        │  Spine-1 (RR)          Spine-2 (RR)   │
+        │  dual-stack underlay   dual-stack       │
+        └──┬──┬──┬──┬────────────┬──┬──┬──┬──────┘
+           │  │  │  │            │  │  │  │
+       ┌───┘  │  │  └────┐  ┌───┘  │  │  └──────┐
+       │      │  └──┐    │  │   ┌──┘  └──┐      │
+ <span style="color:var(--blue);">Leaf-1</span>   <span style="color:var(--orange);">Leaf-2</span>   <span style="color:var(--blue);">Leaf-3</span>   <span style="color:var(--orange);">Leaf-4</span>
+ VXLAN-only  dual-encap  VXLAN-only  dual-encap
+ VTEP only   GW + SRv6   VTEP only   GW + SRv6
+ .113.1      .113.2      .113.3      .113.4
+ db8:1::1    db8:1::2    db8:1::3    db8:1::4
+             fc00:0:1:2::/64         fc00:0:1:4::/64
+
+  Host-A      (gw)      Host-B      Host-D  (ESI dual-homed
+ VLAN-100              VLAN-100    VLAN-200   to Leaf-3 + Leaf-4)
+  Host-C
+ VLAN-200
+
+  Leaf-2 and Leaf-4 are the redundant border-leaves (gateway nodes).
+  Cross-encap traffic from VXLAN Leaf-1/Leaf-3 → SRv6 domain transits Leaf-2 or Leaf-4.
+  uN locator block fc00:0:1::/48 summarised at border; per-leaf /64 distributed in IGP.
+
+  Legend:  <span style="color:var(--blue);">blue = VXLAN-only</span>   <span style="color:var(--orange);">orange = dual-encap gateway</span></pre>
+  </div>
+
+  <div class="card">
+    <h2>How Each Encap Is Signalled</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">VXLAN side</h4>
+        <ul>
+          <li><strong>BGP Encapsulation Extended Community (RFC 9012)</strong> — type value <strong>8</strong> = VXLAN. Carried on every EVPN NLRI originated by a VXLAN PE.</li>
+          <li>The MPLS Label1 field in the EVPN NLRI is repurposed to carry the <strong>VNI</strong> (24-bit value, leftmost 20 bits). This is how VXLAN VNI is encoded in a BGP route — there is no separate VNI field.</li>
+          <li>Next-hop = IPv4 VTEP loopback (e.g., <code>203.0.113.1</code>). Forwarding is to the VTEP address; outer IP is IPv4.</li>
+          <li>No BGP Prefix-SID attribute is present on VXLAN routes. A peer that only understands Prefix-SID will not install these routes as SRv6.</li>
+        </ul>
+      </div>
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">SRv6 side</h4>
+        <ul>
+          <li><strong>BGP Prefix-SID attribute (RFC 8669)</strong> is added to the EVPN NLRI, carrying the <strong>SRv6 Service TLV (RFC 9252)</strong>.</li>
+          <li>Within the SRv6 Service TLV: <strong>Type 5 sub-TLV</strong> = L3 service (used for Type 5 IP Prefix / VRF routes, carrying uDT4/uDT6 SID); <strong>Type 6 sub-TLV</strong> = L2 service (used for Type 2/3 MAC/MAC-IP routes, carrying uDT2U/uDT2M SID).</li>
+          <li>Next-hop = IPv6 loopback or locator address (e.g., <code>2001:db8:1::2</code>). Outer IP is IPv6; no UDP encapsulation (uSID no-SRH path).</li>
+          <li>BGP Encapsulation Extended Community type 14 = SRv6 L3 Service or type 15 = SRv6 L2 Service may also be present (RFC 9012) to aid encap selection at peers that key on the Ext Community rather than the Prefix-SID attribute.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="info yellow">
+    <strong>Next-hop encoding gotcha:</strong> if a leaf advertises a route with an SRv6 next-hop (IPv6 locator) and a peer does not understand SRv6, the route may install in the peer's RIB but will be silently unusable — the peer has no IPv6 forwarding path to the locator. This is the most common silent failure mode during coexistence. Audit encap capability on every receiving leaf <em>before</em> enabling dual-stack advertisement. A quick check: <code>show bgp l2vpn evpn next-hop</code> and verify IPv6 next-hops resolve in the peer's underlay RIB.
+  </div>
+</div>
+
+<!-- §11 — COEXISTENCE PER-SERVICE                                      -->
+<!-- ================================================================== -->
+<div id="coex-services" class="section">
+  <div class="sec-title">11. Coexistence — What It Means Per Service</div>
+  <p class="sec-sub">Phase 1 sits quietly for weeks. Here's what to watch in each service while it does.</p>
+
+  <div class="card">
+    <p>Each EVPN service type behaves differently under dual-encap. L3/Type 5 is the cleanest to coexist — purely a per-route attribute swap. L2/Type 2 coexistence is stable but cross-encap MAC mobility requires gateway mediation. IRB (symmetric) introduces anycast gateway consistency requirements. Multi-homing adds split-horizon and DF election complexity across the encap boundary. Understanding per-service behaviour is what separates a controlled Phase 1 from an unplanned one.</p>
+
+    <h4 class="ph">L2 (Type 2 — MAC/IP)</h4>
+    <ul>
+      <li>VNI semantics are preserved on both encaps: VLAN-100 maps to VNI-10100 regardless of encap. The EVI number is the same; only the tunnel attribute differs.</li>
+      <li>MAC learning works correctly on both encaps independently — a VXLAN leaf learns remote MACs via VXLAN-attributed Type 2 routes; an SRv6 leaf learns them via SRv6-attributed Type 2 routes. Each leaf installs the routes it understands.</li>
+      <li><strong>Cross-encap MAC mobility requires the gateway.</strong> If Host-A (behind Leaf-1, VXLAN) moves to Leaf-3 (also VXLAN), standard MAC mobility applies. If a host moves to or from the SRv6 domain, the gateway (Leaf-2/Leaf-4) must re-originate the Type 2 route in the other encap with the correct sequence number. See §14 for the full MAC mobility walk.</li>
+      <li>Duplicate MAC detection operates per-encap domain first, then at the gateway. Ensure the gateway propagates MAC mobility sequence numbers faithfully across the encap boundary.</li>
+    </ul>
+
+    <h4 class="ph">L3 (Type 5 — IP Prefix)</h4>
+    <ul>
+      <li>A pure-L3 VRF (e.g., VRF green) can be simultaneously advertised by VXLAN leaves (using BGP Encap Ext Community type 8, L3 VNI-10300) and SRv6 leaves (using BGP Prefix-SID RFC 8669 / SRv6 Service TLV RFC 9252 type 5 sub-TLV, uDT4 SID <code>fc00:0:1:N:e100::</code>). Both are valid Type 5 routes; they differ only in encap attribute.</li>
+      <li>Receiving side picks by encap support and local policy. An SRv6-capable leaf prefers the SRv6-attributed route; a VXLAN-only leaf installs the VXLAN route. No explicit policy configuration is needed if both are advertised.</li>
+      <li><strong>Cleanest service to migrate first</strong> — no MAC table, no ARP state, no split-horizon complexity. A pure L3 VRF cutover is reversible (re-advertise VXLAN) and has minimal blast radius if something is mis-configured.</li>
+      <li>Verify VRF import/export route-targets are identical on both encaps. A mismatched RT means the SRv6 route is not imported into the target VRF even if the signalling is correct.</li>
+    </ul>
+
+    <h4 class="ph">IRB (symmetric)</h4>
+    <ul>
+      <li><strong>Anycast gateway MAC and IP must be consistent across all leaves on both encaps.</strong> The anycast gateway MAC (e.g., <code>00:00:5e:00:01:xx</code>) and the SVI IP address must be identical fabric-wide. This is not a new requirement — it applies in pure VXLAN too — but a gateway node in State M that misconfigures its SVI IP will break IRB for the entire segment.</li>
+      <li>Routing is protocol-identical: symmetric IRB does a route-lookup at the ingress leaf (egress SID or VTEP), encapsulates to the egress leaf's L3 endpoint, and decapsulates at the egress leaf. The encap technology does not change the IRB logic.</li>
+      <li>Bridging semantics differ: on the VXLAN side, the EVI is identified by VNI-10100/10200; on the SRv6 side, the same EVI is identified by the uDT2U SID. The gateway must maintain consistent EVI membership on both encap planes.</li>
+      <li>ARP/ND suppression operates per-encap. Ensure the gateway populates its ARP/ND cache from both encap planes and re-advertises ARP entries across the encap boundary in Type 2 routes.</li>
+    </ul>
+
+    <h4 class="ph">Multi-homing (ESI — Type 1 + Type 4)</h4>
+    <ul>
+      <li>The Ethernet Segment route (Type 4) is advertised by both Leaf-3 and Leaf-4 for ESI <code>0x0001:0001:0001:0001:0001</code> (Host-D's dual-home). In State M, Leaf-3 is VXLAN-only and Leaf-4 is dual-encap. Both must advertise the ES route; DF election runs on the union of all ES route advertisers regardless of encap.</li>
+      <li>The per-ES Type 1 route carries the ES Label (VXLAN side: MPLS label field repurposed; Tunnel Encap type 8, RFC 9012) or the ES SID (SRv6 side: BGP Prefix-SID attr RFC 8669 with SRv6 L2 Service TLV type 6 sub-TLV, RFC 9252). Both must consistently identify the same Ethernet Segment.</li>
+      <li><strong>Split-horizon must give consistent results across encaps.</strong> The ES Label (VXLAN) and ES SID (SRv6) serve the same function — preventing replication of BUM traffic back into the ES. The gateway must enforce split-horizon using the correct identifier for each encap plane it participates in.</li>
+      <li>DF election algorithm (per RFC 7432 modulo or preference-based) must produce the same designated forwarder result for both encap planes. A topology where Leaf-3 is DF for VXLAN and Leaf-4 is DF for SRv6 on the same ES is valid but must be intentional.</li>
+      <li>Verify mass-withdraw behaviour on ES link failure: the withdrawing leaf must send Type 1/Type 4 withdrawals on both encap planes it participates in, not just one.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Per-Service at a Glance</h2>
+    <div class="flv-grid">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue);">L2 / Type 2</div>
+        <div class="flv-desc" style="margin-top:6px;">VNI semantics preserved on both encaps. MAC learning independent per encap domain. Cross-encap MAC mobility requires gateway mediation (§14). Stable to sit in coexistence; watch sequence numbers at the gateway.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green);">L3 / Type 5</div>
+        <div class="flv-desc" style="margin-top:6px;">Cleanest coexistence: pure attribute swap (Encap Ext Community → Prefix-SID). No MAC/ARP state. Receivers select by encap capability. Migrate this first. Verify route-target consistency across encaps.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--cyan);">IRB (symmetric)</div>
+        <div class="flv-desc" style="margin-top:6px;">Anycast GW MAC+IP must match fabric-wide on both encaps. Routing logic identical. Bridging uses VNI vs. SID to identify EVI. ARP/ND suppression operates per-encap; gateway must cross-populate.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange);">Multi-homing (ESI)</div>
+        <div class="flv-desc" style="margin-top:6px;">Type 1 + Type 4 advertised by both encap sides. DF election on union of all ES advertisers. ES Label (VXLAN) vs ES SID (SRv6) must give consistent split-horizon. Mass-withdraw must span both encap planes.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--purple);">DCI</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong>Deployment-topology cross-cut, not a service category.</strong> Site-to-site interconnect can remain VXLAN, become SRv6, or be the gateway boundary between encap domains. Not a peer of L2/L3/IRB/Multi-homing in the service taxonomy. Shown here for navigation; matters most in multi-site designs.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <strong>Migration order recommendation:</strong> pick one service to lead the migration — typically L3/Type 5 because it has no MAC/ARP state and the blast radius of a mis-config is smallest. L2 and IRB follow once the L3 path is validated. Multi-homing requires the most care and should come last (or be co-migrated with its leaf pair). See <a href="#" onclick="go('mig-order',event); return false;">§16</a> for the recommended migration order and sequencing rationale.
+  </div>
+</div>
+
   </main>
 </div>
 
