@@ -1845,6 +1845,134 @@
   </div>
 </div>
 
+<div id="gw-design" class="section">
+  <div class="sec-title">12. Gateway Design — Border-Leaf vs Spine-as-Gateway vs Dedicated DCI</div>
+  <p class="sec-sub">The gateway is where two data planes touch. Placement determines blast radius, scale, and rollback flexibility.</p>
+
+  <div class="card">
+    <p>Every dual-encap migration needs at least one node that simultaneously speaks VXLAN and SRv6 and stitches routes between the two domains. Where you place that node is a design decision, not an afterthought. The three canonical placements each carry different trade-offs in hardware requirements, fault isolation, and operational complexity. This guide's reference topology pins the gateway on Leaf-2 and Leaf-4 — a redundant border-leaf pair — which is the right default for single-fabric migrations.</p>
+
+    <h4 class="ph">Border-leaf as gateway</h4>
+    <ul>
+      <li><strong>Most common deployment for single-fabric migrations.</strong> One or two leaf nodes are configured for dual-encap; they stitch VXLAN and SRv6 at the data plane and re-originate EVPN routes across the encap boundary at the control plane.</li>
+      <li>Blast radius is tightly scoped: a mis-configuration or software defect on the gateway leaf affects only traffic that traverses the encap boundary — pure-VXLAN flows between non-gateway leaves are unaffected.</li>
+      <li>Easy to add or remove during migration: promote a leaf to gateway when ready, demote it back when the migration phase is complete or needs rollback. No changes to the spine or other leaves required.</li>
+      <li>Supports incremental scale-out: add a third border-leaf to the gateway pool without re-architecting the fabric.</li>
+      <li><strong>This guide's default.</strong> Leaf-2 and Leaf-4 serve as the redundant border-leaf gateway pair in State M (see §3/§10).</li>
+    </ul>
+
+    <h4 class="ph">Spine as gateway</h4>
+    <ul>
+      <li>Fewer physical devices to upgrade: if spines already run a capable NOS, promoting them to gateway duty avoids adding new leaf hardware.</li>
+      <li><strong>Critical caution: spines are throughput-optimised, not feature-rich.</strong> Confirm the ASIC and NOS version support SRv6 uSID encap/decap at line rate before committing. Some high-density spine ASICs deliberately omit MPLS/SRv6 to maximise forwarding capacity.</li>
+      <li>Couples gateway function to the fabric backbone: a gateway software defect or config error on a spine can split the fabric, not just the encap boundary. Blast radius is significantly wider than border-leaf placement.</li>
+      <li>Suitable when the spine is already the inter-VRF routing point (collapsed leaf/spine) and the hardware is verified SRv6-capable.</li>
+      <li>DF election and multi-homing interact awkwardly with spine-as-gateway: spines typically do not participate in ESI-LAG, so multi-homed segments can't terminate on them directly.</li>
+    </ul>
+
+    <h4 class="ph">Dedicated DCI router</h4>
+    <ul>
+      <li>Designed for inter-fabric or multi-site deployments where the two encap domains are in different data centres or administrative domains.</li>
+      <li>Can be a different vendor or platform than the leaves — the DCI router only needs to speak BGP EVPN with both domains; the underlay is independent on each side.</li>
+      <li>Clean separation: the DCI router is not a member of either fabric's underlay topology. A failure is bounded to the inter-site path, not the intra-fabric forwarding plane.</li>
+      <li>Adds an extra forwarding hop (ingress leaf → DCI router → egress leaf across sites). Latency impact is usually negligible in WAN context but must be accounted for in same-DC designs.</li>
+      <li>Operationally distinct from the fabric: separate change windows, separate NOS image lifecycle. Good for large-scale or mixed-vendor environments; overkill for a contained single-fabric migration.</li>
+    </ul>
+
+    <h4 class="ph">Hardware checklist</h4>
+    <ul>
+      <li><strong>The data-plane requirement is the gating constraint.</strong> The gateway node must perform VXLAN encap/decap AND SRv6 uSID encap/decap at line rate simultaneously. Verify this against the ASIC's forwarding pipeline — not just the NOS feature list.</li>
+      <li>VXLAN decap + SRv6 encap (VXLAN→SRv6 direction) and SRv6 decap + VXLAN encap (SRv6→VXLAN direction) must both be supported in the same forwarding pass. Some ASICs support one direction in hardware and the other in recirculation (software assist) — this causes asymmetric throughput and is usually unacceptable for production traffic.</li>
+      <li>Route-type translation (re-originating Type 2/Type 5 with different encap attributes) is a control-plane operation on any modern EVPN router. CPU and BGP table scale matter, but this is not a hardware bottleneck.</li>
+      <li>Check TCAM resources: dual-encap doubles the prefix scale requirement in certain ASIC architectures. A 256k-entry TCAM shared between VXLAN and SRv6 routes may exhaust sooner than expected.</li>
+      <li>Validate SRv6 uSID support specifically — not just SRv6. Several platforms support SRv6 with 128-bit SIDs but not uSID (compressed 32-bit block format). The migration uses uSID (<code>fc00:0::/32</code> block).</li>
+    </ul>
+
+    <h4 class="ph">HA design</h4>
+    <ul>
+      <li><strong>Anycast next-hop (preferred):</strong> Leaf-2 and Leaf-4 both advertise routes with the same anycast gateway MAC/IP. Ingress leaves ECMP across both. On failure of one gateway, traffic re-hashes to the surviving node with no control-plane reconvergence required on the ingress side.</li>
+      <li><strong>Active/standby with state sync:</strong> One gateway is primary; the standby mirrors MAC/ARP/ND tables and takes over on failure. Lower hardware utilisation under normal operation; reconvergence on failover depends on state-sync fidelity and BGP update propagation time.</li>
+      <li><strong>Mid-flow behaviour on gateway failure:</strong> VXLAN→SRv6 flows in flight are dropped for the duration of the encap boundary being unavailable. Anycast minimises this to the hash-recalculation time (~sub-second). Active/standby introduces a convergence gap (typically 1–3 seconds depending on BFD timers).</li>
+      <li>This guide's redundant pair (Leaf-2 + Leaf-4) uses anycast: both leaves are configured with the same anycast SVI MAC and participate in the same L3 VNI / SRv6 EVI, so ingress leaves naturally ECMP across both.</li>
+      <li>Configure BFD between ingress leaves and the gateway pair (or use fast BGP timers) to detect gateway failure quickly and trigger ECMP rehash before application-layer timeouts fire.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Three Placements Compared</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">Border-leaf</h4>
+        <ul>
+          <li><strong>Best fit:</strong> single-fabric migration (this guide's default)</li>
+          <li>Blast radius scoped to cross-encap traffic only</li>
+          <li>Easy promote/demote lifecycle; rollback is leaf-local</li>
+          <li>ECMP across gateway pair (anycast) is straightforward</li>
+          <li>Requires two leaves with dual-encap ASIC support</li>
+          <li>Does not scale to multi-site without DCI augmentation</li>
+        </ul>
+      </div>
+      <div class="cmp-c">
+        <h4 style="color:var(--green);">Spine-as-gateway</h4>
+        <ul>
+          <li><strong>Best fit:</strong> collapsed fabric with verified SRv6-capable spines</li>
+          <li>Fewer devices to upgrade if spines already qualify</li>
+          <li>Spine failure impacts entire fabric, not just encap boundary</li>
+          <li>ASIC feature support must be explicitly verified — throughput ASICs often lack SRv6</li>
+          <li>Multi-homing and ESI-LAG do not terminate cleanly on spines</li>
+          <li>Higher operational risk; not recommended unless spine already serves L3 gateway role</li>
+        </ul>
+      </div>
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">Dedicated DCI</h4>
+        <ul>
+          <li><strong>Best fit:</strong> multi-site or inter-DC; mixed-vendor environments</li>
+          <li>Clean fault isolation — DCI failure bounded to inter-site path</li>
+          <li>Vendor-agnostic: only BGP EVPN peering required with each domain</li>
+          <li>Extra forwarding hop adds latency (acceptable in WAN, evaluate in same-DC)</li>
+          <li>Separate operational lifecycle from fabric (separate NOS, change windows)</li>
+          <li>Overkill for a single contained fabric migration</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Choosing a Placement</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Recommended placement</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single-site fabric migration</td>
+          <td>Border-leaf (e.g., Leaf-2 + Leaf-4)</td>
+          <td>Smallest blast radius; rollback is leaf-local; anycast HA is simple; this guide's default (State M).</td>
+        </tr>
+        <tr>
+          <td>Multi-site / inter-DC migration</td>
+          <td>Dedicated DCI router</td>
+          <td>Clean administrative boundary between sites; vendor-agnostic; DCI failure scoped to inter-site path, not intra-fabric forwarding.</td>
+        </tr>
+        <tr>
+          <td>Mixed-vendor fabric</td>
+          <td>Dedicated DCI <em>or</em> border-leaf on the SRv6-capable vendor</td>
+          <td>If one vendor's leaves support SRv6 and the other's do not, run the gateway on the SRv6-capable hardware and treat the non-capable leaves as pure VXLAN endpoints. A dedicated DCI is cleaner if the two vendor domains are topologically separate.</td>
+        </tr>
+        <tr>
+          <td>Hardware refresh in progress</td>
+          <td>Border-leaf on the new SRv6-capable leaves</td>
+          <td>New leaves arrive SRv6-ready; designate them as gateway nodes immediately. Old leaves remain VXLAN-only. The gateway boundary tracks the hardware refresh wave — as more leaves are replaced, the gateway role shrinks until it can be retired.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
   </main>
 </div>
 
