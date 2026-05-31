@@ -1546,6 +1546,128 @@
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- §9 — HARDWARE, SILICON, SCALE, MTU, OPERATIONAL TOOLING    -->
+<!-- ============================================================ -->
+<div id="hw-scale" class="section">
+  <div class="sec-title">9. Hardware, Silicon, Scale, MTU, Operational Tooling</div>
+  <p class="sec-sub">Where the comparison stops being protocol theory and becomes a buying decision.</p>
+
+  <div class="card">
+    <p>Protocol correctness is necessary but not sufficient. Whether a migration is feasible in your fabric depends on four hardware-and-operations questions: does your silicon support SRv6/uSID at line rate; what are the real scale limits; where does MTU math break down; and how much re-tooling do operators face post-cutover?</p>
+
+    <h4 class="ph">Silicon support</h4>
+    <ul>
+      <li><strong>VXLAN encap/decap at line rate is broadly supported</strong> — Broadcom Trident3/4, Tomahawk3/4, Jericho2/3, Cisco Silicon One, NVIDIA/Mellanox Spectrum-2/3, and Marvell Teralynx all handle VXLAN in silicon. This is a mature, widely deployed capability.</li>
+      <li><strong>SRv6 uSID hardware support is newer and pipeline-dependent.</strong> Jericho2/3 (carrier-grade) and select Tomahawk4 configurations, Cisco Silicon One G3, and Spectrum-4 have published SRv6 support; Trident3 and earlier Tomahawk generations vary by capability tier. Always verify the specific SRv6/uSID feature set against current vendor data sheets — silicon roadmaps move faster than any written guide.</li>
+      <li><strong>"Does my existing leaf ASIC support SRv6 uSID in hardware?"</strong> is THE gating question before any migration scope is committed. A leaf that falls back to software SRv6 decap will not sustain line-rate traffic at scale.</li>
+      <li>Verify: uSID compression support (not just SRv6 base); endpoint behaviors needed (End.DT2U / uDT2U, End.DT2M / uDT2M, End.DT4 / uDT4); SRH parsing depth in the pipeline (even if you deploy no-SRH paths today, ensure the pipeline won't drop SRH packets in transit).</li>
+      <li>Generic families for reference — verify current SRv6/uSID support against vendor data sheets: Broadcom Trident/Tomahawk/Jericho, Cisco Silicon One, NVIDIA/Mellanox Spectrum, Marvell Teralynx.</li>
+    </ul>
+
+    <h4 class="ph">Scale</h4>
+    <ul>
+      <li><strong>VXLAN VNI space: 24 bits → ~16 million theoretical identifiers.</strong> In practice, vendor implementations cap lower (often 4 K–64 K active VNIs per device depending on ASIC and memory allocation). Identifier exhaustion is rare in pure-DC deployments but relevant for multi-tenant or DCI-at-scale scenarios.</li>
+      <li><strong>SRv6 SID space: 128 bits.</strong> The locator + function encoding (e.g., /48 node locator + 16-bit function block) yields millions of service SIDs per node; identifier exhaustion is not a practical concern at any realistic fabric scale.</li>
+      <li><strong>Underlay routing-table growth:</strong> migrating from IPv4 VTEP loopbacks to IPv6 SRv6 locators replaces a /32-per-leaf IPv4 table with a /48-per-leaf (or /64-per-leaf) IPv6 table. Route count stays the same; prefix length and address family change. ISIS or OSPF re-convergence behavior is equivalent but verify IPv6 scale limits on your spines.</li>
+      <li>SRv6 introduces per-leaf locator prefixes (/48 aggregate + per-function /128s in the SID table). Size your RIB/FIB capacity for the IPv6 SID table in addition to underlay prefixes.</li>
+    </ul>
+
+    <h4 class="ph">MTU implications</h4>
+    <ul>
+      <li><strong>Overhead from §4 (exact figures):</strong> VXLAN-v4 = 50 B; VXLAN-v6 = 70 B; SRv6 uSID no-SRH = 54 B; SRv6 SRH + 1 segment ≈ 78 B.</li>
+      <li>Standard 1500 B host MTU + 50–78 B encap overhead requires a fabric MTU of at least 1578 B. A 9000 B jumbo fabric absorbs all variants with margin to spare — verify your fabric is already jumbo before migration begins, not during.</li>
+      <li><strong>SRH paths cost more:</strong> each additional SID in an SRH adds 16 B. If your SR Policy or Flex-Algo paths push SRH, size for the worst-case segment count at the fabric design stage. A two-SID SRH path (94 B overhead) still fits inside a 9000 B fabric with a 1500 B host MTU, but verify explicitly.</li>
+      <li>Host-facing interfaces: ensure MSS clamping (for TCP) and PMTUD (for non-TCP) are active on all SVIs/IRBs before and after cutover. The encap technology changes; the PMTUD requirement does not.</li>
+      <li>Verify MTU consistency end-to-end — leaf uplinks, spine ports, DCI/WAN interfaces. A single under-sized interface silently fragments or drops packets at the worst possible moment (during a maintenance window).</li>
+    </ul>
+
+    <h4 class="ph">Operational tooling</h4>
+    <ul>
+      <li><strong>Packet capture filters change completely:</strong>
+        <ul>
+          <li>VXLAN: <code>udp dst port 4789</code> — plaintext, VNI readable in byte offset 8 of the UDP payload. Wireshark dissects natively.</li>
+          <li>SRv6 (no SRH): filter on IPv6 destination address matching your locator block (e.g., <code>ip6 dst fc00::/16</code>). The service SID encodes EVI/VRF inline.</li>
+          <li>SRv6 (SRH path): add <code>ip6 proto 43</code> (next-header = Routing Extension Header) to catch packets with an active segment list.</li>
+        </ul>
+      </li>
+      <li><strong>Telemetry counters are re-keyed:</strong> per-VNI byte/packet counters (keyed on a 24-bit VNI) become per-SID counters (keyed on a 128-bit IPv6 address or a vendor-specific SID index). Update dashboards, alert thresholds, and capacity-planning queries before cutover. Historical VNI-keyed data does not automatically map to the new SID key space.</li>
+      <li><strong>Underlay troubleshooting:</strong> <code>traceroute</code> behavior changes — VXLAN UDP-encapped flows are traced via inner UDP entropy; SRv6 flows trace as native IPv6 to the destination SID. Tools like <code>mpls traceroute</code> are not relevant; standard IPv6 path tools apply.</li>
+      <li>Vendor-specific CLI for SRv6 SID state (<code>show segment-routing srv6 sid</code> or equivalent) is a new command set to add to runbooks. Most vendors ship this alongside SRv6 support; verify the CLI surface on your platform before the cutover window.</li>
+    </ul>
+
+    <h4 class="ph">What stays the same operationally</h4>
+    <ul>
+      <li><code>show bgp l2vpn evpn</code> — route-type output, next-hop resolution, and community display are structurally unchanged. The tunnel encap attribute value changes (VXLAN → SRv6); everything else reads the same.</li>
+      <li><code>show evpn mac</code> / <code>show evpn mac-ip</code> — MAC table, MAC-IP bindings, ESI membership, and DF election state are protocol-identical. The remote-endpoint display changes from VTEP IPv4 to SID IPv6, but the table shape does not.</li>
+      <li>VRF route tables (<code>show ip route vrf</code> / <code>show ipv6 route vrf</code>) — overlay routes injected from EVPN remain in the same VRF; the nexthop resolves via the SRv6 SID rather than a VTEP, but the VRF forwarding model is unchanged.</li>
+      <li>BGP session management, peer-group configuration, route-policy/import-export logic, and community strings are all unaffected by the encap migration. EVPN address-family stays the same; only the per-route SID/VNI encoding changes.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Dimension-by-Dimension</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>VXLAN</th>
+          <th>SRv6 (uSID)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Silicon</strong></td>
+          <td>Mature; line-rate encap/decap on virtually all DC ASICs (Trident3+, Tomahawk3+, Spectrum-2+, Teralynx). No pipeline gating for greenfield or brownfield.</td>
+          <td>Newer; available on Jericho2/3, select Tomahawk4, Silicon One G3, Spectrum-4 and later. Verify uSID + required End.* behaviors against current data sheets before committing to migration scope.</td>
+        </tr>
+        <tr>
+          <td><strong>Scale</strong></td>
+          <td>VNI = 24 bits → ~16 M theoretical; vendor-limited lower (often 4 K–64 K per device). IPv4 underlay: /32 per leaf.</td>
+          <td>SID = 128 bits; effectively unlimited service identifiers. Underlay: /48 per leaf (locator) + per-function /128s in SID table. No practical ID exhaustion.</td>
+        </tr>
+        <tr>
+          <td><strong>MTU</strong></td>
+          <td>50 B overhead (IPv4 outer); 70 B (IPv6 outer). Jumbo fabric absorbs either. MSS clamping / PMTUD required at 1500 B host MTU.</td>
+          <td>54 B overhead (no SRH); ~78 B (SRH + 1 seg); ~94 B (SRH + 2 seg). Jumbo fabric absorbs all. SRH paths must be sized for worst-case segment count.</td>
+        </tr>
+        <tr>
+          <td><strong>Capture &amp; tooling</strong></td>
+          <td><code>udp dst port 4789</code>; VNI plaintext in byte offset 8 of UDP payload. Wireshark native dissect. Per-VNI counters.</td>
+          <td>Filter on IPv6 dst in locator block; <code>ip6 proto 43</code> for SRH path. No UDP layer. Per-SID counters (128-bit key). Dashboards must be re-keyed.</td>
+        </tr>
+        <tr>
+          <td><strong>Telemetry</strong></td>
+          <td>Counter key = VNI (24-bit integer). Historical data portable across hardware refresh (same VNI space).</td>
+          <td>Counter key = SID (IPv6 address or vendor SID index). Counter namespace breaks at cutover; re-baseline dashboards and alert thresholds per-SID.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>The Sharpest Differences</h2>
+    <div class="flv-grid" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange)">Scale ceiling</div>
+        <div class="flv-desc" style="margin-top:6px;">VXLAN tops out at 16 M VNIs (24-bit field), typically vendor-capped far lower. SRv6 SID space is 128-bit — service identifier exhaustion is not a real-world concern at any fabric scale.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--cyan)">Capture &amp; decode</div>
+        <div class="flv-desc" style="margin-top:6px;">VXLAN: <code>udp dst port 4789</code> — one filter catches everything; VNI is plaintext. SRv6: filter on IPv6 locator block or <code>ip6 proto 43</code> for SRH paths. Operators must learn a new capture discipline before cutover.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue)">Underlay address family</div>
+        <div class="flv-desc" style="margin-top:6px;">VXLAN runs over an IPv4 (or dual-stack) underlay with /32 VTEP loopbacks. SRv6 requires an IPv6 underlay with /48 locator prefixes per leaf. This is a genuine underlay re-addressing workstream, not just a config tweak.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green)">Silicon maturity</div>
+        <div class="flv-desc" style="margin-top:6px;">VXLAN is ubiquitous across all DC ASICs — no pipeline gating. SRv6 uSID support is pipeline-dependent and generation-gated. Auditing every leaf ASIC against the vendor SRv6/uSID data sheet is the first task in any migration plan.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
   </main>
 </div>
 
