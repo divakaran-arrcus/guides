@@ -3617,6 +3617,225 @@ except Exception as e:
     </section>
 
 
+    <section id="ch15-autonomy" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">15. Standardization vs Autonomy</h1>
+      <span class="lens-tag governance">Governance &amp; Risk</span>
+      <span class="lens-tag people" style="margin-left:6px;">People &amp; Process</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why the governance chapters' pull toward standardization must be balanced by a deliberate counterweight of team autonomy; how the paved-road model gives teams a well-supported default path they choose because it's easier — not because it's mandated; how to draw the mandate/recommend/free line so security holds while local fit survives; how to design escape hatches that expand the system rather than leak around it; and why standards that have no owner and no revision cadence silently rot until engineers stop following them entirely.</p>
+
+      <!-- 15.1 -->
+      <div class="card">
+        <h2>15.1 The central tension</h2>
+        <p>Every chapter in the governance arc — Workflow Standards (Ch 4), Review Gates (Ch 13), Incident Response (Ch 14) — exerts pressure in one direction: standardize more, gate more, verify more. That pressure is real and warranted. Inconsistent practice produces inconsistent outcomes, and at org scale, inconsistency compounds. But governance without a counterweight produces its own failure mode: standards so rigid that teams route around them, shadow usage that is invisible to the platform, and a loss of the velocity and local fit that made individual teams effective in the first place.</p>
+
+        <h4 class="ph">Why consistency and autonomy are both legitimate</h4>
+        <ul>
+          <li>The case for standardization is straightforward: shared practice makes quality measurable, onboarding predictable, and incidents recoverable. When every team uses the same audit trail format, one SIEM query spans the org. When every team follows the same review checklist, one update to the checklist improves every PR. Shared practice is the substrate on which org-scale learning is possible.</li>
+          <li>The case for autonomy is equally real: different teams work in genuinely different contexts. A payments team writing a highly regulated API has different local constraints than an internal-tooling team prototyping a developer experience feature. A one-size rule that fits the first team will slow the second. Autonomy preserves the ability to optimize locally, experiment with new approaches, and adapt to constraints the platform team did not anticipate.</li>
+          <li>The failure of too much standardization is visible in shadow usage: engineers who find the mandated workflow too burdensome quietly adopt their own, undocumented approach. This was the dynamic in Ch 1.3 when ad-hoc usage spread before any platform existed. Overly rigid governance recreates that dynamic inside the platform era — the tool is approved, but the approved workflow is ignored.</li>
+          <li>The failure of too much autonomy is visible in the compounding inconsistency that motivated standardization in the first place: audit gaps that make incidents unrecoverable, quality variance that makes outcomes unpredictable, onboarding that requires team-specific knowledge that new engineers lack.</li>
+          <li>This chapter is the explicit counterweight. Read Ch 4–5, Ch 12–14 for the reasons to standardize. Read this chapter for the discipline of knowing what <em>not</em> to standardize — and how to build the infrastructure that makes autonomy safe rather than dangerous.</li>
+        </ul>
+
+        <div class="info orange"><strong>The governance arc is not wrong — it needs a counterweight.</strong> Standardization reduces variance. Autonomy preserves velocity and local fit. An org that optimizes for only one of these eventually fails at the other. The chapters on either side of this tension are not contradictions; they are two halves of a calibration problem.</div>
+      </div>
+
+      <!-- 15.2 -->
+      <div class="card">
+        <h2>15.2 The paved-road / golden-path model</h2>
+        <p>The paved-road model — sometimes called the golden path — is the most effective answer to the standardization-vs-autonomy tension that platform engineering has produced. Its core insight is simple: a well-supported default path that teams <em>want</em> to use because it is easier, faster, and better-maintained than the alternative is more durable than a mandated path that teams follow because they are required to. The paved road reduces friction on the right path; it does not erect barriers on the others.</p>
+
+        <h4 class="ph">What makes a path "paved"</h4>
+        <ul>
+          <li><strong>It solves a real problem better than the alternatives.</strong> A paved road that is slower, more complex, or less well-documented than rolling your own config will not be chosen voluntarily. The platform team's job is to make the default genuinely better — not just sanctioned. If teams are bypassing the golden config, the first question is not "how do we enforce it?" but "why is it not better than the alternative?"</li>
+          <li><strong>It is actively maintained.</strong> A golden config that was excellent at launch and has not been updated in six months is no longer golden — it is a liability. Active maintenance means the paved road absorbs the lessons of the failure log, reflects changes in tooling, and improves based on team feedback. The platform team owns this maintenance as a primary responsibility, not a secondary one.</li>
+          <li><strong>It comes with support.</strong> Teams that use the paved road get help when they hit the edges. Teams that deviate get less. This is not punitive — it is a natural consequence of investment. The platform team can only maintain deep expertise in the supported path; they cannot maintain it for every possible local variation. The support asymmetry is a real incentive to use the paved road, without being a mandate.</li>
+          <li><strong>It is visible and discoverable.</strong> A golden path that is not well-documented, not surfaced in the internal developer portal, and not mentioned during onboarding is not a path — it is an insider secret. At Stage 3, discoverability is part of the product. New teams should find the paved road before they find an alternative.</li>
+          <li><strong>It has a clear scope.</strong> The paved road covers the common cases well. It does not try to cover every case perfectly. A golden config that attempts to handle every edge case becomes so complex that teams avoid it and maintain local forks. Specify the scope explicitly: "this golden config is designed for stateless web services; if you run a stateful data pipeline, use the pipeline-specific variant."</li>
+        </ul>
+
+        <h4 class="ph">The platform-engineering pattern applied to agentic coding</h4>
+        <ul>
+          <li>The paved-road model was developed in platform engineering for infrastructure: a team provides a well-supported Kubernetes deployment template, a standard CI pipeline, a golden Terraform module. Teams can use them or not, but the ones who do get faster setup, better support, and automatic propagation of infrastructure improvements.</li>
+          <li>The same pattern applies directly to agentic coding. The golden config for AI-assisted development — the approved models, the standard context-loading sequence, the AI-review checklist, the audit trail format — is the paved road. Teams that adopt it get automatic updates when the platform team improves it, better incident support because the incident responder knows the system, and easier onboarding for new members because the conventions are documented. The team that deviates gets a local configuration they own and maintain themselves.</li>
+          <li>Critically: the goal is not 100% adoption of the paved road in every detail. It is high adoption of the parts where consistency creates compounding value — security, audit, incident recovery — and flexible adoption of the parts where local fit matters more than org-wide uniformity.</li>
+        </ul>
+
+        <aside class="tool-alt">
+          <strong>Paved-road delivery — two approaches</strong>
+          <p style="margin:8px 0 6px;"><strong>Config-file approach (Claude Code, Cursor, Windsurf):</strong> The platform team maintains a versioned golden <code>CLAUDE.md</code> / <code>.cursor/rules</code> / <code>.windsurfrules</code> in a shared repository. Teams pull it via a package manager, a bootstrap script, or a git submodule. Updates propagate when teams upgrade. The golden file covers context-loading conventions, approved model series, audit-log format, and the AI-review checklist. Teams extend it locally without modifying the base.</p>
+          <p style="margin:0;"><strong>Platform-portal approach:</strong> The internal developer portal exposes the golden config as a templated workflow. Teams onboard by selecting their service type; the portal generates the appropriate config, CI pipeline, and checklist scaffold. Updates are surfaced as portal notifications. Either approach works; what matters is that the golden config is a product with a version, an owner, and a documented upgrade path — not a wiki page that was last edited nine months ago.</p>
+        </aside>
+
+        <div class="info green"><strong>The paved road is a product, not a policy.</strong> A policy tells teams what they must do. A product teams choose to use because it makes their work better. Design the golden config as a product: it should be fast to adopt, well-documented, actively improved, and genuinely easier than the alternative. If you find yourself writing enforcement mechanisms for the paved road, ask whether the road is paved enough.</div>
+      </div>
+
+      <!-- 15.3 -->
+      <div class="card">
+        <h2>15.3 Mandate vs recommend vs leave free</h2>
+        <p>Not every standard carries the same weight. The clearest tool for calibrating that weight is an explicit three-tier classification: things that are mandated (non-negotiable, enforced by the platform), things that are recommended (the default, with a supported escape hatch), and things that are left free (team discretion, within broad guardrails). Mixing these tiers — treating a recommendation as a mandate, or leaving a mandate as a vague guideline — is one of the most common sources of governance dysfunction at Stage 3.</p>
+
+        <table class="tbl" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Tier</th>
+              <th>Examples</th>
+              <th>Rationale</th>
+              <th>Enforcement mechanism</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Security controls</strong></td>
+              <td><span style="color:var(--red);font-weight:700;">Mandate</span></td>
+              <td>No secrets in agent context; no direct production write without High-tier approval; approved model list only; prompt-injection sanitization on tool outputs</td>
+              <td>A single breach affects the whole org. Local-fit arguments do not override compliance and security obligations. Consistency here is non-negotiable.</td>
+              <td>CI gate blocks merge if violated; policy-as-code enforcement (Ch 13.2); platform config prevents deviation at the tool level where possible</td>
+            </tr>
+            <tr>
+              <td><strong>Audit &amp; traceability</strong></td>
+              <td><span style="color:var(--red);font-weight:700;">Mandate</span></td>
+              <td>Session-identity tagging on all agent commits; structured audit log in standard schema; agent-opened PRs carry the org label; incident recovery chain must be reconstructable within 15 minutes</td>
+              <td>Audit gaps make incidents unrecoverable and compliance attestations impossible. The value of the audit trail is destroyed if any team's sessions are outside it.</td>
+              <td>Platform enforces session tagging at the infrastructure layer; CI rejects commits without the required identity fields; SIEM alert on schema deviation</td>
+            </tr>
+            <tr>
+              <td><strong>Kill-switch &amp; revocation paths</strong></td>
+              <td><span style="color:var(--red);font-weight:700;">Mandate</span></td>
+              <td>Every agentic CI pipeline must have a documented, tested kill-switch procedure; every agent service account must be individually revocable; on-call runbook addendum required before Stage 3 go-live</td>
+              <td>An agent-caused incident that cannot be stopped quickly compounds in blast radius. Incident response infrastructure is not optional at org scale.</td>
+              <td>Stage gate checklist item (Ch 13.3); platform will not provision a service account for an agent workflow without a documented revocation path</td>
+            </tr>
+            <tr>
+              <td><strong>Workflow configs &amp; golden path</strong></td>
+              <td><span style="color:var(--orange);font-weight:700;">Recommend</span></td>
+              <td>Golden <code>CLAUDE.md</code> / <code>.cursor/rules</code>; standard AI-review checklist; spec-then-plan-then-implement loop; minimum context-loading set for common task types</td>
+              <td>These defaults are better than most teams' local alternatives and improve with org-wide feedback. But a team with a genuine local constraint — a regulated-data service with additional spec requirements, a team running a different model tier for cost reasons — can document the deviation and own the maintenance.</td>
+              <td>Paved-road adoption tracked in platform metrics; deviations require a filed escape hatch (see 15.4); no CI block, but unsupported deviations get no platform SLA</td>
+            </tr>
+            <tr>
+              <td><strong>Model series selection</strong></td>
+              <td><span style="color:var(--orange);font-weight:700;">Recommend</span></td>
+              <td>Platform publishes a recommended model tier for each task class (frontier-series for complex reasoning, mid-tier for drafting and iteration); teams may deviate within the approved list</td>
+              <td>Model performance and cost trade-offs vary by task type and team budget. Local optimization is legitimate here. The approved list is the guardrail; the recommended tier is the default.</td>
+              <td>Approved model list enforced by policy; recommended tier surfaced in the golden config; spend ceiling enforced per session and per team</td>
+            </tr>
+            <tr>
+              <td><strong>Prompt style &amp; phrasing</strong></td>
+              <td><span style="color:var(--green);font-weight:700;">Leave free</span></td>
+              <td>Specific wording of task prompts; whether to use multi-shot examples; preferred output format instructions; conversational vs imperative framing</td>
+              <td>Prompt style is genuinely personal. Different engineers develop different approaches that work for them. Mandating phrasing produces cargo-cult behavior: engineers copy-paste without understanding.</td>
+              <td>None. Shared prompt libraries are offered as optional resources, not enforced templates.</td>
+            </tr>
+            <tr>
+              <td><strong>Local tooling &amp; integrations</strong></td>
+              <td><span style="color:var(--green);font-weight:700;">Leave free</span></td>
+              <td>IDE plugins; terminal multiplexer setup; personal workflow scripts; local test-running shortcuts; how an engineer loads context before a session</td>
+              <td>These are personal-environment choices. They affect only the individual engineer's session. Standardizing them produces compliance overhead with no org-level benefit.</td>
+              <td>None, other than the approved-tool list (which tool categories are permitted to connect to org systems at all).</td>
+            </tr>
+            <tr>
+              <td><strong>Experimental approaches</strong></td>
+              <td><span style="color:var(--green);font-weight:700;">Leave free</span></td>
+              <td>New prompting techniques; trying a non-standard model for a specific task; exploring multi-agent orchestration for a task class not yet in the registry</td>
+              <td>The field changes fast. Experiments that stay within the mandate boundaries and are documented in the failure log (success or failure) are the pipeline for future paved-road improvements.</td>
+              <td>Must stay within mandate boundaries. Significant experiments that affect org systems file an escape hatch and report outcomes to the platform team.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">The cost of miscategorizing</h4>
+        <ul>
+          <li>Treating a recommendation as a mandate — writing "you must use the golden config" when you mean "we strongly recommend it" — creates resentment and shadow deviations that are invisible to the platform. Engineers who cannot file an escape hatch file nothing and diverge quietly. The platform then has a false picture of adoption.</li>
+          <li>Treating a mandate as a recommendation — writing "we recommend you avoid putting secrets in agent context" when the policy is that it is prohibited — communicates the wrong level of seriousness. Security requirements are not suggestions. Ambiguity about their binding force is itself a risk.</li>
+          <li>Publish the tier classification explicitly in the golden config and the platform documentation. "This item is mandatory — CI will block if violated. This item is a recommended default — file an escape hatch to deviate. This item is your choice." Engineers who know the tier of each rule can reason about it correctly. Engineers who have to infer the tier from tone will get it wrong.</li>
+        </ul>
+
+        <div class="info"><strong>Clarity about tier is itself a governance control.</strong> An engineer who knows exactly which rules are non-negotiable and which are defaults will comply with the non-negotiable ones and engage constructively with the defaults. An engineer who cannot tell the difference treats everything as a suggestion — or treats everything as a mandate and resents all of it.</div>
+      </div>
+
+      <!-- 15.4 -->
+      <div class="card">
+        <h2>15.4 Governing without strangling</h2>
+        <p>The failure mode of governance at Stage 3 and beyond is not usually an absence of rules — it is an excess of them, or rules with no relief valve, that push teams toward the shadow usage that governance was meant to prevent. The Ch 1 dynamic — engineers using AI tools without telling anyone because the approved path was unclear or too burdensome — reappears inside a mature governance structure whenever the mandatory surface is too large and the escape hatch is too narrow.</p>
+
+        <h4 class="ph">Escape hatches with accountability</h4>
+        <ul>
+          <li>An escape hatch is a formal, lightweight process for a team to deviate from a recommended default with explicit accountability. It is not a loophole — it is the opposite of a loophole. A loophole is an undocumented deviation no one knows about. An escape hatch is a documented deviation with a named owner, a stated rationale, and a review date.</li>
+          <li>The escape hatch form should be minimal: team name, the default being deviated from, the reason (one to three sentences), the alternative approach, and the owner who will maintain it. It should take under fifteen minutes to file. If filing an escape hatch requires more effort than just ignoring the default, teams will choose the latter.</li>
+          <li>The platform team receives escape hatch filings and acknowledges them — not to approve or reject in most cases, but to maintain a complete picture of what deviations exist. Patterns in escape hatch filings are the strongest signal that a recommended default needs revision. If ten teams have filed escape hatches on the same default for similar reasons, the default is wrong — not the teams.</li>
+          <li>Set a review date on every escape hatch. Six months is a reasonable default. At review, the team confirms whether the deviation is still needed, updates the rationale if the context has changed, and the platform team assesses whether the deviation has revealed a gap in the paved road that should be addressed in the golden config. Escape hatches that persist without review become permanent undocumented deviations — which is what they were trying to avoid.</li>
+          <li>Escape hatches apply only to recommended defaults, not to mandates. A team cannot file an escape hatch from a security control or an audit requirement. If they have a genuine operational need that conflicts with a mandate, that is an escalation to the platform team and possibly to the security and compliance function — not a self-service form.</li>
+        </ul>
+
+        <h4 class="ph">Feedback loops that improve the paved road</h4>
+        <ul>
+          <li>The platform team should treat escape hatch filings, failure log entries, and team feedback as continuous product input. The golden config is not written once and maintained forever — it is a product that evolves based on usage evidence. A platform team that is not reading escape hatch filings is operating on assumptions rather than on data about what its users actually need.</li>
+          <li>Hold a quarterly standards review. Invite team leads from across the org. Review escape hatch patterns: which defaults are generating the most deviations, and why? Review the failure log: which incidents revealed gaps in the current standard? Review the recommended tier: have any items become obviously mandatory (because every deviation has produced an incident) or obviously free (because the recommendation provides no org-level value)? Publish the outcomes of the review as a version update to the golden config, with a changelog that explains each change.</li>
+          <li>Give teams credit for escape hatches that improve the standard. If a team's escape hatch revealed a gap that the platform team then fixed for everyone, acknowledge it explicitly — in the changelog, in the quarterly review, in a team-all communication. This signals that the feedback loop is real and that filing an escape hatch is a contribution, not a confession of non-compliance.</li>
+        </ul>
+
+        <h4 class="ph">Avoiding the bureaucracy that recreates shadow usage</h4>
+        <ul>
+          <li>Every governance layer added at Stage 3 should pass a simple test: does this layer prevent a real failure mode, and is the cost of the layer (in engineer time, in cognitive overhead, in friction) proportionate to the failure it prevents? A gate that takes thirty minutes of manual review to pass, for a low-risk task class, will be routed around. The routing happens silently. The gate looks like it is working because no one formally bypasses it; it is not working because the team found a way around it.</li>
+          <li>Review the mandatory surface quarterly alongside the escape hatch review. Ask: are there gates or checks that teams consistently find burdensome but that have never caught a real failure? If so, the gate should be either automated (so the friction is removed) or reclassified from mandatory to recommended. A mandatory gate that catches nothing is a tax on velocity with no return.</li>
+          <li>The Ch 1 lesson applies at Stage 3 as much as at Stage 0: engineers who find the official path too burdensome will find another path. At Stage 0, that meant undocumented AI use. At Stage 3, it means undocumented deviations from the platform baseline — which are harder to detect and harder to recover from because they occur inside an infrastructure that looks compliant from the outside.</li>
+        </ul>
+
+        <div class="info purple"><strong>Shadow usage inside governance is harder to see than shadow usage before it.</strong> At Stage 0, shadow usage was visible: teams had no AI tooling in their official workflow. At Stage 3, shadow usage is a team that uses the approved tool in an unapproved way — and the deviation is invisible unless the escape hatch system is working and the platform team is reading the signals. Design the escape hatch to be easier than shadow usage; then read it.</div>
+      </div>
+
+      <!-- 15.5 -->
+      <div class="card">
+        <h2>15.5 Evolving standards as tools change</h2>
+        <p>Agentic coding tooling is changing faster than most software infrastructure. A golden config written for a specific model capability set, a specific context-window size, or a specific tool's feature surface may be partially wrong twelve months later — not because the config was bad when written, but because the ground truth it was encoding has shifted. Standards that have no owner and no revision cadence fossilize: engineers learn that the standard is out of date, start ignoring it selectively, and stop trusting it entirely. A standard that is not maintained is worse than no standard, because it has the appearance of authority without the substance.</p>
+
+        <h4 class="ph">Every standard needs an owner and a revision cadence</h4>
+        <ul>
+          <li><strong>An owner</strong> is a named role (not a named person — people leave) responsible for monitoring whether the standard remains accurate, receiving feedback from teams, and triggering revisions when the standard is out of date. For the golden config, this is the Platform/DevEx team. For domain-specific standards — a payments-team supplement, a regulated-data addendum — this is a named role on the owning team. A standard without a named owner is owned by no one, which means it is maintained by no one.</li>
+          <li><strong>A revision cadence</strong> is a regular schedule at which the standard is reviewed for accuracy and fitness, regardless of whether any specific trigger has fired. Quarterly is appropriate for fast-moving areas like model capability recommendations and tool-specific config options. Semi-annual or annual is appropriate for slower-moving areas like the overall mandate/recommend/free classification and the stage gate criteria. Without a cadence, revisions happen only when someone is motivated to drive them — which typically means only after a failure has revealed the gap.</li>
+          <li><strong>A changelog</strong> makes the revision history legible. Engineers who encounter a golden config item they don't understand should be able to find, in two clicks, why the item exists (which failure it was designed to prevent, or which escape hatch pattern motivated it). Without a changelog, standards become cargo cult: engineers follow the rule without understanding its basis and cannot evaluate whether it still applies.</li>
+        </ul>
+
+        <h4 class="ph">Triggers for off-cadence revision</h4>
+        <ul>
+          <li>A model generation change that significantly alters capability, context-window size, or behavior in specific task classes should trigger a review of any golden config items that encode assumptions about model behavior. "Use the frontier-series model for multi-file refactoring tasks" was calibrated to a specific capability point. If the mid-tier series reaches equivalent quality for that task class, the recommendation is now unnecessarily expensive.</li>
+          <li>Three or more escape hatch filings citing the same recommended default for similar reasons is a trigger for immediate revision, not a trigger for waiting until the next quarterly review. The escape hatch system is your earliest signal that a standard has drifted from reality. Act on it promptly.</li>
+          <li>An incident postmortem that names a gap in the current standard — or a case where the standard produced the wrong behavior — is always a trigger for off-cadence revision of that item. The incident loop (Ch 14.4) closes here: the failure log entry links to the updated standard item, and the updated standard item links back to the incident that motivated it.</li>
+        </ul>
+
+        <h4 class="ph">Sunset rules that no longer fit</h4>
+        <ul>
+          <li>Not all governance debt looks like a missing rule. Some of it looks like a rule that was right when written and is now wrong — or that encodes a constraint that no longer applies. A standard that prohibits a specific tool interaction because the tool's sandboxing was immature at the time may be prohibiting something that is now well-contained. A recommended model tier calibrated when mid-tier models had a specific capability gap may be recommending the frontier tier for tasks that mid-tier now handles correctly.</li>
+          <li>Rules that are no longer fit for purpose should be retired explicitly, not left in the document with a vague caveat. A retired rule with an explanation — "this prohibition was added when X was true; X is no longer true as of version Y of the tooling; the constraint is lifted" — is legible. A rule that is present but known-to-be-wrong teaches engineers that the standard is not trustworthy, because some of it is known to be outdated.</li>
+          <li>The quarterly review is the primary venue for sunset decisions. Bring the escape hatch log, the failure log, and any known tooling changes to the review. Ask specifically: are there items in the current standard that we know are stale, that teams are routinely ignoring, or that are no longer anchored to a real failure mode? Retire them. The standard is smaller and more trusted with each honest retirement.</li>
+          <li>Communicate retirements visibly. A rule that is removed without announcement leaves engineers wondering whether it is still in force. A changelog entry and a brief team-all note — "the X prohibition has been retired; here is why" — closes the uncertainty loop. Engineers who had filed escape hatches on the retired item learn that their feedback had effect.</li>
+        </ul>
+
+        <div class="info"><strong>A smaller, trusted standard is more effective than a larger, stale one.</strong> Engineers calibrate their attention to the standard based on its track record. A standard that has always been accurate gets followed carefully. A standard that is known to have stale sections gets followed selectively — and the selection is made by the individual engineer, not by the governance design. Keep the standard lean, keep it current, and communicate its revisions clearly.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 3→4: Riya, Priya, and the Paved-Road Negotiation</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>The pressure point:</strong> Eight months into Stage 3, the Platform/DevEx team — reviewing escape hatch filings from the quarter — finds a pattern: six teams have deviated from the golden <code>CLAUDE.md</code> context-loading sequence for the same reason. The recommended sequence loads the service contract and adjacent tests before any task; teams working on internal tooling projects say this sequence adds latency to short, iterative tasks where the service contract is not the relevant context. <strong>Riya</strong> — who championed the context-loading standard in Ch 4 and regards it as a quality anchor — is skeptical. <strong>Priya</strong> — whose pilot team runs exactly this kind of iterative internal-tooling work — has been quietly using a shortened sequence without filing an escape hatch.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>The negotiation:</strong> Marcus convenes a thirty-minute standards review with Riya, Priya, and the Platform/DevEx lead. Priya acknowledges the undocumented deviation — the first signal that the escape hatch friction is too high. Riya reviews the failure log: no silent-wrong-output incident in the last eight months has been traced to a context-loading gap in the internal-tooling class of tasks. The incidents that <em>did</em> involve context loading were all in regulated-service work. The evidence shifts Riya's position: the full context-loading sequence belongs in the mandate tier for regulated-service tasks, and in the recommended tier — with a documented lightweight alternative — for internal-tooling tasks.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>The outcome:</strong> The golden config is revised. The context-loading section now has two documented paths: the full sequence for regulated-service and customer-data tasks (recommended, with a strong note that incidents have originated from deviations here); and a lightweight sequence for internal-tooling tasks (recommended, with an explicit scope statement). Both are documented in the golden config with changelog entries linking to the escape hatch pattern that motivated the split. Priya's team retroactively files the escape hatch — now a one-sentence form since the lightweight path is an official variant. The six teams who had been silently deviating adopt the lightweight variant officially.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Mandates held:</strong> The session-tagging and audit-trail requirements remain in the mandate tier. Neither Riya nor Priya challenges them — the failure log has two entries where audit gaps complicated incident recovery, and neither wants a third. Dana's policy-as-code enforcement continues to block CI on sessions without the required identity fields. The negotiation was about the recommended tier; the mandate tier was not on the table.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus codifies the principle:</strong> In the quarterly engineering leadership update, Marcus names what happened as a governance success, not a governance failure: "We found six teams silently deviating from a standard, which told us the standard was wrong — not the teams. We revised the standard, the deviations became official variants, and we closed the shadow-usage loop without a mandate. That is how the paved road improves." He adds a policy note: the escape hatch form is simplified from a one-page template to a five-field entry in the internal developer portal. The barrier to filing an escape hatch should be lower than the barrier to deviating silently.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch4-standards')">→ Ch 4. Workflow Standards</a>
+        <a onclick="go('ch5-enablement')">→ Ch 5. Enablement &amp; Onboarding</a>
+        <a onclick="go('ch13-gates')">→ Ch 13. Review Gates, Policy &amp; Compliance</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
