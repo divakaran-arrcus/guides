@@ -2314,6 +2314,225 @@ Confirm each `infra/` change. New dependencies require an approval ticket.
       </div>
     </section>
 
+    <section id="ch9-registry" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">9. The Internal Capability Registry</h1>
+      <span class="lens-tag platform">Platform &amp; Infrastructure</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why every team reinventing the same MCP server or skill is Stage 2's most expensive hidden tax; how to build an internal registry that lets engineers discover, trust, and reuse shared capabilities; the trade-offs between central and per-team ownership; how to distribute capabilities across Claude Code, Cursor, Kilo Code, and other MCP-compatible tools; and how to prevent the registry from becoming a graveyard of abandoned integrations.</p>
+
+      <!-- 9.1 -->
+      <div class="card">
+        <h2>9.1 Skills &amp; MCP servers as shared org capabilities</h2>
+        <p>At Stage 1, a single team builds a skill or an MCP server to solve a problem they have right now. At Stage 2, two teams have independently built nearly identical versions. At Stage 3, without an explicit registry, you have a dozen variations of the same deploy-integration MCP server scattered across repos, each slightly different, each maintained by whoever originally wrote it, none of them trusted by anyone outside their origin team.</p>
+
+        <h4 class="ph">What "shared org capability" means</h4>
+        <ul>
+          <li>A <strong>skill</strong> (a <code>SKILL.md</code>-based methodology unit) or an <strong>MCP server</strong> (a process exposing tools, resources, or prompts via the Model Context Protocol) becomes a shared org capability the moment a second team benefits from it. The question is whether that sharing happens by accident — through Slack links and copy-pasted configs — or by design, through a discoverable, versioned registry.</li>
+          <li>MCP servers are particularly high-leverage shared capabilities because they wrap internal systems — your ticketing platform, your internal deploy API, your internal documentation store — that every team needs to integrate with. One well-maintained MCP server wrapping the deploy API is worth more than fifteen ad-hoc implementations, and it only needs to be audited once.</li>
+          <li>Skills encode org-specific methodology. A <code>deploy-checklist</code> skill that encodes your org's release gate process, a <code>migration-workflow</code> skill that encodes the database schema change process — these are org knowledge, not individual knowledge. They belong in a shared registry, not in one engineer's <code>~/.claude/skills/</code> directory.</li>
+          <li>The argument for a registry is not elegance. It is cost. Every hour a payments engineer spends building an MCP integration with the internal ticketing system that the platform team already built and tested six months ago is pure waste. The registry exists to make that waste visible and preventable.</li>
+        </ul>
+
+        <h4 class="ph">MCP as the cross-tool standard</h4>
+        <ul>
+          <li>MCP (Model Context Protocol) is an open, tool-agnostic protocol. An MCP server built once runs with any MCP-compatible client — Claude Code, Cursor, Kilo Code, or any future tool that adopts the standard. This is the core reason to invest in MCP servers rather than tool-specific integrations: you build the integration once and it works everywhere.</li>
+          <li>A shared registry of MCP servers is therefore a shared registry of capabilities for the entire org's toolchain, not just for whichever tool any given team happens to use today. That is a fundamentally different — and far more durable — investment than a collection of Claude-Code-only slash commands.</li>
+          <li>Skills are more tool-specific in form (a <code>SKILL.md</code> is Claude Code's format; Gemini CLI uses its own activation model; Kilo Code encodes methodology as custom modes). The capability-sharing concept is general — the format is a detail. When you register a capability in the internal registry, document both the MCP server form (for cross-tool compatibility) and the skill form (for Claude Code users) where both exist.</li>
+        </ul>
+
+        <div class="info"><strong>The registry problem in one sentence:</strong> if the answer to "does anyone have an MCP server for our internal deploy API?" is "I think payments built something, ask Amir" — you need a registry.</div>
+      </div>
+
+      <!-- 9.2 -->
+      <div class="card">
+        <h2>9.2 Building an internal registry</h2>
+        <p>A registry does not have to be a custom-built platform. It needs to answer three questions reliably: What capabilities exist? Who published them and can I trust them? How do I get and use one? The implementation can be as simple as a well-structured internal repository with enforced conventions, or as elaborate as a searchable internal portal. Start simple; add structure as the catalog grows.</p>
+
+        <h4 class="ph">Discovery — how engineers find capabilities</h4>
+        <ul>
+          <li>The discovery surface is the first thing to get right. An engineer with a new task should be able to search the registry in under two minutes and get a confident answer about whether a capability already exists. Anything slower means engineers will build instead of search.</li>
+          <li>A minimal viable registry is a <code>platform/capabilities/</code> directory with one subdirectory per capability, each containing a <code>README.md</code> (what it does, who owns it, how to install it) and a <code>manifest.json</code> (machine-readable metadata: name, version, type, owner, tags). A <code>CATALOG.md</code> at the root enumerates all capabilities with one-line descriptions and links.</li>
+          <li>Tags matter. An engineer looking for "deploy" should find capabilities tagged <code>deployment</code>, <code>ci</code>, and <code>release-management</code>. Untagged capabilities are invisible capabilities. Make tagging a required field in the manifest.</li>
+          <li>Search tooling can layer on top. A simple GitHub search over the registry repo works at small scale. At larger scale, a portal that indexes manifests and exposes a searchable UI is worth the investment — but only after the registry itself has proven its value with a working catalog.</li>
+        </ul>
+
+        <h4 class="ph">Versioning</h4>
+        <ul>
+          <li>Every published capability has a semantic version. Teams that install a capability pin to a version; they choose when to upgrade. This is the same contract your package ecosystem gives you for libraries — apply it to capabilities.</li>
+          <li>The version is in the manifest, in the install path or package reference, and in a changelog maintained alongside the capability. A changelog entry for every version that affects behavior is not optional — it is how a team consuming your capability learns what changed when something breaks after an upgrade.</li>
+          <li>When a breaking change is unavoidable (a tool's input schema changes, a skill's trigger conditions shift), the version bump communicates it. The release notes spell it out. Teams on the old version stay on the old version until they choose to migrate — they are not silently broken by a registry update.</li>
+        </ul>
+
+        <h4 class="ph">Trust &amp; provenance — who published it, is it safe?</h4>
+        <ul>
+          <li>Provenance is the registry's most important safety property. An MCP server with access to your internal deploy API runs with real production credentials. An engineer who installs a server from the registry is implicitly trusting that it has been reviewed and is safe to run. That trust must be earned and maintained — it cannot be assumed because something is in an internal registry.</li>
+          <li>The manifest requires a named owner (an engineer or team), a review date, and a security-review status field. The Platform/DevEx team and the security lead (Dana, at Meridian) define what "security-reviewed" means: at minimum, the server's code has been read by someone other than its author and any credential handling has been verified. This is addressed further in Ch 12.</li>
+          <li>Capabilities without a named owner are ungoverned capabilities. Listing a capability in the registry without an owner is worse than not listing it: it implies governance that does not exist. The registry should refuse to publish capabilities with an empty owner field.</li>
+          <li>A simple trust tier helps: <em>official</em> (owned and reviewed by the Platform/DevEx team), <em>community</em> (owned by a named team, peer-reviewed, security sign-off from Dana's team), <em>experimental</em> (new submissions awaiting full review — usable but explicitly flagged). Engineers can see the tier at a glance and make an informed decision about what to install.</li>
+        </ul>
+
+        <div class="info orange"><strong>Provenance is not paranoia.</strong> An MCP server running in a developer's session has access to whatever that session has access to — file system, credentials in environment variables, internal network endpoints. Reviewing what a server does before publishing it to a shared registry is a basic operational hygiene requirement, not an overreaction.</div>
+      </div>
+
+      <!-- 9.3 -->
+      <div class="card">
+        <h2>9.3 Central vs per-team ownership</h2>
+        <p>Not every capability belongs in the central registry. Some capabilities are genuinely team-local: they encode domain knowledge that only the payments team would ever need, or they wrap a system that only one team has access to. The central registry should contain broadly reusable capabilities; it should not be a dumping ground for everything. The distinction matters because central capabilities carry a maintenance obligation that team-local capabilities do not.</p>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4>Central registry</h4>
+            <ul style="margin:0;padding-left:16px;font-size:13px;line-height:1.7;">
+              <li>Wraps internal systems used by multiple teams (deploy API, ticketing, internal docs, CI).</li>
+              <li>Encodes org-wide workflow methodology (review gates, deployment checklists, incident runbooks).</li>
+              <li>Reviewed by the Platform/DevEx team and security lead before publication.</li>
+              <li>Versioned with a changelog; breaking changes require a deprecation cycle.</li>
+              <li>Named owner on the Platform/DevEx team; rotation schedule exists.</li>
+              <li>Any team can install; any team can file a bug or propose a change via PR.</li>
+              <li><em>Right test:</em> would two or more teams benefit from this independently?</li>
+            </ul>
+          </div>
+          <div class="cmp-c">
+            <h4>Team-local capabilities</h4>
+            <ul style="margin:0;padding-left:16px;font-size:13px;line-height:1.7;">
+              <li>Wraps a system only one team has access to or that only one team's domain requires.</li>
+              <li>Encodes team-specific workflow knowledge (payments settlement flow, data pipeline orchestration).</li>
+              <li>Reviewed by the owning team; security sign-off still required if it handles credentials or production access.</li>
+              <li>Versioned if other people in the team depend on it; informal if it's a single engineer's productivity tool.</li>
+              <li>Named owner is the engineer or team who built it.</li>
+              <li>Lives in the team's own repo or a team-internal registry; not discoverable org-wide by default.</li>
+              <li><em>Right test:</em> would only this team ever need it, even if the org grew?</li>
+            </ul>
+          </div>
+        </div>
+
+        <h4 class="ph">The promotion path</h4>
+        <ul>
+          <li>When a team-local capability turns out to be useful to a second team, it is a candidate for promotion to the central registry. Promotion is not automatic — it requires a review and a named owner who accepts the maintenance obligation. A capability promoted without an owner who accepts maintenance responsibility will rot faster in the central registry than it would have in the team's own repo.</li>
+          <li>Track promotion candidates. The quarterly registry review (analogous to the golden config audit in Ch 8) is the moment to look for patterns: capabilities that appear in multiple team registries with different implementations are the most valuable promotion candidates.</li>
+          <li>Demotion — moving a capability from central to team-local — also happens. If a capability turns out to only be used by one team after six months of availability, the overhead of maintaining it centrally is not justified. Demote it, transfer ownership to the using team, and reduce the central registry's maintenance load.</li>
+        </ul>
+
+        <div class="info green"><strong>The size of the central registry is a governance signal.</strong> A registry with 200 capabilities sounds impressive; a registry where 180 are unmaintained is a liability. Fewer, better-maintained, widely-used capabilities are worth more than a large catalog that nobody trusts.</div>
+      </div>
+
+      <!-- 9.4 -->
+      <div class="card">
+        <h2>9.4 Distribution mechanics</h2>
+        <p>Publishing a capability to the registry is the start, not the end. Engineers need a friction-free path from "I found this in the registry" to "it is running in my session." The distribution mechanism determines how quickly adoption spreads and how easily capabilities stay current. Choose the mechanism that matches your org's existing toolchain, then automate the update path.</p>
+
+        <h4 class="ph">Distribution patterns</h4>
+        <ul>
+          <li><strong>Package registry (npm / PyPI / internal Artifactory):</strong> publish MCP servers as versioned packages. Engineers install with a standard package manager command. Version pinning, lockfiles, and dependency management come for free. This is the most composable pattern and the right choice when capabilities have their own dependencies that need management.</li>
+          <li><strong>Git submodules or subtrees:</strong> the registry repo is included as a submodule in each consuming repo. Updates are explicit (a <code>git submodule update</code>) and appear as commits in the consuming repo's history — auditability is built in. Operationally heavier than package management but familiar to teams that already use submodules for shared libraries.</li>
+          <li><strong>Internal plugin marketplace:</strong> a curated list of installable extensions surfaced directly inside an agentic tool's UI. Claude Code's <code>/plugin</code> flow is the canonical example. Teams install capabilities with a single command; the tool manages versioning and updates. Lower friction for end users, but limited to tool-specific packaging formats.</li>
+          <li><strong>Config-as-code distribution:</strong> MCP server configs (the JSON stanzas that register a server with a tool) are stored in the golden config repo (Ch 8) and distributed via the same sync script. Teams get the server config automatically; they only need the server binary or package available on their machine or in CI. Clean separation between "how the tool knows about the server" and "where the server binary lives."</li>
+        </ul>
+
+        <h4 class="ph">Claude Code — plugin marketplace (main flow)</h4>
+        <p>For Claude Code users, the internal plugin marketplace is the lowest-friction distribution path for skills. The Platform/DevEx team publishes the org's capability set to an internal plugin source; engineers install with a single <code>/plugin</code> command:</p>
+
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:10px 0;"><code><span style="color:var(--text-muted);"># Add the internal capability source (done once per developer)</span>
+/plugin marketplace add meridian-internal/capability-registry
+
+<span style="color:var(--text-muted);"># Browse and install capabilities</span>
+/plugin
+<span style="color:var(--text-dim);">→ meridian/deploy-checklist    v1.3.0  Official  Deploy gate skill for Meridian CI</span>
+<span style="color:var(--text-dim);">→ meridian/deploy-mcp-server   v2.1.0  Official  MCP server wrapping the internal deploy API</span>
+<span style="color:var(--text-dim);">→ meridian/incident-runbook    v1.0.1  Official  Incident response workflow skill</span>
+<span style="color:var(--text-dim);">→ payments/settlement-flow     v0.9.0  Community Settlement workflow (payments team)</span>
+
+<span style="color:var(--text-muted);"># Install a specific capability</span>
+/plugin install meridian/deploy-mcp-server</code></pre>
+
+        <p style="font-size:13.5px;color:var(--text-dim);margin-top:8px;">After installation, the MCP server is available in every subsequent Claude Code session. The plugin manager handles version pinning and notifies the engineer when a newer version is available in the registry. Skills installed as plugins appear automatically in the agent's <code>system-reminder</code> context and are invokable via the <code>Skill</code> tool without any additional configuration.</p>
+
+        <aside class="tool-alt">
+          <strong>Cursor, Kilo Code, and other MCP-compatible tools — package + config distribution</strong>
+          <p style="margin:8px 0 6px;">For tools that don't have a built-in plugin marketplace, the same MCP servers are distributed via a package registry combined with a shared MCP config stanza. This is the cross-tool path, and it works for any MCP-compatible client.</p>
+          <p style="margin:4px 0;font-size:13px;"><strong>Step 1 — Install the server binary (npm example):</strong></p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 10px;"><code><span style="color:var(--text-muted);"># Install from the internal npm registry (Artifactory / GitHub Packages / similar)</span>
+npm install --save-dev @meridian-internal/deploy-mcp-server@2.1.0</code></pre>
+          <p style="margin:4px 0;font-size:13px;"><strong>Step 2 — Register in Cursor (<code>.cursor/mcp.json</code>) or Kilo Code (<code>.kilocode/mcp.json</code>):</strong></p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 10px;"><code>{
+  "mcpServers": {
+    "meridian-deploy": {
+      "command": "npx",
+      "args": ["@meridian-internal/deploy-mcp-server"],
+      "env": {
+        "DEPLOY_API_TOKEN": "${MERIDIAN_DEPLOY_TOKEN}"
+      }
+    }
+  }
+}</code></pre>
+          <p style="margin:4px 0;font-size:13px;"><strong>Step 3 — Distribute the config stanza via the golden config sync script (Ch 8):</strong></p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 10px;"><code><span style="color:var(--text-muted);"># scripts/sync-mcp-config.sh — runs in CI or manually; writes the org-standard</span>
+<span style="color:var(--text-muted);"># MCP stanzas into .cursor/mcp.json, .kilocode/mcp.json, and .claude/settings.json</span>
+scripts/sync-mcp-config.sh --registry-version 2.1.0 --target cursor,kilo,claude</code></pre>
+          <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Because MCP is an open protocol, the same server binary serves all three tools. The only difference is which config file the stanza is written to. The sync script (from Ch 8) handles the per-tool translation. Engineers on any tool get the same capabilities from the same versioned server — no per-tool reimplementation required.</p>
+        </aside>
+
+        <h4 class="ph">Credential handling in distributed capabilities</h4>
+        <ul>
+          <li>MCP servers that access internal systems need credentials. Never bundle credentials in the package or the config stanza committed to source control. The config stanza uses environment variable references (<code>${MERIDIAN_DEPLOY_TOKEN}</code>); the actual value comes from each developer's local environment or from a secrets manager injected at CI time.</li>
+          <li>Document the required environment variables in the capability's <code>README.md</code> under a <strong>Credentials</strong> section. Engineers should be able to read the README, request the appropriate access from the infra team, and be running the capability within 30 minutes. Undocumented credential requirements are a hidden barrier that kills adoption.</li>
+        </ul>
+      </div>
+
+      <!-- 9.5 -->
+      <div class="card">
+        <h2>9.5 Maintaining quality</h2>
+        <p>A registry that publishes fast but reviews nothing will eventually contain capabilities that are broken, insecure, or abandoned. The value of the registry depends entirely on whether engineers trust what's in it. Trust is built through consistent review before publication, visible ownership, and an honest deprecation process. It is destroyed faster than it is built — one bad capability that breaks production trust will keep engineers building their own integrations for months.</p>
+
+        <h4 class="ph">Review before publish</h4>
+        <ul>
+          <li>Every capability submitted to the central registry goes through a review before it is published. The review has two parts: a functional review (does it do what it claims, is the interface clean, is the README complete?) and a security review (does it handle credentials safely, does it have access only to what it needs, has the code been read by someone other than its author?).</li>
+          <li>The functional review is done by a Platform/DevEx team member. The security review is done or delegated by the security lead (Dana at Meridian) for any capability that touches production systems or handles credentials. A capability that skips the security review is not published — not slowed, not fast-tracked, not published.</li>
+          <li>Keep the review SLA short. A two-week review cycle is a two-week incentive to build locally instead of submitting. The Platform/DevEx team commits to a review turnaround (five business days for community submissions, two for official-tier updates) and tracks it. If the team is consistently missing the SLA, the bottleneck is in the review process, not in the submitters.</li>
+        </ul>
+
+        <h4 class="ph">Named ownership per capability</h4>
+        <ul>
+          <li>Every capability in the registry has a named owner — a specific engineer, not a team alias. The owner's name appears in the manifest, the README header, and the registry catalog. Ownership means: you respond to bug reports within a reasonable SLA, you maintain compatibility across minor version bumps, and you plan and communicate breaking changes before they happen.</li>
+          <li>Ownership changes are registry events. When an engineer leaves a team or changes role, their capabilities are either transferred to a new named owner or moved to community tier with a note that active maintenance has changed hands. A capability without an active owner is not a stable dependency — teams should know that before they pin to it.</li>
+          <li>Name a backup owner for each official-tier capability. The backup takes over if the primary is on leave, changes teams, or leaves the company. Single-point-of-knowledge is a maintenance anti-pattern in code and a registry anti-pattern in capability ownership.</li>
+        </ul>
+
+        <h4 class="ph">Deprecation — removing capabilities without breaking teams</h4>
+        <ul>
+          <li>Deprecation follows the same cycle as the golden config (Ch 8): announce in the changelog and the registry listing one version before removal; tag the capability as deprecated in the manifest; remove in the following version. Teams that have pinned to the deprecated version are not broken by the removal — their pin holds until they choose to move.</li>
+          <li>A deprecated capability's README gets a banner: the replacement, the migration path, and the planned removal date. Engineers searching the registry see the deprecation status before they install. They will not install a deprecated capability unless they have a specific reason, which is the correct behavior.</li>
+          <li>Run a deprecation sweep quarterly. Capabilities that have had zero downloads in the past 90 days and whose owner is no longer active are candidates for archival, not deprecation — archive them to a separate <code>archived/</code> path in the registry so the catalog stays clean without erasing history.</li>
+        </ul>
+
+        <h4 class="ph">Preventing a registry of stale abandoned tools</h4>
+        <ul>
+          <li>The failure mode is not a single bad capability — it is slow accumulation. Each quarter, a few capabilities go unmaintained. After two years, a third of the registry is stale. Engineers learn not to trust anything in the registry unless they can verify it themselves, which defeats the purpose entirely.</li>
+          <li>Run a health check as part of the quarterly review. Each capability is green (owner confirmed active, last updated within 6 months), amber (owner unresponsive or last update 6–12 months ago), or red (owner departed or last update over 12 months ago). Red capabilities get a 30-day remediation notice: find a new owner, update it, or it moves to archived.</li>
+          <li>Publish the health dashboard. Transparency about registry health is itself a quality signal. An engineer who sees that 90% of official-tier capabilities are green and current will trust the registry. One who sees a sea of amber will not.</li>
+        </ul>
+
+        <div class="info purple"><strong>The quality bar sets the trust level.</strong> Engineers do not read capability source code before installing; they install based on registry tier, owner name, and recency. Those signals are only meaningful if the review and maintenance process that produces them is real. A registry that approves everything and never deprecates anything is a list, not a registry.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 2→3: The Platform/DevEx Team Launches the Capability Registry</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">Three months into Stage 3, the <strong>Platform/DevEx team</strong> (now six engineers, including <strong>Nadia</strong> and <strong>Amir</strong> from the original payments-team pilot) conducts a capability audit across all active teams. They find seven independent MCP server implementations wrapping variants of the same internal deploy API — each built by a different team, each with slightly different tool schemas, two of them handling the deploy token in ways that Dana flags as insecure. The audit report to <strong>Marcus</strong> is straightforward: "We are paying for the same integration seven times and two of them are security risks."</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The Platform/DevEx team builds a single <code>meridian-deploy-mcp-server</code>, reviewed by Amir (functional) and <strong>Dana</strong> (security). Dana's security review produces three required changes before publication: credentials must come from environment variables only (no fallback to config files), the server must log all deploy-triggering tool calls to the audit trail, and the README must list the exact OAuth scopes required. The server is published to the registry at <code>v1.0.0</code> as <em>official</em> tier. The seven team-local implementations are given a 60-day migration window and then deprecated.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The first reused <em>skill</em> is a <code>deploy-checklist</code> skill originally written by the <strong>payments team</strong>. Amir nominates it for promotion after seeing Nadia use an identical checklist she had independently written for the platform team's own deploys. The promotion PR takes two days — one day for the functional review, one day for Dana to confirm there are no credential-handling concerns in a read-only skill. The skill goes live as <em>community</em> tier; within two weeks, four other teams have installed it. <strong>Riya</strong> notes in the engineering retrospective that this is the first time she has seen a workflow practice spread across teams without a meeting.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Dana</strong> establishes a standing requirement: no capability with access to production systems or credential handling may be published to the central registry — at any tier — without a completed security review checklist in the PR. The checklist is three items: credential storage verified, audit logging present, access scope documented. Dana's team commits to reviewing checklists within two business days. <em>(The broader framework for security review of agentic capabilities is in Ch 12.)</em></li>
+          <li style="font-size:13.5px;margin-bottom:0px;">At the end of Q3, the registry has 14 official-tier capabilities and 6 community-tier capabilities. The quarterly health check shows all 14 official-tier capabilities green. <strong>Marcus</strong> asks for a cost estimate of the time saved by avoiding duplicate integrations; Nadia's conservative estimate is 40 engineer-hours per quarter at current scale, growing as more teams onboard. "That's one engineer's quarter, every quarter, permanently," Marcus notes. "We should have built this in Stage 2."</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch8-config')">→ Ch 8. Golden Configuration as Code</a>
+        <a onclick="go('ch12-security')">→ Ch 12. Security at Org Scale</a>
+        <a href="gen-ai-hero-to-architect-guide.html">Part 2 — Skills (Ch 15) &amp; MCP (Ch 16)</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
