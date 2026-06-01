@@ -2804,6 +2804,255 @@ except Exception as e:
       </div>
     </section>
 
+    <!-- ═══════════════════ CH 11 ═══════════════════ -->
+    <section id="ch11-cost" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">11. Sandboxing, Isolation &amp; Cost Control at Scale</h1>
+      <span class="lens-tag platform">Platform &amp; Infrastructure</span>
+      <span class="lens-tag governance" style="margin-left:6px;">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: how to choose an isolation model for agent execution that matches your blast-radius tolerance; how to set per-team token and spend budgets that are actually enforced; how to route tasks to cheap-fast models versus capable models based on task type; how to detect and stop runaway agent loops before they blow your monthly budget; and how to treat cost as a first-class operational metric — visible, attributable, and improving over time.</p>
+
+      <!-- 11.1 -->
+      <div class="card">
+        <h2>11.1 Isolation models at scale</h2>
+        <p>A single engineer running an agent on a local machine has one blast radius: their own working tree. An org running agents headless in CI, in shared environments, or on behalf of multiple teams has a much larger blast radius — a misconfigured agent can overwrite shared files, exhaust cloud credentials, hit production APIs, or consume quota that was budgeted for another team. Isolation is the engineering answer to blast radius. The question is not whether to isolate, but at what cost and with what fidelity.</p>
+
+        <h4 class="ph">Why isolation becomes non-negotiable at org scale</h4>
+        <ul>
+          <li>At Stage 2, one team's agents are contained by social norms and shared context files. At Stage 3, multiple teams are running agents concurrently, often against shared resources — a single unconstrained run can affect everyone. Isolation converts social contracts into technical guarantees.</li>
+          <li>Agents that can write to the filesystem, run shell commands, or call APIs need a boundary that limits the scope of what they can change. Without that boundary, every agentic run is a potential incident.</li>
+          <li>Audit requirements in regulated environments are much easier to satisfy when each agent run has a clear, logged, bounded execution environment. "The agent ran on the CI host with the team's credentials" is not an audit trail; "the agent ran in an ephemeral container with exactly these permissions for exactly 8 minutes" is.</li>
+        </ul>
+
+        <h4 class="ph">Isolation model trade-offs</h4>
+        <table class="tbl" style="margin-top:8px;">
+          <thead>
+            <tr>
+              <th>Isolation model</th>
+              <th>Blast-radius containment</th>
+              <th>Setup cost</th>
+              <th>Fidelity to prod env</th>
+              <th>Best fit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Host process (no isolation)</strong></td>
+              <td>None — full host access</td>
+              <td>Zero</td>
+              <td>Exact</td>
+              <td>Individual developer sessions where the engineer is watching and approving</td>
+            </tr>
+            <tr>
+              <td><strong>Dev container / devcontainer</strong></td>
+              <td>Medium — filesystem and network bounded by container; host is protected</td>
+              <td>Low — define once, reuse across team</td>
+              <td>High — matches dev toolchain exactly</td>
+              <td>Team-level standardization; CI advisory steps; interactive agentic sessions where the engineer is present</td>
+            </tr>
+            <tr>
+              <td><strong>Ephemeral VM (cloud or local)</strong></td>
+              <td>High — full OS boundary; disposable after run; no shared filesystem</td>
+              <td>Medium — VM images, provisioning time (30–90 s)</td>
+              <td>High if image matches staging/prod</td>
+              <td>Headless CI agent runs; any run with write-access to shared infra; regulated environments</td>
+            </tr>
+            <tr>
+              <td><strong>Ephemeral cloud sandbox (E2B, Modal, Daytona, or equivalent)</strong></td>
+              <td>Very high — fully managed, network-egress controlled, credential-scoped</td>
+              <td>Higher — API integration, per-sandbox cost, cold-start latency</td>
+              <td>Medium — depends on sandbox image; may differ from prod</td>
+              <td>Untrusted or multi-tenant agent execution; agent-as-a-service architectures; orgs with strict data-residency requirements</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info" style="margin-top:10px;"><strong>Verify sandbox product availability.</strong> The ephemeral cloud sandbox market is evolving rapidly. Products, pricing, and capability sets change frequently — verify current options and pricing against provider documentation before committing to a platform (illustrative names: E2B, Modal, Daytona; others exist and the landscape shifts).</div>
+
+        <h4 class="ph">Choosing the right isolation level</h4>
+        <ul>
+          <li>Match isolation to the agent's permission scope. An agent that only reads files and posts a comment needs a devcontainer. An agent that writes files, runs tests, and calls external APIs needs an ephemeral VM or cloud sandbox.</li>
+          <li>The cost of isolation is largely a one-time platform investment. A well-configured devcontainer definition or VM image is written once and reused by every team. Amortize the setup cost over the number of agent runs it will cover.</li>
+          <li>Over-isolating is not free. Ephemeral VM cold-start times of 60–90 seconds add up in a high-volume CI environment. Match isolation overhead to the risk profile of the task — a review-comment bot does not need a full ephemeral VM.</li>
+          <li>Define the isolation model for each agent role in your Platform/DevEx team's runbook. When a new team onboards an agentic CI step, the isolation choice should be a documented decision, not a judgment call made under pressure.</li>
+        </ul>
+      </div>
+
+      <!-- 11.2 -->
+      <div class="card">
+        <h2>11.2 Budgets, quotas &amp; per-team accounting</h2>
+        <p>At Stage 2, one team's token spend is easy to reason about. At Stage 3, multiple teams are using agents concurrently, some teams are running agentic CI workflows, and the monthly AI spend can double in a week if a single runaway job is not caught. Budgets and per-team accounting are the financial equivalent of isolation — they convert org-level spend visibility into team-level accountability.</p>
+
+        <h4 class="ph">Per-team budgets: the principle</h4>
+        <ul>
+          <li>Assign a token or dollar budget to each team, not to the org as a whole. A single org-level budget is invisible — nobody knows how much they are spending relative to the total until someone hits the cap. Per-team budgets create accountability at the right level of resolution.</li>
+          <li>Budget at two granularities: per-seat (how much can one engineer consume in a month) and per-team (how much can the team's CI jobs and shared agentic workflows consume). The two do not have the same shape — interactive developer sessions have a low, steady cost profile; CI agentic jobs have a spiky, potentially high cost profile.</li>
+          <li>Review budgets quarterly, not just at crisis time. As teams mature their agentic workflows, their spend profiles change — some teams will optimize and reduce spend, others will add new agentic steps and need more budget. A static budget is stale within one quarter at Stage 3 velocity.</li>
+        </ul>
+
+        <h4 class="ph">Hard vs soft quotas</h4>
+        <ul>
+          <li>A <em>soft quota</em> triggers an alert when a team exceeds a threshold but does not stop the work. Soft quotas are the right default for developer sessions — you do not want to interrupt an engineer mid-task because they hit a token limit. The alert goes to the team lead and the Platform/DevEx team.</li>
+          <li>A <em>hard quota</em> terminates or rejects new requests when the limit is reached. Hard quotas are appropriate for CI agent jobs and automated pipelines — these are batch processes, not interactive sessions, and a hard cap prevents a runaway job from consuming an entire month's budget in one run.</li>
+          <li>Set soft quotas at 70–80% of the hard cap so teams get a warning window before hitting the wall. A team that hits a hard cap with no warning will escalate as an incident; a team that gets a 75% alert has time to investigate and adjust.</li>
+        </ul>
+
+        <h4 class="ph">Tagging spend for attribution</h4>
+        <ul>
+          <li>Every API call or agentic job should carry a tag that identifies the team, the use case, and ideally the task type (interactive session, CI review bot, CI generation job, shared pipeline). Without tags, the finance dashboard shows one number; with tags, it shows which team, which workflow, and which task type is driving cost — and in which direction it is trending.</li>
+          <li>Build tagging into your API gateway or model proxy layer, not into individual client code. Tags that depend on every team remembering to set a header will be missing exactly when you need them — after an incident, when you are trying to trace a spike.</li>
+          <li>Expose per-team spend dashboards to team leads and tech leads, not just to the Platform/DevEx team. Teams that can see their own spend will self-regulate. Teams that cannot see it will not.</li>
+        </ul>
+
+        <aside class="tool-alt">
+          <strong>Quota enforcement — tool-agnostic patterns</strong>
+          <p style="margin:8px 0 6px;">If your agentic tool vendor does not natively support per-team quotas, the common implementation patterns are: (1) route all LLM calls through a shared API gateway or proxy (e.g., LiteLLM, a custom FastAPI proxy, or a cloud-provider AI gateway) that enforces per-team rate and spend limits; (2) use provider-side API key scoping — create one API key per team with a spend limit configured in the provider console (Anthropic, OpenAI, and Google Vertex all support some form of usage-capped API keys — verify current capabilities); (3) for CI jobs specifically, set per-job token caps using the CLI flag or SDK parameter (e.g., <code>--max-tokens</code> on Claude Code CLI, <code>max_tokens</code> in the API, or equivalent in your tool). The proxy approach is the most robust because it is independent of which tool or model any given team is using.</p>
+        </aside>
+      </div>
+
+      <!-- 11.3 -->
+      <div class="card">
+        <h2>11.3 Model routing for cost</h2>
+        <p>Not every task needs the most capable model. Using a frontier Opus-class or GPT-5-full model for a task that a Sonnet-class or Flash-class model handles correctly is a purely avoidable cost. Model routing — directing each task to the model that is cheapest while still correct — is one of the highest-leverage cost engineering levers available at org scale.</p>
+
+        <h4 class="ph">The routing principle</h4>
+        <ul>
+          <li>Classify each agentic task by complexity before routing. Simple, well-specified tasks (convention checking, intent classification, code formatting review, short-form generation) route to a fast, cheap model. Complex tasks (architecture analysis, deep code review, multi-step reasoning, root-cause analysis) route to a capable model. The classification does not need to be perfect — it needs to be conservative enough that the cheap model handles the easy work reliably.</li>
+          <li>Express the routing rule explicitly in your platform configuration, not in individual team prompts. A routing rule written once in the platform applies to every team; a routing rule that lives in each team's CLAUDE.md will be applied inconsistently and will drift.</li>
+          <li>Measure routing effectiveness quarterly. Track the fraction of tasks that route to the cheap tier and the error or escalation rate from that tier. If the cheap tier is escalating frequently, the routing criteria are too aggressive — tighten them. If the cheap tier is almost never used, the routing criteria are too conservative — loosen them.</li>
+        </ul>
+
+        <h4 class="ph">Practical task-to-tier mapping</h4>
+        <table class="tbl" style="margin-top:8px;">
+          <thead>
+            <tr>
+              <th>Task type</th>
+              <th>Recommended tier</th>
+              <th>Illustrative model (verify current)</th>
+              <th>Routing signal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Convention checks, linting review, label classification</td>
+              <td>Fast / cheap</td>
+              <td>Claude Haiku, GPT-4o mini, Gemini Flash</td>
+              <td>Short prompt + structured output; no multi-step reasoning needed</td>
+            </tr>
+            <tr>
+              <td>Diff summary, PR description, release notes</td>
+              <td>Fast / cheap to mid</td>
+              <td>Claude Sonnet 4.7, GPT-5 mini, Gemini Flash</td>
+              <td>Medium context; generative but low-stakes output</td>
+            </tr>
+            <tr>
+              <td>Architecture review, security threat modeling, complex refactor</td>
+              <td>Capable / expensive</td>
+              <td>Claude Opus 4.7, GPT-5, Gemini 3 Pro</td>
+              <td>Long context; multi-step reasoning; high-stakes output</td>
+            </tr>
+            <tr>
+              <td>Agentic code generation (multi-file, multi-step)</td>
+              <td>Capable / expensive</td>
+              <td>Claude Opus 4.7, GPT-5</td>
+              <td>Long horizon; tool use; high recovery cost if wrong</td>
+            </tr>
+            <tr>
+              <td>CI intent classification, ticket triage, metadata enrichment</td>
+              <td>Fast / cheap</td>
+              <td>Claude Haiku, GPT-4o mini, Gemini Flash</td>
+              <td>Structured input/output; high volume; low stakes per call</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info" style="margin-top:10px;"><strong>Model names evolve — route by capability tier, not by name.</strong> The table above uses illustrative model names as of mid-2026. Provider model naming changes frequently. Express routing rules in terms of tier (fast/cheap, mid, capable/expensive) and map to specific model names in a single configuration file that the Platform/DevEx team updates when models are released or deprecated.</div>
+
+        <div class="info green" style="margin-top:10px;"><strong>Cross-reference: Part 2, Ch 4 — individual-level cost engineering.</strong> The mechanics of model selection, the capability/cost/latency tradeoff framework, prompt caching, and token budget management for individual engineers are covered in depth in <a href="gen-ai-hero-to-architect-guide.html#ch4-models" style="color:var(--cyan);">Part 2 — Model Selection &amp; Cost Engineering (Ch 4)</a>. This section covers the org-level routing policy that sits above those individual-level choices. Both layers are needed: individual mechanics without org-level routing produces uneven cost profiles; org-level routing without individual-level discipline produces prompts that are needlessly expensive even within the correct tier.</div>
+      </div>
+
+      <!-- 11.4 -->
+      <div class="card">
+        <h2>11.4 Runaway protection &amp; circuit breakers</h2>
+        <p>Agentic loops can run away. A misconfigured tool call, a model that retries an action that keeps failing, an unbounded context window growing with every turn, a CI job that spawns child agents — any of these can result in a single run consuming 10× its expected token budget before anyone notices. Runaway protection is not optional at Stage 3; it is foundational infrastructure.</p>
+
+        <h4 class="ph">Where runaway risk is highest</h4>
+        <ul>
+          <li>Headless CI agentic jobs with no human in the loop. An interactive session is self-limiting because the engineer is watching. A headless job is not — it will continue until the job timeout, the hard cap, or the provider rate limit stops it.</li>
+          <li>Agentic loops with tool calls that modify state. An agent that reads a file and comments on it is bounded by what it can read. An agent that writes a file, runs a test, reads the test output, and adjusts the file is in a loop — and if the test never passes, the loop never terminates naturally.</li>
+          <li>Multi-agent orchestration where a parent agent spawns child agents. Each child agent has its own token budget; the parent's budget does not constrain the children. Without explicit per-child caps, a single orchestration run can consume n × single-agent budget where n is unbounded.</li>
+        </ul>
+
+        <h4 class="ph">Per-run caps</h4>
+        <ul>
+          <li>Set a max-tokens limit on every headless agentic run. This is the most direct protection: when the run hits the limit, it terminates. The cap should be set at a conservative multiple of the expected run cost — a review bot that typically uses 2,000 tokens should have a cap of 8,000–10,000, not 100,000.</li>
+          <li>Set a wall-clock timeout on every CI agentic step. A token cap catches runaway token consumption; a time cap catches agents that make many cheap tool calls in a slow loop. Both are needed. Typical CI agentic steps should complete in under 3 minutes; a 10-minute wall-clock cap is a reasonable outer bound for most advisory agent steps.</li>
+          <li>For multi-agent orchestration, set per-child caps explicitly. Pass the budget as a parameter to each child spawn, not just to the parent orchestrator. Log per-child spend so you can trace which child consumed what when a run goes over budget.</li>
+        </ul>
+
+        <h4 class="ph">Per-day caps and circuit breakers</h4>
+        <ul>
+          <li>Per-run caps protect against single-run disasters. Per-day caps protect against sustained over-consumption — for example, a CI job that runs every 15 minutes and each run consumes 3× its expected budget. The per-run cap limits each incident; the per-day cap limits the aggregate.</li>
+          <li>A circuit breaker trips when the per-day cap is reached, blocks all further agentic calls for the remainder of the day, and sends an alert to the team lead and the Platform/DevEx team. The circuit breaker is a hard stop — not a soft warning — because by the time the per-day cap is reached, the team has already consumed its full day's budget allocation.</li>
+          <li>Design circuit breakers to fail safe. When the circuit breaker trips, agent steps should degrade gracefully — falling back to their non-blocking behavior or posting a canned "automated step unavailable" message — rather than blocking the pipeline. A tripped circuit breaker should never become a release blocker.</li>
+        </ul>
+
+        <h4 class="ph">Alerting and kill-switches</h4>
+        <ul>
+          <li>Alert at 50% and 80% of per-day budget consumption. The 50% alert is informational; the 80% alert triggers an investigation. By the time the circuit breaker trips at 100%, the Platform/DevEx team should already know why spend is elevated and have a plan.</li>
+          <li>Every team should have a documented kill-switch procedure: how to immediately disable all agentic CI steps for their team without requiring a code deploy. This is the manual circuit breaker — used when an alert fires outside business hours and the automated cap has not yet tripped.</li>
+          <li>Log every run termination that was caused by a cap or circuit breaker. The aggregate log is a leading indicator of which teams need cap adjustments, which workflows are misconfigured, and where to invest in cost-optimization next.</li>
+        </ul>
+
+        <div class="info red"><strong>Runaway loops are not hypothetical.</strong> At org scale, a runaway agentic loop will happen. The question is whether your platform catches it in seconds (with per-run caps and monitoring) or in days (when someone reads the invoice). The protection is worth more than its setup cost by the first incident it prevents.</div>
+      </div>
+
+      <!-- 11.5 -->
+      <div class="card">
+        <h2>11.5 The FinOps view</h2>
+        <p>Cost visibility is a behavior-change lever. Teams that can see their token spend, compare it to their budget, and understand which workflows are driving it will make better engineering decisions than teams that cannot. The FinOps discipline — financial operations applied to cloud and infrastructure spend — translates directly to AI model spend. At Stage 3, treat model cost the same way a mature engineering org treats cloud cost: tracked, attributed, forecast, and improving each quarter.</p>
+
+        <h4 class="ph">Forecasting spend</h4>
+        <ul>
+          <li>Baseline current spend by team and by workflow type before committing Stage 3 budgets. A forecast built on the wrong baseline will be wrong in proportion to how wrong the baseline is — and at Stage 3 velocity, the baseline can change quickly as teams add new agentic workflows.</li>
+          <li>Model two scenarios: steady-state growth (existing workflows scale with team headcount) and step-function growth (new agentic CI steps or multi-agent workflows launch). The step-function scenario is the one that has historically surprised finance and VP-level stakeholders — forecast it explicitly and share it before it happens.</li>
+          <li>Update forecasts quarterly. AI spend at Stage 3 is not linear: it grows in steps as new agentic workflows are added, drops as teams optimize, and spikes on misconfiguration incidents. A static annual forecast is never accurate for more than two quarters.</li>
+        </ul>
+
+        <h4 class="ph">Showback vs chargeback</h4>
+        <ul>
+          <li><em>Showback</em> makes cost visible to teams without actually billing them: each team sees a report of what their agentic workflows consumed this month, compared to their allocation, with no financial consequence if they exceed it. Showback is the right starting point at Stage 2→3 — it changes behavior without creating friction or incentives to game the budget.</li>
+          <li><em>Chargeback</em> actually deducts the cost from the team's budget or cost center. Chargeback creates stronger incentives for efficiency but also creates perverse incentives — teams may under-use agents to avoid charges, or resist adopting new agentic workflows because the cost is now directly visible on their budget line. Move to chargeback only when cost discipline is already established and the benefit of tighter accountability outweighs the friction.</li>
+          <li>Most orgs at Stage 3 operate on showback. A few high-maturity Stage 4 orgs move to chargeback when model spend becomes large enough to materially affect team budget decisions. The transition should be gradual: showback first, then a hybrid (chargeback for CI jobs, showback for interactive sessions), then full chargeback if the behavior signal warrants it.</li>
+        </ul>
+
+        <h4 class="ph">Cost as a first-class operational metric</h4>
+        <ul>
+          <li>Add per-team token spend and per-workflow cost efficiency to your eng metrics dashboard — alongside velocity, reliability, and quality metrics. Cost is not a finance metric; it is an engineering metric. A workflow that delivers the same outcome for 40% fewer tokens is a better-engineered workflow.</li>
+          <li>Track cost-per-unit-of-value, not just raw spend. A PR review bot that spends $0.08 per PR reviewed is expensive if the reviews are ignored; it is cheap if the reviews catch two production bugs per month. Frame cost against the outcome it produces.</li>
+          <li>Celebrate cost optimization the same way you celebrate velocity improvements. A team that cuts its CI token spend by 30% through smarter model routing and prompt compression deserves recognition. If the org only celebrates feature output, teams will optimize for feature output — and spend will not improve.</li>
+          <li>Make cost trends visible at the leadership level. Marcus (or whoever holds the budget) should see a monthly one-page summary: total AI spend, by-team breakdown, trend vs forecast, and the two or three biggest cost drivers. This is not a finance report — it is a signal for where the Platform/DevEx team should invest next in optimization work.</li>
+        </ul>
+
+        <div class="info orange"><strong>The insight that changes behavior:</strong> when a team sees that their overnight CI agentic job consumes more tokens per day than all their interactive developer sessions combined, they re-evaluate the job design immediately. Visibility produces optimization; opacity produces waste.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 2→3: The Cost Spike &amp; The FinOps Rebuild</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus</strong> receives the monthly cloud invoice and sees the AI line item has tripled in four weeks. The Platform/DevEx team traces it to a single CI agentic job in the payments service — an agent scaffolded by <strong>Amir</strong> and <strong>Nadia</strong> to run on every commit and generate comprehensive test suggestions. The job has no per-run token cap and no wall-clock timeout. On a week with high commit volume, it ran 340 times and each run consumed between 4,000 and 82,000 tokens depending on diff size. The top 12 runs account for 60% of the month's total AI spend.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Marcus's response to the Platform/DevEx team is direct: "I need to be able to tell any team lead what their team spent last week, what it was budgeted for, and what the top three jobs were. If I cannot do that by end of month, we pause all new agentic CI work until I can." The Platform/DevEx team starts work on three things in parallel: per-team spend dashboards, per-run token caps on all existing CI jobs, and model routing rules that send routine classification tasks to a fast-cheap tier instead of the capable model every job had been defaulting to.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The runaway payments job is immediately given a 10,000-token per-run hard cap and a 5-minute wall-clock timeout. Within the first day, three runs hit the cap and terminate gracefully — posting a canned "token budget exceeded, diff too large for automated suggestions" comment and continuing the pipeline. The job no longer causes outlier spend. A circuit breaker at 80% of the team's daily budget allocation is configured to alert the Platform/DevEx team and Amir directly.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Model routing changes go live two weeks later: convention-check and label-classification steps across all teams are routed to a fast-cheap model, reducing per-run cost on those steps by approximately 70% (illustrative; actual savings vary by model tier differential and verify-current pricing). The Platform/DevEx team's analysis shows that 58% of CI agent API calls were tasks that did not require the capable tier — and had been sent to it only because no routing policy existed.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus</strong> adds AI spend as a standing agenda item in the monthly engineering leadership meeting. Each team lead sees a one-page showback report: spend, budget, top three cost drivers, trend. Cost is no longer an invoice line item that surprises at the end of the month — it is a metric the engineering org owns and tracks with the same attention as reliability. <em>Riya's</em> comment in the Stage 3 retrospective: "The spike was the best thing that could have happened. We built the cost infrastructure we should have built before Stage 3, not after it."</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch2-case')">→ The Business Case</a>
+        <a onclick="go('ch10-cicd')">→ Ch 10. Agents in CI/CD</a>
+        <a href="gen-ai-hero-to-architect-guide.html">Part 2 — Model Selection &amp; Cost Engineering (Ch 4)</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
