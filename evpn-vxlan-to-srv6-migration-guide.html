@@ -2612,6 +2612,97 @@
   </div>
 </div>
 
+<div id="final-cutover" class="section">
+  <div class="sec-title">18. Final Cutover, Rollback, Cleanup</div>
+  <p class="sec-sub">The gateway is a crutch. Eventually you remove it.</p>
+
+  <div class="card">
+    <p>Once every service has been migrated to SRv6, the dual-encap gateway (Leaf-2/Leaf-4, §3) has done its job. Leaving it in place indefinitely is safe but wasteful — it holds VXLAN config, VTEP loopbacks, and IPv4 underlay state that serve no live traffic. This section covers the ordered process for removing that infrastructure, knowing when rollback is realistic, and what must be validated before you declare the migration complete.</p>
+
+    <h4 class="ph">When the gateway can retire</h4>
+    <ul>
+      <li>All services — L3/Type 5, IRB, L2 single-homed, L2 multi-homed (ESI), and DCI — have been individually validated on SRv6 per the §17 playbooks.</li>
+      <li>Zero VXLAN (encap-A) advertisements remain in any BGP RIB — no Type 2, Type 3, or Type 5 routes with VXLAN encap are being originated.</li>
+      <li>Gateway VXLAN encap counters have been zero-byte for a defined observation window (recommended: 7 days production, minimum 48 hours low-traffic).</li>
+      <li>Observability dashboards (§16) show green for the full window: no MAC mobility events, no BFD flaps, no SRv6 SID resolution failures.</li>
+      <li>A formal sign-off from service owners for each migrated service has been obtained and logged — this creates the audit trail that allows decom to proceed.</li>
+    </ul>
+
+    <h4 class="ph">Gateway decommissioning</h4>
+    <ul>
+      <li>Withdraw all remaining VXLAN route advertisements from the gateway (any residual Type 2/3/5 still being originated for completeness). Verify no VXLAN routes appear in any peer's RIB.</li>
+      <li>Confirm traffic on old encap is zero: check gateway encap/decap packet counters on all VXLAN-facing interfaces; wait at least one polling interval (e.g., 5 minutes) to confirm sustained zero.</li>
+      <li>Remove the dual-encap configuration block from the gateway: delete VXLAN EVI instances, VNI-to-service-SID stitching config, and VXLAN-side BGP route-policy attachments. Leave SRv6 config intact — the gateway border leaf can be repurposed.</li>
+      <li>Optionally repurpose Leaf-2/Leaf-4 as a regular SRv6 leaf: remove its "gateway" role in the topology documentation, update naming conventions, and verify it now participates in the SRv6 fabric as a peer (not a translation point).</li>
+      <li>Update all topology diagrams, runbooks, and NMS device roles to reflect the post-migration state.</li>
+    </ul>
+
+    <h4 class="ph">VXLAN-specific cleanup</h4>
+    <ul>
+      <li>Remove unused VTEP loopback interfaces on all leaves that previously served as VTEPs — these addresses are no longer reachable or needed once VXLAN is withdrawn.</li>
+      <li>Retire the IPv4 underlay if SRv6 is now the only data plane: remove OSPF/IS-IS IPv4 instances, IPv4 loopback advertisements, and any IPv4-only underlay peerings. Validate that SRv6 forwarding is unaffected (it uses the IPv6 underlay exclusively).</li>
+      <li>Remove PIM/multicast underlay configuration if BUM traffic was originally handled via multicast replication rather than ingress-replication. Multicast groups used for VXLAN BUM serve no purpose once all VNIs are decommissioned.</li>
+      <li>Clean up any VXLAN-specific ACLs, QoS policies, and monitoring agent configurations (SNMP OIDs, streaming telemetry paths) that referenced VXLAN VNIs or VTEP interfaces.</li>
+    </ul>
+
+    <h4 class="ph">Post-migration validation</h4>
+    <ul>
+      <li>Run a full end-to-end connectivity test per service: for each VRF/VNI that was migrated, verify reachability between at least two endpoints that previously relied on VXLAN paths.</li>
+      <li>Compare before/after packet-counter baselines and forwarding-table scale: SRv6 SID table sizes, BGP route counts, and FIB entry counts should all be within expected bounds (see §9 for scale planning).</li>
+      <li>Confirm zero VXLAN remnants in all RIBs and FIBs — run <code>show bgp evpn</code> and <code>show fib</code> equivalents on all leaves and verify no VXLAN encap is present anywhere in the forwarding state.</li>
+      <li>Verify SRv6 SID assignments are stable: no SID collisions, no unexpected re-allocations, uSID block usage within planned bounds.</li>
+      <li>Capture and archive the post-migration baseline as the new steady-state reference for future troubleshooting.</li>
+    </ul>
+
+    <h4 class="ph">What to keep around</h4>
+    <ul>
+      <li>Retain all dual-stack-period documentation — the migration log, per-service sign-offs, and any incident reports from the transition window — for audit and postmortem purposes. Minimum retention: 12 months or per your change-management policy.</li>
+      <li>Keep the rollback runbook current and accessible: rollback is realistic as long as VXLAN configuration remains archived and can be redeployed. Once deep cleanup (VTEP removal, IPv4 underlay teardown) is complete, rollback becomes a new VXLAN deployment project, not a one-day operation.</li>
+      <li>Archive the VXLAN config snapshots (pre-migration baselines) alongside the rollback runbook; without them, re-deploying VXLAN requires reconstructing configuration from scratch.</li>
+      <li>Schedule a 30-day and 90-day post-migration review: revisit scale numbers, review any incidents, and confirm the SRv6 fabric is operating as designed before closing the migration project.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Decommissioning Sequence</h2>
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">1</div>
+        <div class="stp-t">Withdraw VXLAN advertisements from gateway</div>
+      </div>
+      <p>On Leaf-2/Leaf-4, withdraw all remaining VXLAN BGP route advertisements (Type 2, Type 3, Type 5). Verify no VXLAN encap routes appear in any peer's EVPN RIB. Confirm via <code>show bgp evpn</code> on all SRv6 leaves — zero VXLAN next-hops expected.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n org">2</div>
+        <div class="stp-t">Verify zero VXLAN traffic</div>
+      </div>
+      <p>Poll gateway VXLAN encap and decap packet counters on all VXLAN-facing interfaces. Wait a full observation interval (minimum 5 minutes; recommended one full polling cycle of your telemetry system). Counters must remain at zero before proceeding — any non-zero count indicates a residual flow that must be traced and migrated.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n org">3</div>
+        <div class="stp-t">Remove dual-encap config and VTEP interfaces</div>
+      </div>
+      <p>Delete the VXLAN EVI instances, VNI-to-SID stitching config, and VTEP loopback interfaces from all border leaves. Remove VXLAN-side BGP route-policy attachments. Verify SRv6 operation is unaffected after each deletion (check SRv6 encap counters and BGP session state before proceeding to the next leaf).</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n pur">4</div>
+        <div class="stp-t">Retire IPv4 underlay and PIM if unused</div>
+      </div>
+      <p>If the IPv4 underlay (OSPF/IS-IS IPv4 AF) served VXLAN exclusively, remove it: withdraw IPv4 loopbacks, tear down IPv4 IGP adjacencies, and remove any multicast (PIM) configuration used for BUM replication. Confirm SRv6 forwarding remains stable on the IPv6 underlay — run end-to-end probes across all migrated services before declaring the underlay cleanup complete.</p>
+    </div>
+  </div>
+
+  <div class="info orange">
+    <strong>Rollback after deep cleanup is a new project, not a one-day operation.</strong> As long as VXLAN configuration is still present on the gateways (before Step 3), rollback means re-advertising routes — feasible in hours. Once VTEP interfaces and the IPv4 underlay are removed (Steps 3–4), restoring VXLAN requires reprovisioning the entire VXLAN data plane from scratch. Keep the archived VXLAN config snapshots and the rollback runbook current until you are certain the migration is permanent and the 90-day post-migration review is closed.
+  </div>
+</div>
+
   </main>
 </div>
 
