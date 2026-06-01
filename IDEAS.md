@@ -9,7 +9,7 @@ Future guides to build, ordered by priority.
 | 3 | **Data Center Fabric Design** | Spine-leaf architecture, underlay design, overlay choices | Done |
 | 4 | **Network Automation with BGP** | Provisioning EVPN/SRv6 VPNs programmatically | Planned |
 | 5 | **Segment Routing Policy (SR-TE)** | Traffic engineering — ODN, PCE, constraints, optimization | Done |
-| 6 | **EVPN-VXLAN to EVPN-SRv6 Migration** | Moving DC overlay from VXLAN to SRv6 data plane | Planned |
+| 6 | **EVPN-VXLAN to EVPN-SRv6 Migration** | Moving DC overlay from VXLAN to SRv6 data plane | Done — shipped 2026-06-01 as `evpn-vxlan-to-srv6-migration-guide.html` (25 sections, comparison + 4-phase playbook, 5 packet walks) |
 | 7 | **SRv6 Network Programming** | Advanced SRv6 ops — uSID operations, TE policies, binding SIDs, cross-domain chaining, packet walks | Next |
 | 8 | **SRv6 TI-LFA & Fast Reroute** | SRv6 protection deep dive — micro-SID repair paths, node/link/SRLG protection, convergence timescales | Done (audit-and-fill, not standalone) — content already ~60% covered in sr-mpls + srv6 guides; gaps filled in place: srv6-complete got algorithmic depth (P/Q space, protection scoping, convergence budget), sr-mpls got TI-LFA+Flex-Algo + double-failure limits, sr-te-policy got FRR-vs-policy-layer callout |
 | 9 | **SRv6 Service Chaining (SFC)** | Service function chaining with SRv6 — End.AN, firewall/DPI steering, uSID SFC, NFV integration | Planned |

@@ -24,6 +24,7 @@ Deeper SRv6 operations and moving an existing MPLS network onto SRv6.
 |-------|------|-------------|
 | SRv6 Network Programming | [srv6-network-programming-guide.html](srv6-network-programming-guide.html) | Advanced SRv6 operations — uSID behaviors (uN, uA, uDT, uDX, uB6), headend encapsulation, SRv6 TE policies, cross-domain B6 chaining, SR-MPLS interworking, and 5 detailed packet walks |
 | MPLS to SRv6 Migration Guide | [mpls-to-srv6-migration-guide.html](mpls-to-srv6-migration-guide.html) | SR-MPLS to SRv6 migration — coexistence models, gateway stitching, per-service migration (L3VPN, L2VPN, SR-TE), phase planning, and full packet walks |
+| EVPN-VXLAN to EVPN-SRv6 Migration Guide | [evpn-vxlan-to-srv6-migration-guide.html](evpn-vxlan-to-srv6-migration-guide.html) | Moving the DC overlay data plane from VXLAN to SRv6 — comparison + migration playbook. Header math, route-type behavior across encaps (Type 1–5), 5 side-by-side packet walks, gateway/border-leaf stitching, ESI + MAC mobility across encaps, per-service cutover playbooks (L3 → IRB → L2 → multi-homing → DCI), troubleshooting, monitoring, decision matrix, cheat sheet, and glossary |
 
 ### Data Center & EVPN
 
