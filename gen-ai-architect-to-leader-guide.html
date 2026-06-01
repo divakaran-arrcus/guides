@@ -1874,6 +1874,202 @@
     </section>
 
 
+    <!-- ===================== CH7 ===================== -->
+    <section id="ch7-metrics" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">7. Measuring What Matters</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <span class="lens-tag governance" style="margin-left:6px;">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why leading indicators are the early-warning system you act on and lagging indicators are the scoreboard you report; which metrics survive the pressure to game them and which collapse the moment they become targets; how to triangulate quantitative telemetry with qualitative signal so you are not fooled by a single number; and how to give leadership an honest narrative — improvement, uncertainty, and all — that holds up over time.</p>
+
+      <!-- 7.1 -->
+      <div class="card">
+        <h2>7.1 Leading vs lagging indicators</h2>
+        <p>Every metrics program for an agentic workflow needs two clocks: one that tells you where you are heading and one that confirms you arrived. Leading indicators are behavioral signals — they change before outcomes do. Lagging indicators are outcomes — they confirm (or deny) what the leading signals predicted. You need both. You act on the leading ones.</p>
+
+        <h4 class="ph">Leading indicators — signals that predict outcomes</h4>
+        <ul>
+          <li>Leading indicators change first. If plan-review completion rates are dropping week over week, a defect spike is coming — you just haven't seen it yet. If adoption depth is stalling on one team while growing on others, something in that team's environment is blocking durable habit formation. These are the signals worth investigating before the outcome data arrives.</li>
+          <li>The value of a leading indicator is that it gives you time to intervene. Watching only outcome metrics means you learn about a problem after it has already cost you something. Watching behavioral signals lets you course-correct while the damage is still hypothetical.</li>
+          <li>Good leading indicators are specific and observable without inference. "Engineer confidence in the workflow" is not a leading indicator — it is an interpretation. "Percentage of AI-assisted PRs where the plan-review checklist section is complete" is a leading indicator — you can count it.</li>
+          <li>Leading indicators decay. A behavior that reliably predicted an outcome last quarter may have been gamed, normalized, or disconnected from the outcome by a workflow change. Revisit your leading indicator set at every stage transition.</li>
+        </ul>
+
+        <h4 class="ph">Lagging indicators — outcomes that confirm direction</h4>
+        <ul>
+          <li>Lagging indicators are the scoreboard. They are what you report to Marcus in the quarterly review. They confirm whether the behavioral changes you invested in actually produced better outcomes — or whether you were optimizing a proxy that was unrelated to the real goal.</li>
+          <li>Lagging indicators are slow. A change in your workflow today may not show up in your escape-defect rate for six to eight weeks — long enough for a team to conclude "the change didn't work" before the data actually appears. Set expectations for measurement lag before the quarter begins.</li>
+          <li>Do not make lagging indicators the only thing you track. A team that watches only outcome metrics is flying by instruments that update every 30–60 days. That is too slow for a workflow that can drift meaningfully in a single sprint.</li>
+          <li>The most credible metric program shows both — leading signals that predicted the outcome, and the lagging data that confirmed it. That pairing builds trust in your measurement system over time.</li>
+        </ul>
+
+        <div class="info"><strong>The practical rule:</strong> track leading indicators weekly and act on them; report lagging indicators monthly and contextualize them. Never report a lagging number without showing the leading signals that preceded it — that pairing is the only honest narrative.</div>
+      </div>
+
+      <!-- 7.2 -->
+      <div class="card">
+        <h2>7.2 Metrics that survive contact</h2>
+        <p>Most metrics that sound good in a planning meeting collapse under the pressure of real usage — either because they can be gamed cheaply, or because they measure the wrong thing, or because they conflate the tool's contribution with the team's. The metrics below have survived contact with teams that tried to game them, that measured them honestly for multiple quarters, and that changed workflows based on what they found. Keep these names clean — they form the basis of the Metrics Catalog in the Reference section.</p>
+
+        <table class="tbl" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>What it really tells you</th>
+              <th>Leading or lagging</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>PR Cycle Time</strong></td>
+              <td>End-to-end time from first commit to merge. Captures whether the workflow is actually moving work faster or just generating code faster. A shrinking cycle time with a flat or rising escape-defect rate is a warning sign, not a win.</td>
+              <td>Lagging</td>
+            </tr>
+            <tr>
+              <td><strong>Review Latency</strong></td>
+              <td>Time between PR open and first substantive reviewer comment. Separates "AI speeds up writing" from "AI speeds up the whole delivery loop." High review latency erases cycle-time gains and signals reviewer overload or disengagement.</td>
+              <td>Leading</td>
+            </tr>
+            <tr>
+              <td><strong>Review Load per Reviewer</strong></td>
+              <td>Number of AI-assisted PRs per reviewer per week. AI tooling can inflate PR volume without increasing reviewer headcount — creating a review bottleneck that is invisible in throughput metrics until it snaps. Track this separately from non-AI-assisted review load.</td>
+              <td>Leading</td>
+            </tr>
+            <tr>
+              <td><strong>Change Failure Rate</strong></td>
+              <td>Percentage of changes that cause a production incident or require an emergency rollback. The premier quality signal. If AI-assisted changes have a materially higher change failure rate than hand-written changes on the same codebase, the workflow has a verification gap — regardless of how fast they ship.</td>
+              <td>Lagging</td>
+            </tr>
+            <tr>
+              <td><strong>Escape Defect Rate</strong></td>
+              <td>Bugs found post-merge (in staging or production) per unit of change. Finer-grained than change failure rate — it catches defects that don't cause incidents but do cause rework. Segment by AI-assisted vs hand-written to detect a workflow-specific signal.</td>
+              <td>Lagging</td>
+            </tr>
+            <tr>
+              <td><strong>Adoption Depth</strong></td>
+              <td>Fraction of engineers using the workflow for more than threshold-percentage of their eligible tasks, sustained over multiple sprints. Distinguishes genuine integration from trial logins. A team with 90% login rate and 20% sustained-task adoption has an enablement problem, not a tooling problem.</td>
+              <td>Leading</td>
+            </tr>
+            <tr>
+              <td><strong>Rework Rate</strong></td>
+              <td>Changes reverted or materially revised within N days of merge. Captures the cost of low-quality output that slips through review — including scope creep accepted from the agent that the team later trims. Complements escape defect rate for a fuller quality picture.</td>
+              <td>Lagging</td>
+            </tr>
+            <tr>
+              <td><strong>Plan-Review Completion Rate</strong></td>
+              <td>Fraction of AI-assisted PRs where the plan-review checklist section is substantively completed (not just checked off). The most reliable behavioral leading indicator in an agentic workflow — it measures whether the human-in-the-loop step is happening before code executes, not after.</td>
+              <td>Leading</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="info green"><strong>Segment before you aggregate.</strong> A company-wide average hides the story. Segment every metric by team, by task type, and by AI-assisted vs non-AI-assisted. The signal almost always lives in a segment — not in the average.</div>
+      </div>
+
+      <!-- 7.3 -->
+      <div class="card">
+        <h2>7.3 Vanity metrics &amp; Goodhart's Law</h2>
+        <p>Goodhart's Law: when a measure becomes a target, it ceases to be a good measure. AI tooling creates unusually fertile ground for this failure because it makes it cheap to inflate several metrics that previously required real effort. Know which metrics will be gamed the moment they are made visible, and retire them before they distort behavior.</p>
+
+        <h4 class="ph">The three most common vanity metrics in AI adoption</h4>
+        <ul>
+          <li><strong>Lines of code generated:</strong> AI tooling can produce ten times the code volume with the same engineer effort. That is precisely why lines of code was already a bad metric — and AI makes it catastrophically easy to game. A team that is measured on code volume will accept scope creep from the agent, generate unused scaffolding, and resist the refactors that reduce line count. Do not track it. Do not mention it in a review. Remove it from dashboards where it appears.</li>
+          <li><strong>Raw acceptance percentage:</strong> The fraction of AI suggestions the engineer accepts sounds like a measure of tool usefulness. In practice it measures engagement style, not quality. Engineers who accept everything have a high acceptance rate. Engineers who critically evaluate and selectively accept have a lower rate — and produce better output. High acceptance rate correlated with high escape-defect rate is a red flag, not a success signal.</li>
+          <li><strong>"AI-authored percentage":</strong> The fraction of merged code that was AI-generated is unmeasurable cleanly (most PRs are a mix), gameable (just accept more of what the agent produces), and meaningless as a quality signal. It measures how much the tool was used, not whether using it was the right choice for those tasks. Once this percentage becomes a target — even implicitly, by reporting it upward — engineers will optimize for it.</li>
+        </ul>
+
+        <div class="info red"><strong>Once a metric becomes a target, assume it will be gamed — not by bad actors, but by rational engineers responding to visible incentives.</strong> The solution is not to audit harder; it is to retire the metric before it corrupts the behavior you are trying to produce.</div>
+
+        <h4 class="ph">Why Goodhart's Law hits harder with AI tooling</h4>
+        <ul>
+          <li>AI tooling makes the cost of inflating metrics near-zero. In a hand-written workflow, writing extra code or increasing commit frequency requires real effort and is self-limiting. An agentic workflow can produce both with a single prompt. The low cost of inflation means that any metric which can be inflated will be inflated — faster than you expect.</li>
+          <li>Vanity metrics also create a second-order effect: they crowd out the metrics that matter. If your dashboard prominently shows AI-authored percentage and lines generated, those numbers attract attention in reviews. Managers start asking about them. Engineers start optimizing for them. The durable metrics from 7.2 — cycle time, escape defect rate, adoption depth — get relegated to footnotes because they are harder to move and harder to celebrate.</li>
+          <li>The governance implication: your metrics catalog is a policy document. What you measure is what you implicitly sanction. Audit your dashboard with that lens — if a metric on it would produce bad behavior if it became a target, remove it now, before it does.</li>
+        </ul>
+
+        <div class="info orange"><strong>Practical test:</strong> for every metric on your dashboard, ask "what is the cheapest way an engineer could improve this number without improving the underlying outcome?" If the answer is easy and cheap, the metric is a vanity metric — regardless of how insightful it sounds in the abstract.</div>
+      </div>
+
+      <!-- 7.4 -->
+      <div class="card">
+        <h2>7.4 Instrumenting honestly</h2>
+        <p>No single number tells the full story of an AI workflow's health. The teams that make durable measurement work combine quantitative telemetry — things the system counts automatically — with qualitative signal from the people doing the work. Triangulation is not a nice-to-have; it is the only defense against being confidently wrong.</p>
+
+        <h4 class="ph">Quantitative telemetry — what to instrument</h4>
+        <ul>
+          <li>Instrument at the merge event, not the suggestion event. Most tooling surfaces data about suggestions offered and accepted. That is tool engagement data — it tells you about the human-tool interface, not about the code that made it to production. The measurements that matter happen at merge and post-merge.</li>
+          <li>Build your own metric layer on top of your source control and CI systems. Do not depend on the AI tool vendor's built-in analytics — those dashboards are designed to show the tool performing well. Export raw data (PR timestamps, review events, test outcomes, deployment events) into your own system and compute the metrics from 7.2 yourself.</li>
+          <li>Instrument the checklist, not just the PR. A checklist included in a PR template is not the same as a checklist completed. Add a structured field (a checkbox group or a required comment pattern) that lets you distinguish "checklist present" from "checklist substantively engaged." The former is a process metric; the latter is a behavioral metric.</li>
+          <li>Track per-engineer data carefully. Individual-level data on acceptance rate, review latency, or escape defect rate can become punitive if it is visible to managers in real time. Use individual data for trend detection and aggregation — not for performance ranking. Publish team-level data; investigate individual signals only when a team-level signal points to a specific pattern.</li>
+        </ul>
+
+        <h4 class="ph">Qualitative signal — what to collect and how</h4>
+        <ul>
+          <li>Run a brief workflow health survey every four to six weeks — no more than five questions. Ask about friction points, confidence in the tool on different task types, and whether the review process feels adequate. Pulse surveys this short get high response rates and tell you things that telemetry will never surface: "I feel pressured to accept suggestions I'm not sure about" is a cultural signal that will not appear in any quantitative metric until it becomes an incident.</li>
+          <li>Make the retrospective agenda explicitly include AI workflow health. A retro that discusses only sprint delivery without asking "what did the agentic workflow cost us or save us this sprint?" is leaving its most valuable feedback channel unused. Add a standing agenda item; make it normal to name friction without it being treated as a complaint.</li>
+          <li>Collect failure logs actively. After every post-mortem that touches AI-assisted code, capture a structured entry: what task type, what phase of the workflow failed, what the guardrail gap was. Over time this becomes the most credible dataset you have — it is ground truth from real failures, not from surveys or aggregated telemetry.</li>
+          <li>Weight recent qualitative signal heavily. Quantitative data lags; qualitative signal from this sprint's retro is current. If engineers are telling you the plan-review step is being treated as ceremonial, do not wait for the escape-defect rate to confirm it. Act on the qualitative signal and watch whether the quantitative metric follows.</li>
+        </ul>
+
+        <h4 class="ph">Triangulation — the only honest read</h4>
+        <ul>
+          <li>A good quantitative result contradicted by qualitative signal is a measurement question, not a conclusion. If your escape-defect rate is holding steady but three engineers independently describe the review step as rushed, investigate the discrepancy before claiming the metric is fine. Either your metric is missing a category of defect, or the qualitative signal is describing a leading risk that has not yet converted into escaped defects.</li>
+          <li>The triangulation discipline: never present a single number as "the health of the program." Present at least one quantitative metric paired with at least one qualitative signal, and name where they agree and where they diverge. That structure is honest. A dashboard with eight green metrics and no qualitative context is not honest — it is optimistic.</li>
+        </ul>
+
+        <div class="info purple"><strong>Triangulation rule:</strong> one quantitative metric + one qualitative signal + explicit acknowledgment of where they agree or diverge. That is the minimum honest unit of measurement reporting. Anything less is a single data point dressed as a conclusion.</div>
+      </div>
+
+      <!-- 7.5 -->
+      <div class="card">
+        <h2>7.5 Reporting up without overclaiming</h2>
+        <p>The pressure to show ROI is real and persistent. Marcus will ask for the number. Leadership will want a story of unambiguous progress. The temptation is to give them one — to round up, to ignore the metrics that didn't move, to present the best-performing team as representative. Resist it. An overclaimed win is a debt that comes due at the worst possible time.</p>
+
+        <h4 class="ph">What an honest upward report looks like</h4>
+        <ul>
+          <li>Lead with what improved, stated conservatively. "PR cycle time on the payments team fell by 18% over the quarter, from a baseline of 4.2 days to 3.4 days" is a credible claim. "We are 20% faster" is not — it rounds up, it generalizes across teams with different results, and it will be hard to defend when cycle time goes back up in a quarter where the team is working on a harder class of problem.</li>
+          <li>Name what didn't move, and say why you think it didn't. A report that only shows green metrics is not credible to a skeptical reader. Riya will notice the missing metrics faster than Marcus will notice the green ones. "Review latency held flat — we believe this is because reviewer headcount did not change proportionally to PR volume, and we are proposing a solution" is a professional, actionable update. Omitting review latency because it didn't move is a credibility risk.</li>
+          <li>State your confidence level explicitly. "We believe cycle time improvement is attributable to the agentic workflow, but we cannot rule out that the Q3 task mix was also simpler than Q2" is honest. It shows you understand the limits of your measurement. Leadership that trusts your honesty will trust your confident claims more, not less.</li>
+          <li>Separate tool adoption metrics from outcome metrics. "80% of engineers used the tool at least twice this sprint" is an adoption metric. It is not an outcome metric. Do not present it in the same sentence as an outcome result unless you have evidence of a causal link. Marcus will conflate them if you allow the conflation in the slide structure.</li>
+        </ul>
+
+        <h4 class="ph">Connecting back to the business case (Ch 2)</h4>
+        <ul>
+          <li>Your Ch 2 business case named specific hypotheses and attached measurable success criteria to them. Your quarterly metrics report should explicitly reference those criteria: "Hypothesis 2 was that agentic tooling would reduce rework rate by 15% within two quarters. Actual rework rate moved 9% in the favorable direction. We are on track but have not yet hit the target." That structure is defensible even when the answer is "not yet."</li>
+          <li>If a hypothesis from the business case is not being tested by your current metrics, that is a measurement gap — not a result. Name it and close it. Leaving a business-case hypothesis unmeasured creates the impression that you are not tracking it, which leadership may interpret as avoidance.</li>
+          <li>Resist the pressure to add metrics mid-quarter that happen to look good. Adding a metric because this quarter's numbers are disappointing — or, worse, because a new metric makes the disappointing numbers look better — is a governance failure. Lock your reporting metrics at the start of the quarter and explain any changes you make to them explicitly in the report that introduces the change.</li>
+        </ul>
+
+        <h4 class="ph">The narrative structure that holds up</h4>
+        <ul>
+          <li>Open with what you committed to measure and why those metrics were chosen — a one-sentence callback to the business case.</li>
+          <li>Report each metric with: current value, baseline, direction of movement, and your interpretation of what drove it.</li>
+          <li>Name the open questions — where the data is ambiguous, where the measurement lag is masking a result you expect to see, where a qualitative signal is pointing in a different direction from the quantitative data.</li>
+          <li>Close with the next quarter's leading indicators to watch — so leadership can see the forward-looking signal, not just the historical scoreboard.</li>
+        </ul>
+
+        <div class="info green"><strong>The paradox of honest reporting:</strong> leaders who overclaim their early results face the hardest conversations when results plateau or a quarter goes sideways. Leaders who report conservatively and name uncertainty earn the credibility that lets them say "this is a temporary setback" when it matters — and be believed.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 1→2: The First Dashboard</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">Six weeks into Stage 2, <strong>Marcus</strong> asks <strong>Priya</strong> to build a metrics dashboard for the quarterly leadership review. His opening request is direct: "I want to show the exec team how much of our code is now AI-authored — give me a percentage." Priya brings <strong>Riya</strong> into the conversation before building anything.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong> walks Marcus through three problems with AI-authored percentage as a primary metric: it is not cleanly measurable (most PRs mix AI and human edits), it will be gamed the moment it is reported upward (engineers will accept more suggestions to raise the number), and it tells leadership nothing about whether the code is any good. Marcus pushes back: "Leadership will want a headline number." Riya agrees — but proposes a different headline: <strong>PR Cycle Time</strong> (already moving in the right direction) paired with <strong>Escape Defect Rate</strong> (holding flat, which is the honest story — not worse, not yet better). The AI-authored percentage metric is retired before it ever appears on a dashboard.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The team instruments three leading indicators alongside the lagging outcomes: <strong>Plan-Review Completion Rate</strong> (the behavioral guardrail from Ch 4), <strong>Review Load per Reviewer</strong> (which surfaces the bottleneck created by the jump in PR volume), and <strong>Adoption Depth</strong> (distinguishing sustained usage from trial logins — one team's adoption depth is 35%, well below the others, and it surfaces an enablement gap the team addresses in the next sprint).</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The quarterly report Priya presents to the leadership group names what improved (cycle time, adoption depth trending upward), what didn't move (escape defect rate — flat, not yet improved), and one open question (review latency is high on two teams; the team suspects reviewer overload but hasn't confirmed it). <strong>Nadia</strong> adds a qualitative note from the payments team's retro: engineers feel more confident on routine tasks but more uncertain on cross-service changes. That signal is included in the report verbatim — not paraphrased into a number.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus</strong>'s reaction surprises the team: he says it is the most credible engineering update he has seen in two years, because it names the gaps instead of hiding them. He approves the Stage 2 budget extension and asks Priya to lock the same metric set for Q2 — no metric rotation mid-quarter.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch2-case')">→ Ch 2. The Business Case</a>
+        <a onclick="go('ch6-change')">→ Ch 6. Change Management</a>
+        <a onclick="go('ref-metrics')">→ Reference: Metrics Catalog</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
