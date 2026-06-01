@@ -1464,6 +1464,233 @@
     </section>
 
 
+    <!-- ===================== CH5 ===================== -->
+    <section id="ch5-enablement" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">5. Enablement &amp; Onboarding</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why a few power users and a long tail of non-adopters is the natural state after a pilot, and what it takes to raise the floor rather than just celebrate the ceiling; how to identify and empower internal champions who scale knowledge through people, not just documents; how pairing and code review become teaching channels when used deliberately; how to bring new hires into the agentic workflow from day one; and which anti-patterns — over-reliance, rubber-stamping, skill atrophy — undermine all of the above if you don't name and counter them explicitly.</p>
+
+      <!-- 5.1 -->
+      <div class="card">
+        <h2>5.1 Leveling a team</h2>
+        <p>After a pilot ends, you almost always have a bimodal skill distribution: a handful of engineers who have internalized the agentic workflow and are measurably faster, and a long tail who attended the retrospective and went back to their previous habits. Closing that gap is not a training problem — it is a system design problem.</p>
+
+        <h4 class="ph">The skill-distribution problem</h4>
+        <ul>
+          <li>Bimodal distributions are the natural outcome of any voluntary or semi-voluntary adoption. The power users have disproportionate motivation, prior experience, or just happen to have been on the pilot. The rest of the team has none of those advantages.</li>
+          <li>The gap compounds. Power users get better every week because they are accumulating practice; the long tail stays roughly flat because they lack occasions to accumulate practice. If you do nothing, the gap widens.</li>
+          <li>Wide skill gaps create review friction. A reviewer who is a power user will notice patterns an inexperienced submitter missed. If they cannot explain what they expect — because the expectation is tacit — they will either rubber-stamp (fast, unsafe) or over-reject (slow, demoralizing). Neither outcome is good.</li>
+          <li>At Meridian's scale, a 10-person team with three power users and seven occasional users will, within two sprint cycles, organically drift toward the three doing most of the AI-assisted work. This looks like efficiency in the short term. It is fragility — the skill is now concentrated in three people and their bus factor is high.</li>
+        </ul>
+
+        <h4 class="ph">Raise the floor, not just the ceiling</h4>
+        <ul>
+          <li>Ceiling-raising programs — advanced workshops, conference talks, internal demos of impressive use cases — are fun and easy to run. They serve the power users who are already on the ceiling. They do almost nothing for the long tail.</li>
+          <li>Floor-raising is harder because it targets the engineers who most need help but are least likely to raise their hand and ask for it. Design for them deliberately: short, low-stakes, high-guidance touchpoints rather than optional deep dives.</li>
+          <li>The most effective floor-raising interventions are structured practice on real work, not synthetic exercises. An engineer who pairs with a power user on an actual ticket they are already responsible for learns faster than one who completes a tutorial on a toy codebase.</li>
+          <li>Track individual adoption, not just team averages. A team average that looks healthy can mask a bimodal distribution. If five engineers account for 80% of AI-assisted PRs, the average is a lie. The metric you want is the percentage of the team above a minimum usage threshold — the floor, not the average.</li>
+        </ul>
+
+        <h4 class="ph">Measuring the floor</h4>
+        <ul>
+          <li>Define a minimum active threshold — for example, "at least one AI-assisted PR per sprint per engineer" — and track it. Not to enforce compliance but to identify who needs a floor-raising intervention and to notice when the floor rises.</li>
+          <li>Review the distribution monthly in Stage 2. If the floor hasn't moved in six weeks, something in the enablement system is not working. Investigate before adding more content.</li>
+          <li>Lead indicators of a rising floor: more engineers asking questions in the team's AI-tools channel, more PRs that show evidence of spec-before-session even if imperfect, reviewers calling out useful AI-review observations. These are signals that the floor is moving before the metrics reflect it.</li>
+        </ul>
+
+        <div class="info"><strong>The goal is that every engineer can competently run the standard loop, not that every engineer becomes Priya.</strong> A team where everyone is solid at the baseline workflow is more resilient than a team with two stars and eight bystanders.</div>
+      </div>
+
+      <!-- 5.2 -->
+      <div class="card">
+        <h2>5.2 Internal champions &amp; train-the-trainer</h2>
+        <p>Documentation scales to infinity at zero marginal cost. People do not. But people change other people's behavior in ways documentation never will. Internal champions are the highest-leverage enablement investment a Stage 2 team can make — but only if they are supported, not just designated.</p>
+
+        <h4 class="ph">Who a champion is (and is not)</h4>
+        <ul>
+          <li>A champion is an engineer who is visibly effective with the agentic workflow, enjoys helping others develop the same capability, and is credible to their peers — not because they were given a title, but because colleagues have seen their work.</li>
+          <li>The pilot lead is the obvious first champion. Priya has the context (she built the standards), the credibility (she ran the pilot that produced the evidence), and the motivation (she genuinely believes in the workflow). Make it explicit; don't assume she'll take on the role without a clear mandate and the time to do it.</li>
+          <li>Champions are not trainers in the HR sense. They are not responsible for running all-hands workshops or writing onboarding docs. Their leverage is informal: pairing, ad-hoc code review teaching moments, and being the person an engineer can ask a question without feeling embarrassed.</li>
+          <li>Champions who are perceived as evangelists — enthusiastic, sales-mode, pushing the tool on reluctant colleagues — lose credibility quickly. The best champions are understated. They model the workflow, help when asked, and let the results speak.</li>
+        </ul>
+
+        <h4 class="ph">Identifying the right champions</h4>
+        <ul>
+          <li>Look for engineers who are already answering questions in the team's AI-tools channel. The informal helpers are more effective champions than the formal volunteers, because they are already doing it and have already earned trust.</li>
+          <li>Capability is necessary but not sufficient. An engineer who is excellent with the tool but impatient with slower learners will do more harm than good as a champion. Patience and pedagogical instinct matter more than technical ceiling.</li>
+          <li>In a team of 10–15 engineers, you need 2–3 champions — not one. A single champion becomes a bottleneck. Multiple champions mean engineers can find someone to ask without scheduling it.</li>
+          <li>Champions should come from different tenure and seniority levels if possible. A junior engineer who has become effective is often a more relatable teacher than a staff engineer — the perceived gap is smaller, and the learning feels more attainable.</li>
+        </ul>
+
+        <h4 class="ph">Train-the-trainer: scaling knowledge through people</h4>
+        <ul>
+          <li>Give champions a brief, structured orientation before you send them out to help others. At minimum: what the team's standard workflow is (from the standards doc), what the most common failure modes are (from the pilot's failure log), and how to handle the question "what if I don't think the tool helps here?" without being dismissive.</li>
+          <li>Create a light feedback loop from champions back to the standards steward. When a champion notices a pattern — the same misunderstanding appearing in three different pairing sessions, a convention in the standards doc that nobody follows in practice — that signal should surface and potentially update the standard. Champions are the team's ground truth on whether the standards doc is accurate.</li>
+          <li>Give champions protected time. A champion who has to squeeze enablement into the gaps of their regular sprint will do it inconsistently and burn out. Even two hours per week of explicit "enablement time" — acknowledged in their sprint planning, not just in a verbal agreement — makes champions significantly more effective and more sustainable.</li>
+          <li>At Stage 3, the champion network across multiple teams becomes the backbone of the internal community of practice. Invest in the Stage 2 champion relationship well before you need to scale it.</li>
+        </ul>
+
+        <div class="info green"><strong>Train-the-trainer is not a training program — it is a knowledge distribution architecture.</strong> Documents are static. Champions are adaptive. They answer the question the engineer actually has, not the question someone wrote a doc answer to six months ago.</div>
+      </div>
+
+      <!-- 5.3 -->
+      <div class="card">
+        <h2>5.3 Pairing &amp; review as teaching</h2>
+        <p>The most effective knowledge transfer in engineering has always happened at the keyboard: one engineer working, another watching and asking questions. Agentic sessions are no different — except that the agent itself becomes a participant in the learning dynamic, which creates teaching opportunities that traditional pairing does not.</p>
+
+        <h4 class="ph">Pairing on agent sessions</h4>
+        <ul>
+          <li>Structured pairing on a live agent session — where one engineer drives and one observes with permission to ask questions — is the fastest way to transfer tacit knowledge about the workflow. You cannot fully learn from watching a recording; you can learn from asking "why did you phrase the spec that way?" in real time.</li>
+          <li>The observer's job is to notice and ask about the decisions that the driver is making implicitly: why did they stop and review the plan before approving it; why did they load the service-contract file before writing the spec; what made them decide to push back on the agent's scope creep rather than just accept it. Surfacing these micro-decisions is where the learning happens.</li>
+          <li>Rotate who drives and who observes. An experienced engineer who only ever drives never has to articulate their reasoning; an inexperienced engineer who only ever observes never builds the muscle memory. Swap roles mid-session on a complex ticket.</li>
+          <li>Keep pairing sessions short and focused: 45–90 minutes on a single, real ticket. Longer sessions diffuse into general discussion; shorter sessions don't get past setup. Use a real ticket from the sprint backlog — not a synthetic exercise — so the learning is grounded in actual constraints.</li>
+        </ul>
+
+        <h4 class="ph">Using code review as a teaching channel</h4>
+        <ul>
+          <li>Code review on AI-assisted PRs is one of the highest-leverage teaching channels available, because the learning happens at the exact moment the engineer has context on what they just did. A review comment left within hours of a PR being opened is worth ten retrospective discussions weeks later.</li>
+          <li>Make review comments on AI-specific patterns explicit, not implicit. Instead of "this edge case is not covered," write "this is a common AI-generation pattern: the model produces a clean happy-path but skips the error branch — worth adding a targeted test here." The second version teaches; the first just flags.</li>
+          <li>Champions can use review as a teaching channel by writing review comments that explain the reasoning behind the standard, not just enforce it. "Required per our workflow standard — the reason is..." takes five extra seconds and builds understanding rather than compliance.</li>
+          <li>Track whether the same learning moments recur across multiple PRs. If three engineers in a month all miss the same edge-case type in AI-generated code, the solution is not three separate review comments — it is an update to the PR template's AI-review checklist. Recurring review patterns are bugs in the standard, not just in individual engineers' practice.</li>
+        </ul>
+
+        <h4 class="ph">Making good practice visible</h4>
+        <ul>
+          <li>When an engineer runs the workflow particularly well — a crisp spec, a well-reviewed plan, a clean diff that tests the right things — point it out in a team channel or retrospective. Not in a congratulatory way, but as a concrete example: "The spec on this PR is a good template for service-layer tickets. I'm adding a link to it in our examples file."</li>
+          <li>Build an examples file in the repo: a curated set of 3–5 exemplary agent sessions or AI-assisted PRs with brief annotation. New engineers learn faster from real examples than from abstract principles. The examples file is a living document — add to it when you see good work; retire examples when the patterns they demonstrate have been absorbed into the standard itself.</li>
+          <li>Visibility is a social mechanism. When engineers see their peers' good work acknowledged, the behavior becomes a norm rather than an individual achievement. The goal is not to celebrate individuals — it is to make the expected behavior legible through concrete examples.</li>
+        </ul>
+
+        <div class="info purple"><strong>Review comments are permanent.</strong> A pairing session is ephemeral — it lives in the participants' memory. A well-written review comment is searchable, linkable, and visible to every engineer who reviews that file or PR in the future. Invest in the quality of your AI-specific review comments; they compound.</div>
+      </div>
+
+      <!-- 5.4 -->
+      <div class="card">
+        <h2>5.4 Onboarding new hires</h2>
+        <p>Stage 2 is where your team's agentic workflow becomes load-bearing infrastructure — which means new engineers must be productive within it on day one, not after a months-long informal apprenticeship. The onboarding process is your best opportunity to set expectations, provide structure, and close the floor gap before it opens.</p>
+
+        <h4 class="ph">Bring new joiners in from day one</h4>
+        <ul>
+          <li>New engineers are uniquely receptive during onboarding — they have no prior habits in your specific codebase to undo, and they expect to follow your team's conventions. This window closes within a few weeks as they develop their own patterns. Use it deliberately.</li>
+          <li>Make the agentic workflow part of the official onboarding sequence, not an optional module or a "by the way, we also use this tool" mention at the end of day two. If the workflow is standard practice, it should appear in the onboarding checklist alongside "set up your dev environment" and "open your first PR."</li>
+          <li>Pair new engineers with a champion for their first two AI-assisted tickets. Not to hand-hold — to observe and answer questions in real time. The first time running the full spec → plan → TDD → review loop is always awkward; having a champion available removes the activation energy of figuring it out alone.</li>
+          <li>Set explicit expectations early: "On this team, AI-assisted sessions follow the workflow in <code>CLAUDE.md</code>. Your first week, focus on understanding the loop and asking questions. From week two onward, you should be running it independently and flagging anything that feels unclear in our AI-tools channel."</li>
+        </ul>
+
+        <h4 class="ph">The onboarding checklist</h4>
+        <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:10px;">Version-control this checklist in the repo alongside your workflow standards. Update it whenever the standards change.</p>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Checklist item</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Day 1</td>
+              <td>Read <code>CLAUDE.md</code> (or equivalent) and the narrative workflow standards doc</td>
+              <td>New hire</td>
+            </tr>
+            <tr>
+              <td>Day 1</td>
+              <td>Install the team's approved AI coding tool; confirm model access and spend limits</td>
+              <td>New hire + champion</td>
+            </tr>
+            <tr>
+              <td>Day 1</td>
+              <td>Walk through one historical AI-assisted PR from the examples file with champion</td>
+              <td>Champion</td>
+            </tr>
+            <tr>
+              <td>Week 1</td>
+              <td>Complete first AI-assisted ticket (starter ticket, pairing with champion)</td>
+              <td>New hire + champion</td>
+            </tr>
+            <tr>
+              <td>Week 1</td>
+              <td>Open first AI-assisted PR; request review specifically noting it is AI-assisted</td>
+              <td>New hire</td>
+            </tr>
+            <tr>
+              <td>Week 2</td>
+              <td>Run the spec → plan → TDD → review loop independently on a medium-complexity ticket</td>
+              <td>New hire</td>
+            </tr>
+            <tr>
+              <td>Week 2</td>
+              <td>Share one learning (positive or negative) in the team's AI-tools channel</td>
+              <td>New hire</td>
+            </tr>
+            <tr>
+              <td>Week 4</td>
+              <td>Retrospective with champion: gaps in the onboarding experience; any standards that were unclear</td>
+              <td>New hire + champion</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">The checklist as a living artifact</h4>
+        <ul>
+          <li>The value of the checklist is not just that it covers the steps — it is that completing it gives the new hire a concrete orientation and gives the team a forcing function to keep the checklist current. If a new engineer works through the checklist and finds a step that no longer reflects how the team works, that is a signal to update the checklist (and possibly the standard it points to).</li>
+          <li>The week-4 retrospective is the most important item on the list. New engineers are the best auditors of your onboarding process because they are experiencing it with fresh eyes. Their friction points are your standards' rough edges. Capture and act on that feedback; the onboarding experience compounds across every subsequent hire.</li>
+          <li>The pilot's <code>pilot-learnings.md</code> is the input to this checklist; the checklist is the output. Every hard lesson from the pilot should surface somewhere in the onboarding sequence — either as a checklist item or as a pointed reference to the relevant section of the standards doc.</li>
+        </ul>
+
+        <div class="info green"><strong>The onboarding checklist is the point where your pilot knowledge becomes org knowledge.</strong> Every subsequent hire who completes it starts with the team's accumulated learning rather than from zero. That is the compounding effect of a well-maintained onboarding process.</div>
+      </div>
+
+      <!-- 5.5 -->
+      <div class="card">
+        <h2>5.5 Anti-patterns</h2>
+        <p>Enablement efforts fail in predictable ways. Naming these patterns explicitly — and building counters into your process — is the difference between a team that has a standard and a team that actually practices one.</p>
+
+        <h4 class="ph">Anti-pattern 1: Over-reliance and outsourced judgment</h4>
+        <ul>
+          <li>An engineer who routes every decision through the agent — including decisions that require local knowledge, customer context, or architectural judgment — is not using the tool; they are abdicating to it. The tool is not equipped to make those decisions and will produce plausible-sounding answers that are nonetheless wrong in context.</li>
+          <li>Over-reliance is seductive because it feels like efficiency. The engineer is moving fast, producing output, closing tickets. The cost is invisible until a subtle architectural mistake ships or a context-specific constraint is violated.</li>
+          <li>The warning sign: an engineer who cannot explain why the agent made a specific choice in their PR. If the question "why did it do it this way?" produces "I'm not sure, that's what the agent suggested," the engineer has outsourced the judgment. The answer should always be "because of X constraint, which I loaded as context before starting."</li>
+        </ul>
+        <div class="info orange"><strong>Counter:</strong> Make plan review non-optional on multi-file changes. The requirement to review the plan before approving it forces the engineer to engage with the reasoning rather than rubber-stamp the output. Champions should model this explicitly in pairing sessions — pausing at the plan stage, reading it aloud, and asking "does this match the spec I wrote?"</div>
+
+        <h4 class="ph">Anti-pattern 2: Review rubber-stamping</h4>
+        <ul>
+          <li>A reviewer who approves an AI-assisted PR without additional scrutiny — because it looks clean, because the tests pass, or because they implicitly trust that "the AI checked it" — is not reviewing; they are performing review theater. The quality gate is closed but not locked.</li>
+          <li>Rubber-stamping is especially dangerous on AI-assisted code because the output is syntactically clean and structurally plausible. A human-written PR with a subtle logic bug often looks subtly wrong; an AI-generated PR with the same bug often looks very right. The cleanliness of the surface obscures the defect beneath it.</li>
+          <li>Rubber-stamping tends to spread. When one reviewer approves quickly, the next reviewer sees a prior approval and approves even more quickly. The social proof of a fast approval cascades. Name this pattern explicitly in your review norm so engineers recognize it when it starts.</li>
+        </ul>
+        <div class="info red"><strong>Counter:</strong> Add the three-question AI-review checklist to your PR template (does the implementation match the plan; are edge cases covered; does the change stay within declared scope). Make it a required section, not an optional aside. Reviewers who fill it out — even briefly — cannot have rubber-stamped. The checklist is the evidence they engaged.</div>
+
+        <h4 class="ph">Anti-pattern 3: Skill atrophy</h4>
+        <ul>
+          <li>An engineer who delegates a category of work to agents entirely — test writing, documentation, routine refactors — will gradually lose fluency in that category. This is not hypothetical; it is the normal outcome of reduced practice over months.</li>
+          <li>Skill atrophy is silent until it matters. The engineer appears productive; their PRs pass review; their velocity looks good. The deficit surfaces when the agent is not available (an outage, a context failure, a task the tool handles poorly), when they need to review someone else's hand-written code in that area, or when they are asked to make a judgment call the agent cannot make.</li>
+          <li>The teams most at risk are those where the division of labor has become "agent does X, human reviews X." If engineers are reviewers but never practitioners of X, their ability to review it intelligently degrades. A reviewer who cannot write a test cannot effectively judge whether the agent's test is good.</li>
+        </ul>
+        <div class="info orange"><strong>Counter:</strong> Require that engineers occasionally write code in a category without agent assistance — not as punishment, but as deliberate practice to maintain baseline fluency. Champions can model this by periodically narrating a session where they explicitly write tests by hand before asking the agent to validate them. The goal is not to avoid agents; it is to ensure every engineer retains the judgment to evaluate agent output.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 1→2: Champions, Checklists, and Riya's Warning</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Priya</strong> identifies two other engineers on the payments team as champions: Amir (mid-level, two years on the team, known for patient code review explanations) and Nadia (junior, joined during the pilot, became effective faster than anyone expected and now informally mentors the engineers who struggle most with the spec stage). Priya gives both a brief orientation — thirty minutes walking through the standard workflow, the failure log highlights, and the three most common questions their colleagues will ask. Champion time: two hours per week each, negotiated with the team lead and noted in sprint planning.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The pilot's <code>pilot-learnings.md</code> becomes the input to a version-controlled <code>onboarding-checklist.md</code>, written by Amir and reviewed by Priya and one of the team's newer hires who completed an early version of it. The checklist has eight items across four weeks. The week-4 retrospective item is non-optional — it is how the checklist gets updated.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Three weeks into Stage 2, <strong>Riya</strong> flags a pattern she has noticed in code review: two of the team's mid-level engineers are approving AI-assisted PRs faster than they approve hand-written ones. "Faster review on AI code makes no sense. AI code should get more scrutiny, not less. Either they're rubber-stamping or they've found something I haven't. Either way, I want to understand it." Priya adds the three-question AI-review checklist to the PR template the next day, framed not as a response to the concern but as a natural Stage 2 process improvement.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The first new hire to go through the formal onboarding checklist, a senior engineer joining from outside the company, completes her week-4 retrospective with one observation: "The standards doc explains what to do but not why the plan-review step exists. I almost skipped it on my first solo ticket because it felt ceremonial." Priya updates the narrative standards doc the same day: the plan-review step now has a one-sentence rationale drawn directly from the pilot's failure log.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus</strong> sees the champion program and the onboarding checklist in Priya's bi-weekly status update. His note back: "This is the first enablement structure we've had that doesn't require a training team to run. It's embedded in the team's normal work. Keep it that way."</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch4-standards')">→ Ch 4. Workflow Standards</a>
+        <a onclick="go('ch6-change')">→ Ch 6. Change Management</a>
+        <a onclick="go('ch15-autonomy')">→ Ch 15. Standardization vs Autonomy</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
