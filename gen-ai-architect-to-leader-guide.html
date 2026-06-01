@@ -3997,6 +3997,190 @@ except Exception as e:
       </div>
     </section>
 
+    <section id="ref-scorecard" class="section">
+      <h1>Maturity Self-Assessment Scorecard</h1>
+      <p class="sec-sub">Locate your org on the five-stage model, lens by lens</p>
+
+      <div class="card">
+        <h4 class="ph">How to score yourself</h4>
+        <p>Rate your org <strong>0–4 on each of the three lenses</strong> below. Use the descriptor that best matches your current reality — not where you aspire to be, and not the best team in the building. Be honest: the value of the scorecard is in its accuracy, not its optimism.</p>
+        <ul>
+          <li><strong>People &amp; Process</strong> — the shared habits, conventions, champions, and onboarding that shape how engineers actually use AI tools day to day.</li>
+          <li><strong>Platform &amp; Infrastructure</strong> — the shared tooling layer: golden configs, capability registries, CI integration, cost controls, sandbox isolation.</li>
+          <li><strong>Governance &amp; Risk</strong> — review gates, policy as code, audit trails, incident playbooks, and the deliberate limits on agent autonomy.</li>
+        </ul>
+        <div class="info"><strong>Your overall stage ≈ your weakest lens.</strong> Most orgs score unevenly. If you are Stage 2 on People but Stage 0 on Platform, you are a Stage 0 org for platform purposes — and the Stage 0 platform risks apply. The bottleneck lens is where you invest next.</div>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">The scorecard — 3 lenses × 5 stages</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Find the row for each lens and read across to the column that matches your org. Write down the stage number for each lens; your lowest number is your effective current stage.</p>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Lens</th>
+              <th>Stage 0 — Ad-hoc</th>
+              <th>Stage 1 — Pilot</th>
+              <th>Stage 2 — Team</th>
+              <th>Stage 3 — Org</th>
+              <th>Stage 4 — Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>People &amp; Process</strong></td>
+              <td>Individuals self-teach in isolation; no shared practice; wins stay with the person who found them</td>
+              <td>One small team runs a time-boxed experiment; falsifiable hypothesis written down; learnings captured in a document</td>
+              <td>Team has versioned shared workflow standards; champions carry the standard; structured onboarding for new members</td>
+              <td>Multiple teams using shared playbook; cross-team champions network; blameless incident culture established and modelled by leadership</td>
+              <td>Org-wide paved road with documented escape hatch; calibration reviews run regularly; deviations feed back into the standard</td>
+            </tr>
+            <tr>
+              <td><strong>Platform &amp; Infrastructure</strong></td>
+              <td>Each engineer configures their own tool; no shared defaults; no cost visibility; duplicated prompts and configs everywhere</td>
+              <td>Pilot team has a working setup; basic guardrails in place for the experiment; no shared infra beyond the pilot scope</td>
+              <td>Versioned shared config file in the repo; context-loading conventions written down; informal reuse of prompts and snippets</td>
+              <td>Golden config with org → team → repo layering; capability registry live; CI integration with advisory review gates; per-team budget quotas and circuit breaker</td>
+              <td>Full paved-road infra: golden config + registry + CI gates + cost controls all owned by a named platform team; model routing in place; sandbox isolation for high-blast-radius agents</td>
+            </tr>
+            <tr>
+              <td><strong>Governance &amp; Risk</strong></td>
+              <td>No review policy for AI-assisted work; secrets handling ad-hoc; no audit trail; no incident process for agent failures</td>
+              <td>Pilot-scoped guardrails: human review required before any merge; no auto-approve; basic scope constraint on what the agent can touch</td>
+              <td>AI-review checklist in PR template; blameless postmortem process for agent-assisted incidents; honest metrics dashboard that names gaps</td>
+              <td>Policy-as-code enforcing review requirements; agents advisory-only on merge decisions; provenance checks on shared MCP servers; cost incident playbook</td>
+              <td>Tiered audited review gates scaled by blast radius; reconstructable audit trail; mandatory security checklist before any workflow goes org-wide; incident runbooks tested; compliance artifacts exportable</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Where to jump next — based on your lowest score</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Read the chapters that match your weakest lens. Do not skip ahead: each stage's chapters assume the previous stage's foundations are in place.</p>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Your profile</th>
+              <th>Where to start</th>
+              <th>Chapters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>All lenses mostly 0–1 (just getting started)</td>
+              <td>Begin at Stage 0→1: build the business case and run a credible pilot before anything else</td>
+              <td><a onclick="go('ch2-case')">Ch 2</a>, <a onclick="go('ch3-pilot')">Ch 3</a></td>
+            </tr>
+            <tr>
+              <td>People weak (score 0–1 on People, higher elsewhere)</td>
+              <td>You have tooling but no shared practice — standardize workflow conventions and stand up champions first</td>
+              <td><a onclick="go('ch4-standards')">Ch 4</a>, <a onclick="go('ch5-enablement')">Ch 5</a>, <a onclick="go('ch6-culture')">Ch 6</a></td>
+            </tr>
+            <tr>
+              <td>Platform weak (score 0–1 on Platform, higher elsewhere)</td>
+              <td>Teams have good habits but no shared infra — introduce the golden config, registry, and CI integration</td>
+              <td><a onclick="go('ch8-golden')">Ch 8</a>, <a onclick="go('ch9-registry')">Ch 9</a>, <a onclick="go('ch10-cicd')">Ch 10</a>, <a onclick="go('ch11-cost')">Ch 11</a></td>
+            </tr>
+            <tr>
+              <td>Governance weak (score 0–1 on Governance, higher elsewhere)</td>
+              <td>You have scale without guardrails — security review, tiered gates, and incident playbooks before you go wider</td>
+              <td><a onclick="go('ch12-security')">Ch 12</a>, <a onclick="go('ch13-gates')">Ch 13</a>, <a onclick="go('ch14-incidents')">Ch 14</a>, <a onclick="go('ch15-paved')">Ch 15</a></td>
+            </tr>
+            <tr>
+              <td>All lenses at 2–3 (scaling across teams)</td>
+              <td>Focus on platform hardening and cross-team consistency; governance work is next</td>
+              <td><a onclick="go('ch8-golden')">Ch 8–11</a>, then <a onclick="go('ch12-security')">Ch 12–15</a></td>
+            </tr>
+            <tr>
+              <td>All lenses at 3–4 (calibrating at scale)</td>
+              <td>Review the paved-road model and escape-hatch design; run the full checklists as a gap audit</td>
+              <td><a onclick="go('ch15-paved')">Ch 15</a>, <a onclick="go('ref-checklists')">Adoption Checklists</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('map')">→ The Map: Five Stages &amp; Three Lenses</a>
+        <a onclick="go('ref-checklists')">→ Adoption Checklists</a>
+        <a onclick="go('ch16-rollout')">→ Ch 16: Meridian's 12-Month Rollout</a>
+      </div>
+    </section>
+
+    <section id="ref-checklists" class="section">
+      <h1>Adoption Checklists</h1>
+      <p class="sec-sub">Concrete entry and exit gates for each stage transition — use these as go/no-go criteria, not aspirational guidelines</p>
+
+      <div class="info"><strong>How to use these checklists.</strong> Each block covers one stage transition. Work through the items before you declare a transition complete. An unchecked item is not a blocker on its own — it is a risk you are knowingly carrying. Name it, mitigate it, or fix it. Do not start Stage 3 platform work until the Stage 2 exit checklist is green on your weakest lens.</div>
+
+      <div class="card">
+        <h4 class="ph">Stage 0 → 1: from ad-hoc to a credible pilot</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Chapters 1–3. The goal is a time-boxed experiment with a falsifiable hypothesis, a real budget owner, and a written stop condition.</p>
+        <ul>
+          <li>Have you identified a <strong>pilot team that is representative</strong> of your broader engineering org — not the most enthusiastic team, not a cherry-picked greenfield project? <em>(Ch 3)</em></li>
+          <li>Have you written a <strong>falsifiable success hypothesis</strong> — a specific, measurable claim that the pilot can disprove, not just validate? <em>(Ch 3.2)</em></li>
+          <li>Have you set a <strong>written stop condition</strong> — a clear trigger that would cause you to halt the pilot — agreed before the pilot starts? <em>(Ch 3.2)</em></li>
+          <li>Have you captured a <strong>baseline measurement</strong> for the metric(s) you intend to move (e.g., PR cycle time, escape defect rate) before any AI tooling is introduced? <em>(Ch 7)</em></li>
+          <li>Have you set a <strong>time-box</strong> — a fixed end date, not "until we feel ready"? <em>(Ch 3)</em></li>
+          <li>Have you produced a <strong>one-page pilot proposal</strong> that a budget owner can approve, with cost, scope, success criteria, and what gets decided at the end? <em>(Ch 2)</em></li>
+          <li>Have you defined <strong>guardrails for the pilot</strong> — what the agent can and cannot touch, and that human review is required before every merge? <em>(Ch 3.3)</em></li>
+          <li>Have you identified the person who will <strong>lead the pilot</strong> — ideally the engineer who already knows what good looks like? <em>(Ch 3.1)</em></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Stage 1 → 2: from pilot to team-wide standard</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Chapters 4–7. The goal is to convert the pilot's tacit habits into transferable, versioned practice that the whole team can use from day one.</p>
+        <ul>
+          <li>Have you converted <code>pilot-learnings.md</code> (or equivalent) into a <strong>versioned shared playbook</strong> — a reviewed artifact with an owner, stored in the repo? <em>(Ch 4)</em></li>
+          <li>Have you established <strong>shared workflow conventions</strong> — context-loading standards, the spec → plan → implement loop, an AI-review checklist in the PR template? <em>(Ch 4)</em></li>
+          <li>Have you named at least one <strong>champion</strong> per team — a person accountable for carrying the standard into pairing sessions and code review? <em>(Ch 5)</em></li>
+          <li>Have you built an <strong>onboarding checklist</strong> that brings new team members into the AI workflow from day one, not after weeks of organic discovery? <em>(Ch 5)</em></li>
+          <li>Have you run at least one <strong>blameless postmortem</strong> on an AI-assisted incident — establishing the cultural precedent that failures produce guardrails, not blame? <em>(Ch 6)</em></li>
+          <li>Have you shipped a <strong>metrics dashboard</strong> with at least two honest leading indicators (e.g., cycle time, escape defect rate) — one that names the gaps, not just the wins? <em>(Ch 7)</em></li>
+          <li>Have you retired at least one <strong>vanity metric</strong> (e.g., "AI-authored %") from the dashboard in favour of a signal that is harder to game? <em>(Ch 7)</em></li>
+          <li>Have you verified that every engineer on the team can <strong>run the standard workflow competently</strong> — not just the power users? <em>(Ch 5)</em></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Stage 2 → 3: from team standard to org platform</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Chapters 8–11. The goal is shared infrastructure that multiple teams pull from — not paste. Config sprawl and duplicated effort are the primary risks at this transition.</p>
+        <ul>
+          <li>Have you introduced a <strong>golden config</strong> — a versioned, org-owned baseline that layers org → team → repo, which teams pull rather than copy-paste? <em>(Ch 8)</em></li>
+          <li>Does your golden config answer these five questions: who last changed it, when, why, what it looked like before, and which teams it affects? <em>(Ch 8)</em></li>
+          <li>Have you stood up a <strong>capability registry</strong> — a discoverable catalog of shared MCP servers and capabilities with provenance, tier, and maintenance status? <em>(Ch 9)</em></li>
+          <li>Have you reviewed the provenance of every MCP server running in shared CI — what it does, what it can access, and who owns it? <em>(Ch 9)</em></li>
+          <li>Have you integrated AI review tooling into CI as <strong>advisory-only</strong> — agents inform the merge decision, they do not own it? <em>(Ch 10)</em></li>
+          <li>Have you set <strong>per-team token quotas</strong>, a per-run cap, and a circuit breaker that fires before the monthly budget is exhausted? <em>(Ch 11)</em></li>
+          <li>Have you implemented <strong>model routing</strong> — sending routine low-complexity steps to a fast-cheap tier rather than your most capable model? <em>(Ch 11)</em></li>
+          <li>Have you formed a named <strong>Platform/DevEx team</strong> (even two engineers) with explicit ownership of the shared tooling layer? <em>(Ch 8)</em></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Stage 3 → 4: from org platform to enterprise governance</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Chapters 12–15. The goal is making scale safe without making it slow — tiered gates, audit trails, and a paved road that teams choose because it is easier than the alternative.</p>
+        <ul>
+          <li>Have you run a <strong>security review</strong> of all agentic workflows before org-wide rollout — treating it as a gate, not an advisory? <em>(Ch 12)</em></li>
+          <li>Have you verified that no <strong>secrets or credentials flow into model context</strong> — via env file scans, directory traversal, or over-broad MCP tools? <em>(Ch 12)</em></li>
+          <li>Have you replaced any over-broad MCP tools with <strong>scoped alternatives</strong> that expose only what the agent legitimately needs? <em>(Ch 12)</em></li>
+          <li>Have you hardened review requirements into <strong>tiered, audited gates</strong> — human review scaled by blast radius, backed by policy-as-code and a reconstructable audit trail? <em>(Ch 13)</em></li>
+          <li>Does your audit trail make every agent-assisted incident <strong>recoverable and reconstructable</strong> — who triggered what, when, and with what effect? <em>(Ch 14)</em></li>
+          <li>Have you published and tested <strong>incident runbooks</strong> for the most likely agentic failure modes (runaway CI job, secret-in-context, auto-approve bypass)? <em>(Ch 14)</em></li>
+          <li>Have you drawn the <strong>paved-road line explicitly</strong> — which controls are mandated (non-negotiable), which are recommended defaults, and which are free within guardrails? <em>(Ch 15)</em></li>
+          <li>Have you made your <strong>escape-hatch process easy enough</strong> that teams file it rather than deviate silently — a short form, a fast turnaround, and a commitment to revise the standard when multiple teams request the same exception? <em>(Ch 15)</em></li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ref-scorecard')">→ Maturity Scorecard</a>
+        <a onclick="go('ch16-rollout')">→ Ch 16: Meridian's 12-Month Rollout</a>
+        <a onclick="go('map')">→ The Map: Five Stages &amp; Three Lenses</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
