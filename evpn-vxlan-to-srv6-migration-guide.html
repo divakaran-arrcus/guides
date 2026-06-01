@@ -3163,6 +3163,50 @@
   </div>
 </div>
 
+<div id="glossary" class="section">
+  <div class="sec-title">23. Glossary</div>
+  <p class="sec-sub">Terms specific to this guide. Adds to the bgp-evpn and srv6-complete glossaries.</p>
+  <div class="card">
+    <dl class="glossary">
+      <dt><strong>BGP Encapsulation Extended Community</strong> (RFC 9012)</dt>
+      <dd>BGP extended community signalling the data-plane encapsulation type for an EVPN route. Type 8 = VXLAN. The receiving PE uses it to decide whether it can install the route in its data plane.</dd>
+
+      <dt><strong>BGP Prefix-SID attribute</strong> (RFC 8669)</dt>
+      <dd>BGP attribute (type 40) carrying Segment Routing identifiers. Extended by RFC 9252 to carry SRv6 service SIDs for EVPN and L3VPN routes via the SRv6 Services TLV.</dd>
+
+      <dt><strong>End.DT2U / End.DT2M / End.DT4 / End.DT6</strong></dt>
+      <dd>SRv6 service-SID endpoint behaviors (RFC 9252). DT2U: decap + L2 unicast MAC lookup. DT2M: decap + L2 BUM/multicast flood. DT4/DT6: decap + IPv4/IPv6 VRF route lookup. uSID-flavor equivalents are <code>uDT2U</code>/<code>uDT2M</code>/<code>uDT4</code>/<code>uDT6</code> (compressed SRv6 — see srv6-complete-guide for the mapping).</dd>
+
+      <dt><strong>ES Label / ES SID</strong></dt>
+      <dd>Identifier used in EVPN multi-homing for split-horizon filtering and DF election. An MPLS label in VXLAN encap; an SRv6 SID in SRv6 encap. Carried in Type 1 (Ethernet A-D) and Type 4 (ES) routes.</dd>
+
+      <dt><strong>Gateway / border-leaf</strong></dt>
+      <dd>A leaf (or redundant pair) that runs both VXLAN and SRv6 data planes simultaneously and stitches EVPN routes between them by re-originating with translated encap-specific attributes. Intra-fabric (same AS) — <em>not</em> an ASBR.</dd>
+
+      <dt><strong>IMET (Inclusive Multicast Ethernet Tag)</strong></dt>
+      <dd>EVPN Type 3 route, advertised per (EVI, Ethernet Tag) by each PE to signal bridge-domain membership and convey replication-tree parameters via the PMSI Tunnel attribute.</dd>
+
+      <dt><strong>PMSI Tunnel attribute</strong> (RFC 6514)</dt>
+      <dd>BGP attribute carried in Type 3 (IMET) declaring the inclusive-multicast tunnel type and identifier — ingress replication, P2MP, or PIM. Its Tunnel Identifier carries the originating leaf's node IP on both encaps.</dd>
+
+      <dt><strong>Route re-origination (stitching)</strong></dt>
+      <dd>What the gateway does at an encap boundary: receives an EVPN route in encap A, replaces the next-hop and encap-specific attributes (VNI ↔ SID), and re-advertises it into encap B's BGP-EVPN domain. RD/RT are usually preserved. "Stitching" is the operational synonym.</dd>
+
+      <dt><strong>Service SID</strong></dt>
+      <dd>An SRv6 SID bound to a service-specific endpoint behavior (<code>uDT2U</code>/<code>uDT2M</code>/<code>uDT4</code>/<code>uDT6</code>). Carried in the BGP Prefix-SID attribute via the SRv6 Services TLV. The SRv6 analogue of a VXLAN VNI.</dd>
+
+      <dt><strong>uN / uA</strong></dt>
+      <dd>uSID (compressed SRv6) flavors of the End and End.X behaviors. <code>uN</code> = node/transit (locator advance); <code>uA</code> = adjacency (forward via a specific link).</dd>
+
+      <dt><strong>VNI ↔ Service SID mapping</strong></dt>
+      <dd>The migration's central data-plane translation. A 24-bit VXLAN VNI maps 1:1 to an SRv6 service SID — typically <code>uDT2U</code> for an L2 VNI or <code>uDT4</code>/<code>uDT6</code> for an L3 VRF. The gateway maintains this mapping in its stitching policy.</dd>
+
+      <dt><strong>VTEP / SRv6 endpoint equivalence</strong></dt>
+      <dd>A VXLAN VTEP (a loopback that terminates VXLAN tunnels) is functionally equivalent to an SRv6 endpoint (a uN-locator address that terminates SRv6 paths). Both are "where the encap is decapsulated."</dd>
+    </dl>
+  </div>
+</div>
+
   </main>
 </div>
 
