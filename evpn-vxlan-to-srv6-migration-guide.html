@@ -2703,6 +2703,238 @@
   </div>
 </div>
 
+<div id="troubleshooting" class="section">
+  <div class="sec-title">19. Troubleshooting — Control Plane vs Data Plane</div>
+  <p class="sec-sub">The encap changes what you capture and how you read it. The control plane barely moves.</p>
+
+  <div class="card">
+    <p>Migrating from VXLAN to SRv6 narrows the troubleshooting surface more than most engineers expect. BGP-EVPN still carries the same route types (Type 2 MAC/IP, Type 3 IMET, Type 5 IP prefix); the control plane commands are identical; the MAC and ARP tables are unchanged. What shifts is the data plane: the forwarding encapsulation token, the capture filter, and where to look for MTU-related drops.</p>
+
+    <h4 class="ph">What stays the same</h4>
+    <ul>
+      <li><code>show bgp l2vpn evpn</code> — same route types, same attribute fields; only the encap extended community (VXLAN vs SRv6) differs in the attribute block.</li>
+      <li><code>show evpn mac</code> / <code>show evpn mac detail</code> — MAC-to-next-hop table shape is identical; next-hop value changes from VTEP IP to service SID.</li>
+      <li><code>show evpn arp</code> / <code>show evpn nd</code> — ARP/ND binding table format unchanged.</li>
+      <li><code>show ip route vrf &lt;vrf&gt;</code> / <code>show ipv6 route vrf &lt;vrf&gt;</code> — VRF RIB output unchanged; next-hop pointer shifts from VTEP to SID.</li>
+      <li>BGP session state, neighbor flaps, and route count deltas are diagnosed identically on both encaps.</li>
+    </ul>
+
+    <h4 class="ph">Control-plane diffs per encap</h4>
+    <ul>
+      <li><strong>VXLAN:</strong> BGP EVPN next-hop = VTEP loopback IP; VNI carried in the VXLAN encap extended community (e.g., <code>RT:1:1000, encap:VXLAN, label:10000</code>). Verify with <code>show bgp l2vpn evpn route-type 3</code> — IMET carries the VTEP IP as the PMSI tunnel endpoint.</li>
+      <li><strong>SRv6:</strong> BGP EVPN next-hop = node locator; service SID encoded as a BGP prefix-SID attribute or SRv6 L3VPN/L2VPN SID TLV. Verify with <code>show bgp l2vpn evpn route-type 3 detail</code> — look for the SRv6 SID sub-TLV field.</li>
+      <li>Encap extended community mismatch between two peers is the most common control-plane cause of one-way traffic after partial migration — one side still advertising VXLAN encap to an SRv6-only leaf.</li>
+      <li>Check SID resolution: <code>show segment-routing srv6 sid</code> / <code>show srv6 locator</code> — a service SID without a resolved locator endpoint will drop silently.</li>
+    </ul>
+
+    <h4 class="ph">Data-plane capture — VXLAN</h4>
+    <ul>
+      <li>Capture filter: <code>udp port 4789</code> — VXLAN uses UDP/4789 as the standard destination port.</li>
+      <li>Frame structure: outer Ethernet → outer IP → UDP (dport 4789) → 8-byte VXLAN header (flags + 24-bit VNI) → inner Ethernet frame.</li>
+      <li>VNI is in plaintext in bytes 5–7 of the VXLAN header; readable without decryption. Wireshark dissects automatically with the VXLAN dissector.</li>
+      <li>Identify the source VTEP from the outer source IP; the destination VTEP from the outer destination IP (unicast ingress-replication) or multicast group (PIM BUM).</li>
+      <li>Look for fragmentation at the outer IP layer — any fragment indicates an MTU problem; the inner frame is invisible in non-first fragments.</li>
+    </ul>
+
+    <h4 class="ph">Data-plane capture — SRv6</h4>
+    <ul>
+      <li>Capture filter (SRH present): <code>ip6[6] == 43</code> — IPv6 next-header 43 is the Routing Header; SRH is a Routing Header with type 4.</li>
+      <li>Capture filter (uSID, no SRH): <code>ip6 and ip6[24:4] == 0xfc000001</code> — match packets whose IPv6 destination falls within the uN locator block (e.g., <code>fc00:0:1::/48</code> per §9 planning). Adjust the mask to match your deployed locator range.</li>
+      <li>uSID: the active segment function is encoded directly in the destination IPv6 address (bits 48–95 of a 128-bit uSID); no SRH is present for single-segment paths, which is the common case in a uSID fabric.</li>
+      <li>To decode the service function: extract the IPv6 destination, split at the 16-bit uSID boundary, and map each 16-bit block to your SID allocation table (<code>show srv6 sid</code>).</li>
+      <li>No fragmentation on the SRv6 path is permitted (IPv6 forbids in-network fragmentation); an oversized packet is dropped with ICMPv6 Packet Too Big — capture ICMPv6 type 2 as the drop signal.</li>
+    </ul>
+
+    <h4 class="ph">Gateway-specific failures</h4>
+    <ul>
+      <li><strong>Stuck routes:</strong> a service route present on VXLAN leaves but absent on SRv6 leaves usually means the gateway did not re-originate the Type 5 or Type 2 route with the correct SRv6 encap after the stitching config was applied. Check <code>show bgp l2vpn evpn summary</code> on the gateway — confirm it is advertising to SRv6 peers.</li>
+      <li><strong>One-way traffic:</strong> asymmetric encap — SRv6 leaf sends to VXLAN host correctly (via gateway re-encap), but VXLAN leaf's return path bypasses the gateway entirely (e.g., direct Type 2 learned via BGP shortcut). Verify that VXLAN leaves point their return path through the gateway, not a direct SRv6 path they cannot process.</li>
+      <li><strong>State desync after gateway failover:</strong> if the gateway (Leaf-2/Leaf-4) fails over to its redundant peer (§3 HA), the new active gateway must re-establish the stitching state before forwarding resumes. Monitor MAC mobility event counters immediately after a failover event — a spike indicates the re-advertisement storm is in progress.</li>
+      <li><strong>Missing IPv6 underlay route:</strong> SRv6 traffic silently black-holes if the locator prefix is absent from the underlay (IS-IS SR-IPv6 or BGP-LU not redistributing the locator). Run <code>show isis database detail</code> or <code>show bgp ipv6 unicast</code> to verify locator reachability from the gateway's perspective.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Debug Toolkit — Side by Side</h2>
+    <div class="cmp">
+      <div class="cmp-c">
+        <h4 style="color:var(--blue);">VXLAN</h4>
+        <ul>
+          <li><strong>Control plane:</strong> <code>show bgp l2vpn evpn</code>, <code>show evpn mac</code>, <code>show evpn arp</code>, <code>show vxlan vtep</code>, <code>show vxlan vni</code></li>
+          <li><strong>Data plane:</strong> <code>show interface vxlan1 counters</code>, <code>show vxlan flood vtep</code></li>
+          <li><strong>Capture filter:</strong> <code>udp port 4789</code></li>
+          <li><strong>Decoder:</strong> Wireshark VXLAN dissector (auto); tcpdump readable inline — VNI at byte offset 4 in VXLAN header</li>
+          <li><strong>MTU check:</strong> <code>ping &lt;vtep-ip&gt; df-bit size 1600</code>; look for outer-IP fragmentation in capture</li>
+          <li><strong>BUM trace:</strong> check PIM multicast group joins or ingress-replication peer list in <code>show vxlan flood vtep</code></li>
+        </ul>
+      </div>
+      <div class="cmp-c">
+        <h4 style="color:var(--orange);">SRv6</h4>
+        <ul>
+          <li><strong>Control plane:</strong> <code>show bgp l2vpn evpn</code>, <code>show evpn mac</code>, <code>show srv6 locator</code>, <code>show srv6 sid</code>, <code>show segment-routing srv6 forwarding</code></li>
+          <li><strong>Data plane:</strong> <code>show interface &lt;uplink&gt; counters</code> (no dedicated VXLAN counter; per-interface stats), <code>show srv6 sid counters</code></li>
+          <li><strong>Capture filter (SRH):</strong> <code>ip6[6] == 43</code> — next-header 43</li>
+          <li><strong>Capture filter (uSID):</strong> <code>ip6 dst net fc00:0:1::/48</code> — adjust to your locator block</li>
+          <li><strong>Decoder:</strong> Wireshark SRv6 dissector (v3.2+); manually decode uSID by splitting IPv6 dst at 16-bit boundaries</li>
+          <li><strong>MTU check:</strong> capture ICMPv6 type 2 (Packet Too Big) — the drop signal for oversized frames; also check <code>show interface &lt;gw-uplink&gt; drops</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Failure → Symptom → Fix</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Failure</th>
+          <th>Control-plane symptom</th>
+          <th>Data-plane symptom</th>
+          <th>Fix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MAC flap loop</strong> (§14 — sequence number mismatch)</td>
+          <td>Rapid MAC mobility sequence increments in <code>show evpn mac detail</code>; BGP Type 2 churning between two next-hops</td>
+          <td>Intermittent packet loss; frames alternately forwarded to two different next-hops; high MAC-move event rate in telemetry</td>
+          <td>Identify which two nodes are originating conflicting Type 2 routes for the same MAC; confirm sequence numbers are monotonically increasing; check for duplicate ESI or mis-matched EVI config between nodes</td>
+        </tr>
+        <tr>
+          <td><strong>Wrong next-hop install</strong> (§5 gotcha)</td>
+          <td>BGP RIB shows correct route; FIB shows stale VTEP IP or unresolved SID as next-hop</td>
+          <td>Traffic hits wrong leaf or is dropped at FIB lookup; <code>show forwarding ipv6 route</code> shows mismatch with BGP next-hop</td>
+          <td>Clear the BGP EVPN session to force route re-advertisement; verify FIB programmed next-hop matches BGP-advertised SID or VTEP; check for stale ARP/ND entry on gateway</td>
+        </tr>
+        <tr>
+          <td><strong>ESI mismatch</strong> (§14 — multi-homing)</td>
+          <td>Only one of two redundant paths advertised; <code>show evpn esi</code> shows different ESI values on the two access-side peers</td>
+          <td>Single-homed forwarding instead of load-balanced; one access link carries all traffic while the redundant link idles</td>
+          <td>Verify ESI config is byte-for-byte identical on both peers for the given LAG/bundle; re-apply ESI config and confirm <code>show evpn esi detail</code> shows the same value on both nodes</td>
+        </tr>
+        <tr>
+          <td><strong>MTU drop at gateway</strong> (§15)</td>
+          <td>Control plane clean — routes present, MACs learned, next-hops resolved</td>
+          <td>"MAC table looks fine but no traffic" — packets dropped silently (VXLAN) or with ICMPv6 PTB (SRv6) after re-encapsulation adds header overhead; gateway drop counters rising</td>
+          <td>Check gateway interface drop counters and per-interface MTU config; verify the re-encapsulated frame size does not exceed the fabric path MTU; increase uplink MTU to ≥ 9216 bytes or reduce inner frame MTU; capture ICMPv6 type 2 messages to identify the path bottleneck</td>
+        </tr>
+        <tr>
+          <td><strong>Missing IPv6 underlay route</strong></td>
+          <td>SRv6 SID present in BGP but <code>show srv6 sid</code> shows locator unresolved; <code>show isis database detail</code> / <code>show bgp ipv6 unicast</code> missing locator prefix</td>
+          <td>SRv6-encapsulated traffic black-holes silently; ICMP probes via underlay succeed but EVPN-carried tenant traffic drops</td>
+          <td>Verify locator prefix is redistributed into the IS-IS SR-IPv6 or BGP IPv6 unicast topology; check IS-IS prefix-segment advertisements for the locator node; re-apply locator config or fix redistribution policy</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info red">
+    <strong>Classic: "MAC table looks fine but no traffic."</strong> The most deceptive failure after a gateway migration is clean control-plane state paired with total data-plane silence. The usual culprit is an MTU drop at the gateway: re-encapsulation (VXLAN → SRv6 or vice versa) adds header bytes, and if the gateway uplink MTU was sized for the original encap, the re-encapsulated packet now exceeds the path MTU and is dropped without a counter-increment visible at the leaf level. Always check gateway interface drop counters and path MTU — run an explicit ping with the DF bit set and maximum expected frame size from both sides of the gateway before concluding that control-plane health implies data-plane health.
+  </div>
+</div>
+
+<div id="monitoring" class="section">
+  <div class="sec-title">20. Monitoring, Telemetry, Observability</div>
+  <p class="sec-sub">Dashboards and alerts need migrating too — VNI-keyed counters don't exist on SRv6 leaves.</p>
+
+  <div class="card">
+    <p>The migration changes the vocabulary of your monitoring stack as much as it changes the network. VXLAN monitoring is VNI-centric: every dashboard panel, alert threshold, and YANG subscription is keyed on a VNI. SRv6 monitoring is SID-centric: the granularity unit is a service SID (or a locator prefix), and VNI-keyed panels go blank the moment VXLAN is withdrawn. Plan the monitoring migration in parallel with the forwarding-plane migration, not after it.</p>
+
+    <h4 class="ph">Counter mapping</h4>
+    <ul>
+      <li><strong>VXLAN:</strong> per-VNI encap/decap packet and byte counters; per-VTEP tunnel counters; per-NVE interface aggregate. YANG path example: <code>openconfig-network-instance:network-instances/network-instance[name=*]/vlans/vlan[vlan-id=*]/state/counters</code>.</li>
+      <li><strong>SRv6:</strong> per-service-SID counters (function-level); per-locator aggregate (locator-level). YANG paths vary by vendor — look under <code>Cisco-IOS-XR-segment-routing-srv6-oper</code> or <code>openconfig-segment-routing:segment-routing/srv6/locators/locator[name=*]/sids/sid[value=*]/state</code>.</li>
+      <li>Function-level (per-SID) granularity is equivalent to per-VNI granularity; locator-level granularity is coarser (one counter for all services on a node) — ensure your telemetry subscription requests function-level paths to maintain visibility parity.</li>
+      <li>During the dual-stack window, subscribe to both VXLAN VNI paths and SRv6 SID paths simultaneously; plot them in separate panels to track traffic shift without losing either side's visibility.</li>
+    </ul>
+
+    <h4 class="ph">Flow export</h4>
+    <ul>
+      <li>sFlow and IPFIX both continue to work on SRv6-encapsulated traffic — the sampling point is still the ingress interface.</li>
+      <li><strong>VXLAN flow records:</strong> collector decodes inner flow by stripping the VXLAN header; VNI appears as a tunnel metadata field in IPFIX (Information Element 351: <em>virtualStationInterfaceName</em> or vendor-specific VNI IE).</li>
+      <li><strong>SRv6 flow records:</strong> the outer IPv6 header is sampled; the SID appears as the outer destination IP. Collectors must be configured to recognize the SRH extension header (next-header 43) and extract the segment list. Update collector templates to add SRH parsing if absent.</li>
+      <li>Check your flow collector's SRv6 support matrix before cutover — many collectors added SRH support only in recent versions. Upgrade or add a mediator with SRH-aware normalization if needed.</li>
+      <li>Inner flow visibility (tenant IP addresses) is preserved in both encaps as long as sampling is done at the access-side interface before encapsulation or after decapsulation.</li>
+    </ul>
+
+    <h4 class="ph">SLA / probe-based monitoring</h4>
+    <ul>
+      <li><strong>BFD over VXLAN:</strong> BFD sessions ride inside the VXLAN tunnel; loss of the UDP/4789 path triggers BFD down. Timers: typical 300 ms detection (3×100 ms intervals) for DC fabrics.</li>
+      <li><strong>BFD over SRv6:</strong> BFD sessions use the IPv6 underlay directly or are encapsulated into the SRv6 SID path; sub-50 ms detection is achievable on both encaps with 10 ms / 3× intervals on modern silicon.</li>
+      <li>TWAMP/STAMP probes for delay and loss measurement work on both encaps with no changes to the probe source/sink config — the probe packets traverse the same underlay path and encap headers are transparent to the measurement.</li>
+      <li>For SRv6, add a locator-reachability probe (simple ICMPv6 to the node SID) separate from the service-SID probe — this distinguishes underlay failures from service-SID programming failures.</li>
+      <li>Update OAM probe target addresses: VXLAN probes target VTEP loopbacks; SRv6 probes should target the node SID (End SID) for underlay health and the service SID for data-plane health.</li>
+    </ul>
+
+    <h4 class="ph">Dashboards during dual-stack</h4>
+    <ul>
+      <li>Create a split-panel layout: left panel shows VXLAN-side counters (VNI encap/decap, VTEP tunnel state, IPv4 underlay health); right panel shows SRv6-side counters (SID counters, locator reachability, IPv6 underlay health).</li>
+      <li>The gateway is the only node with genuinely new visibility requirements: a cross-encap translation counter (how many packets were re-encapsulated in each direction) is the primary new metric. This counter confirms that the gateway is actively bridging traffic and that neither encap side has gone silent unexpectedly.</li>
+      <li>Add a "traffic balance" panel during dual-stack: plot VXLAN byte counters and SRv6 byte counters as a ratio — this gives an at-a-glance view of migration progress per service.</li>
+      <li>Pin gateway translation-failure counters to the top of the migration dashboard — a non-zero translation failure is an immediate escalation trigger.</li>
+    </ul>
+
+    <h4 class="ph">Alerting drift to watch</h4>
+    <ul>
+      <li><strong>Scale counter thresholds:</strong> SRv6 SID table growth is shaped differently from VNI growth — adding a new service adds one or more SIDs per node rather than one VNI per leaf. Review and recalibrate SID table utilization alerts before the migration reaches scale.</li>
+      <li><strong>Encap-mismatch alerts:</strong> alert on any BGP EVPN route carrying a VXLAN encap extended community that is imported on an SRv6-only leaf — this indicates a misconfigured leaf or a gateway failure to re-originate with the correct encap.</li>
+      <li><strong>Gateway translation-failure alerts:</strong> add a dedicated alert for any non-zero gateway translation-failure counter; threshold should be zero — any failure here means tenant traffic is being dropped at the gateway boundary.</li>
+      <li><strong>VNI-keyed panel health:</strong> alert when a VNI-keyed counter that was active drops to zero unexpectedly — this distinguishes a successful migration (VNI counter goes to zero because traffic moved to SRv6) from a failure (VNI counter goes to zero because the path broke).</li>
+      <li>Audit all SNMP traps and event triggers that reference VXLAN interface names or VNI OIDs — update them to equivalent SRv6 OIDs or YANG paths before cutover, not after.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Monitoring Matrix</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>VXLAN</th>
+          <th>SRv6</th>
+          <th>Gateway-specific</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Counters</strong></td>
+          <td>Per-VNI encap/decap pkt+byte; per-VTEP tunnel; per-NVE interface aggregate</td>
+          <td>Per-service-SID (function-level) pkt+byte; per-locator aggregate; per-node-SID reachability</td>
+          <td>Cross-encap translation pkt+byte (VXLAN→SRv6 and SRv6→VXLAN); gateway drop counters per direction</td>
+        </tr>
+        <tr>
+          <td><strong>Flow export</strong></td>
+          <td>IPFIX/sFlow; VNI as tunnel metadata IE; inner flow visible after VXLAN header strip</td>
+          <td>IPFIX/sFlow; outer IPv6 dst = SID; SRH IE (next-header 43) for segment list; collector must support SRH parsing</td>
+          <td>Flows transiting gateway appear with two records: one with VXLAN outer header, one with SRv6 outer header — correlate on inner 5-tuple</td>
+        </tr>
+        <tr>
+          <td><strong>SLA probes</strong></td>
+          <td>BFD to VTEP loopback; TWAMP/STAMP via underlay; target = VTEP IP</td>
+          <td>BFD to node SID (End SID) for underlay; BFD to service SID for data-plane; TWAMP/STAMP unchanged; sub-50 ms detection achievable</td>
+          <td>Add dedicated TWAMP probe from each encap-side through the gateway to confirm round-trip path; alert on asymmetric latency</td>
+        </tr>
+        <tr>
+          <td><strong>Dashboards</strong></td>
+          <td>VNI-keyed panels; VTEP tunnel state; BUM replication tree health; IPv4 underlay topology view</td>
+          <td>SID-keyed panels; locator reachability map; SRH utilization (for multi-segment paths); IPv6 underlay topology view</td>
+          <td>Split-panel (VXLAN-side | SRv6-side); traffic balance ratio; gateway translation counter; cross-encap path latency delta</td>
+        </tr>
+        <tr>
+          <td><strong>Alerting</strong></td>
+          <td>VNI counter unexpected zero; VTEP tunnel down; BFD flap on VTEP; IPv4 underlay prefix withdrawal</td>
+          <td>SID table utilization &gt; threshold; locator prefix missing; SID programming failure; IPv6 underlay prefix withdrawal</td>
+          <td>Translation failure counter &gt; 0; encap-mismatch route (VXLAN encap imported on SRv6-only leaf); gateway BFD flap; both-sides-zero (traffic vanished from both panels simultaneously)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info">
+    <strong>Audit your dashboards before cutover starts — not after.</strong> VNI-keyed panels go blank on SRv6 leaves the moment VXLAN is withdrawn. If your NOC's primary view is a per-VNI health board, it will show red across the board for every migrated service — indistinguishable from a mass outage unless the SRv6-side panels are already live and green. Build and validate the SRv6 dashboard panels at least two weeks before the first service cutover, run them in parallel during dual-stack, and get the operations team comfortable with the new view before the old one goes dark.
+  </div>
+</div>
+
   </main>
 </div>
 
