@@ -2935,6 +2935,146 @@
   </div>
 </div>
 
+<div id="decision-matrix" class="section">
+  <div class="sec-title">21. Decision Matrix — Migrate Now / Later / Stay</div>
+  <p class="sec-sub">Not every operator should migrate. Here are the signals.</p>
+
+  <div class="card">
+    <p>The right migration decision depends on where you are today — hardware, scale, organizational readiness, and business drivers all matter. Use the signals below honestly. If you cannot point to at least two strong "migrate now" signals, the project risk likely outweighs the reward at this time. This guide's <a href="#" onclick="go('migration-question',event); return false;">§FM-2</a> covers the motivations in more depth.</p>
+
+    <h4 class="ph">Migrate now if…</h4>
+    <ul>
+      <li><strong>SP + DC unified-underlay is a stated goal.</strong> SRv6 is the only encap that spans both domains natively; staying on VXLAN forecloses that convergence.</li>
+      <li><strong>SRv6-capable silicon is already deployed.</strong> If leaves and spines already run ASICs with uSID support, the marginal cost of migration is primarily operational, not capital.</li>
+      <li><strong>Scale is approaching VXLAN's practical ceiling.</strong> VNI space (16 M) is rarely the constraint — per-leaf MAC table size, BUM replication fan-out, and VTEP peer count are. If you are at 60–70 % of any of these ceilings, SRv6's locator-based scale model is worth the migration cost now.</li>
+      <li><strong>Multi-domain TE is pulling DC traffic.</strong> SRv6 policy can steer tenant flows across the WAN; VXLAN cannot participate in SR-TE without tunneling overhead and a gateway at every domain boundary.</li>
+      <li><strong>Vendor EOL is approaching on VXLAN-only platforms.</strong> A planned hardware refresh is the lowest-friction migration window — new hardware comes up native SRv6 and the VXLAN footprint shrinks naturally.</li>
+      <li><strong>You have SRv6 operational expertise in-house or under contract.</strong> Tooling, runbooks, and trained staff are ready.</li>
+    </ul>
+
+    <h4 class="ph">Migrate later if…</h4>
+    <ul>
+      <li><strong>Hardware refresh is 1–3 years out.</strong> Migrating twice (software now, hardware at refresh) doubles operational risk and change-freeze windows. Wait for the refresh and migrate once on new silicon.</li>
+      <li><strong>Current scale and tooling work fine.</strong> If VNI counts, MAC tables, and BUM replication are all well below ceilings, there is no operational pressure to migrate.</li>
+      <li><strong>No business pull from SP convergence or multi-domain TE.</strong> VXLAN is a proven, stable encap. Without a clear business driver, migration is cost and risk without payoff.</li>
+      <li><strong>Organizational SRv6 skill gap is significant.</strong> Schedule training and lab time first; migrate once the team can operate the new plane without heroics. A 6–12 month readiness investment before migration is normal.</li>
+      <li><strong>Active features under development are VXLAN-specific.</strong> Freezing feature work for a migration is expensive; finish the feature cycle first.</li>
+    </ul>
+
+    <h4 class="ph">Stay on VXLAN if…</h4>
+    <ul>
+      <li><strong>Single-site, modest scale, no SP integration story.</strong> VXLAN is purpose-built for this deployment model and will continue to receive vendor support indefinitely at this scale.</li>
+      <li><strong>No SRv6 operational expertise and no plan to build it.</strong> Running a technology the team cannot troubleshoot is a reliability risk that no architecture benefit justifies.</li>
+      <li><strong>Hardware is locked to a vendor without an SRv6 roadmap.</strong> If the silicon vendor has no uSID support in the next two platform generations, migration would require a full rip-and-replace — evaluate that as a separate capital project, not an encap migration.</li>
+      <li><strong>Multi-vendor interop requirements are complex.</strong> SRv6 interop across vendors in the same fabric is possible but has more rough edges than VXLAN today. If you run a strict multi-vendor fabric, wait for the ecosystem to mature.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Signal → Outcome</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Migrate now</th>
+          <th>Migrate later</th>
+          <th>Stay on VXLAN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SP + DC convergence goal</td>
+          <td style="text-align:center; color:var(--green); font-weight:600;">&#10003;</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>SRv6-capable silicon already deployed</td>
+          <td style="text-align:center; color:var(--green); font-weight:600;">&#10003;</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Approaching VXLAN scale ceiling (MAC table / BUM / VTEP peers)</td>
+          <td style="text-align:center; color:var(--green); font-weight:600;">&#10003;</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Multi-domain TE need (SR-TE across WAN)</td>
+          <td style="text-align:center; color:var(--green); font-weight:600;">&#10003;</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>VXLAN-only platform approaching vendor EOL</td>
+          <td style="text-align:center; color:var(--green); font-weight:600;">&#10003;</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Hardware refresh due in 1–3 years</td>
+          <td></td>
+          <td style="text-align:center; color:var(--cyan); font-weight:600;">&#10003;</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Current scale and tooling working fine, no business pull</td>
+          <td></td>
+          <td style="text-align:center; color:var(--cyan); font-weight:600;">&#10003;</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Significant SRv6 skill gap, readiness investment needed</td>
+          <td></td>
+          <td style="text-align:center; color:var(--cyan); font-weight:600;">&#10003;</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Single-site, modest scale, no SP integration story</td>
+          <td></td>
+          <td></td>
+          <td style="text-align:center; color:var(--orange); font-weight:600;">&#10003;</td>
+        </tr>
+        <tr>
+          <td>No SRv6 operational expertise, no plan to build it</td>
+          <td></td>
+          <td></td>
+          <td style="text-align:center; color:var(--orange); font-weight:600;">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Hardware locked to vendor with no SRv6 roadmap</td>
+          <td></td>
+          <td></td>
+          <td style="text-align:center; color:var(--orange); font-weight:600;">&#10003;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>The Three Outcomes</h2>
+    <div class="flv-grid">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green);">Migrate now</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong>Strongest signal combination:</strong> SRv6-capable silicon already in the fabric AND SP + DC underlay convergence is a committed business goal. Migration cost is primarily operational (not capital), and the business driver is concrete. The hardware and architecture are aligned; delaying is cost without benefit. See <a href="#" onclick="go('migration-question',event); return false;">§FM-2</a> for motivations and §9 for silicon requirements.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--cyan);">Migrate later</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong>Strongest signal:</strong> hardware refresh is planned within 1–3 years. Migrating before the refresh means running a dual-encap migration on end-of-life hardware, then migrating again at refresh. Wait: new hardware comes up native SRv6, the VXLAN footprint retires naturally, and you migrate once. Use the window to build SRv6 skills and complete this guide's readiness checklist.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange);">Stay on VXLAN</div>
+        <div class="flv-desc" style="margin-top:6px;"><strong>Strongest signal combination:</strong> single-site or modest-scale DC with no SP integration story AND no SRv6 operational expertise. VXLAN is a stable, well-understood encap that will be supported by vendors for the foreseeable future at this scale. Migration introduces risk and operational burden with no measurable return. Revisit this decision when the business model or scale changes.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <strong>This guide assumes you have chosen to migrate — but revisit this matrix honestly before you start.</strong> A migration with no business driver is cost and risk without payoff. If you cannot identify at least two concrete "migrate now" signals in your environment, the right answer today may be "migrate later" or "stay." Return to <a href="#" onclick="go('migration-question',event); return false;">§FM-2</a> and re-read the motivation section with fresh eyes before committing to the project plan.
+  </div>
+</div>
+
   </main>
 </div>
 
