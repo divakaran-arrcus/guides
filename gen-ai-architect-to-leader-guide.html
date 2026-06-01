@@ -3419,6 +3419,204 @@ except Exception as e:
     </section>
 
 
+    <!-- ===================== CH14 ===================== -->
+    <section id="ch14-incident" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">14. Failure Modes &amp; Incident Response</h1>
+      <span class="lens-tag governance">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: the taxonomy of agent failures that emerge specifically at org scale — and why they differ from ordinary software bugs; what to do in the first minutes and hours when an agent causes real damage; how to run a blameless postmortem adapted to the "who decided?" ambiguity of agentic systems; how to close the loop so each incident hardens a guardrail rather than becoming a footnote; and what on-call teams need — kill switches, revocation paths, identification heuristics — to operate confidently when agents are in the deployment chain.</p>
+
+      <!-- 14.1 -->
+      <div class="card">
+        <h2>14.1 Taxonomy of agent failures at org scale</h2>
+        <p>Most engineering teams plan for failures they have seen before: unhandled exceptions, off-by-one errors, race conditions. Agent failures at org scale introduce categories that fall outside that prior experience. Naming them precisely is a prerequisite for designing the right guardrails — and for running postmortems that produce specific fixes rather than vague caution.</p>
+
+        <h4 class="ph">Six categories you will encounter at Stage 3 and beyond</h4>
+        <table class="tbl" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Failure category</th>
+              <th>What it looks like</th>
+              <th>Why it's different from a normal bug</th>
+              <th>Primary guardrail layer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Silent-wrong output</strong></td>
+              <td>The agent produces code or configuration that is syntactically correct, passes tests, and merges cleanly — but is semantically wrong in a way that only surfaces under specific runtime conditions.</td>
+              <td>Human-written code that is wrong often looks wrong to a careful reader. AI-generated code that is wrong often looks very right. The plausibility of the surface conceals the defect beneath it.</td>
+              <td>Spec completeness; edge-case test coverage check in the AI-review checklist; post-merge monitoring.</td>
+            </tr>
+            <tr>
+              <td><strong>Runaway / cost explosion</strong></td>
+              <td>An agent loops, retries excessively, spawns subagents without bound, or hits an API in a hot loop — consuming tokens, compute, or third-party API budget at rates orders of magnitude above expected.</td>
+              <td>Cost is invisible until a billing alert fires or a budget is exhausted. The blast radius is financial and service-continuity, not necessarily correctness. It can affect unrelated systems sharing budget.</td>
+              <td>Per-session token and call-count limits; spend alerts at 50% and 80% of budget thresholds; rate-limit configuration on all agent-accessible APIs.</td>
+            </tr>
+            <tr>
+              <td><strong>Destructive action</strong></td>
+              <td>The agent deletes, overwrites, or irreversibly modifies files, database records, infrastructure resources, or deployed services — either within its permitted scope or by escaping it.</td>
+              <td>A human who runs <code>rm -rf</code> by mistake feels the consequence immediately and usually stops. An agent instructed to "clean up stale resources" may complete the action silently across hundreds of targets before any human sees the output.</td>
+              <td>Mandatory human approval for all destructive tool calls (risk tier: High or Sensitive); dry-run flags enforced by platform config; no-delete policy on production tooling in headless CI.</td>
+            </tr>
+            <tr>
+              <td><strong>Prompt-injection compromise</strong></td>
+              <td>A malicious payload embedded in content the agent reads — a code comment, a web page fetched by a tool, a retrieved document — causes the agent to deviate from its intended behavior, exfiltrate context, or take an action the human operator did not authorize.</td>
+              <td>The attack surface is not the agent's code — it is anything the agent reads. Attackers do not need to compromise your system; they need to get their instruction into a document your agent will process.</td>
+              <td>Input validation and content sanitization on all tool outputs that re-enter the model context; principle of least-privilege on tool permissions; audit logging of all tool calls for anomaly detection.</td>
+            </tr>
+            <tr>
+              <td><strong>Hallucinated dependency</strong></td>
+              <td>The agent adds a dependency — an npm package, a PyPI library, a Go module — that does not exist or that differs from a legitimate package by one character (typosquatting). The dependency is installed, the tests pass (the dep is unused in the test path), and the malicious or non-existent package ships.</td>
+              <td>Dependency confusion and typosquatting attacks are not new, but an agent that adds dependencies autonomously — without a human checking each addition against a registry — dramatically increases the surface area and the velocity of introduction.</td>
+              <td>Allowlist-only dependency addition in CI; automated package name verification against the org's approved-dependency registry; any new transitive dependency flags for human review.</td>
+            </tr>
+            <tr>
+              <td><strong>Over-trusted auto-merge</strong></td>
+              <td>A CI pipeline is configured to auto-merge agent-generated PRs that pass all checks. The checks pass; the PR merges; the change reaches production without a human having read it. A systematic bias or policy violation in the agent's output propagates across many services before detection.</td>
+              <td>Auto-merge on human-authored PRs typically follows a long review process. Auto-merge on agent PRs can follow a process that feels equivalent but lacks the human semantic review. At scale, this compounds: one bad pattern, if it passes the checks, replicates across every service that uses the same pipeline.</td>
+              <td>Explicit policy: no auto-merge of agent-generated PRs without human semantic review; risk-tier gate enforced at the registry level for any pipeline that includes auto-merge steps.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">Why org scale changes the failure profile</h4>
+        <ul>
+          <li>At Stage 1–2, a failure affects one team's codebase. At Stage 3, a failure in a shared workflow standard, a golden config rule, or a platform-level CI step propagates to every team using that component. The failure surface is multiplied by adoption breadth.</li>
+          <li>Failures that are rare per-session become statistically guaranteed at org scale. If a hallucinated dependency occurs in 0.1% of dependency-addition tasks and your org runs 10,000 such tasks per quarter, you will see roughly ten incidents per quarter — not zero.</li>
+          <li>Detection lag grows with team count. A failure that one team would notice in hours may take days to surface when the affected code is a shared library that dozens of teams own collectively and no single team monitors closely.</li>
+          <li>Audit complexity increases. "Which agent session, on whose behalf, added this dependency?" is a harder question to answer when 200 engineers are running sessions concurrently. The audit trail design from Ch 13.2 is not optional at this scale — it is the only way to answer that question in under an hour.</li>
+        </ul>
+
+        <div class="info orange"><strong>Name the category first.</strong> When an incident surfaces, the fastest path to a targeted fix is identifying which failure category it belongs to. A silent-wrong-output incident gets a different postmortem and a different guardrail than a hallucinated-dependency incident. Category confusion produces generic fixes ("be more careful") that harden nothing.</div>
+      </div>
+
+      <!-- 14.2 -->
+      <div class="card">
+        <h2>14.2 When an agent does damage</h2>
+        <p>The first minutes after an agent causes a real production failure are high-pressure and high-stakes. Teams that have rehearsed the containment sequence perform it correctly under pressure. Teams that are improvising it for the first time make it worse. The sequence below is not comprehensive — it is the minimum that must happen correctly before anything else.</p>
+
+        <h4 class="ph">The containment sequence</h4>
+        <ul>
+          <li><strong>Stop the agent first.</strong> This sounds obvious, but it is not always done. An agent that is still running while you diagnose the failure may be extending the blast radius with every additional tool call. Every agentic workflow must have a documented and rehearsed kill path — a way to halt an in-progress session or pipeline that does not require access to the model provider's console. If your team cannot answer "how do we stop the agent right now?" in under 60 seconds, that is the first gap to close.</li>
+          <li><strong>Contain the blast radius before you diagnose.</strong> Identify what the agent had access to — which repos, which APIs, which databases, which credentials — and assess what it could have changed. Revoke or restrict access to those resources before continuing. You may not know yet what the agent did; you know what it could have done. The containment step limits continued exposure while diagnosis proceeds.</li>
+          <li><strong>Revert via git and deploy rollback.</strong> Git is your primary safety net at org scale. Any agent-authored change that reached a repository is recoverable. Identify the commit(s), revert cleanly, and confirm the revert deployed before declaring the blast radius contained. For infrastructure changes, deploy rollback is the equivalent mechanism — but confirm the previous state is known and the rollback target is clean before you execute it.</li>
+          <li><strong>Preserve the evidence before you clean up.</strong> The instinct after a painful failure is to fix it fast and move on. Resist it. Before you revert anything, capture the agent's session log, the relevant audit trail entries, the tool call sequence, and the state of any affected resources. This is the evidence base for the postmortem. Without it, you will be writing a postmortem from memory — which produces vague findings and vague fixes.</li>
+          <li><strong>Communicate scope before you communicate cause.</strong> The first stakeholder update after an agent-caused incident should name what is affected, what is being done to contain it, and the expected time to resolution — not a theory about what went wrong. "We have halted the agent pipeline. Affected: the payments-service staging environment. We are reverting now. ETA to restored service: 30 minutes. Postmortem in 48 hours." That is enough. A premature cause statement that turns out to be wrong damages credibility and creates noise during the response.</li>
+        </ul>
+
+        <div class="info red"><strong>Git is your org-scale safety net — but only if you use it correctly.</strong> Agent-authored changes that bypass version control, write directly to a database, or deploy without a tracked artifact cannot be reverted via git. The containment sequence above works because git preserves every state. Design your agent tooling so that every consequential change goes through a reviewable, revertable, version-controlled artifact. If an agent can act outside that boundary — writing directly to a database, modifying a deployed secret — that action requires High or Sensitive tier approval before it runs, not after it fails.</div>
+
+        <h4 class="ph">After containment: immediate post-incident hygiene</h4>
+        <ul>
+          <li>Rotate any credentials the agent had access to, even if you believe they were not used inappropriately. A compromised session may have exfiltrated credentials without leaving an obvious trace. Rotation is cheap; credential-reuse exposure is not.</li>
+          <li>Confirm the revert actually holds. Check downstream systems that depend on the reverted component. An infrastructure revert that leaves a dependent service in a stale state is a second incident waiting to happen.</li>
+          <li>Set a 48-hour postmortem timer. Not a "schedule a meeting when things calm down" note — a calendar block with a stated facilitator, a stated audience, and a stated deliverable. Incidents with vague postmortem timelines tend to produce postmortems that never happen, or that happen weeks later when the details have faded.</li>
+        </ul>
+      </div>
+
+      <!-- 14.3 -->
+      <div class="card">
+        <h2>14.3 The blameless postmortem for agent incidents</h2>
+        <p>The blameless postmortem was designed for systems failures — events where a cascade of conditions converged to produce a bad outcome, and where blaming the operator closest to the failure produces a false sense of resolution without fixing the underlying system. Agent incidents are a particularly strong fit for this framework, because the "operator closest to the failure" question is systematically ambiguous: the human authorized the session, the model made decisions within it, and the platform configuration shaped what was possible. Assigning individual blame in that context is not just unfair — it is analytically wrong.</p>
+
+        <h4 class="ph">The "who decided?" question and why it changes things</h4>
+        <ul>
+          <li>In a conventional software incident, the question "who made this change?" usually has a clear answer: a specific engineer committed specific code. In an agent incident, the change was proposed by the model, shaped by the context loaded into the session, constrained (or not) by the platform configuration, and authorized (or not) by a human gate. Each of those layers made a "decision." The postmortem must examine all of them — not just the human at the edge of the loop.</li>
+          <li>The most common misframing in an agent incident postmortem is: "the engineer should have caught this." That framing assigns blame to the human reviewers while leaving untouched the spec that failed to specify the edge case, the checklist that did not prompt for that class of check, the platform that allowed the tool call without a gate, and the test suite that covered only the happy path. All of those are system-layer findings. They produce guardrails. "The engineer should have caught this" produces only caution — which is not a guardrail.</li>
+          <li>Ask specifically: at which layer did the failure originate? Was the spec insufficient? Did the model make a decision outside its competence boundary? Did the platform allow an action that the risk tier matrix would have gated? Did the review step miss the failure? Each layer has a different fix. Identifying the correct layer is the core analytical work of the postmortem.</li>
+        </ul>
+
+        <h4 class="ph">Adapted postmortem structure for agent incidents</h4>
+        <ul>
+          <li><strong>Incident summary:</strong> What happened, when, and what was the impact — stated in observable terms. Include the agent session identity if known, the task the agent was performing, and the tool calls or changes that caused the damage. This is the factual record; keep it free of interpretation.</li>
+          <li><strong>Timeline:</strong> Reconstruct the sequence of events from the audit trail. For agent incidents specifically, map the sequence of tool calls — not just the git commits. The moment the failure originated is often several steps before the moment it became visible.</li>
+          <li><strong>Contributing factors by layer:</strong> Spec layer (was the task scoped clearly enough for the model to produce correct output?); model layer (did the model exceed its reliable competence boundary for this task type?); platform layer (did the configuration allow an action that should have been gated?); review layer (did the human gate function as designed, and if it failed, why?). This multi-layer analysis is what distinguishes an agent postmortem from a conventional one.</li>
+          <li><strong>What went well:</strong> Name what worked — detection speed, audit trail completeness, rollback effectiveness, communication quality. This is not feel-good padding; it is the evidence base for what to preserve when you tighten the system.</li>
+          <li><strong>Action items:</strong> One to three specific, targeted changes. Each action item must name the layer it addresses, the owner, and the deadline. "Be more careful" is not an action item. "Add an error-path coverage check to the AI-review checklist for any PR touching the payments module" is an action item.</li>
+        </ul>
+
+        <div class="info green"><strong>The culture signal the postmortem sends is as important as its findings.</strong> A postmortem that names system failures and produces system fixes teaches the team that surfacing failures is safe and productive. A postmortem that identifies an individual as the root cause — even implicitly, by naming the reviewing engineer without naming the checklist gap — teaches the team that postmortems are cover for blame. The second lesson is carried forward into every future incident: people hide problems earlier.</div>
+
+        <h4 class="ph">When the failure was novel</h4>
+        <ul>
+          <li>Not every agent failure maps neatly onto an existing guardrail gap. Some failures represent a genuinely new capability boundary — a task class where the model is less reliable than expected under conditions the team had not previously tested. These failures deserve a different postmortem ending: not "fix this guardrail" but "add this task type to the known-limitations section of the golden config and require human review for it until the boundary is better understood."</li>
+          <li>Novel failures are the most valuable input to your capability registry (Ch 9). A failure that reveals a new boundary — "the model reliably hallucinates dependency names in this specific subdirectory where the project uses a non-standard module naming convention" — is institutional knowledge that can prevent the same failure on every other team using the same registry. Document it there, not just in the incident log.</li>
+        </ul>
+      </div>
+
+      <!-- 14.4 -->
+      <div class="card">
+        <h2>14.4 Feeding incidents back into the system</h2>
+        <p>A postmortem that produces action items but does not close the loop — that adds checklist items no one updates, that writes capability boundaries no registry captures, that recommends a gate no CI pipeline enforces — has done half the work. The other half is institutional memory: making the failure available to every team that will encounter the same condition, and encoding its lesson in the system rather than in someone's head.</p>
+
+        <h4 class="ph">The failure log as institutional memory</h4>
+        <ul>
+          <li>Maintain a failure log from the first incident. This was introduced in Ch 6.2 as a single-team discipline. At Stage 3, the failure log becomes an org-wide artifact: a version-controlled document (or structured dataset) that captures every agent-related incident, its category, the layer where it originated, the fix that was applied, and the guardrail or config change that resulted. Each entry is evidence that the standard has contact with reality.</li>
+          <li>Structure the failure log for search, not just for reading. A flat narrative list of incidents is useful for onboarding context ("here is what has burned us before"). A structured format — with fields for failure category, affected service, contributing layer, and fix type — enables the queries that actually matter: "how many silent-wrong-output incidents have we had in the payments module in the last six months?" and "which guardrail gaps have recurred across multiple teams?"</li>
+          <li>Each incident entry should link directly to the postmortem, the PR that applied the fix, and the updated guardrail or config. The chain from incident to fix should be traceable in one click. If it requires archaeology to reconstruct that chain six months later, the institutional memory is not actually stored — it is just temporarily accessible.</li>
+          <li>Review the failure log at every stage gate. Before a team moves from Stage 2 to Stage 3, their sponsor should review whether the team has been using the failure log discipline — not just whether they have avoided incidents. A team that has had no incidents and no failure log entries has probably not been surfacing failures. A team with ten entries and ten corresponding fixes has a functioning learning loop.</li>
+        </ul>
+
+        <h4 class="ph">Closing the loop: incident → guardrail → config → gate</h4>
+        <ul>
+          <li>Every incident postmortem should produce at least one of: an update to the AI-review checklist, an update to the golden config, a new or modified CI gate, a capability boundary added to the registry, or a risk-tier reclassification in the human-in-the-loop matrix. If the postmortem produces only a narrative and no system change, the lesson is stored in a document — not in the system that will run the next session.</li>
+          <li>Track guardrail changes separately from feature changes. When you update a CI gate or a checklist item in response to an incident, tag the PR with the incident ID. This creates a bidirectional link: from incident to fix, and from fix back to the incident that motivated it. Reviewers who encounter an unfamiliar gate rule six months later can understand its origin — and can evaluate whether it is still calibrated correctly.</li>
+          <li>Propagate fixes to all affected teams, not just the team that experienced the incident. A silent-wrong-output incident on the payments team that reveals a checklist gap is relevant to every team running the same checklist. The Platform/DevEx team owns this propagation at Stage 3: they receive incident notifications, assess which guardrail components are affected, and push the fix to the org-wide baseline within a defined SLA. Fixes that stay on one team's config are institutional memory that doesn't transfer.</li>
+          <li>Set a review cadence for accumulated fixes. Guardrails that accumulate through incidents can become inconsistent over time — a rule added after incident 3 may conflict with a rule added after incident 7. Quarterly, review the failure log and the current guardrail state together. Prune fixes that are no longer relevant, consolidate overlapping rules, and confirm that the guardrail set is coherent rather than a sediment layer of past panics.</li>
+        </ul>
+
+        <div class="info purple"><strong>The failure log from Ch 6 is institutional memory in progress.</strong> At Stage 1–2, it is one team's record of what burned them. At Stage 3, it is the org's ground truth about where agent reliability boundaries actually lie — updated by real failures, not by theoretical analysis. The teams that treat it as a living document are the ones that avoid repeating their predecessors' incidents. The teams that treat it as a compliance artifact are the ones who repeat them.</div>
+      </div>
+
+      <!-- 14.5 -->
+      <div class="card">
+        <h2>14.5 The on-call runbook addendum for agentic systems</h2>
+        <p>On-call engineers operate under pressure with incomplete information. They need runbooks that tell them exactly what to do — not principles to reason from. Your existing on-call runbook was written for a world where humans made all the changes. If agents are now in the deployment chain, the runbook needs an addendum that addresses the new class of question: "was this change made by a person or an agent, and does that change what I do next?"</p>
+
+        <h4 class="ph">What on-call needs — four things that must be in the addendum</h4>
+        <ul>
+          <li><strong>The kill switch — where it is and how to use it.</strong> Every agentic workflow must have a kill switch: a way to halt an in-progress agent session or a scheduled agent pipeline that does not require escalation to the platform team or access to the model provider's console. The kill switch should be documented by name, location, and the exact command or UI action required. On-call should be able to find and execute it in under 60 seconds without a phone call. If your current tooling does not have a user-accessible kill switch, that is a platform gap to close before Stage 3 goes live.</li>
+          <li><strong>How to revoke agent credentials.</strong> An agent session operates on behalf of a human principal using that person's credentials or a service account. If a session is compromised or behaves unexpectedly, revoking its access is the fastest way to stop further damage. The runbook addendum must name: which credentials agents use (service accounts, API keys, OAuth tokens); where to revoke each type; and whether revoking mid-session causes a graceful stop or a hard failure with partial state. Partial-state failures may require a separate cleanup step — document it.</li>
+          <li><strong>How to identify an agent-caused change.</strong> When on-call is investigating an unexpected production change, the first question is often "did a person do this or did an agent?" The runbook addendum should describe the distinguishing signals: agent commits typically carry a commit message prefix (e.g., <code>[agent]</code> or <code>chore(agent):</code>); agent API calls appear in the audit log under the service account identity rather than a named engineer; agent-opened PRs carry a label or a standard description pattern. If none of these conventions exist, establishing them is a prerequisite for the addendum to be useful.</li>
+          <li><strong>Escalation path for agent-specific failures.</strong> Not every on-call engineer will have seen an agent-specific failure mode before. The addendum must name a clear escalation path: who to call when the kill switch does not halt the agent, when the credential revocation path is unclear, or when the failure mode does not match any documented category. That person is typically a Platform/DevEx team member with deep knowledge of the agentic infrastructure, not just the service being affected. Name them by role, not by name — names change; roles persist.</li>
+        </ul>
+
+        <aside class="tool-alt">
+          <strong>Kill-switch and credential revocation — tool-agnostic patterns</strong>
+          <p style="margin:8px 0 6px;">Different agentic coding tools expose different control surfaces. For Claude Code in a CI/CD context, cancelling the pipeline job is typically the kill switch — the agent stops when its process is terminated. For orchestrated multi-agent pipelines (LangGraph, CrewAI, custom frameworks), the kill switch may be a dedicated endpoint or a queue-drain command. For service accounts used by agents: AWS IAM → disable the access key; GitHub → revoke the token under Settings → Developer settings → Personal access tokens; general OAuth → invalidate the session via your identity provider's admin console. Document the specific path for each tool your agents use — the generic principle ("revoke the credentials") is not enough for someone operating under pressure at 2am. If you use an internal developer portal, surface the agent kill-switch and credential revocation paths there so on-call can find them without knowing which tool is involved.</p>
+        </aside>
+
+        <h4 class="ph">Testing the addendum before you need it</h4>
+        <ul>
+          <li>Run a tabletop exercise before the first Stage 3 go-live. Give the on-call rotation a simulated agent-caused incident scenario — "an agent pipeline wrote to production and we don't know what it changed" — and walk through the addendum. The gaps will surface immediately. Better to find them in a tabletop than at 2am.</li>
+          <li>Include the agent addendum in your regular runbook review cycle. Agentic tooling changes faster than most infrastructure. A runbook written for one version of your agent infrastructure may be wrong for the next. Review the addendum any time you add a new agent capability, a new tool, or a new service account to the agentic system.</li>
+          <li>Confirm that every on-call engineer has read the addendum and can locate the kill switch, even if they have never needed it. A runbook that only the author knows exists is not a runbook — it is a document.</li>
+        </ul>
+
+        <div class="info"><strong>On-call readiness is a governance signal.</strong> An on-call team that cannot answer "was this change made by an agent?" or "how do I stop the pipeline?" is an org that has deployed agentic systems faster than its incident-response infrastructure has matured. Closing that gap is not optional — it is the operational prerequisite for operating safely at Stage 3 and beyond.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 3→4: Amir's Ch 6 Bug, Stress-Tested at Scale</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">At Stage 2, <strong>Amir</strong>'s payments-module incident (Ch 6) produced two system fixes: Riya's edge-case coverage addition to the AI-review checklist, and a mandatory error-path section in the spec template. Both held — Riya's update caught a second gap two sprints later. Now, eight months on and at Stage 3, 200 engineers are running agentic sessions concurrently. The Platform/DevEx team — which <strong>Amir</strong> now co-staffs — receives an alert: a scheduled CI pipeline in the payments service has written to a production table via a database migration agent that was supposed to target staging only. The environment flag was set incorrectly in the pipeline config. The agent executed successfully. No gate caught it. The blast radius: 340 records modified in production during a low-traffic window.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Detection and containment:</strong> The production write is caught by a database row-count anomaly alert, not by the pipeline itself. Amir, on rotation that evening, executes the kill-switch procedure (pipeline cancellation via the internal portal), verifies the agent has stopped, and issues a credential-revocation for the CI service account. He checks the audit trail — structured JSON, emitting to the SIEM per Dana's policy-as-code requirement from Ch 13 — and reconstructs the exact sequence of tool calls in eleven minutes. He escalates to Marcus with a scope statement: "Production DB modified. Contained. 340 rows. Reverting now. No customer-facing data affected. Postmortem in 48 hours." Marcus does not panic. He has seen this response sequence before.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>The postmortem</strong> is run blameless — but this time the "who decided?" question is more complex than in Ch 6. The agent executed correctly given its configuration. The configuration was wrong. The configuration was written by a human, reviewed by a human, and passed three automated checks — none of which verified that the environment flag matched the intended target. The postmortem names three contributing factors: platform layer (no gate on the pipeline config that verified environment-flag consistency against the intended deployment target); review layer (the two-person pipeline-config review did not include an environment-flag sanity check step); policy layer (the risk-tier matrix classified database migrations as High, requiring human approval — but the approval was granted on the migration script, not on the environment it would run against). The postmortem does not name Amir. It names the gaps.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>The loop closes in three concrete changes:</strong> Dana's policy-as-code enforcement layer adds an environment-consistency check to the CI pipeline gate — a migration that targets production must have a production-intent flag set explicitly, and the gate rejects any migration config where the environment flag and the target DSN do not resolve to the same tier. Riya, reviewing the postmortem, notes the parallel to the Ch 6 edge-case failure: both incidents shared the same root shape — a check present in form (the review happened) but absent in substance (the relevant specific item was not checked). She proposes a meta-principle for the review standards: "Every gate must name the specific thing it is verifying, not just that it is verifying." <strong>Amir</strong> writes the incident entry into the org-wide failure log with a callout: "Recurrence of the Ch 6 pattern at Stage 3 scale. The checklist form was present; the substance was missing. Same fix, different layer."</li>
+          <li style="font-size:13.5px;margin-bottom:0px;">Marcus presents the incident to the engineering leadership group with the same framing as Ch 6: "Our system caught itself failing, and corrected. The audit trail was reconstructable in eleven minutes. The rollback was clean. The postmortem produced three specific fixes, not a moratorium." He adds one note: "The kill switch worked because we built it before we needed it. That is not luck — that is Stage 3 operational maturity." The incident becomes the first entry in Meridian's org-wide Failure Log under the category "destructive action / environment misconfiguration." The log is now a searchable artifact, available to every team in the internal capability registry, with a direct link from the registry's database-migration capability entry.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch6-change')">→ Ch 6. Change Management</a>
+        <a onclick="go('ch12-security')">→ Ch 12. Security at Org Scale</a>
+        <a onclick="go('ch13-gates')">→ Ch 13. Review Gates, Policy &amp; Compliance</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
