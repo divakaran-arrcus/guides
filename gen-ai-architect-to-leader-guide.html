@@ -1690,6 +1690,189 @@
       </div>
     </section>
 
+    <section id="ch6-change" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">6. Change Management</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: how trust in AI tooling actually evolves — from early skepticism through a dangerous over-trust peak to the calibrated trust that makes the workflow durable; how to respond when the inevitable first public failure arrives without destroying confidence or doubling down on the wrong lessons; what culture and incentives leaders must get right to avoid rewarding the wrong behavior; and how to handle the two most disruptive personality profiles in any adoption — the loudest skeptic and the over-eager adopter — so both become assets rather than liabilities.</p>
+
+      <!-- 6.1 -->
+      <div class="card">
+        <h2>6.1 The trust curve</h2>
+        <p>Trust in a new capability almost never matures in a straight line. It follows a curve with two dangerous inflection points — one on the way up, and one after the first failure. Understanding where your team is on that curve determines how to intervene.</p>
+
+        <h4 class="ph">The three phases</h4>
+        <div class="pkt" style="min-height:64px;margin:14px 0 18px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Phase 1</div>
+            <div class="v">Skepticism</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:1;">
+            <div class="l">Phase 2</div>
+            <div class="v">Over-trust</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Phase 3</div>
+            <div class="v">Calibrated trust</div>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Phase 3 is the goal. Most teams get stuck in Phase 1 or pass through Phase 2 too quickly and pay for it later.</p>
+
+        <h4 class="ph">Phase 1: Skepticism</h4>
+        <ul>
+          <li>Early skepticism is healthy if it is specific. "I'm not convinced the agent handles edge cases well" is actionable; "I don't trust AI" is not. Healthy skepticism generates hypotheses you can test in a controlled pilot.</li>
+          <li>Skepticism becomes a problem when it hardens into a posture rather than remaining a question. Engineers who decide to reject the workflow before they have tried it under fair conditions are not being rigorous — they are pattern-matching to prior experiences with overhyped tools. Both deserve different responses.</li>
+          <li>The pilot phase is the designed intervention for skepticism. It converts a general feeling into specific data — either the workflow helped on the task type you expected it to, or it didn't. Either outcome is useful.</li>
+          <li>The most valuable skeptics are the engineers who remain skeptical even after the pilot shows positive results. They are asking: "does it hold under a different class of task, on a different codebase section, under a different reviewer?" That rigor is an asset — channel it into the standards and verification process, not out of the team.</li>
+        </ul>
+
+        <h4 class="ph">Phase 2: Over-trust (the dangerous zone)</h4>
+        <ul>
+          <li>Over-trust is harder to spot than skepticism because it looks like enthusiasm. Engineers who are genuinely excited about the workflow will sometimes drift from "this usually works well" to "I don't need to check it carefully." The gap between those two positions is where defects enter the codebase.</li>
+          <li>Over-trust is not just an individual failure — it is a systems failure. If the review process does not catch the over-trust behavior, or if the team's culture rewards speed without verification, the environment is producing the behavior. The individual is not uniquely to blame.</li>
+          <li>Indicators of over-trust in a team: average review time on AI-assisted PRs drops below review time on hand-written PRs; engineers start describing the agent's output as "correct" rather than "plausible"; plan-review steps are increasingly treated as ceremonial.</li>
+          <li>Over-trust tends to build gradually and then fail abruptly. The incremental shortcuts are invisible; the production incident is not. If you can identify over-trust behavior before the incident, you have an enormous advantage. Build detection into the process rather than waiting for the failure to provide it.</li>
+        </ul>
+
+        <h4 class="ph">Phase 3: Calibrated trust</h4>
+        <ul>
+          <li>Calibrated trust means engineers have an accurate mental model of where the tool is reliable and where it requires additional scrutiny. They verify proportionally — more carefully on unfamiliar territory, less carefully on well-trodden patterns they have validated many times.</li>
+          <li>Calibrated trust takes time to develop. It is earned through accumulated experience — tasks where the tool performed as expected and tasks where it surprised in ways the engineer caught and corrected. The surprise-and-catch moments are what calibrate the model. Engineers who have never caught the tool being wrong do not yet have a calibrated model; they are still in Phase 2.</li>
+          <li>The goal of your standards, verification workflow, and champion program is to accelerate the path to calibrated trust — to give engineers the catch-and-learn moments in a controlled environment before they encounter them in production.</li>
+          <li>A team operating with calibrated trust is more resilient than one operating with either extreme: it moves faster than a skeptical team and fails less often than an over-trusting one.</li>
+        </ul>
+
+        <div class="info"><strong>Both extremes are failure modes.</strong> Sustained skepticism that never converts into evidence-based evaluation blocks real productivity gains. Over-trust that bypasses verification converts small gains into systemic risk. Calibrated trust, earned deliberately, is the only stable equilibrium.</div>
+      </div>
+
+      <!-- 6.2 -->
+      <div class="card">
+        <h2>6.2 The "it shipped a bug" moment</h2>
+        <p>No agentic workflow at scale avoids a first significant production failure that can be traced back to AI-assisted code. This moment is not a question of if — it is a question of when, and of how you respond. Your response in the first 48 hours largely determines whether trust recovers or collapses.</p>
+
+        <h4 class="ph">Why this moment is pivotal</h4>
+        <ul>
+          <li>Before the first failure, most of the people on your team have an abstract opinion about AI risk. The first concrete incident converts abstraction into evidence — but the lesson people take depends heavily on how leadership frames it. An unreflective response teaches the wrong lesson; a blameless, systems-focused response teaches the right one.</li>
+          <li>The two failure responses you must avoid: over-reaction (ban AI-assisted PRs on class X of tasks; add mandatory human sign-off on all generated code; convene an incident committee) and under-reaction (it was just a bug, every process has bugs, move on). Both send the wrong signal. Over-reaction conflates the tool with the process failure that let the bug through. Under-reaction signals that verification matters until it is inconvenient.</li>
+          <li>The loudest voices in the room immediately after a failure often represent the pre-existing skeptics and the most risk-averse stakeholders. Their framing — "this proves AI code is unreliable" — is too broad. The useful question is: "which specific guardrail failed to catch this?" That is a narrower and more answerable question, and it leads somewhere productive.</li>
+        </ul>
+
+        <h4 class="ph">Blameless post-mortem framing</h4>
+        <ul>
+          <li>Run the incident through a blameless post-mortem within 48 hours. The framing question is not "who let this through?" but "which part of the process allowed this class of defect to reach production?" The answer almost always implicates a missing guardrail, an ambiguous verification step, or a review norm that had drifted in practice from what the standard describes.</li>
+          <li>Name the failure at the system level: "our plan-review step did not surface the edge case because the spec did not include the error-path requirements" is a system diagnosis. "The engineer did not check it carefully enough" is a blame assignment that does not generalize. The system diagnosis produces a fix; the blame assignment produces caution without direction.</li>
+          <li>Document the failure in the same shared repository as the workflow standards. Not to create a wall of shame but to ensure that the lesson is available to every engineer who later reads the standards. The failure log is the most credible part of your standards documentation — it shows that the standard has contact with reality and was updated by it.</li>
+          <li>End the post-mortem with one to three specific, targeted changes to the workflow or review standard — not a wholesale reversal of AI-assisted practice. Surgical changes demonstrate that you understand the specific failure mechanism. Wholesale reversals signal panic, not learning.</li>
+        </ul>
+
+        <h4 class="ph">Rebuilding trust after the incident</h4>
+        <ul>
+          <li>The guardrail fix is not enough on its own. Engineers who witnessed the incident — especially skeptical ones — will be watching to see whether the fix actually holds. Make the post-mortem outcomes visible: share what changed, show the updated standard, and run a brief retrospective two sprints later on whether the fix is holding.</li>
+          <li>Acknowledge the incident without catastrophizing. A leader who says "we had a production failure, here is what it cost, here is what we changed, here is the evidence the change is working" models proportionate response and earns more trust than one who either minimizes the event or uses it to question the whole program.</li>
+          <li>The first failure, handled well, often accelerates trust more than a streak of successes. It demonstrates that the team can catch and recover from AI-specific failures — and that the process is honest about its own limitations. That is evidence of maturity, not of fragility. Note this pattern — you will encounter it again when discussing incident response at scale in Ch 14.</li>
+        </ul>
+
+        <div class="info orange"><strong>The first production failure is a test of your process, not evidence that the workflow is wrong.</strong> A blameless post-mortem that produces specific, targeted guardrail updates demonstrates exactly the kind of institutional learning that makes a workflow durable at scale. How you handle failure teaches your team what you actually value.</div>
+      </div>
+
+      <!-- 6.3 -->
+      <div class="card">
+        <h2>6.3 Culture &amp; incentives</h2>
+        <p>What a team optimizes for is determined less by what leaders say and more by what leaders measure, reward, and let slide. If the incentive structure rewards raw output volume — tickets closed, lines of code generated, PRs merged per week — the culture will produce exactly that, with verification treated as a tax. Getting the incentives right is a prerequisite for everything else in this chapter.</p>
+
+        <h4 class="ph">What you actually want to reward</h4>
+        <ul>
+          <li>Reward verification quality, not output volume. An engineer who writes a crisp spec, reviews the agent's plan carefully, catches a scope creep before approving, and ships a smaller PR that precisely meets the requirement — is worth more to the team than one who ships twice as many PRs that drift through review.</li>
+          <li>Reward sharing failure. Engineers who surface a case where the workflow produced a subtle bug, document it, and propose an update to the standards are performing exactly the behavior that keeps the system healthy. If that behavior is unremarked upon while throughput is celebrated, the system is teaching engineers not to surface failures.</li>
+          <li>Reward deliberate practice. The engineer who occasionally does work without agent assistance to maintain fluency, or who takes the time to explain a review comment in depth rather than flag and move on, is building the team's long-term resilience. Short-term metrics will not capture this; leaders have to name it explicitly.</li>
+          <li>Reward pairing and teaching time. Champions who spend two hours per week helping others are temporarily slower in their individual velocity. If your sprint planning does not account for this explicitly, the implicit incentive is to skip the teaching to close more tickets. Champions who are not protected will quietly stop championing.</li>
+        </ul>
+
+        <h4 class="ph">Output theater: the vanity trap</h4>
+        <ul>
+          <li>Output theater is the pattern where engineers optimize for the metrics of productivity rather than the substance. Lines of code generated, commit frequency, PR count per sprint — all of these can be inflated by an AI-assisted workflow in ways that look good on a dashboard and mean very little for actual delivery quality.</li>
+          <li>The most insidious form of output theater with AI tooling is the large PR: scope creep accepted from the agent because it makes the diff look substantial, edge cases left uncovered because fixing them would slow the throughput, tests that cover the happy path but not the contract. The PR is real. The quality is not.</li>
+          <li>If your engineering metrics visibly reward any of these behaviors — if a manager praises a team for its PR volume or its commit frequency without examining what those PRs contain — the culture is producing output theater. Change the metric before you change the person.</li>
+          <li>The antidote is not to remove all volume metrics but to pair them with quality signals: defect rate on AI-assisted code, post-merge bug rate, review depth (is the AI-review checklist being engaged or bypassed?). Volume plus quality is a coherent incentive. Volume alone is a recipe for theater.</li>
+        </ul>
+
+        <h4 class="ph">What leaders signal (even when they don't mean to)</h4>
+        <ul>
+          <li>When a leader praises a team for its throughput in a sprint where the verification steps were obviously rushed, they have sent a signal that is much louder than anything in the workflow standard. Engineers notice what leaders celebrate.</li>
+          <li>When a leader asks about PR count in a retro but not about review depth or defect rate, the team adjusts its behavior toward what the leader is watching. This is not cynicism — it is rational response to the feedback signal available.</li>
+          <li>When an incident is handled with blame rather than systems framing, the signal is: surface failures at your own risk. The consequence is that the next failure is hidden for longer, or its scope grows before it surfaces. Leaders who handle failures blamlessly are not being soft — they are removing the incentive to hide problems.</li>
+          <li>The most powerful signal a leader can send is to slow down publicly. Asking "how did we decide that spec was complete?" or "what did the plan-review step surface on this one?" in a team meeting signals that quality is observable from the top, not just from the review layer. Engineers will start preparing for those questions.</li>
+        </ul>
+
+        <div class="info green"><strong>You cannot policy your way to a good culture.</strong> Policies set the floor; incentives and leader behavior set the ceiling. If your most visible rewards go to raw output, no standard will counteract that. Align what you measure, what you celebrate, and what you ask about — and the culture will follow.</div>
+      </div>
+
+      <!-- 6.4 -->
+      <div class="card">
+        <h2>6.4 Handling the loudest skeptic and the over-eager adopter</h2>
+        <p>Every adoption curve has two outlier profiles that require active management. The loudest skeptic raises their voice early and often. The over-eager adopter moves fast and skips steps. Both are disruptive. Both are also recoverable — if you handle them deliberately rather than reactively.</p>
+
+        <h4 class="ph">The loudest skeptic</h4>
+        <ul>
+          <li>The loudest skeptic is not the most skeptical engineer — they are the most vocal one. They surface their doubts in standups, PRs, retrospectives, and side conversations. Their presence can dampen the enthusiasm of engineers who are on the fence and not yet sure whether the workflow is worth the activation energy.</li>
+          <li>Do not try to convert the loudest skeptic through persuasion. Argument against skepticism is perceived as defensive and usually hardens the position. What converts a skeptic is evidence they respect — and their own participation in producing it. If you can bring the skeptic into the pilot as a rigorous evaluator rather than a resistant bystander, they often emerge as the most credible voice in the room for why the workflow is or is not ready to scale.</li>
+          <li>Give the skeptic a structural role: let them define the failure criteria for the pilot, or ask them to review the standards draft for gaps. When their rigor is channeled into improving the process rather than opposing it, they become an asset. A skeptic who helped write the verification standard will enforce it with much more conviction than one who was told to follow it.</li>
+          <li>If the skeptic's objections are specific and factual — "I've seen three PRs in the last sprint where the agent's generated tests do not actually cover the error paths they claim to cover" — take the objection seriously and investigate. Specific, reproducible objections are valuable signals. Dismiss them at your peril; they often precede the first production incident.</li>
+          <li>Reserve the harder conversation for the case where the skeptic's behavior is consistently obstructive even after their specific objections have been addressed. That is a professionalism discussion, not a technology discussion, and it should happen privately.</li>
+        </ul>
+
+        <h4 class="ph">The over-eager adopter</h4>
+        <ul>
+          <li>The over-eager adopter is enthusiastic about the tool and genuinely believes in the workflow — but they consistently skip or compress the steps that slow them down. They submit PRs without completing the plan-review step. They accept scope creep from the agent because the extra code "looked fine." They do not flag when a session produced uncertain output because they do not want to be the one raising a concern about a tool they championed.</li>
+          <li>Over-eager adopters are dangerous precisely because they are not trying to cut corners — they have simply developed a false confidence that the tool's output does not require the same scrutiny it did when they were learning. Managing them requires a specific and non-shaming approach: focus on the process, not on their attitude toward the tool.</li>
+          <li>"You skipped the plan-review step on this PR" is a process feedback. "You trust the AI too much" is an attitude critique that will produce defensiveness without changing behavior. Give process feedback, not attitude critique. Require specific steps; make the steps checkable.</li>
+          <li>Use the PR review checklist as the accountability mechanism rather than personal confrontation. If the checklist is a required section of every AI-assisted PR and the section is missing, the feedback is "the required section is missing" — a factual process gap, not a judgment about the engineer. The checklist does the work; you are simply holding the line on a shared standard.</li>
+          <li>Watch for over-eager adopters who are influential — senior engineers, team leads, or informal opinion leaders whose behavior others are implicitly copying. An influential over-eager adopter who skips verification publicly normalizes the behavior for the entire team. Address it faster and more directly than you would with an engineer whose behavior is less visible.</li>
+        </ul>
+
+        <h4 class="ph">Different problems, different tools</h4>
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--text-dim);">Loudest Skeptic</h4>
+            <ul style="font-size:13px;padding-left:16px;color:var(--text-dim);line-height:1.7;">
+              <li>Give them a structural role in the process (e.g., define failure criteria)</li>
+              <li>Respond to specific objections with evidence, not argument</li>
+              <li>Channel their rigor into standards improvement</li>
+              <li>Celebrate when their concern prevents a defect from shipping</li>
+            </ul>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--text-dim);">Over-eager Adopter</h4>
+            <ul style="font-size:13px;padding-left:16px;color:var(--text-dim);line-height:1.7;">
+              <li>Give feedback at the process level, not the attitude level</li>
+              <li>Use the checklist as the accountability mechanism, not personal confrontation</li>
+              <li>Act faster when the adopter is influential and others are copying them</li>
+              <li>Separate enthusiasm for the tool from adherence to the workflow</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info purple"><strong>Neither profile needs to be removed — both need to be redirected.</strong> A skeptic who helps write the verification standard becomes one of its strongest enforcers. An eager adopter who learns that their enthusiasm is most valuable when it includes verification becomes a model practitioner. The goal is to channel both, not to eliminate one and celebrate the other.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 1→2: The Bug, the Blameless Review, and Riya's Moment</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">Three weeks after Stage 2 begins, an agent-assisted change in the payments service ships a subtle off-by-one error in the fee calculation path. The bug is not caught in review — the AI-review checklist is present in the PR template but the submitting engineer, <strong>Amir</strong>, checks the boxes without reading through the generated test suite's edge cases carefully. It reaches production during a low-traffic window and is caught by a customer-facing alert two hours later. Impact: a small number of transactions are charged incorrectly; all are reversed within the day. <strong>Marcus</strong> is notified within the hour.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus</strong>'s first instinct is to suspend AI-assisted PRs on the payments module pending a full audit. <strong>Priya</strong> asks for 24 hours before any policy change: let the blameless post-mortem run first. Marcus agrees — reluctantly but explicitly. The post-mortem framing question is "which guardrail failed to catch this class of defect?" not "who approved this PR?" The answer surfaces within two hours: the spec for the change did not include error-path requirements, the agent generated tests covering the happy path only, and the AI-review checklist did not include a specific prompt to verify that edge-case coverage matched the full spec — only that the tests passed.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong>, who has been the team's most consistent skeptic since before the pilot, does something no one anticipates: she writes a draft guardrail update within a day of the post-mortem. It adds one item to the AI-review checklist — "confirm test coverage addresses all error paths named in the spec, not only the happy path" — and it updates the spec template to include a mandatory error-path section. She shares it in the team channel with a note: "This is the class of bug I was worried about. Now we have a specific counter for it. Let's see if it holds." The PR is merged the next morning.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Amir</strong> is not named in the incident write-up. The write-up names the checklist gap and the spec template omission. Amir himself adds a note to the failure log: "I approved my own checklist too quickly. I should have read the test names, not just that the count was high." That note stays in the log. It is the most credible item in the document — it is the engineer closest to the failure acknowledging the behavior pattern, not being accused of it.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus</strong> does not suspend the AI-assisted workflow on payments. In his weekly update to the engineering leadership group, he describes the incident as "the first time our review process caught itself failing, and corrected." Two sprints later, Riya's checklist addition surfaces a second edge-case gap in a different PR — caught before merge. The fix held. This thread continues in Ch 14, when Meridian's incident response process is stress-tested at Stage 3 scale.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch5-enablement')">→ Ch 5. Enablement &amp; Onboarding</a>
+        <a onclick="go('ch7-metrics')">→ Ch 7. Measuring What Matters</a>
+        <a onclick="go('ch14-incident')">→ Ch 14. Failure Modes &amp; Incident Response</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
