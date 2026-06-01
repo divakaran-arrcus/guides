@@ -4182,6 +4182,219 @@ except Exception as e:
     </section>
 
 
+    <!-- ===================== REF: METRICS CATALOG ===================== -->
+    <section id="ref-metrics" class="section">
+      <h1>Metrics Catalog</h1>
+      <p class="sec-sub">The eight durable metrics from Ch 7 — instrumentation notes and gaming failure modes in one place</p>
+
+      <p style="margin-bottom:20px;">Use this catalog as an instrumentation checklist when standing up or auditing your AI-workflow dashboard. The metric names are deliberately kept identical to Ch 7 — use these exact names in dashboards, review decks, and team agreements so that cross-team comparisons remain valid.</p>
+
+      <div class="tbl-wrap" style="overflow-x:auto;">
+        <table class="tbl" style="min-width:820px;">
+          <thead>
+            <tr>
+              <th style="width:18%;">Metric</th>
+              <th style="width:27%;">What it measures</th>
+              <th style="width:30%;">How to instrument</th>
+              <th style="width:25%;">Failure mode (gaming)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>PR Cycle Time</strong></td>
+              <td>End-to-end elapsed time from the first commit on a branch to the merge commit. Captures whether the full delivery loop — not just code generation — is faster.</td>
+              <td>Read from VCS event timestamps (e.g., GitHub Events API, GitLab Analytics, or a DORA-metric tool like LinearB or Swarmia). Segment by AI-assisted vs non-AI-assisted PRs using a label or branch-naming convention.</td>
+              <td>Teams push small, isolated changes to shrink the number — inflating PR count without reducing real delivery lag. Watch PR size distribution alongside cycle time; a sudden drop in median PR size with flat escape-defect rate signals this.</td>
+            </tr>
+            <tr>
+              <td><strong>Review Latency</strong></td>
+              <td>Time between PR open and first substantive reviewer comment (not a bot comment or auto-label). Isolates the human bottleneck in the delivery loop.</td>
+              <td>Filter VCS comment events: exclude bot actors, auto-approve comments, and trivial "+1" responses. Track median and p90 — p90 surfaces the chronic tail that median hides. DORA-metric tools typically surface this as "time to first review".</td>
+              <td>Reviewers post a brief acknowledgement comment immediately to reset the clock, then do the actual review later. Define "substantive" explicitly in your tooling config (e.g., comment longer than N characters, or from a reviewer who subsequently approved).</td>
+            </tr>
+            <tr>
+              <td><strong>Review Load per Reviewer</strong></td>
+              <td>Number of AI-assisted PRs assigned to each reviewer per week. Flags when AI throughput inflates PR volume beyond the human review capacity that was sized for hand-written code.</td>
+              <td>Aggregate from VCS reviewer-assignment events. Build a weekly histogram per engineer — not a team average, which hides concentration on a few over-assigned reviewers. Alert when any individual's weekly AI-assisted PR load exceeds a configured threshold (e.g., 2× their historical baseline).</td>
+              <td>Teams reassign PRs to a small group of willing reviewers, flattering the aggregate while burning out individuals. Track per-person distribution, not team mean. Rotate reviewer assignments deliberately if load concentrates.</td>
+            </tr>
+            <tr>
+              <td><strong>Change Failure Rate</strong></td>
+              <td>Percentage of merged changes that cause a production incident (P1/P2 severity) or require an emergency rollback within a defined window (typically 72 hours). The premier quality lagging indicator.</td>
+              <td>Join your incident-management system (PagerDuty, Opsgenie, etc.) to your VCS deployment events. Tag incidents with the triggering deployment SHA. Calculate: incidents caused by AI-assisted deploys ÷ total AI-assisted deploys. Maintain a parallel calculation for non-AI-assisted deploys to produce a ratio, not just a rate.</td>
+              <td>Incidents are downgraded to P3 to avoid attribution. Maintain independent severity criteria controlled by an SRE or on-call lead, not the team that shipped the change. Audit severity distribution for systematic downgrading at high change-volume periods.</td>
+            </tr>
+            <tr>
+              <td><strong>Escape Defect Rate</strong></td>
+              <td>Bugs found post-merge (in staging or production) per unit of change (e.g., per 100 PRs or per 1,000 changed lines). Finer-grained than change failure rate — catches defects that don't cause incidents but do create rework.</td>
+              <td>Instrument bug-tracker tickets with a "found-in" field linked to a PR or deployment SHA. Segment by AI-assisted vs hand-written. Requires discipline in ticket creation — automate linking where possible (e.g., a Jira automation that attaches the last deploy SHA to every P2/P3 bug on open).</td>
+              <td>Bugs are triaged as "known issues" or "tech debt" rather than escape defects to keep the rate clean. Define "escape defect" in your team agreement before measurement begins — a defect that was present in the merged code and found after merge, regardless of how it's triaged. Stick to the definition.</td>
+            </tr>
+            <tr>
+              <td><strong>Adoption Depth</strong></td>
+              <td>Fraction of engineers using the AI workflow for more than a threshold percentage of their eligible tasks (e.g., ≥50% of PRs), sustained over ≥2 consecutive sprints. Distinguishes genuine integration from trial-and-occasional use.</td>
+              <td>Pull from AI-tool telemetry (most enterprise-tier tools expose usage dashboards or CSV exports). Define "eligible task" up front — typically excludes maintenance-only commits, emergency hotfixes, and infrastructure-only changes. Export weekly active-PR counts per engineer, join to total eligible-PR counts, apply the threshold.</td>
+              <td>Engineers open AI-tool sessions briefly on every PR to register as "active users" without meaningfully using the tool. Depth requires sustained, threshold-crossing use — not presence. If your tool's telemetry only exposes login events, supplement with a monthly self-report survey that asks the threshold question directly.</td>
+            </tr>
+            <tr>
+              <td><strong>Rework Rate</strong></td>
+              <td>Percentage of merged changes that are reverted or materially revised (e.g., &gt;30% of changed lines re-touched) within N days of merge (typically 14–30 days). Captures low-quality output that slipped through review.</td>
+              <td>Identify reverts by scanning commit messages for "revert" and checking parent SHAs. Identify material revisions by diffing the touched-line set of follow-on PRs against the original PR's line set within the N-day window. Automate this with a scheduled VCS query; flag PRs above the threshold for review in your weekly metrics review.</td>
+              <td>Teams open new feature branches over reverted code rather than creating explicit revert commits, hiding the rework in "enhancements". Define "revert" to include branch-level replacements. A sudden spike in same-file churn within the N-day window is the signal to inspect manually.</td>
+            </tr>
+            <tr>
+              <td><strong>Plan-Review Completion Rate</strong></td>
+              <td>Fraction of AI-assisted PRs where the plan-review checklist section of the PR template is substantively completed — not just checked off. The most reliable behavioral leading indicator; measures whether human oversight happens before code executes.</td>
+              <td>Add a structured plan-review block to your PR template (e.g., a Markdown checklist under a "## AI Plan Review" heading). Use a CI linting check that parses the PR body and verifies the block is non-empty and all boxes are checked before the PR can be approved. Track completion rate as: PRs passing lint check ÷ total AI-assisted PRs opened.</td>
+              <td>Engineers check all boxes without reading the plan — rubber-stamping. The CI lint check confirms the boxes are checked, not that the review was substantive. Counter with a reviewer norm: require that the reviewer explicitly comments on one plan-review item in their review. Champions should model this in pairing sessions.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info" style="margin-top:20px;"><strong>Verify and adapt to your stack.</strong> The instrumentation notes above describe common approaches — your VCS provider, incident tool, and AI-tool telemetry may expose different APIs or event shapes. Treat the notes as a starting point, not a copy-paste recipe. What matters is that each metric is defined consistently across teams before you compare numbers across teams.</div>
+
+      <div class="see-also">
+        <a onclick="go('ch7-metrics')">→ Ch 7: Measuring What Matters</a>
+        <a onclick="go('ref-scorecard')">→ Maturity Scorecard</a>
+        <a onclick="go('ref-glossary')">→ Glossary</a>
+      </div>
+    </section>
+
+
+    <!-- ===================== REF: GLOSSARY ===================== -->
+    <section id="ref-glossary" class="section">
+      <h1>Glossary</h1>
+      <p class="sec-sub">Org-adoption terms used throughout this guide — alphabetical, with chapter cross-links</p>
+
+      <p style="margin-bottom:24px;">Terms are scoped to organizational adoption of agentic coding — not general AI or software-engineering vocabulary. Each entry links to the chapter where the concept is covered in depth. Consult Part 1 and Part 2 of this series for tool-level terms (agent loop, context compaction, MCP, etc.).</p>
+
+      <dl class="glossary">
+
+        <dt><strong>Adoption Depth</strong></dt>
+        <dd>A metric measuring the fraction of engineers who use the AI workflow for more than a threshold percentage of their eligible tasks, sustained over multiple consecutive sprints. Distinguishes genuine integration from trial or occasional use — a team with 90% login rate and 20% sustained-task adoption has an enablement problem, not a tooling problem. <a onclick="go('ch7-metrics')">→ Ch 7</a></dd>
+
+        <dt><strong>Audit Trail</strong></dt>
+        <dd>A reconstructable, append-only record of which agent actions were taken, by whom, when, and with what effect. Required at Stage 4 for compliance and incident reconstruction — the audit trail is what lets you answer "how did this change happen?" after an agentic incident. <a onclick="go('ch13-gates')">→ Ch 13</a></dd>
+
+        <dt><strong>Blast Radius</strong></dt>
+        <dd>The maximum scope of damage a single agent action or agentic workflow failure could cause — e.g., deleting files, pushing to production, or touching infrastructure shared by many teams. Governance at org scale is largely a discipline of keeping blast radius small through scoped permissions, dry-run flags, and reversible operations. <a onclick="go('ch12-security')">→ Ch 12</a></dd>
+
+        <dt><strong>Capability Registry</strong></dt>
+        <dd>A discoverable catalog of shared MCP servers and agentic capabilities — what each does, who owns it, what tier it has been approved for, and its maintenance status. The registry prevents teams from reimplementing the same capability in isolation and gives security a single inventory to audit. <a onclick="go('ch9-registry')">→ Ch 9</a></dd>
+
+        <dt><strong>Change Failure Rate</strong></dt>
+        <dd>A DORA-family lagging metric: the percentage of merged changes that cause a production incident or require an emergency rollback within a defined window. The premier quality signal in an agentic workflow — if AI-assisted changes have a materially higher change failure rate than hand-written changes, the workflow has a verification gap. <a onclick="go('ch7-metrics')">→ Ch 7</a></dd>
+
+        <dt><strong>Circuit Breaker</strong></dt>
+        <dd>An automated stop that fires when a system metric — token spend, error rate, CI job duration — exceeds a threshold, preventing runaway cost or cascading failure. In AI-workflow cost control, a circuit breaker halts agent jobs before the monthly budget is exhausted rather than after. <a onclick="go('ch11-cost')">→ Ch 11</a></dd>
+
+        <dt><strong>Escape Defect Rate</strong></dt>
+        <dd>Bugs found post-merge (in staging or production) per unit of change. Finer-grained than change failure rate — it catches defects that don't cause incidents but do cause rework. Segmenting by AI-assisted vs hand-written is the only way to detect a workflow-specific quality signal. <a onclick="go('ch7-metrics')">→ Ch 7</a></dd>
+
+        <dt><strong>Escape Hatch</strong></dt>
+        <dd>A lightweight, documented process by which a team can request an exception to an org-wide AI workflow standard — for instance, to use a different model for a sensitive codebase or to skip a review gate for a time-boxed experiment. An escape hatch that is easy to use reduces the shadow-usage pressure that builds when standards feel immovable. <a onclick="go('ch15-autonomy')">→ Ch 15</a></dd>
+
+        <dt><strong>Golden Config (Golden Configuration)</strong></dt>
+        <dd>A versioned, org-owned baseline configuration for AI tools — covering context-loading standards, model settings, allowed tools, and review conventions — that layers org → team → repo. Teams pull from the golden config rather than copy-paste from each other, so updates propagate without manual synchronization. <a onclick="go('ch8-config')">→ Ch 8</a></dd>
+
+        <dt><strong>Human-in-the-Loop</strong></dt>
+        <dd>A design principle requiring that a human reviews and approves consequential agent actions before they are executed or merged. Human-in-the-loop is the primary check on blast radius at every stage — it scales via tiered gates (more scrutiny for higher-risk changes) rather than blanket approval of everything. <a onclick="go('ch13-gates')">→ Ch 13</a></dd>
+
+        <dt><strong>Maturity Stage</strong></dt>
+        <dd>One of five levels (0–4) describing an organization's progression in adopting agentic coding at scale: Ad-hoc → Pilot → Team → Org → Enterprise. Each stage has a characteristic shape, primary risk, and a set of entry and exit criteria described in the Adoption Checklists. You can be at different stages on different lenses simultaneously. <a onclick="go('map')">→ The Map</a></dd>
+
+        <dt><strong>MCP Server</strong></dt>
+        <dd>A Model Context Protocol server — a process that exposes tools, data sources, or services to an AI coding agent over a standardized client–server protocol. At org scale, shared MCP servers are the primary mechanism for giving multiple teams access to the same capabilities without each team building and maintaining their own integrations. <a onclick="go('ch9-registry')">→ Ch 9</a></dd>
+
+        <dt><strong>Model Routing</strong></dt>
+        <dd>The practice of directing different types of agent tasks to different model tiers based on complexity and cost — routine, low-stakes steps to a fast-cheap model; complex, high-stakes reasoning to the most capable model. Model routing is the principal cost-control lever at Stage 3 and above. <a onclick="go('ch11-cost')">→ Ch 11</a></dd>
+
+        <dt><strong>Paved Road (Golden Path)</strong></dt>
+        <dd>The org-supported, well-maintained AI workflow that is easier to use than alternatives — pre-configured tooling, shared MCP servers, onboarding materials, and review templates all provided. Teams choose the paved road because it reduces friction, not because deviating from it is prohibited. The alternative — a mandate without a path — produces shadow usage. <a onclick="go('ch15-autonomy')">→ Ch 15</a></dd>
+
+        <dt><strong>Pilot</strong></dt>
+        <dd>A time-boxed, falsifiable experiment run by a representative team to validate (or invalidate) a specific hypothesis about AI-assisted development — not a demo, not a showcase, and not the most enthusiastic team. A credible pilot has a written stop condition, a baseline measurement, and a named decision-maker who acts on the outcome. <a onclick="go('ch3-pilot')">→ Ch 3</a></dd>
+
+        <dt><strong>Prompt Injection (Indirect)</strong></dt>
+        <dd>An attack in which malicious instructions are embedded in content the agent is asked to process — a source file, a document, a code comment, or a web page — causing the agent to execute attacker-controlled actions rather than the user's intent. At org scale, indirect prompt injection is the primary untrusted-input risk for agents that read third-party content. <a onclick="go('ch12-security')">→ Ch 12</a></dd>
+
+        <dt><strong>Review Gate</strong></dt>
+        <dd>A mandatory human-approval checkpoint before a change can merge or a workflow can proceed. Review gates scale via blast-radius tiers: changes touching security-sensitive or cross-team infrastructure require more scrutiny than isolated, easily-reversible changes. Gates are policy-as-code — enforced by CI, not enforced by culture alone. <a onclick="go('ch13-gates')">→ Ch 13</a></dd>
+
+        <dt><strong>Shadow Usage</strong></dt>
+        <dd>Unstructured, undocumented use of AI tools by individuals who have not been given an official onramp — the natural state in Stage 0. Shadow usage is not adoption; it is risk accumulation. Engineers build idiosyncratic habits that don't transfer, and the organization has no visibility into what the tools are doing. <a onclick="go('ch1-scale')">→ Ch 1</a></dd>
+
+        <dt><strong>Showback vs Chargeback</strong></dt>
+        <dd>Two models for handling AI-tooling cost at org scale. Showback: teams are shown their token spend (for awareness and self-correction) but are not billed against it. Chargeback: teams are billed for their actual consumption, creating a direct incentive to optimize. Most orgs start with showback and move to chargeback at Stage 3 when per-team quotas are established. <a onclick="go('ch11-cost')">→ Ch 11</a></dd>
+
+        <dt><strong>The Three Lenses</strong></dt>
+        <dd>The three independent axes on which organizational AI adoption is assessed: <strong>People &amp; Process</strong> (skills, habits, and workflow conventions), <strong>Platform &amp; Infrastructure</strong> (shared tooling, configs, and capability registry), and <strong>Governance &amp; Risk</strong> (security, compliance, review gates, and audit trails). An organization can be at different maturity stages on each lens simultaneously — the bottleneck lens determines where to invest next. <a onclick="go('map')">→ The Map</a></dd>
+
+      </dl>
+
+      <div class="see-also">
+        <a onclick="go('ch7-metrics')">→ Ch 7: Measuring What Matters</a>
+        <a onclick="go('ref-metrics')">→ Metrics Catalog</a>
+        <a onclick="go('ref-reading')">→ Further Reading</a>
+      </div>
+    </section>
+
+
+    <!-- ===================== REF: FURTHER READING ===================== -->
+    <section id="ref-reading" class="section">
+      <h1>Further Reading</h1>
+      <p class="sec-sub">Annotated pointers to external research, frameworks, and prior parts of this series</p>
+
+      <p style="margin-bottom:20px;">The resources below are organized by theme. Each entry is labeled with what it is and why it is relevant. Links and resources change — verify current URLs and editions before citing or assigning these to a team.</p>
+
+      <div class="card">
+        <h4 class="ph">Engineering effectiveness &amp; DORA research</h4>
+        <ul>
+          <li><em>DORA (DevOps Research and Assessment) annual State of DevOps Report</em> — <a href="https://dora.dev" target="_blank">dora.dev</a> — the primary longitudinal research base for software delivery performance metrics. The four DORA metrics (deployment frequency, lead time for changes, change failure rate, time to restore service) are the direct ancestors of Ch 7's catalog. Read the most recent report for the current data on what high-performing teams actually do differently.</li>
+          <li><em>SPACE framework</em> (Forsgren et al., 2021) — a five-dimension developer productivity framework (Satisfaction, Performance, Activity, Communication, Efficiency) that corrects for the single-metric failure mode. Search: "SPACE framework developer productivity ACM Queue". Useful when leadership pushes for a single productivity number — cite SPACE to explain why that framing is structurally misleading.</li>
+          <li><em>LinearB, Swarmia, Jellyfish</em> — engineering-analytics platforms that surface DORA metrics and related signals from VCS and issue-tracker data. Mentioned here as instrumentation reference points, not endorsements; evaluate against your stack's integration requirements. Search each name for current documentation.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Platform engineering &amp; paved-road patterns</h4>
+        <ul>
+          <li><em>Team Topologies</em> (Skelton &amp; Pais, 2019) — <a href="https://teamtopologies.com" target="_blank">teamtopologies.com</a> — the foundational text on stream-aligned, platform, enabling, and complicated-subsystem team types. The Platform/DevEx team described in Ch 8 maps directly onto Team Topologies' "platform team" pattern. Required reading before you try to staff or charter that team.</li>
+          <li><em>Internal Developer Platform (IDP) community resources</em> — <a href="https://internaldeveloperplatform.org" target="_blank">internaldeveloperplatform.org</a> — a community-maintained reference covering IDP patterns, golden paths, and self-service infrastructure. Relevant to Ch 8–9: the golden-config and capability-registry work is a specialized IDP build-out for AI tooling.</li>
+          <li><em>Backstage (CNCF)</em> — <a href="https://backstage.io" target="_blank">backstage.io</a> — an open-source developer portal that many orgs use to host their internal capability registry. If your org already runs Backstage, the Ch 9 capability registry can be implemented as a Backstage catalog extension rather than a bespoke tool.</li>
+          <li><em>"Platform Engineering on Kubernetes"</em> (Valero, 2024) — Manning — covers the infrastructure underpinning of paved-road patterns, including golden paths, self-service templates, and policy-as-code. Useful for the Stage 3 → 4 transition where AI-workflow guardrails need to integrate with existing infrastructure-governance tooling.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">AI governance &amp; responsible-AI frameworks</h4>
+        <ul>
+          <li><em>NIST AI Risk Management Framework (AI RMF 1.0)</em> — <a href="https://www.nist.gov/system/files/documents/2023/01/26/AI%20RMF%201.0.pdf" target="_blank">nist.gov</a> — the US government's structured approach to managing risks across the AI lifecycle (Govern, Map, Measure, Manage). The Govern and Measure functions map directly onto the governance and metrics work in Ch 7, Ch 12, and Ch 13. Enterprise organizations operating under federal or regulated-industry requirements should align their governance tier to this framework.</li>
+          <li><em>EU AI Act (Regulation (EU) 2024/1689)</em> — <a href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai" target="_blank">digital-strategy.ec.europa.eu</a> — the European Union's risk-based regulation for AI systems, including obligations for high-risk AI and general-purpose AI models. Relevant at Stage 4 for orgs with EU operations or EU-based customers. Verify the current implementation timeline — phased enforcement began 2024–2025.</li>
+          <li><em>Anthropic's responsible scaling policy and usage guidelines</em> — <a href="https://www.anthropic.com/responsible-scaling-policy" target="_blank">anthropic.com</a> — the vendor-level governance framework that underpins Claude Code's default safety behaviors. Understanding it helps you write internal policies that align with, rather than conflict with, the model's built-in constraints.</li>
+          <li><em>OWASP Top 10 for Large Language Model Applications</em> — <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank">owasp.org</a> — the canonical checklist for LLM-specific security risks, including prompt injection (Ch 12's primary concern), insecure output handling, and excessive agency. Use this as the security-review checklist template for Ch 12's agentic-workflow audit.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Parts 1 and 2 of this series</h4>
+        <ul>
+          <li><em>Gen AI for Developers: Zero to Hero</em> — <a href="gen-ai-zero-to-hero-guide.html" target="_blank">gen-ai-zero-to-hero-guide.html</a> — Part 1. Individual-level foundations: the agent loop, context management, the spec → plan → implement workflow, prompt engineering, TDD with AI, and debugging. Start here if you are onboarding engineers who have not yet used an AI coding agent.</li>
+          <li><em>Gen AI for Developers: Hero to Architect</em> — <a href="gen-ai-hero-to-architect-guide.html" target="_blank">gen-ai-hero-to-architect-guide.html</a> — Part 2. Advanced individual and small-team practice: multi-tool environments (Claude Code, Kilo Code, Gemini CLI), parallel agent dispatch, MCP server authoring, skills and hooks, and eval-driven development. Start here if your engineers are proficient with a single tool and ready for advanced patterns before the org-scale work in Part 3.</li>
+        </ul>
+      </div>
+
+      <div class="info" style="margin-top:4px;"><strong>Links and resources change — verify current.</strong> URLs, edition numbers, and community resource locations shift over time. Treat the entries above as search anchors and canonical-domain pointers, not permanent deep links. If a URL resolves to a 404, search the title or resource name directly.</div>
+
+      <div class="see-also">
+        <a onclick="go('ref-metrics')">→ Metrics Catalog</a>
+        <a onclick="go('ref-glossary')">→ Glossary</a>
+        <a onclick="go('ref-scorecard')">→ Maturity Scorecard</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
