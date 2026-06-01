@@ -3207,6 +3207,218 @@ except Exception as e:
     </section>
 
 
+    <!-- ===================== CH13 ===================== -->
+    <section id="ch13-gates" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">13. Review Gates, Policy &amp; Compliance</h1>
+      <span class="lens-tag governance">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: how to tier human review by blast radius so automated and human gates are applied where they add value, not everywhere; what a reconstructable audit trail requires and why it matters at org scale; the practical trade-offs between policy as code and policy as documentation; how agentic usage maps to existing compliance frameworks like SOC 2 and ISO 27001 without overstating the answers; and how to right-size gate friction so governance accelerates trust rather than killing throughput.</p>
+
+      <!-- 13.1 -->
+      <div class="card">
+        <h2>13.1 The human-in-the-loop matrix</h2>
+        <p>Not every agent action needs a human approval. Requiring one on every action produces approval fatigue and degrades the signal-to-noise ratio of gates that matter. Requiring none on any action removes the judgment that catches the failures automated checks miss. The design question is: which actions require which level of human involvement, and what determines the boundary?</p>
+
+        <p>Blast radius — how bad the worst case is if the action goes wrong — and sensitivity — whether the domain involves secrets, customer data, production systems, or regulated content — are the two axes that matter most. Combine them into a risk tier, then assign a gate posture to each tier.</p>
+
+        <h4 class="ph">Risk-tiered human-in-the-loop matrix</h4>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Risk tier</th>
+              <th>Blast radius</th>
+              <th>Sensitivity</th>
+              <th>Gate posture</th>
+              <th>Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag t-g">Low</span></td>
+              <td>Scoped to developer's local environment or draft artifact</td>
+              <td>Non-sensitive: internal tooling, scaffolding, documentation drafts</td>
+              <td><strong>Auto-approve.</strong> No human gate required. Logging recommended for retrospective review.</td>
+              <td>Generate a README draft; scaffold a new service directory; write unit tests for a private module; summarize a PR</td>
+            </tr>
+            <tr>
+              <td><span class="tag t-o">Medium</span></td>
+              <td>Touches shared infrastructure, shared codebase, or team-visible artifacts</td>
+              <td>Moderate: shared context files, CI configuration, internal APIs, non-sensitive data</td>
+              <td><strong>Advisory human review.</strong> Agent proceeds but output is flagged for async human review before it takes effect or is merged. A reviewer must acknowledge, not just approve — they are accountable for the output.</td>
+              <td>Modify a shared <code>CLAUDE.md</code> or workflow standard; open a PR that changes a shared library; update a CI pipeline configuration; add a registry entry</td>
+            </tr>
+            <tr>
+              <td><span class="tag t-r">High</span></td>
+              <td>Affects production systems, customer-facing services, or organization-wide infrastructure</td>
+              <td>Elevated: production deployments, secrets management, customer data, regulated modules, security controls</td>
+              <td><strong>Mandatory human approval before action.</strong> Agent proposes; a human explicitly approves before the agent executes. Approval is logged with identity and timestamp.</td>
+              <td>Deploy to production; modify secrets or IAM configuration; write to a production database; change a security policy; add a dependency to a production service</td>
+            </tr>
+            <tr>
+              <td><span class="tag t-p">Sensitive paths</span></td>
+              <td>Affects systems with high compliance exposure, fiduciary responsibility, or irreversible consequences</td>
+              <td>Highest: PII processing, payment flows, regulated financial or health data, critical infrastructure</td>
+              <td><strong>Mandatory two-person approval.</strong> Two independent humans approve before action. Each approval is logged separately. Agent output is treated as a proposal, never a directive.</td>
+              <td>Changes to payment processing logic; modifications to data-deletion or retention pipelines; updates to audit-log infrastructure itself; changes to authentication or authorization flows</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">Applying the matrix in practice</h4>
+        <ul>
+          <li>Assign a risk tier to each agent-accessible action when you configure your platform — not at incident time. A deploy tool that touches staging is Medium. The same tool pointed at production is High. The distinction lives in the tool configuration, not in the engineer's judgment at 11pm on a Friday.</li>
+          <li>The matrix is a starting point, not a permanent contract. Tiers should be reviewed quarterly, especially as your agent capabilities expand. An action that was Low-risk when it produced draft output becomes Medium-risk if you automate its downstream use.</li>
+          <li>Two-person approval on sensitive paths is a borrowing from the dual-control principle in financial controls. The rationale is the same: not because you distrust any individual, but because consequential irreversible actions are less prone to error and manipulation when no single actor can authorize them alone.</li>
+          <li>Gate posture applies to agent actions specifically. A human engineer performing the same action under their own session may operate under different norms — the matrix governs the autonomous agent loop, not every developer interaction with the system.</li>
+        </ul>
+
+        <div class="info orange"><strong>Blast-radius thinking is a prerequisite, not an afterthought.</strong> If you haven't categorized the blast radius of each agent-accessible tool before deploying at Stage 3, the matrix has nothing to operate on. Revisit your tool inventory (Ch 10) and assign tiers before the rollout, not after the first incident. The Ch 12 security review is a natural moment to do this work.</div>
+      </div>
+
+      <!-- 13.2 -->
+      <div class="card">
+        <h2>13.2 Audit trails</h2>
+        <p>A human who makes a consequential decision leaves a trail: a commit, a ticket comment, a Slack message, a deploy record. An agent that makes a consequential decision can leave no trail at all unless you build one explicitly. At Stage 3 and beyond, the absence of an agent audit trail is a compliance gap, an incident-response blocker, and a governance failure waiting to surface.</p>
+
+        <h4 class="ph">What a useful audit trail captures</h4>
+        <ul>
+          <li><strong>Who:</strong> The identity of the human who initiated the agent session, and — in multi-agent pipelines — which orchestrator or agent sent each sub-task. "Agent" is not a sufficient actor identity. The trail must trace back to a human principal.</li>
+          <li><strong>What:</strong> The action the agent took — tool called, arguments passed, files written, API invoked. Not the full prompt if that creates data-retention risk, but the action and its key parameters. What changed, not just that something changed.</li>
+          <li><strong>When:</strong> Timestamp at action time, not at log-flush time. In multi-step pipelines, timestamps on each discrete action, not just the run as a whole.</li>
+          <li><strong>Why (decision context):</strong> Enough of the prompt or instruction to reconstruct the agent's stated rationale. This does not mean logging raw prompts wholesale — that creates data-egress risk (see Ch 12.2). It means logging the task description and the key constraints the agent was given.</li>
+          <li><strong>Approvals:</strong> For Medium, High, and Sensitive actions — who approved, at what timestamp, and what they were shown when they approved. An approval is only auditable if the record captures what the approver saw, not just that they clicked a button.</li>
+          <li><strong>Outcome:</strong> What the action produced — the file written, the PR opened, the command's exit code. The trail is incomplete without evidence of what actually happened, not just what was intended.</li>
+        </ul>
+
+        <h4 class="ph">Making agent activity reconstructable</h4>
+        <ul>
+          <li>Reconstructability means that six months after an incident, an investigator with access to your logs can answer: what did the agent do, who authorized it, what was it operating on, and what was the outcome? If the answer to any of those questions requires guessing, your audit trail is insufficient.</li>
+          <li>Structure logs for query, not for reading. A flat text log of agent sessions is useful for debugging but nearly useless for compliance review. Structured event logs — JSON, a time-series store, or your existing SIEM ingestion format — enable the queries that incidents and audits require: "show me all agent actions on the payments module in the last 90 days."</li>
+          <li>Retain agent logs for at least as long as your audit log retention policy for human actions. If your compliance framework requires 12-month retention for production change logs, agent actions that touch production require the same. Do not invent a shorter retention period for agents just because they feel different.</li>
+          <li>Protect the audit trail itself. A log that can be modified by any engineer with filesystem access is not an audit trail — it is a journal. Write logs to an append-only destination (a write-protected bucket, a SIEM with ingest-only credentials) so the trail is trustworthy under adversarial conditions.</li>
+        </ul>
+
+        <aside class="tool-alt">
+          <strong>Audit trail infrastructure — tool-agnostic patterns</strong>
+          <p style="margin:8px 0 6px;">Most agentic coding tools emit some form of session logs, but their formats differ and their completeness varies. A tool-agnostic approach: route all agent tool calls through your existing API gateway or proxy layer (see Ch 12.2), instrument the gateway to emit structured events to your SIEM or log-aggregation platform (e.g., Splunk, Datadog, OpenSearch), and treat the gateway log as the authoritative source for compliance purposes. Tool-specific logs (Claude Code conversation exports, CI job logs) supplement but don't replace the gateway record. The gateway sees every outbound API call regardless of which tool generated it — making it the only single point that covers your full agent footprint.</p>
+        </aside>
+
+        <div class="info"><strong>The audit trail is also your incident-response first responder.</strong> When something goes wrong — a production deploy that shouldn't have happened, a file that was overwritten unexpectedly, a secret that appeared in a tool call — the first question is always "what did the agent actually do?" If you can answer that in minutes from your logs, your incident response is calibrated. If it takes hours of log archaeology, you are managing the incident in the dark.</div>
+      </div>
+
+      <!-- 13.3 -->
+      <div class="card">
+        <h2>13.3 Policy as code vs policy as docs</h2>
+        <p>Every org that reaches Stage 3 has some combination of written policies and enforced technical controls. The ratio between them — how much of your governance lives in documents versus in running checks — determines how reliably the policy is actually followed. Agents change this calculation, because an agent cannot read a Google Doc and decide whether to comply; it will do what it is configured to do.</p>
+
+        <h4 class="ph">The spectrum</h4>
+        <ul>
+          <li><strong>Policy as docs</strong> is a written statement of what is permitted, required, or prohibited. It relies on engineers reading, understanding, and choosing to follow the policy in every session. At small scale, this works. At Stage 3, with hundreds of engineers running agent sessions in parallel, the gap between what the policy says and what actually happens grows with team size, onboarding velocity, and the pace of policy updates.</li>
+          <li><strong>Policy as code</strong> encodes the policy as a check that runs automatically — a CI gate, a pre-commit hook, a gateway rule, a registry enforcement layer. The check cannot be skipped by an engineer who didn't read the update, and it doesn't degrade with team size. It also creates a clear source of truth: the policy is the code, not the interpretation of the code.</li>
+          <li>Most governance regimes need both: policy-as-code for the checks where the right answer is unambiguous and enforcement is feasible, and policy-as-docs for the guidance that requires human judgment (when to escalate, how to evaluate a borderline case, what "reasonable" means in a novel situation).</li>
+        </ul>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--green);">Policy as code</h4>
+            <p style="font-size:13px;"><strong>Reliable enforcement:</strong> The check runs on every session, PR, or deploy — not just when an engineer remembers to check the policy doc.<br><br>
+            <strong>Scales with the org:</strong> Adding 50 engineers does not reduce enforcement coverage. Each new session inherits the controls automatically.<br><br>
+            <strong>Auditable by default:</strong> The CI gate log is evidence of enforcement. A failed gate is a recorded event. A passing gate is evidence of compliance at that moment.<br><br>
+            <strong>Watch for:</strong> Hard to encode nuance. A gate that blocks every case where a secret pattern appears in a prompt will produce false positives on test fixtures. Calibration takes time and iteration. And the gate is only as good as its coverage — it cannot enforce what it was not built to check.</p>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--blue);">Policy as docs</h4>
+            <p style="font-size:13px;"><strong>Handles judgment calls:</strong> Written policy can say "escalate to security when you're uncertain." A CI gate cannot implement "when uncertain."<br><br>
+            <strong>Faster to update:</strong> Changing a written policy is a PR. Changing a policy-as-code gate may require a gate refactor, a test suite update, and a rollout. Written policies respond to emerging threats faster.<br><br>
+            <strong>Cross-cutting guidance:</strong> Some governance applies across many contexts in ways that resist encoding. Cultural norms, escalation paths, and principle-based guidance are better suited to prose than to code.<br><br>
+            <strong>Watch for:</strong> Policy drift. The doc says one thing; what teams actually do is another. Without enforcement, the gap widens silently. Written policies that nobody reads are governance theater.</p>
+          </div>
+        </div>
+
+        <h4 class="ph">Where to start</h4>
+        <ul>
+          <li>Encode as code first: secret-pattern detection in the gateway, dependency allowlist enforcement in CI, registry tier enforcement (only approved-tier servers in headless CI), and audit-log writes on every agent tool call. These are unambiguous, high-value, and the automation pays for itself quickly.</li>
+          <li>Keep as docs: escalation paths for novel situations, the rationale behind gate thresholds, guidance on context-loading discipline, and the norms around human judgment calls on borderline approvals. These require human interpretation and benefit from narrative explanation.</li>
+          <li>When a policy-as-doc item is violated repeatedly, that is a signal it should become policy-as-code. The violation pattern is evidence that the written policy is not self-enforcing in that context. Build the gate; remove the doc-only dependency.</li>
+        </ul>
+
+        <div class="info green"><strong>The test of a gate is whether it would have caught the last incident.</strong> After every agent-related incident, ask: if this gate had existed, would the incident have been prevented or detected earlier? If yes, build the gate. That is how policy-as-code grows from real failures rather than theoretical concerns.</div>
+      </div>
+
+      <!-- 13.4 -->
+      <div class="card">
+        <h2>13.4 Regulatory fit</h2>
+        <p>If your org operates in a regulated industry — financial services, healthcare, defense, or any context where SOC 2, ISO 27001, HIPAA, PCI-DSS, or equivalent frameworks apply — you need to understand how agentic coding maps to your existing controls. This section provides orientation, not legal or compliance advice. Engage your compliance team and qualified counsel; do not rely on engineering judgment alone for regulatory conclusions.</p>
+
+        <h4 class="ph">How agent usage maps to existing control families</h4>
+        <ul>
+          <li><strong>Change management controls (SOC 2 CC8, ISO 27001 A.12.1.2):</strong> If your compliance posture requires that all production changes are authorized, reviewed, and logged, then agent-initiated production changes must satisfy the same requirements. The agent proposing a change does not substitute for the human authorization your controls require. The human-in-the-loop matrix (13.1) is the engineering implementation of this control for agentic workflows — but your compliance team needs to verify the mapping.</li>
+          <li><strong>Access controls (SOC 2 CC6, ISO 27001 A.9):</strong> Agents that inherit engineer credentials operate under that engineer's access grants. If your controls require that access is scoped to need, an agent with broad filesystem and shell access granted to a developer account may exceed what the control intends, even if the developer was individually granted that access. Review agent-accessible permission scopes against your principle of least privilege requirements.</li>
+          <li><strong>Audit logging (SOC 2 CC7, ISO 27001 A.12.4):</strong> Most frameworks require that access to and changes in systems are logged, and that logs are protected from modification. Section 13.2 describes what agent audit trails need to capture. The compliance question is whether your audit trail meets the specificity and retention requirements of your framework — and whether agent actions are explicitly included in scope or assumed to be excluded.</li>
+          <li><strong>Vendor risk management (SOC 2 CC9, ISO 27001 A.15):</strong> Model providers are vendors. Their data handling practices, subprocessors, retention policies, and contractual commitments are in scope for vendor risk management. Verify that your provider's current terms satisfy your framework's requirements. Third-party MCP servers used in agent pipelines are additional vendors, each requiring evaluation.</li>
+        </ul>
+
+        <h4 class="ph">What to bring to your compliance partnership</h4>
+        <ul>
+          <li>A description of what data enters agent context windows — source code, test fixtures, configuration, customer data samples — and which of those categories are in scope for your compliance framework.</li>
+          <li>Your audit trail design (13.2) and the gap analysis against your framework's logging requirements.</li>
+          <li>The human-in-the-loop matrix (13.1) as evidence that human authorization is preserved for actions your controls require humans to authorize.</li>
+          <li>Your model provider's data processing agreement and the specific commitments on data retention, training exclusion, and subprocessor disclosure.</li>
+          <li>A list of third-party MCP servers and other agentic components that touch regulated data paths, treated the same as any other third-party vendor.</li>
+        </ul>
+
+        <div class="info purple"><strong>Do not over-claim compliance.</strong> Saying "our agentic pipeline is SOC 2 compliant" before your auditor has reviewed the scope is a statement that could create liability. The honest framing at this stage is: "We have mapped our controls to the relevant control families and believe the design satisfies the requirements; our auditor will confirm during the next review cycle." That framing is accurate and sets the right expectation with stakeholders.</div>
+      </div>
+
+      <!-- 13.5 -->
+      <div class="card">
+        <h2>13.5 Gate friction vs throughput</h2>
+        <p>Gates exist to catch failures that automated checks miss and to ensure human judgment is applied where it is needed. But every gate adds latency. A gate that takes 48 hours to clear is not just slow — it breaks the flow state that makes agentic coding productive, creates pressure to bypass the gate, and trains engineers to view governance as an obstacle rather than a safeguard. Right-sizing gates is a throughput problem as much as a governance problem.</p>
+
+        <h4 class="ph">The cost of over-gating</h4>
+        <ul>
+          <li>Approval fatigue: when every agent action requires human sign-off, reviewers see so many requests that each individual approval gets less scrutiny. The gate becomes a checkbox rather than a judgment call — which is the opposite of its intended purpose. Over-gating does not produce better review; it produces faster rubber-stamping.</li>
+          <li>Bypass pressure: engineers under deadline pressure who face a slow gate will find a path around it — running the action manually outside the agentic pipeline, requesting informal approvals over Slack, or simply not using the approved agentic workflow for time-sensitive work. Shadow usage (Ch 1) returns, now with an official process that is officially being bypassed.</li>
+          <li>Measurement distortion: if your fastest path to shipping does not go through the gate, your throughput metrics will not reflect gate latency. You will see high velocity and attribute it to good engineering practice, while the actual path to production is ungoverned and unlogged.</li>
+        </ul>
+
+        <h4 class="ph">The cost of under-gating</h4>
+        <ul>
+          <li>Incidents that a human would have caught reach production. The blast radius of those incidents is proportional to how far down the automation chain they travel before a human sees the output.</li>
+          <li>Audit and compliance gaps accumulate silently. A regulated workflow that runs without the required authorization trail is a compliance finding waiting to be discovered — not at the moment of the action, but during the next audit or incident investigation.</li>
+          <li>Trust erodes. When the first significant agent-caused incident occurs — and one will — the absence of gates becomes the story. "You let agents do this without any human review?" is a much harder conversation than "The gate failed to catch this specific case; here is how we are improving it."</li>
+        </ul>
+
+        <h4 class="ph">Right-sizing: tiering and latency targets</h4>
+        <ul>
+          <li>Apply the risk tier matrix from 13.1 to gate assignments. Low-tier actions should have zero gate latency (auto-approve). Medium-tier actions should have an async advisory review — measurable in hours, not days. High-tier and sensitive-path actions should have synchronous approval, but the approval flow itself should be designed for speed: clear approval UI, mobile-accessible, with a well-defined scope of what the reviewer is being asked to evaluate.</li>
+          <li>Measure gate latency explicitly. Add gate wait time — the time between an agent action being proposed and a human approval being recorded — to your engineering platform metrics. If your Medium-tier advisory reviews are averaging 3 days, that is a process failure, not a security feature. Either the review scope is too broad, the reviewer pool is too small, or the approval interface is too slow.</li>
+          <li>Set latency targets by tier and hold them. For example: Low — 0 minutes (auto). Medium — advisory review within 4 business hours. High — synchronous approval within 30 minutes during business hours, escalation path for off-hours. Sensitive — synchronous two-person approval, with an on-call rotation for time-sensitive cases.</li>
+          <li>Review the gate load quarterly. If your Medium tier is generating 200 advisory reviews per week and your review team has capacity for 50, the tier assignment is wrong, the reviewer pool is undersized, or some Medium actions should be reclassified downward. Gate load that systematically exceeds reviewer capacity will collapse into rubber-stamping or bypass — neither outcome is better than the original ungated state.</li>
+        </ul>
+
+        <div class="info"><strong>This chapter connects to Ch 15 (Standardization vs Autonomy).</strong> The gate friction question is a specific instance of the broader standardization–autonomy dial: how much constraint does the org impose centrally, and how much is left to team judgment? Gates are centrally-imposed constraints. Ch 15 addresses when to tighten and when to loosen that dial as the org matures. Keep the gate design consistent with where you are on that dial — over-constraining at Stage 3 is as costly as under-constraining at Stage 1.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 3→4: Dana's Template Becomes Org Policy</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Dana's</strong> Ch 12 security review template — the three-item checklist covering egress controls, MCP server permissions, and dependency-addition behavior — becomes the starting point for a broader org-wide review-gate policy. The Platform/DevEx team drafts it; Dana and Marcus review it together before it goes to the engineering leadership team. The key design question is risk tiering: what requires a gate, what requires a human approval, and what can flow without review.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus's</strong> concern is friction. "If every PR that touches a shared library needs a security review, we'll be back to the throughput we had before any of this. The whole point was to move faster." Dana's response: "The tiering is the answer. Low-risk work doesn't touch the security gate at all. Medium work gets an async advisory review that a reviewer can clear in ten minutes. High-risk and sensitive paths get a real approval — but those are a small fraction of total volume." She shows the gate-load model: of the last 30 days of agent-assisted work, 62% was Low-tier, 31% Medium, 6% High, and less than 1% Sensitive. The mandatory human approvals apply to 7% of actions. Marcus approves the tiering design.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong> reviews the draft policy and raises one concern: the Medium-tier advisory reviews have no latency target. "An advisory review without a time bound is a slow mandatory review. I've seen this before — the queue grows, people stop watching it, and then it's not a gate anymore, it's theater." The team adds latency targets to each tier: Medium advisory reviews are committed to within 4 business hours; High approvals within 30 minutes with an escalation path. A gate-latency metric is added to the Platform/DevEx weekly dashboard.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The audit trail design from 13.2 is encoded as a policy-as-code requirement: any new agentic workflow submitted to the internal capability registry must include a structured audit-log configuration that emits to the org's SIEM. The registry enforcement layer checks for this at submission time — a workflow without a valid audit-log config is rejected at the gate, not after deployment. Dana estimates this single enforcement point would have caught two of the three findings from her Ch 12 review before they reached the review stage.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;">The policy is published as a versioned document with a companion enforcement spec — policy-as-docs for the judgment-requiring sections, policy-as-code for the enforceable checks. <strong>Amir</strong> writes the onboarding section for new teams joining Stage 3: three pages explaining the risk tier matrix, the gate latency targets, and the audit-log requirement, with a worked example for a typical payment-team workflow. The review-gate policy becomes the governance foundation for the Stage 4 enterprise expansion in subsequent chapters.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch10-cicd')">→ Ch 10. Agents in CI/CD</a>
+        <a onclick="go('ch12-security')">→ Ch 12. Security at Org Scale</a>
+        <a onclick="go('ch15-autonomy')">→ Ch 15. Standardization vs Autonomy</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
