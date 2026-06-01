@@ -43,6 +43,7 @@ From AI fundamentals to the modern agentic coding stack.
 |-------|------|-------------|
 | Gen AI: Zero to Hero | [gen-ai-zero-to-hero-guide.html](gen-ai-zero-to-hero-guide.html) | Complete guide from AI basics to mastery — neural networks, LLMs, transformers, prompting, RAG, AI agents, Claude, Claude Code, CLAUDE.md, skills, MCP, hands-on exercises, cheat sheets, and A-Z glossary |
 | Gen AI: Hero to Architect | [gen-ai-hero-to-architect-guide.html](gen-ai-hero-to-architect-guide.html) | Advanced companion to Zero to Hero — agentic coding loop, context engineering, OpenSpec, SpecKit, Superpowers, Kilo Code, Claude Code, Gemini CLI, MCP, multi-agent workflows, and a worked example shipping a CLI tool across three tools |
+| Gen AI: Architect to Leader | [gen-ai-architect-to-leader-guide.html](gen-ai-architect-to-leader-guide.html) | Tool-agnostic playbook for scaling agentic coding org-wide — maturity model, people/platform/governance pillars, and the Meridian case study |
 
 ## Usage
 
