@@ -1082,6 +1082,190 @@
       </div>
     </section>
 
+    <!-- ===================== CH3 ===================== -->
+    <section id="ch3-pilot" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">3. Running a Credible Pilot</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: how to select a pilot team that produces generalizable evidence; why falsifiable success metrics and explicit stop conditions are what make a pilot credible rather than just optimistic; how to time-box and guard-rail a pilot so it can't cause real damage; how to avoid the demo trap of cherry-picked wins; and what to capture so the pilot's real output — organizational knowledge — survives into Stage 2.</p>
+
+      <!-- 3.1 -->
+      <div class="card">
+        <h2>3.1 Choosing the pilot team</h2>
+        <p>The team you pick shapes the evidence you can produce. A poorly chosen pilot team means the results don't generalize — and a skeptic like Riya will say so before the ink is dry on the retrospective.</p>
+
+        <h4 class="ph">Selection criteria that produce generalizable results</h4>
+        <ul>
+          <li>Choose a team whose work is representative of the broader engineering org. If most of your engineers work on service-layer APIs, pick a service-layer team — not the platform team whose work is structurally different from everyone else's.</li>
+          <li>The team should be medium-sized: 8–20 engineers is a practical range. Smaller than that and the sample is too thin to draw statistical conclusions; larger and the coordination overhead of the pilot itself becomes the main story.</li>
+          <li>Prefer a team with measurable, well-understood baseline metrics. If you don't know what their current PR cycle time or rework rate is before the pilot starts, you cannot claim any movement after it ends.</li>
+          <li>The team lead should be willing — not conscripted. A pilot lead who privately thinks this is a waste of time will unconsciously shape the experiment toward that conclusion.</li>
+        </ul>
+
+        <h4 class="ph">Who not to pick: not the all-stars</h4>
+        <ul>
+          <li>The most productive engineers on the team are the worst choice for a pilot. If the pilot succeeds, skeptics will attribute it to their individual talent, not to the tooling or the process. The result doesn't generalize.</li>
+          <li>All-stars also tend to develop idiosyncratic, highly personal prompting approaches. What works for Priya — who has two months of daily experimentation behind her — does not work for a median engineer starting fresh. If you design the pilot around Priya's habits, you will not learn what the median engineer needs.</li>
+          <li>This is the hardest constraint to enforce. The instinct is to give the pilot the best chance of succeeding; selecting the best people feels like doing that. It isn't. It is selecting for a success that won't replicate.</li>
+        </ul>
+
+        <h4 class="ph">Who not to pick: not the cynics</h4>
+        <ul>
+          <li>Equally, do not stack the pilot with engineers who have publicly declared AI tools to be useless. They will approach every interaction as a test of their prior opinion rather than as a genuine experiment.</li>
+          <li>A skeptic who has agreed to participate on its merits — like Riya — is valuable. A skeptic who was conscripted is a liability.</li>
+          <li>Cynicism and healthy skepticism are different. Healthy skeptics ask "how do we know this worked?" Cynics ask "why do you think this will work?" before the experiment has started. The pilot team needs the former; exclude the latter.</li>
+        </ul>
+
+        <h4 class="ph">Representativeness: the standard that lets results travel</h4>
+        <ul>
+          <li>Before announcing the pilot team, ask: "If this team gets strong positive results, would a VP-level skeptic concede that the results likely apply to team X as well?" If the answer is no, choose a different team.</li>
+          <li>Document why you chose the team and what assumptions that choice embeds. When the pilot ends, you will need to argue the case for a broader rollout — a well-reasoned team-selection rationale is part of that argument.</li>
+          <li>Explicitly acknowledge what won't generalize. If the pilot team has unusually clean code or unusually short feedback loops, say so upfront. That acknowledgment builds more trust than discovering the caveat later.</li>
+        </ul>
+
+        <div class="info"><strong>Representativeness is an upfront decision, not a post-hoc defense.</strong> You cannot fix a poorly chosen pilot team after the fact. Spend the extra week on team selection before the pilot starts — you will spend far more than that defending a poorly chosen team after the results are in.</div>
+      </div>
+
+      <!-- 3.2 -->
+      <div class="card">
+        <h2>3.2 Defining success up front</h2>
+        <p>A pilot without explicit success criteria is not an experiment — it is a demonstration. Demonstrations prove commitment to a decision already made. Experiments produce evidence. You want the latter.</p>
+
+        <h4 class="ph">Falsifiable hypotheses: what they are and why they matter</h4>
+        <ul>
+          <li>A falsifiable hypothesis specifies in advance what you would need to observe to conclude the pilot failed. Without that, any result can be reframed as a partial success — which is the same as no result.</li>
+          <li>Good form: "If the pilot team uses [tool] with shared context files and 4 hours of structured onboarding, we expect PR cycle time on service-layer tickets to drop from 5.8 days to ≤ 4.5 days within 6 weeks, with no increase in rework rate beyond 15% of baseline." This can fail.</li>
+          <li>Bad form: "We expect to see a productivity improvement and a positive sentiment from the pilot team." This cannot fail — any result will satisfy it.</li>
+          <li>Write one primary hypothesis and at most one secondary hypothesis. More than two and you are hedging: you will find something positive in the list and declare victory regardless of what matters.</li>
+        </ul>
+
+        <h4 class="ph">Capturing a baseline before you start</h4>
+        <ul>
+          <li>Measure everything you intend to claim movement on <em>before the pilot starts</em>. This sounds obvious. It is consistently skipped — because the baseline measurement is boring, and starting the pilot feels exciting.</li>
+          <li>A minimum viable baseline: PR cycle time (open to first review, first review to merge), rework rate (PRs that need significant rework after review), and subjective confidence (a short weekly survey asking engineers to rate confidence in the AI-assisted changes they're shipping).</li>
+          <li>Run the baseline measurement for at least two weeks before the pilot begins. A single week's baseline can be contaminated by a sprint anomaly, a holiday, or an unusually large ticket that distorts the average.</li>
+          <li>Store the baseline in a place the whole team can see. Transparency on the baseline number before the pilot starts removes the accusation that the baseline was chosen to make the results look good.</li>
+        </ul>
+
+        <h4 class="ph">Explicit exit criteria and stop conditions</h4>
+        <ul>
+          <li>An exit criterion describes the decision you will make when the timebox ends. Write two: one for the success case ("if the primary hypothesis is satisfied, we recommend expanding the pilot to two additional teams and beginning Stage 2 infrastructure work") and one for the failure case ("if the primary hypothesis is not satisfied, we publish a retrospective describing what we learned and recommend a 60-day pause before revisiting").</li>
+          <li>A stop condition is different from an exit criterion. It is a circuit breaker that fires during the pilot if something goes badly wrong: "If rework rate increases by more than 25% in any two-week window, we pause the pilot for a calibration week before continuing."</li>
+          <li>Stop conditions are not admissions of doubt — they are what make a skeptic comfortable allowing the experiment to proceed. Riya will accept a pilot that has a circuit breaker. She will resist a pilot that has no defined limit on how bad things can get before anyone acts.</li>
+          <li>Define the stop condition in terms of something you are already measuring. A stop condition you cannot detect is not a stop condition.</li>
+        </ul>
+
+        <div class="info green"><strong>Falsifiability is credibility infrastructure.</strong> When the pilot ends and you stand in front of Marcus and Riya with results, your most powerful asset is "we said what success looked like before we started, and here is whether it happened." That framing is worth more than any positive metric you could point to.</div>
+      </div>
+
+      <!-- 3.3 -->
+      <div class="card">
+        <h2>3.3 Time-boxing &amp; guardrails</h2>
+        <p>A pilot with no end date and no constraints is not a pilot — it's a slow drift into the same unstructured adoption the pilot was meant to replace. The timebox and the guardrails are what make the experiment safe enough to run and clean enough to learn from.</p>
+
+        <h4 class="ph">Why a fixed duration matters</h4>
+        <ul>
+          <li>The timebox creates urgency for the pilot team: every week of the pilot counts toward a decision, so the team engages rather than drifting. Without a deadline, human nature pushes experimentation into gaps between "real work" — and it will never have those gaps.</li>
+          <li>A fixed duration limits downside. Leadership accepting a 6-week pilot is accepting a bounded risk. Leadership accepting an open-ended pilot is accepting an unbounded one. Short fixed durations are far easier to approve.</li>
+          <li>Six weeks is a practical minimum for a coding workflow pilot. The first 1–2 weeks are onboarding and calibration; weeks 3–5 are where you collect the bulk of the evidence; week 6 is synthesis and retrospective. Shorter than 6 weeks and you don't have enough data. Longer than 10 weeks and you lose urgency and accumulate noise.</li>
+          <li>Set a hard calendar end date the day the pilot is approved — not "6 weeks from when we're ready." The incentive to delay the start to prepare more is real; a calendar end date neutralizes it.</li>
+        </ul>
+
+        <h4 class="ph">Bounding the scope so the pilot can't sprawl</h4>
+        <ul>
+          <li>Scope the pilot to a specific class of work. "Service-layer tickets of medium complexity" is a scope. "All work the team does" is not — it makes the measurement muddy and the learning generic.</li>
+          <li>Define what is explicitly out of scope. Security-critical modules, authentication flows, and anything that requires Dana's sign-off should be out of scope for autonomous agent action during a pilot. Not because agents can't help with those — but because the pilot is not the time to negotiate that boundary.</li>
+          <li>Write the scope definition in a file in the repo so the team can refer to it when they are unsure whether a task falls within the pilot's mandate. A Slack thread is not a scope definition.</li>
+        </ul>
+
+        <h4 class="ph">Safety rails: ensuring a pilot can't cause real damage</h4>
+        <ul>
+          <li>Limit agent autonomy to what the team has explicitly agreed to before the pilot starts. A reasonable default for a first pilot: agents can read and write code in the scoped service but must not make commits directly. All commits are manual, by the engineer, with full review of the diff.</li>
+          <li>Set up secret-detection scanning on all pilot repos before the pilot begins. Engineers will paste things into prompts they shouldn't. Catching a secret before it leaves the perimeter is far easier than responding to an incident after it does.</li>
+          <li>Require a brief human review of every AI-assisted PR during the pilot — not just for code quality, but to record whether the engineer felt the agent's output was trustworthy. This data is part of what the pilot produces.</li>
+          <li>Ensure the pilot team knows the stop condition and who has authority to invoke it. A stop condition that requires a multi-level approval chain before it can be used will never be invoked in time.</li>
+        </ul>
+
+        <div class="info orange"><strong>Guardrails are not timidity — they are what makes the experiment safe to run at all.</strong> A pilot that could, in principle, commit untested agent output directly to a production codebase will not get approved by Dana or by Marcus. Design the guardrails first and you shorten the approval conversation by half.</div>
+      </div>
+
+      <!-- 3.4 -->
+      <div class="card">
+        <h2>3.4 Avoiding the demo trap</h2>
+        <p>The demo trap is the most common way a pilot loses credibility: the team cherry-picks the three most impressive AI-assisted moments from six weeks and presents them as representative evidence. They believe it. Everyone watching doesn't — especially the skeptics.</p>
+
+        <h4 class="ph">Use representative work, not curated wins</h4>
+        <ul>
+          <li>Insist that the pilot covers the full range of the team's normal work during the timebox — not just the tasks where the tool is obviously useful. If the team works on bug fixes, migrations, feature work, and on-call response, all of those should be in scope for the experiment.</li>
+          <li>Track all work attempted with AI assistance during the pilot, not just the work that succeeded. If the team ran 40 AI-assisted tasks and 12 required significant manual correction, that 30% correction rate is a key finding — and it should be in the pilot retrospective even if it complicates the headline numbers.</li>
+          <li>When you present results, show the distribution: how many tasks went well, how many were neutral, how many required significant rework. A distribution tells a story that a headline average cannot.</li>
+        </ul>
+
+        <h4 class="ph">Record honest negatives</h4>
+        <ul>
+          <li>Keep a failure log from day one. Every time an agent output required significant rework, every time the tool produced plausibly wrong code the reviewer had to catch, every time the engineer lost time to a misbehaving agent run — these go in the log with a brief note on what happened and what the resolution was.</li>
+          <li>The failure log is not a list of reasons the tool doesn't work. It is a learning artifact. A pilot retrospective that presents only positive results will be dismissed by Riya as marketing. A retrospective that includes a well-documented failure log and the lessons drawn from it will be taken seriously.</li>
+          <li>Designate one person on the pilot team as the keeper of the failure log. Shared ownership means no ownership — the log will be blank when you need it.</li>
+        </ul>
+
+        <h4 class="ph">A flashy demo is not evidence</h4>
+        <ul>
+          <li>There is almost always a moment during a pilot when the tool does something remarkable: generates a complex migration script from a plain-English description, writes a full test suite in two minutes, refactors a gnarly legacy function cleanly. These moments are real and they are impressive. They are not evidence that the tool improves overall team velocity.</li>
+          <li>Leaders have seen impressive demos before. The question they are implicitly asking when you show them one is: "Is this the representative case or the best case?" If you cannot answer "representative," you have not answered the question.</li>
+          <li>Use demos to illustrate the mechanism — to show leadership how the tool works. Use your metrics to make the evidence claim. Never conflate the two. A compelling demo paired with rigorous outcome data is persuasive. A compelling demo alone is theater.</li>
+        </ul>
+
+        <div class="info red"><strong>Cherry-picking is invisible from the inside.</strong> The pilot team is not being dishonest when they lead with their strongest results — they are being human. Build the recording discipline into the pilot structure so that the honest picture is captured automatically, not reconstructed from memory at the end.</div>
+      </div>
+
+      <!-- 3.5 -->
+      <div class="card">
+        <h2>3.5 Capturing learnings</h2>
+        <p>The pilot's primary output is not shipped code. It is organizational knowledge: the prompt patterns that worked, the failure modes to guard against, the time deltas that hold up under scrutiny, and the workflow norms that should carry forward into Stage 2. If that knowledge is not captured in a durable, shareable form, the pilot is wasted.</p>
+
+        <h4 class="ph">What to record during the pilot</h4>
+        <ul>
+          <li><strong>Prompts and configurations that worked:</strong> When an engineer finds a prompting structure that reliably produces clean, well-scoped diffs for a specific class of task, that structure should be captured verbatim — not paraphrased — in a shared file in the repo. Include the context: what kind of task it was used on, what the codebase characteristics were, what the expected output looked like.</li>
+          <li><strong>Failure modes:</strong> What caused agents to produce bad output? Was it ambiguous specs, insufficient context, tasks that crossed a complexity threshold, or specific file types the tool handled poorly? Document the pattern, not just the instance.</li>
+          <li><strong>Time deltas:</strong> For each task where you measured time spent with and without AI assistance (or compared against baseline estimates), record the actual delta and the task characteristics. Over 40 tasks, these deltas tell you which task categories are worth targeting in Stage 2 and which are not.</li>
+          <li><strong>Review observations:</strong> What did reviewers notice about AI-assisted PRs? Were they structurally different from hand-written PRs? What extra checks did they perform? This informs the review norm updates that Stage 2 will need.</li>
+        </ul>
+
+        <h4 class="ph">The real output: organizational knowledge</h4>
+        <ul>
+          <li>At the end of the pilot, you should be able to hand an engineer who was not on the pilot team a document — not a slide deck — that tells them: here are the three prompting patterns that produced the best results in our codebase, here are the two task types where we saw no benefit, and here are the guardrails we'd recommend based on what went wrong.</li>
+          <li>That document is the pilot's real deliverable. The shipped code is ephemeral; the organizational knowledge is what compounds.</li>
+          <li>Version-control this document from day one. Not in Notion, not in a Google Doc — in the repo, as a plain text or Markdown file. That way it survives team changes, is searchable, and has an audit trail. The team at Stage 2 will build on it; they need to be able to see how it evolved.</li>
+        </ul>
+
+        <h4 class="ph">Carrying forward into Stage 2</h4>
+        <ul>
+          <li>Before the pilot ends, assign ownership of each artifact to a named person who will be responsible for it in Stage 2. A shared context file with no owner will not be updated; a shared context file owned by a named engineer will.</li>
+          <li>The pilot retrospective should include a section titled "Stage 2 starting conditions": what shared context files exist and need updating, what workflow norms the pilot discovered that should become team conventions, what infrastructure work is needed before a broader rollout, and what the one thing is that the pilot lead most wishes they had done differently.</li>
+          <li>Schedule the Stage 2 kickoff before the pilot ends. The window between a pilot concluding and momentum evaporating is shorter than it looks. If Stage 2 planning requires another approval cycle, start it during the last week of the pilot, not after the retrospective.</li>
+        </ul>
+
+        <div class="info purple"><strong>Organizational knowledge is the compound interest of a well-run pilot.</strong> Every subsequent team that onboards in Stage 2 starts with the pilot's hard-won lessons rather than from zero. That knowledge transfer is worth more, long-term, than any feature the pilot team shipped during the 6 weeks.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 0→1: The Pilot Takes Shape</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">With Marcus's approval in hand, Priya is named pilot lead. The payments team (18 engineers, service-layer tickets, a clean two-week baseline in the issue tracker) is selected — deliberately not the platform team, which has atypical work patterns that would make the results hard to generalize.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong>, asked to participate as the pilot's internal skeptic and metric keeper, agrees on one condition: "I want us to write down what success and failure look like before we start. Not after we see the numbers." Priya adds a one-page success criteria doc to the pilot repo that afternoon: primary hypothesis (PR cycle time to ≤ 4.5 days over 6 weeks), stop condition (rework rate ≥ 25% in any two-week window triggers a calibration pause), and a failure definition (hypothesis not met = the pilot is documented as inconclusive and a structured retrospective is published before any further spend).</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The team picks a workstream that is representative but not glamorous: a backlog of medium-complexity service-layer bug fixes and small feature additions. Not the greenfield API redesign that would make for a better demo. "If this works on boring tickets," Riya notes, "it will scale. If it only works on the fun stuff, we've learned something important."</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">A <code>pilot-learnings.md</code> file is created in the repo on day one. Priya owns it. Every Friday, each engineer adds two sentences: one thing that worked, one thing that didn't. The failure log fills up faster than anyone expected — which turns out to be the most useful data the pilot produces.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;">At the week-three midpoint check-in, the headline cycle-time number looks promising. The failure log surfaces a consistent pattern: the tool produces unreliable output on any ticket that touches the legacy billing module, which has minimal test coverage and no documented contracts. That finding shapes the Stage 2 scoping decision before the pilot is even over.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch1-scale')">→ Ch 1. Why Individual Mastery Doesn't Scale</a>
+        <a onclick="go('ch4-standards')">→ Ch 4. Workflow Standards</a>
+        <a onclick="go('ch7-metrics')">→ Ch 7. Measuring What Matters</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
