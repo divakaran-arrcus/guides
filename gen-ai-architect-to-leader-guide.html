@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gen AI for Developers: Architect to Leader</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090e1a;
+    --bg-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    --surface: #0f1629;
+    --surface2: #162040;
+    --surface3: #1c2a52;
+    --border: #1e2d55;
+    --border-light: #2a3d6b;
+    --text: #dce4f8;
+    --text-dim: #7e90b8;
+    --text-muted: #4d5f84;
+    --blue: #4f9fff;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fb923c;
+    --purple: #a78bfa;
+    --accent: #2dd4bf;  /* teal */
+    --yellow: #fbbf24;
+    --pink: #f472b6;
+    --teal: #2dd4bf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grain);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 24px 0;
+  }
+
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-group { padding: 0 12px; margin-bottom: 16px; }
+
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: #fff; background: rgba(79,159,255,0.15); border-left: 2px solid var(--accent); }
+
+  .main {
+    margin-left: 280px;
+    flex: 1;
+    padding: 32px 40px;
+    max-width: 920px;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px 16px; }
+  }
+
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .sec-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .sec-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+
+  .lede {
+    font-size: 16px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 24px;
+    line-height: 1.75;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .card h3 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--blue); }
+  .card h4 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: var(--purple); }
+  .card h4.ph { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 16px 0 6px; }
+  .card h4.ph::before { content: '\25B8'; color: var(--accent); font-size: 11px; margin-right: 7px; }
+  .card h4.ph code { font-family: 'JetBrains Mono', monospace; font-size: 0.92em; }
+  .card h4.ph + ul { padding-left: 38px; }
+  .card p { font-size: 14px; line-height: 1.75; margin-bottom: 8px; }
+  .card ul { padding-left: 18px; margin: 6px 0 10px; }
+  .card li { font-size: 14px; margin-bottom: 4px; line-height: 1.65; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(79,159,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+
+  .info { border-left: 3px solid var(--blue); background: rgba(79,159,255,0.06); padding: 12px 16px; border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 13.5px; }
+  .info.green { border-color: var(--green); background: rgba(52,211,153,0.06); }
+  .info.orange { border-color: var(--orange); background: rgba(251,146,60,0.06); }
+  .info.red { border-color: var(--red); background: rgba(248,113,113,0.06); }
+  .info.purple { border-color: var(--purple); background: rgba(167,139,250,0.06); }
+  .info.yellow { border-color: var(--yellow); background: rgba(251,191,36,0.06); }
+  .info strong { color: var(--text); }
+
+  .lens-tag { display:inline-block; font-size:11px; font-weight:600; letter-spacing:.02em;
+    padding:2px 9px; border-radius:999px; margin:0 6px 0 0; border:1px solid var(--border); }
+  .lens-tag.people     { color:var(--green);  border-color:var(--green); }
+  .lens-tag.platform   { color:var(--blue);   border-color:var(--blue); }
+  .lens-tag.governance { color:var(--orange); border-color:var(--orange); }
+  .case { border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 6%, transparent);
+    padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0; }
+  .case-label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:6px; }
+
+  .tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 12px 0; font-size: 13px; }
+  .tbl th { background: var(--surface2); padding: 9px 12px; text-align: left; font-weight: 600; color: var(--cyan); border-bottom: 2px solid var(--border); font-size: 12px; }
+  .tbl th:first-child { border-radius: 6px 0 0 0; } .tbl th:last-child { border-radius: 0 6px 0 0; }
+  .tbl td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .tbl tr:last-child td:first-child { border-radius: 0 0 0 6px; } .tbl tr:last-child td:last-child { border-radius: 0 0 6px 0; }
+
+  .pkt { display: flex; align-items: stretch; border-radius: 5px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; min-height: 40px; margin: 4px 0; }
+  .pkt-c { padding: 7px 10px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgba(0,0,0,0.3); min-width: 50px; }
+  .pkt-c:last-child { border-right: none; }
+  .pkt-c .l { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.6; margin-bottom: 2px; }
+  .pkt-c .v { font-size: 11.5px; font-weight: 600; }
+
+  .bg-ipv6 { background: rgba(37,99,235,0.3); color: #93c5fd; }
+  .bg-srh { background: rgba(124,58,237,0.25); color: #c4b5fd; }
+  .bg-seg { background: rgba(5,150,105,0.22); color: #6ee7b7; }
+  .bg-vpn { background: rgba(13,148,136,0.25); color: #5eead4; }
+  .bg-pay { background: rgba(107,114,128,0.18); color: #d1d5db; }
+  .bg-mpls { background: rgba(251,146,60,0.25); color: #fed7aa; }
+  .bg-tilfa { background: rgba(251,146,60,0.2); color: #fed7aa; }
+  .bg-rem { background: repeating-linear-gradient(45deg, rgba(248,113,113,0.06), rgba(248,113,113,0.06) 4px, rgba(248,113,113,0.01) 4px, rgba(248,113,113,0.01) 8px); color: #fca5a5; border: 1px dashed rgba(248,113,113,0.3); }
+
+  .ann { font-size: 11.5px; color: var(--text-dim); margin: 4px 0 4px 4px; display: flex; gap: 5px; line-height: 1.5; }
+  .ann::before { content: '\2192'; color: var(--blue); font-weight: bold; flex-shrink: 0; }
+
+  .action { text-align: center; padding: 4px 0; color: var(--green); font-size: 12px; font-weight: 600; }
+
+  .sid-fmt { display: flex; align-items: stretch; margin: 10px 0; border-radius: 6px; overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+  .sid-p { padding: 12px 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid rgba(0,0,0,0.3); }
+  .sid-p:last-child { border-right: none; }
+  .sid-p .n { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.65; margin-bottom: 3px; }
+  .sid-p .val { font-size: 12px; font-weight: 700; }
+  .sid-p .bits { font-size: 8.5px; opacity: 0.45; margin-top: 2px; }
+
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  @media (max-width: 700px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp-c { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .cmp-c h4 { font-size: 14px; margin-bottom: 8px; }
+
+  .stp { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 12px 0; }
+  .stp-h { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .stp-n { background: var(--blue); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .stp-n.grn { background: var(--green); } .stp-n.org { background: var(--orange); } .stp-n.red { background: var(--red); } .stp-n.pur { background: var(--purple); }
+  .stp-t { font-size: 14px; font-weight: 600; }
+  .stp p { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+
+  .flv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  @media (max-width: 700px) { .flv-grid { grid-template-columns: 1fr; } }
+  .flv { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .flv-name { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+  .flv-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .t-r { background: rgba(248,113,113,0.18); color: var(--red); }
+  .t-g { background: rgba(52,211,153,0.18); color: var(--green); }
+  .t-o { background: rgba(251,146,60,0.18); color: var(--orange); }
+  .t-b { background: rgba(79,159,255,0.18); color: var(--blue); }
+  .t-p { background: rgba(167,139,250,0.18); color: var(--purple); }
+
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .marker-ok { background: rgba(52,211,153,0.08); border: 1px dashed var(--green); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--green); text-align: center; font-weight: 600; }
+  .marker-bad { background: rgba(248,113,113,0.08); border: 1px dashed var(--red); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--red); text-align: center; font-weight: 600; }
+
+  /* ===== LIGHT MODE ===== */
+  body.light {
+    --bg: #f5f7fa;
+    --bg-grain: none;
+    --surface: #ffffff;
+    --surface2: #eef1f6;
+    --surface3: #e2e7ef;
+    --border: #d1d8e4;
+    --border-light: #b8c3d4;
+    --text: #1a2332;
+    --text-dim: #4a5568;
+    --text-muted: #8694a7;
+    --blue: #2563eb;
+    --cyan: #0891b2;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #d97706;
+    --purple: #7c3aed;
+    --accent: #0d9488;
+    --yellow: #b45309;
+    --pink: #db2777;
+    --teal: #0d9488;
+  }
+
+  body.light .bg-ipv6 { background: rgba(37,99,235,0.12); color: #1e40af; }
+  body.light .bg-srh { background: rgba(124,58,237,0.1); color: #5b21b6; }
+  body.light .bg-seg { background: rgba(5,150,105,0.1); color: #065f46; }
+  body.light .bg-vpn { background: rgba(13,148,136,0.1); color: #115e59; }
+  body.light .bg-pay { background: rgba(107,114,128,0.08); color: #374151; }
+  body.light .bg-mpls { background: rgba(217,119,6,0.1); color: #92400e; }
+  body.light .bg-tilfa { background: rgba(217,119,6,0.08); color: #92400e; }
+  body.light .bg-rem { background: repeating-linear-gradient(45deg, rgba(220,38,38,0.04), rgba(220,38,38,0.04) 4px, rgba(220,38,38,0.01) 4px, rgba(220,38,38,0.01) 8px); color: #991b1b; border: 1px dashed rgba(220,38,38,0.3); }
+
+  body.light code { background: rgba(37,99,235,0.08); color: var(--cyan); }
+  body.light pre { background: var(--surface2); border-color: var(--border); }
+  body.light .info { background: rgba(37,99,235,0.05); }
+  body.light .info.green { background: rgba(5,150,105,0.05); }
+  body.light .info.orange { background: rgba(217,119,6,0.05); }
+  body.light .info.red { background: rgba(220,38,38,0.05); }
+  body.light .info.purple { background: rgba(124,58,237,0.05); }
+  body.light .info.yellow { background: rgba(180,83,9,0.05); }
+  body.light .marker-ok { background: rgba(5,150,105,0.06); }
+  body.light .marker-bad { background: rgba(220,38,38,0.06); }
+
+  body.light .nav-item.active { color: var(--blue); background: rgba(37,99,235,0.08); border-left: 2px solid var(--accent); }
+  body.light .sidebar { background: #ffffff; border-right-color: var(--border); }
+  body.light .card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  body.light .t-r { background: rgba(220,38,38,0.1); color: var(--red); }
+  body.light .t-g { background: rgba(5,150,105,0.1); color: var(--green); }
+  body.light .t-o { background: rgba(217,119,6,0.1); color: var(--orange); }
+  body.light .t-b { background: rgba(37,99,235,0.1); color: var(--blue); }
+  body.light .t-p { background: rgba(124,58,237,0.1); color: var(--purple); }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    margin-top: 4px;
+  }
+
+  .theme-toggle-btn {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .theme-toggle-btn::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.2s;
+  }
+
+  body.light .theme-toggle-btn::after {
+    left: 20px;
+    background: var(--blue);
+  }
+
+  .theme-toggle-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    user-select: none;
+  }
+
+  /* Custom: try-this exercise boxes */
+  .try-this { background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); border-radius: 10px; padding: 18px; margin: 14px 0; }
+  .try-this-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--green); margin-bottom: 8px; }
+  .try-this p { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+
+
+  /* Tool-alt callout */
+  aside.tool-alt {
+    background: var(--surface2);
+    border-left: 3px solid var(--purple);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  aside.tool-alt::before {
+    content: "Alt tool →";
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--purple);
+    letter-spacing: 1.5px;
+    margin-right: 8px;
+  }
+
+  /* gitlog-report mini-walkthrough box */
+  div.walkthrough {
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--cyan) 6%, transparent),
+      color-mix(in srgb, var(--accent) 6%, transparent));
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 24px 0;
+  }
+  div.walkthrough h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cyan);
+    margin-bottom: 10px;
+  }
+
+  /* Card grid for adjacent-tool tours */
+  div.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+  }
+  div.card-grid > div.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  div.card-grid > div.tool-card h4 {
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  div.card-grid > div.tool-card .tool-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  /* See-also link grid */
+  div.see-also {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  div.see-also a {
+    color: var(--cyan);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  div.see-also a:hover { text-decoration: underline; }
+
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <h1>Architect to Leader</h1>
+      <p>Part 3 — scaling agentic coding across an organization</p>
+    </div>
+
+    <div class="theme-toggle">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode"></button>
+      <span class="theme-toggle-label">Light mode</span>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Front Matter</div>
+      <button class="nav-item active" onclick="go('welcome')">Welcome</button>
+      <button class="nav-item" onclick="go('map')">The Map</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 1 — Foundations</div>
+      <button class="nav-item" onclick="go('ch1-loop')">1. The Agentic Coding Loop</button>
+      <button class="nav-item" onclick="go('ch2-context')">2. Context as Working Memory</button>
+      <button class="nav-item" onclick="go('ch3-tools')">3. Tools, Side Effects &amp; the Agent's World</button>
+      <button class="nav-item" onclick="go('ch4-models')">4. Model Selection &amp; Cost Engineering</button>
+      <button class="nav-item" onclick="go('ch5-surface')">5. IDE vs Terminal</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 2 — Methodology</div>
+      <button class="nav-item" onclick="go('ch6-spec')">6. Spec-Driven Dev (OpenSpec &amp; SpecKit)</button>
+      <button class="nav-item" onclick="go('ch7-plan')">7. Plan-Driven Execution</button>
+      <button class="nav-item" onclick="go('ch8-tdd')">8. TDD with Agents</button>
+      <button class="nav-item" onclick="go('ch9-debug')">9. Debugging with Agents</button>
+      <button class="nav-item" onclick="go('ch10-review')">10. Safety, Review &amp; Verification</button>
+      <button class="nav-item" onclick="go('ch11-parallel')">11. Multi-Agent &amp; Parallel</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 3 — Mastery</div>
+      <button class="nav-item" onclick="go('ch12-kilo')">12. Kilo Code Deep Dive</button>
+      <button class="nav-item" onclick="go('ch13-claude')">13. Claude Code Deep Dive</button>
+      <button class="nav-item" onclick="go('ch14-gemini')">14. Gemini CLI Deep Dive</button>
+      <button class="nav-item" onclick="go('ch15-superpowers')">15. Superpowers &amp; Skills Authoring</button>
+      <button class="nav-item" onclick="go('ch16-mcp')">16. MCP Servers</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Part 4 — Putting It Together</div>
+      <button class="nav-item" onclick="go('ch17-worked')">17. Worked Example: gitlog-report</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <button class="nav-item" onclick="go('ref-decisions')">Decision Frameworks</button>
+      <button class="nav-item" onclick="go('ref-cheats')">Cheat Sheets</button>
+      <button class="nav-item" onclick="go('ref-glossary')">Glossary A–Z</button>
+      <button class="nav-item" onclick="go('ref-reading')">Further Reading</button>
+    </div>
+
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <section id="welcome" class="section active">
+      <div class="sec-title">Gen AI for Developers: Architect to Leader</div>
+      <p class="sec-sub">Part 3 of a series — scaling agentic coding across an organization</p>
+
+      <div class="card">
+        <h2>Who This Is For</h2>
+        <p>You've read v1 (or you have equivalent breadth: you understand tokens, context windows, RAG basics, and what an LLM actually is). Now you're picking up an agentic coding tool — <strong>Claude Code</strong>, <strong>Kilo Code</strong>, or <strong>Gemini CLI</strong> — and you want to wield it well, not just survive it.</p>
+        <p>This guide is for developers at that exact inflection point: past the "what is this" stage, not yet at the "I work this way automatically" stage. The goal is to close that gap.</p>
+        <div class="info green"><strong>Assumes v1.</strong> If you haven't read the Zero to Hero guide yet, start there. This guide builds on that mental model without re-explaining it.</div>
+      </div>
+
+      <div class="card">
+        <h2>What's Different from v1</h2>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th></th>
+              <th>v1 — Zero to Hero</th>
+              <th>v2 — Hero to Architect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Reader</strong></td>
+              <td>New to AI</td>
+              <td>Picking up agentic coding tools</td>
+            </tr>
+            <tr>
+              <td><strong>Treatment</strong></td>
+              <td>Breadth — what is this</td>
+              <td>Depth — how do I work this way</td>
+            </tr>
+            <tr>
+              <td><strong>Section length</strong></td>
+              <td>Short, many</td>
+              <td>Deep, fewer</td>
+            </tr>
+            <tr>
+              <td><strong>Tools</strong></td>
+              <td>Claude Code intro</td>
+              <td>Kilo Code + Claude Code + Gemini CLI deep dives + methodology layer</td>
+            </tr>
+            <tr>
+              <td><strong>Style</strong></td>
+              <td>Foundational</td>
+              <td>Practitioner + reference</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>The short version: v1 teaches you the map; v2 teaches you how to drive.</p>
+      </div>
+
+      <div class="card">
+        <h2>What's Inside</h2>
+        <p>This guide is organized in three layers, built on three primary tools:</p>
+        <div class="flv-grid">
+          <div class="flv"><div class="flv-name">Foundations</div><div class="flv-desc">How agentic coding actually works: the loop, context, tools, models, surfaces (Ch 1–5)</div></div>
+          <div class="flv"><div class="flv-name">Methodology</div><div class="flv-desc">How you work: spec-driven dev, planning, TDD, debugging, review, parallel agents (Ch 6–11)</div></div>
+          <div class="flv"><div class="flv-name">Mastery</div><div class="flv-desc">The tools deep: Kilo Code, Claude Code, Gemini CLI, Superpowers, MCP (Ch 12–16)</div></div>
+          <div class="flv"><div class="flv-name">Kilo Code</div><div class="flv-desc">IDE-resident agent — modes, BYO model, custom rules</div></div>
+          <div class="flv"><div class="flv-name">Claude Code</div><div class="flv-desc">Terminal agent — skills, plugins, hooks, sub-agents</div></div>
+          <div class="flv"><div class="flv-name">Gemini CLI</div><div class="flv-desc">Free-tier terminal agent — 1M context, extensions</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How to Read It</h2>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Linear training path — first time through</div></div>
+          <p>Part 1 → Part 2 → Part 3 → Part 4. Each part builds on the previous. Part 4's worked example (<code>gitlog-report</code>) is most rewarding if you've absorbed the methodology in Part 2 first.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Dip-in reference — day-to-day use</div></div>
+          <p>Once you're working this way, Part 5 (Reference) is your home base. Decision matrices, cheat sheets, and the glossary are all designed for fast lookup, not linear reading.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">The three layers</div></div>
+          <p><strong>Foundations</strong> (Ch 1–5) — the mental model: agent loop, context, tools, model selection, surface choice. <strong>Methodology</strong> (Ch 6–11) — how you actually work: spec, plan, TDD, debug, review, parallel. <strong>Mastery</strong> (Ch 12–16) — the tools that make it real: Kilo Code, Claude Code, Gemini CLI, Superpowers, MCP.</p>
+        </div>
+        <div class="info purple"><strong>See The Map</strong> (next section) for a visual overview of how everything connects.</div>
+      </div>
+
+      <div class="card">
+        <h2>Prerequisites</h2>
+        <ul>
+          <li><strong>v1 mental model</strong> — tokens, context windows, LLM basics, RAG concept, what an agent is. You don't need to have memorized it; you need to have internalized the shape of it.</li>
+          <li><strong>Basic git and CLI fluency</strong> — you can clone a repo, run commands in a terminal, and read a diff without stress.</li>
+          <li><strong>Comfort installing tools</strong> — you can follow a README to install a CLI tool, set an API key, or add a VS Code extension without needing step-by-step hand-holding.</li>
+          <li><strong>No specific language required</strong> — the worked example uses Python, but the methodology applies to any stack. Adapt freely.</li>
+        </ul>
+      </div>
+    </section>
+
+
+  </main>
+</div>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+    document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.querySelector('.theme-toggle-label').textContent = isLight ? 'Dark mode' : 'Light mode';
+    localStorage.setItem('guide-theme', isLight ? 'light' : 'dark');
+  }
+
+  (function() {
+    const saved = localStorage.getItem('guide-theme');
+    if (saved === 'light') {
+      document.body.classList.add('light');
+      document.querySelector('.theme-toggle-label').textContent = 'Dark mode';
+    }
+  })();
+</script>
+</body>
+</html>
