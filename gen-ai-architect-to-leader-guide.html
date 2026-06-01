@@ -2069,6 +2069,251 @@
       </div>
     </section>
 
+    <!-- ===================== CH8 ===================== -->
+    <section id="ch8-config" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">8. Golden Configuration as Code</h1>
+      <span class="lens-tag platform">Platform &amp; Infrastructure</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why config sprawl is the silent killer of org-wide AI workflow quality; how to treat agent configuration as a versioned, reviewed artifact rather than a paste-and-forget file; the tool-agnostic patterns for a golden config that covers Claude Code, Cursor, GitHub Copilot, and Kilo Code; how a baseline layers from org to team to repo; how distribution and override mechanics work in practice; and how to keep the golden config from rotting once you've shipped it.</p>
+
+      <!-- 8.1 -->
+      <div class="card">
+        <h2>8.1 Config sprawl — the Stage 3 pain</h2>
+        <p>At Stage 1, one team has one config file. At Stage 2, a handful of teams share a draft. At Stage 3, dozens of teams are running agentic workflows — and unless you acted early, each team has its own version of the configuration, written independently, updated inconsistently, and never reviewed by anyone outside the team.</p>
+
+        <h4 class="ph">How sprawl happens</h4>
+        <ul>
+          <li>The payments team shares their <code>CLAUDE.md</code> in Slack. The platform team copies it and adapts it. The data team copies the platform team's version. Three months later there are fourteen versions, none of which anyone can reconcile into a single authoritative file. The original author has moved on.</li>
+          <li>Divergence is not random. Teams add the things that burned them recently and forget to add the things that only burned the payments team. The result is a patchwork: each config is locally reasonable, globally incoherent, and collectively unmaintainable.</li>
+          <li>No single source of truth means no single place to patch a security convention, update a model reference, or propagate a workflow change that the Platform/DevEx team has agreed on. Every change has to be announced in Slack and hoped to land.</li>
+          <li>The sprawl problem is not about effort. Teams are not lazy. They are doing the rational thing: copying what worked nearby and adapting it locally. The organizational solution is not to ask harder; it is to make the right thing the default.</li>
+        </ul>
+
+        <h4 class="ph">Signs you already have sprawl</h4>
+        <ul>
+          <li>You cannot name the canonical config file without qualifying it by team. "We have a config — well, payments has one, platform has one, they're different."</li>
+          <li>A new team joining the workflow asks "where do I start?" and gets three different answers from three helpful colleagues.</li>
+          <li>The most recent version of any team's config file contains a comment like <code># copied from payments team, 2025-09 — check if still valid</code>. Nobody has checked.</li>
+          <li>A security convention agreed in the governance review never made it into any team's config because there was no distribution channel — only a Slack message that scrolled off.</li>
+        </ul>
+
+        <div class="info orange"><strong>Sprawl is a Stage 3 problem that starts in Stage 2.</strong> The moment you have two teams copying config files from each other, you have the seed of sprawl. The golden config pattern does not eliminate team-level customization — it replaces the anarchy of independent copies with a governed baseline plus explicit overrides.</div>
+      </div>
+
+      <!-- 8.2 -->
+      <div class="card">
+        <h2>8.2 Golden config as a versioned, reviewed artifact</h2>
+        <p>The word "golden" is shorthand for a simple principle: treat agent configuration the same way you treat production code. That means version control, code review, release tagging, and named ownership. It does not mean bureaucracy — it means discipline applied to an artifact that has real consequences if it is wrong.</p>
+
+        <h4 class="ph">Why version control changes everything</h4>
+        <ul>
+          <li>A config file in version control has a history. You can ask "when did we add the billing-service boundary?" and get an answer. You can revert it when an experiment goes wrong. You can diff it when a team reports unexpected agent behavior — "did the config change?" is now a question you can answer in five seconds.</li>
+          <li>A config file pasted into Slack has no history. Its effective date is unknowable. Its authorship is murky. Whether any given team has the current version is anyone's guess. That is not a foundation you can build an org-wide workflow on.</li>
+          <li>The repository structure is straightforward: a <code>platform/agent-config/</code> directory at the organization level. The golden base lives there. Team-level overrides live in each team's repo. The layering mechanics (Section 8.4) handle the composition.</li>
+        </ul>
+
+        <h4 class="ph">Code review for config changes</h4>
+        <ul>
+          <li>Every change to the golden baseline goes through a PR. Not because changes are dangerous — most are mundane — but because the PR is the mechanism by which the org learns about the change. Riya reviewing a config PR is how she catches "this new out-of-scope rule will break the data team's workflow" before it ships.</li>
+          <li>Config PRs should have at least two reviewers: the Platform/DevEx team engineer proposing the change, and a reviewer from an affected team. The cross-team reviewer catches impact that the platform engineer did not anticipate. This is not optional — it is the primary quality gate for config changes.</li>
+          <li>Keep config PRs small. A PR that adds one convention is easy to review and easy to revert. A PR that rewrites the entire golden base because "we were cleaning it up" is a governance nightmare — it bundles contested changes with uncontested ones, and no reviewer can reasonably approve it.</li>
+        </ul>
+
+        <h4 class="ph">Release tagging and the deprecation cycle</h4>
+        <ul>
+          <li>Tag the golden config at meaningful milestones: after each Stage transition, after a significant governance change, after a model upgrade. Teams can pin to a tag while they migrate to the next version. This is not overengineering — it is the same contract you give to any shared library.</li>
+          <li>Deprecate old conventions explicitly. When a rule is removed, add a one-cycle deprecation notice: the rule is commented out with an explanation, not deleted silently. Teams whose configs depend on the old rule see the comment and have time to adapt.</li>
+          <li>Name an owner for each major section of the golden config. The Platform/DevEx team owns the whole, but individual sections should have a named engineer whose job is to keep that section current. Ownership without a name is no ownership at all.</li>
+        </ul>
+
+        <div class="info green"><strong>The test for "treated like code":</strong> can you answer these five questions about your config? Who last changed it? When? Why? What did it look like before the change? What teams does the change affect? If any answer is "I don't know," the config is not yet treated like code.</div>
+      </div>
+
+      <!-- 8.3 -->
+      <div class="card">
+        <h2>8.3 Tool-agnostic patterns — the four-tool mapping</h2>
+        <p>The golden config concept is tool-agnostic. Every major agentic coding tool has its own config filename and load mechanism, but the content — the conventions, boundaries, and context-loading rules you want agents to follow — is the same. The table below maps the concept across the four tools in common use. The content is not duplicated; it is translated.</p>
+
+        <table class="tbl" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Config file(s)</th>
+              <th>How it loads</th>
+              <th>Org-wide baseline</th>
+              <th>Team-local overrides</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Claude Code</strong></td>
+              <td><code>CLAUDE.md</code></td>
+              <td>Loaded automatically at every session start from the repo root (and any parent directories up to <code>~/.claude/CLAUDE.md</code> for user-level config). Hierarchical merge: global → project → sub-directory.</td>
+              <td>Org baseline in a shared repo; teams copy or import via a generation script. User-level <code>~/.claude/CLAUDE.md</code> for developer defaults.</td>
+              <td>Repo-level <code>CLAUDE.md</code> imports the org base and adds team-specific sections below the import block. Sub-directory <code>CLAUDE.md</code> files scope rules to a subtree.</td>
+            </tr>
+            <tr>
+              <td><strong>Cursor</strong></td>
+              <td><code>.cursorrules</code> (legacy) or <code>.cursor/rules/*.mdc</code></td>
+              <td>Workspace open triggers auto-load. The <code>.cursor/rules/</code> directory supports structured rule files with metadata (always-on, manual, agent-requested). Verify against current Cursor docs — the rules format has evolved across versions.</td>
+              <td>Org baseline expressed as a set of <code>.mdc</code> rule files committed to a shared template repository. Teams bootstrap from the template; the Platform/DevEx team publishes updates.</td>
+              <td>Teams add project-specific <code>.mdc</code> files alongside the org-base files. Naming convention: org files prefixed <code>org-</code>, team files prefixed <code>team-</code> for clear separation.</td>
+            </tr>
+            <tr>
+              <td><strong>Generic / Copilot</strong></td>
+              <td><code>AGENTS.md</code></td>
+              <td>Recognized by OpenAI Codex-compatible harnesses and GitHub Copilot agent mode as the instruction file. Placed at repo root; some harnesses walk the directory tree. Check tool-specific docs for directory scope.</td>
+              <td>Org baseline section clearly marked with a header comment and a "do not edit below this line" boundary. Teams copy the full file; the baseline section is regenerated from the org template on update.</td>
+              <td>Team-local content lives below the baseline boundary in the same file. On update, a script replaces only the org baseline section, preserving team additions.</td>
+            </tr>
+            <tr>
+              <td><strong>Kilo Code</strong></td>
+              <td><code>.kilocode/</code> rules directory</td>
+              <td>Rules files in the directory are concatenated into the system prompt at session start. File naming within the directory is free-form; one file per concern is a maintainable pattern.</td>
+              <td>Org baseline rules in files prefixed <code>00-org-</code>. Numeric prefix controls concatenation order — org baseline always loads before team additions.</td>
+              <td>Team-specific rules in files prefixed <code>10-team-</code> or higher. Platform/DevEx team owns the <code>00-org-*</code> files; team engineers own <code>10-team-*</code> and above.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">What belongs in the org-wide baseline vs team-local config</h4>
+        <ul>
+          <li><strong>Org-wide baseline:</strong> security boundaries (files and directories no agent may touch without explicit approval), the required workflow loop (plan before code, tests before PR), model and cost guardrails (max context window, no tool calls to external services without review), compliance conventions (no credentials in generated code, no logging of PII), and the review-date comment that makes staleness visible.</li>
+          <li><strong>Team-local:</strong> service-specific context-loading rules (read <code>services/payments/api.md</code> when working in that directory), team-specific out-of-scope boundaries, test framework preferences, and any conventions that apply only to that team's codebase or workflow rhythm.</li>
+          <li>The boundary is not always sharp. When a team-local convention turns out to apply to three other teams, it is a candidate for promotion to the org baseline. That promotion is a PR against the golden config repo, not a Slack announcement.</li>
+        </ul>
+
+        <div class="info"><strong>The golden config content is your standard; the filename is a detail.</strong> Write the conventions once, in plain language. Translate the filename and load path per tool. The content should be identical — or deliberately different, with the difference documented and reviewed.</div>
+      </div>
+
+      <!-- 8.4 -->
+      <div class="card">
+        <h2>8.4 Distribution &amp; layering — from org baseline to repo</h2>
+        <p>Having a golden config in a shared repository does not help teams if the distribution mechanism is "remember to copy the latest version." Distribution must be automatic, verifiable, and safe to override in the right places.</p>
+
+        <h4 class="ph">The three-layer model</h4>
+        <ul>
+          <li><strong>Org layer:</strong> the golden baseline owned by the Platform/DevEx team. Contains the non-negotiable conventions — security boundaries, workflow loop, compliance rules. Teams cannot opt out of this layer. Changes require a PR with cross-team review.</li>
+          <li><strong>Team layer:</strong> per-team additions that live alongside the org baseline in each team's repo. Contains service-specific context, team-specific task patterns, and any local conventions that do not belong org-wide. Teams own this layer entirely.</li>
+          <li><strong>Repo/subtree layer:</strong> per-directory overrides for sub-systems with different conventions. A monorepo might have <code>services/payments/CLAUDE.md</code> that adds payment-specific rules without repeating the org baseline. This layer is additive — it cannot override the org layer, only extend it.</li>
+        </ul>
+
+        <h4 class="ph">Sync mechanics — how teams stay current</h4>
+        <ul>
+          <li>A generation script — not manual copying — is the sync mechanism. The script fetches the current tagged release of the org baseline and writes it into the appropriate location in each repo, clearly delimited. Teams run the script on update (or it runs in CI). The output is always a PR, not a silent file change — so the team sees what changed.</li>
+          <li>The delimiter pattern is simple: the org baseline section is wrapped in a comment block that the generation script recognizes. Content outside the block is team-local and untouched by the sync.</li>
+          <li>Version-pin each team's sync to a release tag. Teams on the same baseline version are easy to support. Teams pinned to different versions for legitimate reasons (they're in a migration) are visible and auditable. Teams on no known version are a gap the Platform/DevEx team needs to close.</li>
+        </ul>
+
+        <h4 class="ph">A concrete example — Claude Code org baseline (main flow)</h4>
+        <p>The following is the org-wide baseline section of a <code>CLAUDE.md</code>. The delimiter comments are recognized by the sync script; content above or below them is team-local.</p>
+
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:10px 0;"><code><span style="color:var(--text-muted);"># === ORG BASELINE — generated by platform/agent-config v2.1.0 ===
+# Do not edit this block manually. Run `scripts/sync-agent-config.sh` to update.
+# Owner: Platform/DevEx team. Changes: https://github.com/meridian/agent-config</span>
+
+<span style="color:var(--cyan);">## Non-negotiable workflow conventions</span>
+- Produce a step-by-step plan before writing any code. Wait for engineer approval.
+- Do not open a PR until all required tests pass. State which tests in the PR body.
+- Do not write credentials, tokens, or PII to any file or log output.
+
+<span style="color:var(--cyan);">## Security boundaries (org-wide)</span>
+- Do not modify files in `infra/` without explicit engineer confirmation per change.
+- Do not add new third-party dependencies without a separate approval ticket.
+- Do not call external APIs in generated code unless the service is in `docs/approved-services.md`.
+
+<span style="color:var(--text-muted);"># === END ORG BASELINE ===</span>
+
+<span style="color:var(--cyan);">## Team-local additions — Payments Team</span>
+- Load `services/payments/api-contracts.md` when working in `services/payments/`.
+- Tests for payment flows live in `tests/payments/`. Run them before any PR.
+- Do not modify `services/billing/` — owned by the billing team (JIRA: BILL-*).</code></pre>
+
+        <aside class="tool-alt">
+          <strong>Equivalent for Cursor (<code>.cursor/rules/</code>) and <code>AGENTS.md</code></strong>
+          <p style="margin:8px 0 6px;">The same three sections — non-negotiable conventions, security boundaries, team-local additions — expressed in the Cursor and generic-harness formats.</p>
+          <p style="margin:4px 0;font-size:13px;"><strong>Cursor (<code>.cursor/rules/00-org-baseline.mdc</code>):</strong></p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 10px;"><code><span style="color:var(--text-muted);">---
+description: Org baseline — generated by platform/agent-config v2.1.0
+alwaysApply: true
+---</span>
+
+<span style="color:var(--cyan);">## Non-negotiable workflow conventions</span>
+- Plan before code. Wait for approval. Tests pass before PR opens.
+- No credentials, tokens, or PII in generated files or logs.
+
+<span style="color:var(--cyan);">## Security boundaries</span>
+- Confirm each change in `infra/` explicitly with the engineer.
+- New dependencies require an approval ticket before the PR.</code></pre>
+          <p style="margin:4px 0;font-size:13px;"><strong>Generic / Copilot (<code>AGENTS.md</code> — org baseline section):</strong></p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 6px;"><code><span style="color:var(--text-muted)">&lt;!-- ORG BASELINE v2.1.0 — sync-agent-config.sh managed --&gt;</span>
+
+<span style="color:var(--cyan);">## Workflow</span>
+Plan before code. All required tests pass before opening a PR.
+No credentials or PII in any generated output.
+
+<span style="color:var(--cyan);">## Boundaries</span>
+Confirm each `infra/` change. New dependencies require an approval ticket.
+
+<span style="color:var(--text-muted)">&lt;!-- END ORG BASELINE --&gt;</span></code></pre>
+          <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">The content is the same. The delimiter syntax differs per tool: YAML front-matter for Cursor <code>.mdc</code> files; HTML comments for <code>AGENTS.md</code>; Markdown comments for <code>CLAUDE.md</code>. The sync script knows each tool's delimiter and regenerates only the org baseline block.</p>
+        </aside>
+
+        <h4 class="ph">Override vs mandate — drawing the line</h4>
+        <ul>
+          <li>Not everything in the org baseline is equally non-negotiable. Some rules are mandates — a team that removes them is out of compliance and the Platform/DevEx team will notice in the next audit. Some rules are strong defaults — teams can override them but the override must be documented and reviewed.</li>
+          <li>Mark the distinction explicitly in the config. A comment like <code># MANDATE — do not remove</code> vs <code># DEFAULT — override with justification</code> makes the difference visible to any engineer who opens the file. The sync script can enforce that mandate-marked lines survive unchanged.</li>
+          <li>The first time a team asks "can we remove the infra-change confirmation rule because it slows us down?" is the moment the mandate/default distinction earns its keep. The answer is not "no, because rules." It is "that rule is a mandate — here's why, here's the process to challenge it, and here's the alternative we can offer." That is a conversation; the label makes it the right conversation.</li>
+        </ul>
+      </div>
+
+      <!-- 8.5 -->
+      <div class="card">
+        <h2>8.5 Keeping it from rotting</h2>
+        <p>A golden config that is not actively maintained becomes the most dangerous kind of artifact: one that teams trust but that has drifted from reality. Rotting configs teach agents the wrong conventions, give new engineers false confidence, and erode the trust that makes the whole system work.</p>
+
+        <h4 class="ph">Named ownership and the change process</h4>
+        <ul>
+          <li>Every section of the golden config has a named owner — a specific engineer on the Platform/DevEx team, not "the platform team." Named ownership means someone's name is on the review date. That is a social mechanism: a comment that says <code># Owner: Nadia — reviewed: 2026-Q1</code> creates accountability that "owned by platform" does not.</li>
+          <li>The change process is a PR. That is not optional. An engineer who spots a stale rule and fixes it in their team's config without filing a PR against the golden base has fixed one team's problem and hidden it from everyone else. The PR is how the fix propagates.</li>
+          <li>Changes to the golden config need a summary of impact: which teams are affected, what behavior changes, what the migration path is for teams on the old version. A one-paragraph impact summary in the PR body costs ten minutes to write and saves hours of confused Slack messages after the release.</li>
+        </ul>
+
+        <h4 class="ph">Periodic audits — closing the drift gap</h4>
+        <ul>
+          <li>Schedule a quarterly config audit. The audit has one question: does the golden config reflect what teams are actually doing? If three teams have independently added the same rule to their local configs, that rule is a candidate for promotion to the org baseline. If a golden-base rule is being silently ignored by five teams, it is either a bad rule or an unenforced one — both require action.</li>
+          <li>The audit is not a compliance check. It is a feedback loop. The goal is to learn what has changed in real workflows since the last release, and to bring the golden config back into contact with reality. A config that diverges from practice for two consecutive quarters has become advisory at best, noise at worst.</li>
+          <li>Compare team-local additions across teams. Recurring patterns belong in the baseline. One-off rules belong in the team config. The comparison is the mechanism by which the golden config grows to reflect the org's actual best practices — not what the Platform/DevEx team theorized in Q1.</li>
+        </ul>
+
+        <h4 class="ph">Deprecation — removing rules without breaking teams</h4>
+        <ul>
+          <li>When a rule is removed, it goes through a deprecation cycle: one release where the rule is commented out with a removal notice and a date, one release where it is gone. Teams that depend on the explicit rule have a cycle to adapt.</li>
+          <li>Never silently delete a rule. Silent deletion looks like a bug to the team whose agent changes behavior after a sync. A deprecation notice makes the change legible: "this rule was removed because it conflicted with the new model's default behavior — if you relied on it, here is the equivalent you can add to your team config."</li>
+          <li>Track which teams are pinned to deprecated versions. The sync script emits a version manifest. The Platform/DevEx team can see, at any time, which teams are on v2.1.0, which are on v2.0.0, and which are on no tagged version. Teams on a version that is more than two releases old get a direct message — not a Slack broadcast, a direct message — from the section owner.</li>
+        </ul>
+
+        <div class="info purple"><strong>The freshness test:</strong> open the golden config right now. Find the review-date comment. If it is more than one quarter old, the config is stale until proven otherwise. Schedule the audit before you close this page.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 2→3: The Platform/DevEx Team Takes Ownership</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">Six weeks into Stage 3, the newly formed <strong>Platform/DevEx team</strong> — four engineers including <strong>Nadia</strong> and <strong>Amir</strong> from the payments-team pilot — inherits a catalog of at least eleven distinct config files, each the result of a different team copying and adapting the payments team's original <code>CLAUDE.md</code>. Three of the eleven contain security boundaries that have since been updated in the governance review; none of the updated rules reached any team's config.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The Platform/DevEx team's first act is not to write the golden config from scratch. It is to collect and diff all eleven files, identify the conventions that appear in all of them (the workflow loop, the credential rule, the infra-boundary rule), and promote those to a v1.0.0 baseline. The exercise takes two days and surfaces four rules that every team thought they had but only half of them actually had in their config. The updated security boundaries from the governance review are added as mandates.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong> reviews the golden config PR as a required cross-team reviewer. Her first comment: "The infra boundary rule says 'confirm each change' but it doesn't say how — in the PR description, in a comment, verbally? Add a one-line example." Nadia adds the example. Riya's second comment: "Who owns this after you ship it? I see the Platform/DevEx team as the owner, but no named person. If it's everyone's it's no one's." Section ownership is added, with Nadia named on security boundaries and Amir named on workflow conventions.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">The first override-vs-mandate tension arrives two weeks after v1.0.0 ships: the data engineering team asks to remove the "plan before code" requirement for exploratory analysis tasks, arguing that the overhead is disproportionate in an exploratory context. The Platform/DevEx team's response distinguishes mandate from default: the rule is relabeled as a strong default, not a mandate, and the data team's override is documented in their team config with a justification comment. <em>(The broader question — how teams can formally request exceptions to org standards — is addressed in Ch 15.)</em></li>
+          <li style="font-size:13.5px;margin-bottom:0px;">At the end of Q2, the first quarterly audit finds that three teams have independently added a rule about not modifying shared database schema files without a migration ticket. The rule is promoted to the v2.0.0 baseline. The audit takes four hours and closes six drift gaps. <strong>Marcus</strong> notes in the engineering all-hands that the Platform/DevEx team shipped an infrastructure improvement that nobody noticed — which is, Nadia points out, exactly what good platform work looks like.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch9-registry')">→ Ch 9. The Internal Capability Registry</a>
+        <a onclick="go('ch10-cicd')">→ Ch 10. Agents in CI/CD</a>
+        <a href="gen-ai-hero-to-architect-guide.html">Part 2 — Context (Ch 2) &amp; Claude Code config (Ch 13)</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
