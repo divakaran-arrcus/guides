@@ -2534,6 +2534,277 @@ scripts/sync-mcp-config.sh --registry-version 2.1.0 --target cursor,kilo,claude<
     </section>
 
 
+    <!-- ===================== CH10 ===================== -->
+    <section id="ch10-cicd" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">10. Agents in CI/CD</h1>
+      <span class="lens-tag platform">Platform &amp; Infrastructure</span>
+      <span class="lens-tag governance" style="margin-left:6px;">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: where a non-deterministic agent belongs in a pipeline — and where it does not; how to run agents in PR review flows as assistive, not authoritative, participants; what merge gates an agent may and may not control; how to run agents headless in CI with proper auth, budgets, and timeouts; and how to handle the inevitable flakiness of agent steps without blocking releases.</p>
+
+      <!-- 10.1 -->
+      <div class="card">
+        <h2>10.1 Deterministic pipeline vs agentic step</h2>
+        <p>A CI pipeline is an engineering contract: the same commit produces the same build outcome every time. An LLM-backed agent is inherently non-deterministic: two identical runs can produce different outputs, different comments, different recommendations. Mixing the two carelessly breaks the contract. The first question before adding any agent step is: what would happen if this step produced a different answer tomorrow?</p>
+
+        <h4 class="ph">Where determinism is non-negotiable</h4>
+        <ul>
+          <li>Compile, link, and package steps must be fully reproducible. An agent must never sit in the critical path of producing a build artifact.</li>
+          <li>Test execution and pass/fail decisions must be deterministic. If a test suite passes or fails based on an agent's interpretation rather than an objective assertion, you have lost the ability to trust the red/green signal that drives your entire development loop.</li>
+          <li>Security scans, license checks, and compliance gate decisions must be reproducible. Auditors need to reconstruct exactly why a release was allowed to proceed; "the agent approved it" is not an audit trail.</li>
+          <li>Deployment triggers — the decision to promote an artifact from staging to production — must be based on deterministic pass/fail criteria, not on an agent's summary judgment.</li>
+        </ul>
+
+        <h4 class="ph">Where agents add genuine value in a pipeline</h4>
+        <ul>
+          <li><strong>Advisory outputs:</strong> agents are well-suited to producing information that a human then acts on — a diff summary, a list of potential risks in a PR, a first-pass review comment, a test coverage narrative. The agent's non-determinism is acceptable when a human remains in the decision loop.</li>
+          <li><strong>Drafting and enrichment:</strong> agents can draft release notes from commit history, enrich PR descriptions with context from linked tickets, or suggest a rollback plan when a deployment fails. None of these require determinism because a human reviews the draft before it becomes canonical.</li>
+          <li><strong>Triage and labeling:</strong> agents can label PRs by domain, route them to the correct review queue, or flag PRs that touch security-sensitive paths. These are high-value, low-stakes uses — the worst outcome of a wrong label is that the PR reaches the wrong reviewer, not that bad code ships.</li>
+        </ul>
+
+        <h4 class="ph">The mood problem</h4>
+        <ul>
+          <li>Never let the build outcome depend on the agent's mood. This is the informal statement of the principle: if running the pipeline twice on the same commit can produce different pass/fail results because an agent step produces different output, you have introduced non-determinism into a system that must be deterministic.</li>
+          <li>The practical rule: agent steps are <em>advisory</em> by default. An agent step produces output — a comment, a label, a document — that a downstream deterministic step or a human uses. The agent does not gate downstream steps. The deterministic checks gate downstream steps.</li>
+          <li>If an agent step fails — times out, errors, or produces unusable output — the pipeline continues without that step's output. The agent step is non-required. A flaky agent must never convert a green build into a red build.</li>
+        </ul>
+
+        <div class="info orange"><strong>Agents advise; deterministic checks decide.</strong> This is the architectural principle that makes agents safe in CI. An agent can tell you the PR looks risky. Only a passing test suite, a clean security scan, and a human approver can let it merge.</div>
+      </div>
+
+      <!-- 10.2 -->
+      <div class="card">
+        <h2>10.2 Automated review bots &amp; agent-in-the-loop PR flows</h2>
+        <p>Agentic PR review is one of the most immediately practical CI integrations. An agent reads a diff, applies your org's review conventions, and posts structured comments — freeing human reviewers to focus on architecture and intent rather than mechanical pattern-checking. Done well, it compresses the feedback cycle and raises baseline review quality. Done badly, it becomes noise that teams learn to ignore.</p>
+
+        <h4 class="ph">What the agent does in a PR review flow</h4>
+        <ul>
+          <li><strong>Diff summary:</strong> the agent reads the full diff and writes a two-paragraph summary — what changed and why, as inferred from the diff and commit messages. Reviewers who weren't in the original conversation get context immediately, without reading every changed line cold.</li>
+          <li><strong>Convention checks:</strong> the agent applies your org's coding conventions from <code>CLAUDE.md</code> or an equivalent standards file. It flags patterns that violate them — naming inconsistencies, missing error handling, hardcoded values that should be constants — and posts these as line-level review comments. This is mechanical pattern-matching that an LLM does reliably and reviewers find tedious.</li>
+          <li><strong>Risk flagging:</strong> the agent tags PRs that touch authentication code, payment flows, data migrations, or other high-risk areas identified in your standards file. The tag is a signal to human reviewers to allocate extra attention — not a rejection.</li>
+          <li><strong>Fix drafts:</strong> for straightforward convention violations, the agent can post a suggested fix alongside the comment. The reviewer reads the suggestion, judges whether it is correct, and applies or rejects it. The agent drafts; the engineer decides.</li>
+          <li><strong>Test coverage narrative:</strong> the agent reads the diff and the test file changes together and notes if the new code paths appear to be covered by the new tests — or explicitly flags cases where they do not appear to be. This is a heuristic, not a substitute for a coverage tool, and should be labeled as such.</li>
+        </ul>
+
+        <h4 class="ph">Assistive, not authoritative</h4>
+        <ul>
+          <li>Every comment the agent posts should be labeled with its source. A banner or a tag like <code>[automated-review-bot]</code> ensures engineers treat the output as a first-pass opinion, not a final verdict. Unlabeled agent comments are indistinguishable from human reviewer comments, which sets the wrong expectation about what the comment represents.</li>
+          <li>The bot does not block merges. A failed agent review step — whether it errored, timed out, or produced a low-confidence output — must not prevent the PR from merging once human reviewers have approved. The bot's role ends when it posts its comments.</li>
+          <li>Tune the bot's scope to the highest-signal checks. A bot that comments on every PR with 40 items generates reviewer fatigue and gets ignored. A bot that comments with 3–5 high-confidence, high-value observations gets read. Start narrow, expand scope only when the team reports the comments are useful.</li>
+          <li>Measure bot comment acceptance rate. If reviewers consistently dismiss or revert the bot's suggestions, the bot's signal quality is low and needs retuning — or the checks it is applying do not reflect how the team actually works. A bot that nobody listens to is noise infrastructure.</li>
+        </ul>
+
+        <div class="info green"><strong>The right mental model:</strong> the review bot is a very fast, very consistent junior reviewer who has read all your standards documents. It catches things a senior reviewer would catch in thirty seconds if they remembered to check. It does not catch architectural mistakes, incomplete requirements, or subtle concurrency bugs. Human reviewers do the work that matters; the bot does the work that doesn't need to be done by a human.</div>
+      </div>
+
+      <!-- 10.3 -->
+      <div class="card">
+        <h2>10.3 Merge gates — what an agent may and may not do</h2>
+        <p>The most important governance boundary in agentic CI is the merge gate. This is where non-determinism and authority must not meet. The table below defines the boundary explicitly; share it with the Platform/DevEx team and post it in your agentic tooling standards document.</p>
+
+        <table class="tbl" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th style="width:38%;">Action</th>
+              <th style="width:18%;">Agent may?</th>
+              <th>Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Post review comments (line-level or summary)</td>
+              <td><span style="color:var(--green);font-weight:700;">Yes</span></td>
+              <td>Advisory output; human reviewer reads and judges. No gate authority.</td>
+            </tr>
+            <tr>
+              <td>Apply labels (domain, risk tier, routing)</td>
+              <td><span style="color:var(--green);font-weight:700;">Yes</span></td>
+              <td>Labels are routing signals, not blocking signals. A wrong label is a minor inconvenience.</td>
+            </tr>
+            <tr>
+              <td>Draft or enrich PR descriptions and release notes</td>
+              <td><span style="color:var(--green);font-weight:700;">Yes</span></td>
+              <td>Output is reviewed by a human before it becomes canonical. Non-determinism is acceptable in a draft.</td>
+            </tr>
+            <tr>
+              <td>Request changes (GitHub "Request changes" review state)</td>
+              <td><span style="color:var(--orange);font-weight:700;">Limited</span></td>
+              <td>Only if human reviewers can override with a single approval. Never the sole blocker. Prefer a comment over a blocking review state.</td>
+            </tr>
+            <tr>
+              <td>Approve a PR (GitHub "Approve" review state)</td>
+              <td><span style="color:var(--red);font-weight:700;">No</span></td>
+              <td>An agent approval counts toward merge quorum in many platforms. This makes a non-deterministic actor a gatekeeper — the core failure mode to prevent.</td>
+            </tr>
+            <tr>
+              <td>Be the sole approver of a merge</td>
+              <td><span style="color:var(--red);font-weight:700;">Never</span></td>
+              <td>A human (or a deterministic test gate) must always be a required co-approver. No exceptions. Ch 13 formalizes this in policy.</td>
+            </tr>
+            <tr>
+              <td>Trigger a merge or deployment directly</td>
+              <td><span style="color:var(--red);font-weight:700;">Never</span></td>
+              <td>Agents do not push the button. Agents advise; humans and deterministic gates push the button.</td>
+            </tr>
+            <tr>
+              <td>Block a merge based solely on its own output</td>
+              <td><span style="color:var(--red);font-weight:700;">Never</span></td>
+              <td>A flaky agent step must not halt a release. If the agent is a required gate, every agent timeout becomes an incident.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 class="ph">Configuring your platform to enforce the boundary</h4>
+        <ul>
+          <li>In GitHub, set branch protection rules to require a minimum number of <em>human</em> approvals, and configure the review bot's GitHub App to be explicitly excluded from the approval count. Most platforms distinguish bot accounts from user accounts — use that distinction.</li>
+          <li>In GitLab, use approval rules with role-based requirements. Bot accounts should not be listed as eligible approvers in any required approval rule.</li>
+          <li>If your CI platform does not natively distinguish bot approvals from human approvals, add a required human-approval step after the agent step. The human step confirms the agent's output was reviewed, not merely that the agent produced output.</li>
+          <li>Document the boundary in your <code>CONTRIBUTING.md</code> or equivalent standards file. Engineers integrating new bots or agent steps need to know the boundary without having to ask.</li>
+        </ul>
+
+        <div class="info red"><strong>The single-approver failure mode.</strong> If a review bot is misconfigured to count toward merge quorum, a bad-faith or hallucinating agent can approve its own commit chain with no human review. This is not a theoretical risk — it has happened in organizations that moved quickly to automate review without setting the approval-count boundary. Configure the boundary before the bot goes live.</div>
+      </div>
+
+      <!-- 10.4 -->
+      <div class="card">
+        <h2>10.4 Headless / non-interactive runs in CI</h2>
+        <p>Running an agent in CI means running it without a human in the session. No interactive approval, no mid-run redirection, no "wait, let me check" moment. The agent must have everything it needs at startup, must stay within a token budget, and must time out cleanly if it does not. These requirements make headless CI runs substantially different from interactive developer sessions — treat them as a different operational mode, not just a cron job version of the same session.</p>
+
+        <h4 class="ph">Prerequisites for a headless run</h4>
+        <ul>
+          <li><strong>Auth via secrets:</strong> the agent authenticates using an API key injected at CI time from your secrets manager (GitHub Actions secrets, Vault, AWS Secrets Manager, or equivalent). The key is scoped to CI use only — not a personal developer key, not a key with broader permissions than the CI job needs. Rotate CI keys on a fixed schedule; log when and by whom the key was last rotated.</li>
+          <li><strong>Token budget per run:</strong> set a hard token ceiling for each CI agent step. A review-bot run that reads a medium-sized diff typically consumes far less than an interactive session, but without a ceiling a runaway agent — a very large PR, an unexpectedly complex diff — can consume an hour's budget in a single run. Set a per-run ceiling and treat any run that hits it as a timeout, not a success.</li>
+          <li><strong>Explicit timeouts:</strong> set a wall-clock timeout for the CI step, separate from the token budget. If the agent has not completed within N minutes, the step exits with a non-blocking warning. The pipeline continues. Never let a hung agent step hold up a build queue.</li>
+          <li><strong>No interactive prompts in CI:</strong> if an agent tool requires interactive confirmation (a "proceed? [y/n]" prompt), it must be replaced with an equivalent non-interactive flag or pre-approved permission configuration before being used in CI. An interactive prompt in a headless run will hang the job silently until the timeout fires.</li>
+        </ul>
+
+        <h4 class="ph">Claude Code headless — CI step (main flow)</h4>
+        <p>Claude Code supports a headless, non-interactive mode suitable for CI pipelines. The agent runs a defined task without requiring human input mid-run. Verify exact flags and syntax against the current Claude Code documentation before deploying.</p>
+
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:10px 0;"><code><span style="color:var(--text-muted);"># .github/workflows/agent-review.yml  (illustrative — verify flags against current Claude Code docs)</span>
+name: Agent PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  agent-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10          <span style="color:var(--text-muted);"># wall-clock timeout; agent step is non-blocking on failure</span>
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0         <span style="color:var(--text-muted);"># full history for diff context</span>
+
+      - name: Run Claude Code review (headless)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_CI }}   <span style="color:var(--text-muted);"># CI-scoped key, not developer key</span>
+        run: |
+          claude \
+            --headless \
+            --print \
+            --max-tokens 4000 \
+            --input "Review the diff in this PR for convention violations per CLAUDE.md.
+                     Post a structured comment. Do not approve or request changes." \
+          || echo "Agent review step failed or timed out — continuing pipeline"
+          <span style="color:var(--text-muted);"># The '|| echo' ensures a non-zero agent exit does not fail the build step.</span>
+          <span style="color:var(--text-muted);"># This step is advisory. A failed agent run is a warning, not a build failure.</span></code></pre>
+
+        <p style="font-size:13.5px;color:var(--text-dim);margin-top:8px;"><strong>Key decisions in this pattern:</strong> the API key is CI-scoped; a wall-clock timeout limits runaway runs; the <code>|| echo</code> fallback makes the step non-blocking; the agent is explicitly instructed not to approve or request changes. Verify the exact <code>--headless</code>, <code>--print</code>, and <code>--max-tokens</code> flags (or their current equivalents) against the Claude Code documentation — CLI interfaces evolve and flags may differ from the illustrative names shown here.</p>
+
+        <aside class="tool-alt">
+          <strong>API-based approach — tool-agnostic headless runner</strong>
+          <p style="margin:8px 0 6px;">If your tool does not expose a headless CLI mode, or if you are running a multi-tool org where different teams use different agentic tools, the same CI pattern can be implemented as a direct API call to the model provider. This approach is tool-agnostic: it works regardless of which agentic coding tool your engineers use interactively.</p>
+          <pre style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;overflow-x:auto;margin:4px 0 10px;"><code><span style="color:var(--text-muted);"># scripts/ci-agent-review.py  (illustrative; verify SDK/API details against current provider docs)</span>
+import anthropic, os, subprocess, sys
+
+diff = subprocess.check_output(["git", "diff", "origin/main...HEAD"],
+                               text=True, timeout=30)
+
+client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY_CI"])
+
+try:
+    response = client.messages.create(
+        model="claude-sonnet-4-7",           <span style="color:var(--text-muted);"># verify current model names</span>
+        max_tokens=2048,
+        messages=[{
+            "role": "user",
+            "content": f"Review this diff against our coding conventions. "
+                       f"Output a structured comment. Do not approve or block.\n\n{diff[:12000]}"
+        }]
+    )
+    print(response.content[0].text)
+    sys.exit(0)
+except Exception as e:
+    print(f"[agent-review] step failed: {e} — non-blocking, continuing pipeline", file=sys.stderr)
+    sys.exit(0)   <span style="color:var(--text-muted);"># always exit 0 so the step is advisory, not blocking</span></code></pre>
+          <p style="margin:4px 0;font-size:13px;color:var(--text-dim);">This pattern works with any provider that exposes a REST or SDK API (Anthropic, OpenAI, Google Gemini, or a self-hosted endpoint). Swap the client and model name; the pipeline logic is identical. Verify current model identifiers, SDK versions, and API shapes against the provider's documentation — these change more frequently than the pattern itself. Use prompt caching if the review conventions prompt is large and the same across every run.</p>
+        </aside>
+
+        <h4 class="ph">Permissions and scope in headless runs</h4>
+        <ul>
+          <li>In interactive sessions, an engineer approves tool calls as they happen. In a headless CI run there is no engineer — so either the agent runs with a pre-approved permission set, or any tool call that requires approval will block indefinitely. Define the allowed tool set explicitly before the run and configure it as a non-interactive permission grant.</li>
+          <li>Apply least-privilege to CI agent permissions. A review-bot agent needs to read the diff and post a comment — it does not need filesystem write access, network access to internal services, or the ability to trigger deployments. Scope the permission set to exactly what the task requires and nothing beyond that.</li>
+          <li>Log the permission set used for each CI run alongside the agent output. When a CI agent step produces unexpected behavior, the first question is what permissions it had. If the log doesn't answer that, the investigation starts from scratch every time.</li>
+        </ul>
+      </div>
+
+      <!-- 10.5 -->
+      <div class="card">
+        <h2>10.5 Failure handling in pipelines</h2>
+        <p>Agent steps in CI will fail. They will time out, produce empty output, hit rate limits, return low-confidence results, or hallucinate on unusual diffs. This is not a defect to be fixed — it is an inherent property of probabilistic systems. The engineering question is not "how do we make agent steps never fail?" but "how do we make agent failures graceful, bounded, and irrelevant to release velocity?"</p>
+
+        <h4 class="ph">Make agent steps non-required by default</h4>
+        <ul>
+          <li>Every agent step in CI should be configured as a <em>non-required check</em> in your PR merge requirements. A required agent check means any agent failure — timeout, provider outage, hallucination — becomes a release blocker. This is the wrong tradeoff: you are accepting release risk (blocked good changes) to avoid advisory risk (a flaky review comment).</li>
+          <li>Mark agent steps as advisory in your PR checks dashboard. Engineers should see clearly that the agent check is informational, not a gate. If the check is green, the review comment is available. If the check is red or absent, the pipeline continues normally.</li>
+          <li>The same principle applies to deployment pipelines. An agent step that summarizes deployment risk for the on-call engineer is valuable when it works and absent when it doesn't — it should never block the deployment from proceeding.</li>
+        </ul>
+
+        <h4 class="ph">Retries with caps</h4>
+        <ul>
+          <li>For transient failures — rate limit hits, provider timeouts, temporary network errors — a single retry is usually sufficient. Configure the CI step to retry once with a short delay, then exit with a non-blocking warning if the retry also fails. A retry cap of 1–2 attempts is appropriate for CI; uncapped retries accumulate job-minutes and can exhaust pipeline capacity during a provider incident.</li>
+          <li>Distinguish retriable failures from non-retriable ones. A 429 (rate limit) or a network timeout is retriable. A 400 (bad request) or an output-length error means the task itself is misconfigured — retrying will not help and will waste budget. Log the distinction so the on-call engineer can diagnose quickly.</li>
+          <li>Count agent retries as a metric. If the retry rate for a CI agent step is high, the step is operating near a limit — token budget too tight, prompt too large, provider capacity too low for your pipeline volume. Tune before the retry rate becomes a cost problem.</li>
+        </ul>
+
+        <h4 class="ph">Fallbacks for agent steps</h4>
+        <ul>
+          <li>Design each agent step with an explicit fallback behavior for the failure case. A review bot that fails to run can post a canned comment: "Automated review unavailable for this run — human review required." This is more informative than a silent failure and avoids the reviewer wondering whether the bot just didn't have anything to say.</li>
+          <li>For diff-summary steps, the fallback is no summary — reviewers proceed with the raw diff, as they always did before the bot existed. This is acceptable; the bot is an improvement, not a dependency.</li>
+          <li>For risk-labeling steps, the fallback is no label — a conservative default where the PR is routed via normal assignment. The fallback must never produce a false-safe outcome, such as labeling a high-risk PR as low-risk because the agent did not complete its run.</li>
+        </ul>
+
+        <h4 class="ph">Never block a release on a flaky agent</h4>
+        <ul>
+          <li>If an agent step's failure rate rises above 5% of runs in any 24-hour window, treat that as an incident for the Platform/DevEx team, not a release problem. The agent step goes into degraded mode (fallback only) until the root cause is resolved. Releases continue.</li>
+          <li>Separate agent step health monitoring from build health monitoring. Agent steps are infrastructure; build tests are product quality gates. Conflating the two means a provider outage shows up as a product quality regression, which is the wrong signal for the wrong audience.</li>
+          <li>Document your agentic CI steps in a runbook with a section on failure modes and fallback behaviors. When an agent step fails at 2am during a release, the on-call engineer needs to know immediately: is this a required check? What is the fallback? Who owns this step? A runbook answer is faster than a Slack thread.</li>
+        </ul>
+
+        <div class="info purple"><strong>Flakiness budget vs release cadence.</strong> If your org ships multiple times per day, a 5% agent step failure rate means a failed agent step on roughly 1 in 20 PRs. That is not a tolerable tax on release velocity — tune or drop the step. If you ship weekly, the same failure rate is invisible. Know your release cadence before setting your flakiness tolerance.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 2→3: The Review Bot Incident &amp; Retune</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">The <strong>Platform/DevEx team</strong> ships a PR review bot to every Meridian repository as part of Stage 3 standardization. The initial configuration is generous: the bot posts convention-check comments, applies risk labels, and — because the team wants fast feedback loops — is configured to post a <code>bot-approved</code> label when it finds no major issues. The label is intended to be advisory, but in practice it becomes a soft social signal: engineers start merging PRs without waiting for a human reviewer when the bot label is green.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Three weeks in, a subtle bug ships to production in the payments service. The PR had the <code>bot-approved</code> label and a single human approval from a reviewer who had been watching too many PRs that day and trusted the bot's clean signal. <strong>Riya</strong> traces the issue in the post-mortem: the bug was in an authentication-adjacent code path that the bot's convention checks were not tuned to flag. The bot had correctly found no convention violations — it had simply never been asked to check for the class of error that slipped through.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Dana</strong> pulls the bot's permission configuration and finds a second issue: the bot's GitHub App had been granted the ability to post a review with the "Approve" state — not just a comment. It had not done so, but the permission meant it could. Dana immediately revokes the Approve permission and converts the <code>bot-approved</code> label to <code>bot-reviewed-advisory</code>, with a banner added to every bot comment explicitly stating: <em>This is an automated advisory comment. It does not substitute for human review or satisfy any approval requirement.</em></li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Riya and Dana co-author the retune: the bot's scope is narrowed to three high-confidence checks (naming conventions, missing error handling, hardcoded secrets). The risk-labeling step is kept but explicitly documented as a routing signal, not a quality signal. The bot's GitHub App permissions are locked to comment-only — no label writes, no review states. A new branch protection rule requires at least two human approvals on any PR touching security-sensitive paths, regardless of bot output.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;"><strong>Marcus</strong> adds the bot configuration to the quarterly governance review checklist. The retune takes two days. The lesson Meridian documents in the Stage 3 runbook: a review bot that becomes a social substitute for human review is more dangerous than no bot at all. The value of the bot is in the quality of its comments, not in the credibility it accidentally accumulates. <em>(The broader pattern of agent gates failing and the incident response playbook are covered in Ch 13 and Ch 14.)</em></li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch11-cost')">→ Ch 11. Sandboxing, Isolation &amp; Cost Control</a>
+        <a onclick="go('ch13-gates')">→ Ch 13. Review Gates, Policy &amp; Compliance</a>
+        <a onclick="go('ch14-incident')">→ Ch 14. Failure Modes &amp; Incident Response</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
