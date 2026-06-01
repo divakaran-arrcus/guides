@@ -2365,6 +2365,253 @@
   </div>
 </div>
 
+<div id="mig-order" class="section">
+  <div class="sec-title">16. Migration Order &amp; Approach</div>
+  <p class="sec-sub">The order isn't arbitrary — some services carry less state, less risk, and roll back more cleanly.</p>
+
+  <div class="card">
+    <p>Start where failure is cheapest: pure L3 services carry no bridge-domain state, have clean per-VRF rollback, and expose routing correctness without risking MAC/ARP stability. Work toward services that carry more per-host state (IRB, L2) and finally ESI multi-homing and DCI, where dual-encap overlap must be tightly controlled.</p>
+    <h4 class="ph">Recommended order</h4>
+    <ul>
+      <li><strong>1 — L3 / Type 5 (lowest risk):</strong> No bridge-domain state; per-VRF rollback is atomic. Advertise via SRv6, verify routing table, then withdraw VXLAN routes. A mis-step affects only routed prefixes, never MAC tables.</li>
+      <li><strong>2 — IRB:</strong> Adds anycast gateway state (MAC + IP must be consistent on both encaps). Migrate after L3 VRFs are proven; symmetric-IRB cutover is clean once the gateway is validated in §13/§14.</li>
+      <li><strong>3 — L2 single-homed:</strong> Introduces per-host MAC/ARP state. VNI-to-service-SID mapping must be verified before cutover; ARP-suppression cache must be flushed post-cutover to prevent stale entries.</li>
+      <li><strong>4 — L2 multi-homed / ESI (highest per-service risk):</strong> DF election must stay stable across the encap-A-only → dual-encap → encap-B-only transition. ES routes must be present on both encaps before switchover. Any DF flap during transition causes transient traffic loss on the multihomed segment.</li>
+      <li><strong>5 — DCI (last):</strong> Inter-site connectivity is cut over after all intra-site services are validated on SRv6. DCI is treated as a migratable unit here even though §11 frames it as a deployment-topology cross-cut — the inter-site cutover is its own discrete step with its own pre-checks.</li>
+    </ul>
+
+    <h4 class="ph">Cutover patterns</h4>
+    <ul>
+      <li><strong>Per-VRF:</strong> Cleanest scope — migrate one VRF at a time. Failure blast-radius is a single tenant's routed traffic. Best starting point.</li>
+      <li><strong>Per-VLAN:</strong> Within a tenant, migrate one VLAN/VNI at a time. Useful when a tenant spans many VLANs; lets you validate L2 state service-by-service.</li>
+      <li><strong>Per-tenant:</strong> Groups all VRFs and VLANs for a tenant into a single cutover window. Higher blast-radius but minimises dual-encap overlap duration for that tenant.</li>
+      <li><strong>Per-leaf-group:</strong> Migrate all tenants on a set of leaves together. Suited to hardware refresh (leaf replacement); the new hardware comes up SRv6-only, removing the need for a dual-encap state machine.</li>
+    </ul>
+
+    <h4 class="ph">Rollback design</h4>
+    <ul>
+      <li>Leave VXLAN configuration in place on each leaf until every tenant on that leaf is validated on SRv6. Do not remove VXLAN config leaf-by-leaf as you go — rollback requires instantaneous re-activation.</li>
+      <li>Per-service rollback must <strong>not</strong> require gateway reconfiguration. The gateway holds both encap contexts throughout the migration; per-leaf or per-tenant rollback is achieved by toggling route advertisements, not by touching gateway state. This is a hard invariant from §13/§14.</li>
+      <li>Maintain a rollback timer: if validation is not passed within the agreed window (e.g., 30 minutes), roll back automatically. Do not leave dual-encap state active indefinitely.</li>
+    </ul>
+
+    <h4 class="ph">Observability during cutover</h4>
+    <ul>
+      <li><strong>MAC-table convergence:</strong> Watch MAC-table size on the gateway and target leaf both before and after cutover. A drop in MAC count on the SRv6 leaf immediately post-cutover indicates ARP/ND has not re-populated; allow convergence time (typically &lt;30 s) before declaring failure.</li>
+      <li><strong>ARP-table consistency:</strong> Compare ARP tables on the gateway (both encap sides) and on the target leaf. Stale ARP entries pointing to the old encap cause silent black-holes — not drops, but wrong-path forwarding. Flush ARP-suppression cache on the leaf after L2 cutover.</li>
+      <li><strong>Gateway counters:</strong> Monitor VXLAN decap, SRv6 decap, and SRv6 encap counters on the gateway. During dual-encap, both VXLAN and SRv6 counters should increment. After cutover, only SRv6 encap/decap should be active for the migrated service; residual VXLAN counter increments are a rollback signal.</li>
+      <li><strong>Expected pattern:</strong> VXLAN counters ramp down, SRv6 counters ramp up over the convergence window (&lt;60 s for most topologies). Anomalous pattern: both counters flat-line (routing black-hole) or SRv6 counters stay at zero (re-origination not active on the gateway).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Recommended Migration Order</h2>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">1</div>
+        <div class="stp-t">L3 / Type 5 — pure routed VRFs</div>
+      </div>
+      <p>No bridge-domain state. Per-VRF rollback is atomic. Lowest risk; start here to validate SRv6 routing end-to-end before touching any L2 services.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n grn">2</div>
+        <div class="stp-t">IRB — anycast gateway segments</div>
+      </div>
+      <p>Adds anycast MAC/IP state. Requires consistent gateway MAC/IP on both encap domains. Migrate after L3 VRFs are validated; leverage §13/§14 gateway invariants.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n org">3</div>
+        <div class="stp-t">L2 single-homed — bridged VNIs, single uplink</div>
+      </div>
+      <p>Introduces per-host MAC/ARP state. VNI↔service-SID mapping must be verified; ARP-suppression cache must be flushed after cutover. Moderate risk.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n red">4</div>
+        <div class="stp-t">L2 multi-homed / ESI — dual-homed CE/server</div>
+      </div>
+      <p>Trickiest: DF election must stay stable across encap-A-only → dual-encap → encap-B-only. ES routes must be present on both encaps before cutover. Any DF flap causes transient loss.</p>
+    </div>
+
+    <div class="stp">
+      <div class="stp-h">
+        <div class="stp-n pur">5</div>
+        <div class="stp-t">DCI — inter-site connectivity</div>
+      </div>
+      <p>Treated as a migratable unit: the discrete inter-site cutover step. Cut over after all intra-site services are validated on SRv6. Site-by-site or gateway-to-gateway depending on inter-site fabric design.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cutover Patterns</h2>
+    <div class="flv-grid" style="grid-template-columns: repeat(2,1fr);">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green);">per-VRF</div>
+        <div class="flv-desc">One VRF at a time. Smallest blast-radius. Best starting pattern for L3 and IRB services. Failure isolates to a single tenant's routed traffic.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--blue);">per-VLAN</div>
+        <div class="flv-desc">Within a tenant: one VLAN/VNI per cutover window. Validates L2 MAC/ARP state service-by-service. Good for tenants with many VLANs.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange);">per-tenant</div>
+        <div class="flv-desc">All VRFs and VLANs for a tenant in one window. Higher blast-radius but minimises time spent in dual-encap for that tenant.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--purple);">per-leaf-group</div>
+        <div class="flv-desc">All tenants on a set of leaves cut over together. Ideal for hardware refresh — new hardware comes up SRv6-only, eliminating the dual-encap state machine entirely.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info green">
+    <strong>Invariant: every per-service cutover must be reversible without touching the gateway.</strong> The gateway holds both encap contexts throughout the full migration window. Per-leaf and per-tenant rollback is achieved by toggling route advertisements on the leaf, not by reconfiguring the gateway. Any cutover procedure that requires gateway reconfiguration to roll back violates this invariant and must be redesigned.
+  </div>
+</div>
+
+<div id="mig-playbooks" class="section">
+  <div class="sec-title">17. Service-Specific Cutover Playbooks</div>
+  <p class="sec-sub">One playbook per service, in cutover order: pre-check → cutover → validation → rollback.</p>
+
+  <div class="info">
+    <strong>Note on DCI:</strong> The 5th playbook is DCI — included here as a <em>migratable unit</em> (the discrete inter-site cutover step) even though §11 frames DCI as a deployment-topology cross-cut, not a peer service category. Operators cut over inter-site connectivity as its own step after all intra-site services are validated; this playbook captures that procedure. Cross-reference §11 for the DCI topology framing.
+  </div>
+
+  <div class="card">
+    <h2>Playbooks at a Glance</h2>
+    <div class="flv-grid" style="grid-template-columns: repeat(3,1fr);">
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green);">L3 / Type 5</div>
+        <div class="flv-desc">Pure routed VRFs. Lowest risk. Per-VRF atomicity. Start here.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--green);">IRB</div>
+        <div class="flv-desc">Anycast gateway segments. Requires MAC/IP consistency check first.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--orange);">L2 single-homed</div>
+        <div class="flv-desc">Bridged VNIs, single uplink. MAC/ARP state; flush ARP cache post-cutover.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--red);">L2 multi-homed (ESI)</div>
+        <div class="flv-desc">Trickiest. DF election must stay stable across dual-encap transition.</div>
+      </div>
+      <div class="flv">
+        <div class="flv-name" style="color:var(--purple);">DCI</div>
+        <div class="flv-desc">Inter-site cutover. Migratable unit. Last step after intra-site validated.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 class="ph">L3 / Type 5 cutover</h4>
+    <ul>
+      <li><strong>Pre-check:</strong> Record VRF count and prefix count per VRF on both VXLAN and SRv6 sides. Verify the gateway is re-originating Type 5 routes in both directions (check BGP RIB on gateway). Confirm MTU on SRv6 fabric-facing interfaces.</li>
+      <li><strong>Cutover:</strong> On the target leaf, enable SRv6 VRF advertisement for the selected VRF. Verify the SRv6 Type 5 route appears in the BGP RIB on remote SRv6 peers. Once confirmed, withdraw the VXLAN Type 5 advertisement for that VRF.</li>
+      <li><strong>Validation:</strong> Prefix count on SRv6 peers equals pre-cutover VXLAN count. Probe traffic (ICMP + TCP) from an SRv6-only leaf to an SRv6-only leaf through the now-migrated VRF. Check gateway VXLAN encap counters drop to zero for that VRF; SRv6 encap counters active.</li>
+      <li><strong>Rollback:</strong> Re-advertise the VXLAN Type 5 routes for the VRF. Withdraw SRv6 advertisement. No gateway reconfiguration required — gateway continues to hold both encap contexts. Convergence typically &lt;BFD timer + 1 BGP scan cycle.</li>
+    </ul>
+
+    <h4 class="ph">IRB cutover</h4>
+    <ul>
+      <li><strong>Pre-check:</strong> Verify anycast gateway MAC and IP are identical on both the VXLAN and SRv6 instances. The gateway must not be a DF candidate (per §14) — confirm this before any cutover. Check that ARP-suppression tables are populated correctly on gateway for the VNI.</li>
+      <li><strong>Cutover:</strong> Enable symmetric-IRB on the SRv6 instance of the target VNI/VRF pair. Advertise SRv6 Type 2 (MAC/IP) and Type 5 routes for the IRB segment. Verify routes appear on SRv6 peers. Withdraw VXLAN Type 2 and Type 5 for the same segment.</li>
+      <li><strong>Validation:</strong> Host-to-host routed traffic (inter-subnet) flows correctly on SRv6 path. ARP table on SRv6 leaf shows correct MAC/IP bindings. Gateway counters show SRv6 IRB lookups active, VXLAN IRB counters quiescent.</li>
+      <li><strong>Rollback:</strong> Re-advertise VXLAN Type 2/5 for the IRB segment. Withdraw SRv6 advertisements. Gateway does not need reconfiguration; rollback is route-advertisement-only. Note: MAC mobility sequence numbers are preserved by the gateway (per §13) — re-advertising VXLAN does not reset mobility counters.</li>
+    </ul>
+
+    <h4 class="ph">L2 single-homed cutover</h4>
+    <ul>
+      <li><strong>Pre-check:</strong> Verify VNI-to-service-SID mapping is provisioned on the target SRv6 leaf (<code>show evpn evi detail</code> equivalent). Snapshot the MAC table for the VNI on the gateway and the source VXLAN leaf. Record ARP-suppression cache entry count.</li>
+      <li><strong>Cutover:</strong> On the target leaf, activate the SRv6 EVI for the VNI. Advertise SRv6 Type 2 routes (MAC/IP). Verify Type 2 routes appear on the gateway and remote SRv6 leaves. Withdraw VXLAN Type 2 routes for the VNI from the source leaf.</li>
+      <li><strong>Validation:</strong> MAC table on SRv6 leaf matches pre-cutover snapshot count. Flush ARP-suppression cache on the gateway for that VNI — stale entries pointing to the old VXLAN VTEP will otherwise black-hole traffic silently until ARP refresh. Re-verify MAC/IP bindings post-flush. Test L2 forwarding with a probe frame.</li>
+      <li><strong>Rollback:</strong> Re-advertise VXLAN Type 2 routes. Withdraw SRv6 Type 2. Flush ARP-suppression cache again (entries may now have both old and new VTEP). No gateway reconfiguration required.</li>
+    </ul>
+
+    <h4 class="ph">L2 multi-homed (ESI) cutover</h4>
+    <ul>
+      <li><strong>Pre-check:</strong> Confirm ES (Ethernet Segment) routes (Type 1 and Type 4) are present for the ESI on both VXLAN and the SRv6 instance before starting. Verify DF election state — identify which PE is currently DF for each VLAN on the ESI. Record the DF PE; this must not change during cutover. The gateway must not be a DF candidate (§14 invariant).</li>
+      <li><strong>Transition sequence:</strong> This is a three-phase transition to keep DF stable:
+        <ol style="padding-left:18px; margin:6px 0;">
+          <li><strong>Phase A (encap-A-only → dual-encap):</strong> Activate SRv6 EVI for the ESI segment. Advertise SRv6 ES (Type 1), DF election (Type 4), and MAC/IP (Type 2) routes. Do NOT withdraw VXLAN ES routes yet. Verify SRv6 DF election converges to the same PE as VXLAN DF. If they diverge, stop and investigate before proceeding.</li>
+          <li><strong>Phase B (dual-encap steady state):</strong> Both VXLAN and SRv6 ES routes active. Traffic can take either path. Verify no MAC flap events in the MAC-table log. Run for a validation window (minimum 5 minutes under traffic).</li>
+          <li><strong>Phase C (dual-encap → encap-B-only):</strong> Withdraw VXLAN ES routes (Type 1 and Type 4) for the ESI. VXLAN DF election is withdrawn; SRv6 DF election takes full ownership. Monitor MAC-table for convergence. Withdraw residual VXLAN Type 2 routes.</li>
+        </ol>
+      </li>
+      <li><strong>Validation:</strong> DF PE for each VLAN on the ESI is unchanged post-cutover. No MAC mobility counter increments (MAC moves). BFD/LAG state on the multihomed CE/server is stable. End-to-end L2 probes pass.</li>
+      <li><strong>Rollback:</strong> Re-advertise VXLAN ES (Type 1, Type 4) routes. Allow VXLAN DF election to reconverge. Withdraw SRv6 ES routes. This is the most complex rollback — allow a full BGP scan cycle for DF re-election before declaring rollback complete. No gateway reconfiguration required.</li>
+    </ul>
+
+    <h4 class="ph">DCI cutover</h4>
+    <ul>
+      <li><strong>Framing:</strong> DCI is a migratable unit here — the inter-site cutover step — even though §11 frames it as a deployment-topology cross-cut. This playbook covers the case where inter-site connectivity needs to move from VXLAN-based DCI to SRv6-based DCI after all intra-site services are migrated.</li>
+      <li><strong>Pre-check:</strong> All intra-site services on both sites must be validated on SRv6 before beginning DCI cutover. Verify inter-site BGP sessions (EVPN AF) are up on both VXLAN and the SRv6 underlay. Confirm the inter-site fabric (DC interconnect / WAN) can carry the SRv6 outer IPv6 header (MTU + IPv6 transit support).</li>
+      <li><strong>Cutover patterns:</strong> Two options: <em>site-by-site</em> (migrate one site's inter-site peering to SRv6 at a time, with the gateway bridging encaps at the DCI boundary) or <em>gateway-to-gateway</em> (both border leaves at both sites simultaneously, cleaner but higher risk). Site-by-site is recommended; the DCI gateway boundary mirrors the intra-site gateway pattern.</li>
+      <li><strong>Cutover:</strong> Establish SRv6 inter-site EVPN sessions. Advertise inter-site Type 2/5 routes via SRv6. Verify routes appear on both sites' SRv6 RIBs. Withdraw VXLAN inter-site route advertisements. Confirm inter-site traffic flows end-to-end.</li>
+      <li><strong>Validation:</strong> Inter-site MAC/IP reachability confirmed via probes. BGP route counts consistent across sites. No MAC mobility events on hosts whose MACs are learned cross-site. Latency/throughput unchanged (SRv6 outer header is 40 B vs. VXLAN's 50 B, slight improvement expected on routed paths).</li>
+      <li><strong>Rollback:</strong> Re-activate VXLAN inter-site EVPN sessions. Re-advertise VXLAN inter-site routes. Withdraw SRv6 inter-site advertisements. No intra-site gateway reconfiguration required.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Cutover Checklist by Service</h2>
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Pre-check</th>
+          <th>Cutover</th>
+          <th>Validation</th>
+          <th>Rollback</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:var(--green);">L3 / Type 5</strong></td>
+          <td>VRF count, prefix count, GW re-origination active, MTU verified</td>
+          <td>Enable SRv6 VRF adv → verify Type 5 on SRv6 peers → withdraw VXLAN Type 5</td>
+          <td>Prefix count matches; probe traffic passes; GW VXLAN encap counters → 0</td>
+          <td>Re-adv VXLAN Type 5; withdraw SRv6; no GW reconfig</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--green);">IRB</strong></td>
+          <td>Anycast GW MAC/IP consistent on both encaps; GW not DF candidate; ARP-suppress populated</td>
+          <td>Enable sym-IRB on SRv6 → adv Type 2 + Type 5 → verify on SRv6 peers → withdraw VXLAN Type 2/5</td>
+          <td>Inter-subnet routed traffic passes; ARP bindings correct; GW SRv6 IRB counters active</td>
+          <td>Re-adv VXLAN Type 2/5; withdraw SRv6; MAC mobility seq preserved; no GW reconfig</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--orange);">L2 single-homed</strong></td>
+          <td>VNI↔service-SID mapping provisioned; MAC-table snapshot; ARP-suppress entry count</td>
+          <td>Activate SRv6 EVI → adv SRv6 Type 2 → verify on GW → withdraw VXLAN Type 2</td>
+          <td>MAC count matches snapshot; ARP-suppress cache flushed; L2 probe passes</td>
+          <td>Re-adv VXLAN Type 2; withdraw SRv6; flush ARP-suppress again; no GW reconfig</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--red);">L2 multi-homed (ESI)</strong></td>
+          <td>ES Type 1/4 on VXLAN confirmed; DF PE identified; GW not DF candidate</td>
+          <td>Phase A: adv SRv6 ES routes → verify DF matches VXLAN DF → Phase B: dual-encap window → Phase C: withdraw VXLAN ES routes</td>
+          <td>DF PE unchanged; no MAC moves; BFD/LAG stable; L2 probes pass</td>
+          <td>Re-adv VXLAN ES Type 1/4; await DF re-election; withdraw SRv6 ES; no GW reconfig</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--purple);">DCI</strong></td>
+          <td>All intra-site services validated; inter-site BGP up on SRv6 underlay; inter-site fabric IPv6/MTU verified</td>
+          <td>Establish SRv6 inter-site EVPN sessions → adv inter-site Type 2/5 via SRv6 → verify on both sites → withdraw VXLAN inter-site routes</td>
+          <td>Cross-site MAC/IP reachability confirmed; route counts consistent; no MAC mobility events</td>
+          <td>Re-activate VXLAN inter-site EVPN; re-adv VXLAN routes; withdraw SRv6; no intra-site GW reconfig</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
   </main>
 </div>
 
