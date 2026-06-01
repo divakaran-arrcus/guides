@@ -3075,6 +3075,94 @@
   </div>
 </div>
 
+<div id="cheat-sheet" class="section">
+  <div class="sec-title">22. VXLAN vs SRv6 Cheat Sheet</div>
+  <p class="sec-sub">One-page reference. Scan, don't read.</p>
+
+  <div class="card">
+    <h2>Encapsulation Headers</h2>
+    <div class="pkt" style="margin-bottom:10px;">
+      <div class="pkt-c bg-pay" style="flex:1.2;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+      <div class="pkt-c bg-ipv6" style="flex:1.4;"><div class="l">Outer IPv4</div><div class="v">20 B</div></div>
+      <div class="pkt-c bg-vpn" style="flex:0.9;"><div class="l">UDP</div><div class="v">4789</div></div>
+      <div class="pkt-c bg-srh" style="flex:1.2;"><div class="l">VXLAN</div><div class="v">VNI · 8 B</div></div>
+      <div class="pkt-c bg-seg" style="flex:1.6;"><div class="l">Inner frame</div><div class="v">payload</div></div>
+    </div>
+    <div class="ann">VXLAN over IPv4 = <strong>50 B</strong> outer overhead (14 + 20 + 8 + 8).</div>
+    <div class="pkt" style="margin:10px 0;">
+      <div class="pkt-c bg-pay" style="flex:1.2;"><div class="l">Outer Eth</div><div class="v">14 B</div></div>
+      <div class="pkt-c bg-ipv6" style="flex:2.4;"><div class="l">Outer IPv6 — DA = service SID</div><div class="v">40 B</div></div>
+      <div class="pkt-c bg-seg" style="flex:1.6;"><div class="l">Inner frame</div><div class="v">payload</div></div>
+    </div>
+    <div class="ann">SRv6 uSID, no SRH = <strong>54 B</strong> outer overhead (14 + 40). The destination IPv6 address <em>is</em> the service SID.</div>
+    <table class="tbl" style="margin-top:12px;">
+      <thead><tr><th>Encap</th><th>Outer header bytes</th><th>Total outer overhead</th></tr></thead>
+      <tbody>
+        <tr><td>VXLAN / IPv4 outer</td><td>Eth 14 + IPv4 20 + UDP 8 + VXLAN 8</td><td><strong>50 B</strong></td></tr>
+        <tr><td>VXLAN / IPv6 outer</td><td>Eth 14 + IPv6 40 + UDP 8 + VXLAN 8</td><td><strong>70 B</strong></td></tr>
+        <tr><td>SRv6 uSID (no SRH)</td><td>Eth 14 + IPv6 40</td><td><strong>54 B</strong></td></tr>
+        <tr><td>SRv6 + SRH, 1 segment</td><td>Eth 14 + IPv6 40 + SRH 8 + SID 16</td><td><strong>~78 B</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>BGP Signalling</h2>
+    <table class="tbl">
+      <thead><tr><th>Item</th><th>VXLAN</th><th>SRv6</th></tr></thead>
+      <tbody>
+        <tr><td>Encap signal</td><td>BGP Encapsulation Extended Community (RFC 9012) type 8</td><td>BGP Prefix-SID attribute (RFC 8669)</td></tr>
+        <tr><td>L3 service</td><td>L3-VNI in MPLS Label field</td><td>SRv6 Service TLV (RFC 9252) type 5 sub-TLV → <code>uDT4</code>/<code>uDT6</code></td></tr>
+        <tr><td>L2 service</td><td>L2-VNI in MPLS Label field</td><td>SRv6 Service TLV (RFC 9252) type 6 sub-TLV → <code>uDT2U</code></td></tr>
+        <tr><td>BUM (Type 3)</td><td>PMSI Tunnel attr (RFC 6514), tunnel-id = node IP; IR or PIM</td><td>PMSI Tunnel attr (RFC 6514), tunnel-id = node IP; <code>uDT2M</code> SID in Services TLV</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>SID Function Quick Reference</h2>
+    <table class="tbl">
+      <thead><tr><th>Function</th><th>Meaning</th><th>VXLAN equivalent</th></tr></thead>
+      <tbody>
+        <tr><td><code>uN</code></td><td>uSID node / transit behavior (locator advance)</td><td>— (underlay routing)</td></tr>
+        <tr><td><code>uA</code></td><td>uSID adjacency behavior (forward via specific link)</td><td>— (underlay adjacency)</td></tr>
+        <tr><td><code>uDT2U</code> / <code>End.DT2U</code></td><td>Decap + L2 unicast MAC lookup in the bridge domain</td><td>L2-VNI unicast</td></tr>
+        <tr><td><code>uDT2M</code> / <code>End.DT2M</code></td><td>Decap + L2 BUM / multicast flood</td><td>L2-VNI + ingress-replication / PIM</td></tr>
+        <tr><td><code>uDT4</code> / <code>End.DT4</code></td><td>Decap + IPv4 VRF route lookup</td><td>L3-VNI (IPv4)</td></tr>
+        <tr><td><code>uDT6</code> / <code>End.DT6</code></td><td>Decap + IPv6 VRF route lookup</td><td>L3-VNI (IPv6)</td></tr>
+        <tr><td>ES SID</td><td>Ethernet Segment / split-horizon for multi-homing</td><td>ESI label</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Show Commands &amp; Capture Filters</h2>
+    <table class="tbl">
+      <thead><tr><th>Task</th><th>VXLAN</th><th>SRv6</th></tr></thead>
+      <tbody>
+        <tr><td>BGP-EVPN routes</td><td colspan="2"><code>show bgp l2vpn evpn</code> — same command, encap differs in the next-hop / attribute view</td></tr>
+        <tr><td>MAC table</td><td colspan="2"><code>show evpn mac</code> — same shape both encaps</td></tr>
+        <tr><td>Data-plane capture</td><td>filter <code>udp port 4789</code>; VNI in plaintext in the 8-byte VXLAN header</td><td>filter <code>ip6 proto 43</code> (SRH) or destination in <code>fc00:0:1::/48</code>; uSID function encoded in the DA</td></tr>
+        <tr><td>Service-ID inspect</td><td>VNI ↔ bridge-domain / VRF mapping</td><td>local SID table: <code>show segment-routing srv6 sid</code> (verify exact command per platform)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Route-Type Translation at the Gateway</h2>
+    <table class="tbl">
+      <thead><tr><th>Route type</th><th>VXLAN encoding</th><th>SRv6 encoding</th></tr></thead>
+      <tbody>
+        <tr><td>Type 1 (Eth A-D)</td><td>ESI label</td><td>ES SID</td></tr>
+        <tr><td>Type 2 (MAC/IP)</td><td>L2-VNI (+ L3-VNI for MAC+IP)</td><td><code>uDT2U</code> (+ <code>uDT4</code>/<code>uDT6</code>)</td></tr>
+        <tr><td>Type 3 (IMET)</td><td>PMSI tunnel-id = node IP; VNI</td><td>PMSI tunnel-id = node IP; <code>uDT2M</code> SID</td></tr>
+        <tr><td>Type 4 (ES route)</td><td>ESI label</td><td>ES SID (gateway is not a DF candidate)</td></tr>
+        <tr><td>Type 5 (IP Prefix)</td><td>L3-VNI + GW IP/MAC</td><td><code>uDT4</code>/<code>uDT6</code> + GW IP/MAC</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
   </main>
 </div>
 
