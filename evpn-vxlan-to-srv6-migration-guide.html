@@ -1265,9 +1265,9 @@
     <ul>
       <li><strong>Leaf-3 originates</strong> a BGP-EVPN Type 5 route for <code>10.10.200.0/24</code>, advertising its L3 reachability in VRF green.</li>
       <li>The Type 5 NLRI carries a GW IP (Leaf-3's IRB address or loopback) and a GW MAC (Leaf-3 router-MAC). These are used by the ingress PE to rewrite the inner dst MAC before encapsulation.</li>
-      <li><strong>VXLAN path:</strong> Leaf-1 installs an IP route in VRF green — <code>10.10.200.0/24</code> → VTEP next-hop <code>203.0.113.3</code>, encap L3-VNI <code>50100</code>, inner dst MAC = Leaf-3 router-MAC.</li>
+      <li><strong>VXLAN path:</strong> Leaf-1 installs an IP route in VRF green — <code>10.10.200.0/24</code> → VTEP next-hop <code>203.0.113.3</code>, encap L3-VNI <code>10300</code>, inner dst MAC = Leaf-3 router-MAC.</li>
       <li><strong>SRv6 path:</strong> Leaf-1 installs an IP route in VRF green — <code>10.10.200.0/24</code> → L3 service SID <code>fc00:0:1:3:e100::</code> (Leaf-3 uDT4 for VRF green). No router-MAC rewrite needed; the SID encodes the entire VRF lookup on the egress PE.</li>
-      <li>L3-VNI <code>50100</code> is the per-VRF L3-VNI for VRF green; it is distinct from the per-VLAN L2-VNIs (10100, 10200).</li>
+      <li>L3-VNI <code>10300</code> is the per-VRF L3-VNI for VRF green; it is distinct from the per-VLAN L2-VNIs (10100, 10200).</li>
     </ul>
   </div>
 
@@ -1290,7 +1290,7 @@
             <div class="stp-n grn">2</div>
             <div class="stp-t">Leaf-1 VXLAN-encapsulates with L3-VNI</div>
           </div>
-          <p>Leaf-1 builds the outer tunnel: src VTEP <code>203.0.113.1</code>, dst VTEP <code>203.0.113.3</code>, UDP dport 4789, VXLAN VNI = <code>50100</code> (the per-VRF L3-VNI for VRF green). The inner frame carries the rewritten router-MAC.</p>
+          <p>Leaf-1 builds the outer tunnel: src VTEP <code>203.0.113.1</code>, dst VTEP <code>203.0.113.3</code>, UDP dport 4789, VXLAN VNI = <code>10300</code> (the per-VRF L3-VNI for VRF green). The inner frame carries the rewritten router-MAC.</p>
           <div class="pkt">
             <div class="pkt-c bg-pay" style="min-width:60px;">
               <div class="l">Outer</div>
@@ -1306,7 +1306,7 @@
             </div>
             <div class="pkt-c bg-seg" style="min-width:100px;">
               <div class="l">VXLAN</div>
-              <div class="v">L3-VNI 50100</div>
+              <div class="v">L3-VNI 10300</div>
             </div>
             <div class="pkt-c bg-pay" style="flex:1;">
               <div class="l">Inner IP pkt</div>
@@ -1329,7 +1329,7 @@
             <div class="stp-n pur">4</div>
             <div class="stp-t">Leaf-3 decaps → VRF green → egress IRB</div>
           </div>
-          <p>Leaf-3 matches UDP dport 4789, strips outer headers, reads VNI <code>50100</code> → maps to VRF green. Performs an IPv4 route lookup in VRF green for <code>10.10.200.x</code>, resolves to the local VLAN-200 IRB, and forwards the frame to the host.</p>
+          <p>Leaf-3 matches UDP dport 4789, strips outer headers, reads VNI <code>10300</code> → maps to VRF green. Performs an IPv4 route lookup in VRF green for <code>10.10.200.x</code>, resolves to the local VLAN-200 IRB, and forwards the frame to the host.</p>
         </div>
       </div>
 
