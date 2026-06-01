@@ -524,95 +524,170 @@
   <main class="main">
 
     <section id="welcome" class="section active">
-      <div class="sec-title">Gen AI for Developers: Architect to Leader</div>
-      <p class="sec-sub">Part 3 of a series — scaling agentic coding across an organization</p>
+      <div class="sec-title">Welcome to Gen AI: Architect to Leader</div>
+      <p class="sec-sub">Part 3 of a series — from individual effectiveness to organizational effectiveness, safely and at scale</p>
 
       <div class="card">
-        <h2>Who This Is For</h2>
-        <p>You've read v1 (or you have equivalent breadth: you understand tokens, context windows, RAG basics, and what an LLM actually is). Now you're picking up an agentic coding tool — <strong>Claude Code</strong>, <strong>Kilo Code</strong>, or <strong>Gemini CLI</strong> — and you want to wield it well, not just survive it.</p>
-        <p>This guide is for developers at that exact inflection point: past the "what is this" stage, not yet at the "I work this way automatically" stage. The goal is to close that gap.</p>
-        <div class="info green"><strong>Assumes v1.</strong> If you haven't read the Zero to Hero guide yet, start there. This guide builds on that mental model without re-explaining it.</div>
+        <h4 class="ph">Who this is for</h4>
+        <ul>
+          <li>Tech leads and engineering managers who own how their team works, not just what it builds.</li>
+          <li>Platform and DevEx engineers building the internal substrate that makes AI adoption consistent.</li>
+          <li>Staff-plus engineers and architects who set standards and absorb the risk of early decisions.</li>
+          <li>Assumes fluency with Parts 1 and 2 — you understand the agent loop, context windows, tool calls, and have shipped something meaningful with an agentic tool.</li>
+        </ul>
       </div>
 
       <div class="card">
-        <h2>What's Different from v1</h2>
+        <h4 class="ph">The gap this fills</h4>
+        <ul>
+          <li>Parts 1 and 2 make an <em>individual</em> effective with agentic tools. That is necessary but not sufficient.</li>
+          <li>When ten engineers each develop their own prompting habits, conventions, and tool configs in isolation, you get inconsistency, hidden risk, and no shared learning loop.</li>
+          <li>This guide makes an <em>organization</em> effective — safely, consistently, measurably, at scale.</li>
+          <li>The unit of analysis shifts from "my workflow" to "our platform, our standards, and our risk posture."</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">How to read it</h4>
+        <ul>
+          <li><strong>Training path (top to bottom):</strong> Start at The Map, follow the stage chapters in order. Each chapter maps to a stage transition in the maturity model. First-time readers should go linear.</li>
+          <li><strong>Reference mode:</strong> The Maturity Scorecard, Adoption Checklists, and Metrics Catalog are designed for fast lookup, not linear reading. Bookmark them after your first pass.</li>
+          <li><strong>Running case study:</strong> Meridian, a ~400-engineer B2B SaaS company, appears in every chapter. Follow their decisions stage by stage to see how the abstract becomes concrete.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">The three lenses</h4>
+        <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:14px;">Every chapter examines its topic through three lenses. You will see these tags throughout the guide.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span class="lens-tag people">People &amp; Process</span>
+            <span style="font-size:13.5px;color:var(--text-dim);">How people adopt, resist, and sustain change — hiring, training, norms, and culture.</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span class="lens-tag platform">Platform &amp; Infrastructure</span>
+            <span style="font-size:13.5px;color:var(--text-dim);">The technical substrate — configs, registries, CI/CD hooks, sandboxes, and cost controls.</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span class="lens-tag governance">Governance &amp; Risk</span>
+            <span style="font-size:13.5px;color:var(--text-dim);">Policies, review gates, compliance, audit trails, and the limits of acceptable autonomy.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info purple">
+        <strong>Series cross-link.</strong> This is Part 3. It assumes you have worked through <a href="gen-ai-zero-to-hero-guide.html" style="color:var(--purple);">Gen AI: Zero to Hero</a> (Part 1 — foundations, the agent loop, tool calls) and <a href="gen-ai-hero-to-architect-guide.html" style="color:var(--purple);">Gen AI: Hero to Architect</a> (Part 2 — methodology, spec-driven development, agentic workflow patterns). If you have not, start there first.
+      </div>
+    </section>
+
+    <section id="map" class="section">
+      <div class="sec-title">The Map</div>
+      <p class="sec-sub">A five-stage maturity model, three lenses, and the running case study — the conceptual backbone of everything that follows</p>
+
+      <div class="card">
+        <h4 class="ph">The five stages at a glance</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Each later chapter maps to one stage transition. This strip is your anchor.</p>
+        <div class="pkt" style="min-height:60px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Stage 0</div>
+            <div class="v">Ad-hoc</div>
+          </div>
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">Stage 1</div>
+            <div class="v">Pilot</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Stage 2</div>
+            <div class="v">Team</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Stage 3</div>
+            <div class="v">Org</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:1;">
+            <div class="l">Stage 4</div>
+            <div class="v">Enterprise</div>
+          </div>
+        </div>
+        <div class="ann">Parts 1 and 2 leave you at Stage 0. This guide takes you from Stage 0 to Stage 4, one transition at a time.</div>
+      </div>
+
+      <div class="card">
+        <h4 class="ph">Stage definitions and primary risks</h4>
         <table class="tbl">
           <thead>
             <tr>
-              <th></th>
-              <th>v1 — Zero to Hero</th>
-              <th>v2 — Hero to Architect</th>
+              <th>Stage</th>
+              <th>Name</th>
+              <th>Shape</th>
+              <th>Primary risk</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Reader</strong></td>
-              <td>New to AI</td>
-              <td>Picking up agentic coding tools</td>
+              <td><strong>0</strong></td>
+              <td>Ad-hoc</td>
+              <td>Scattered individuals, no shared practice — where Parts 1–2 leave you</td>
+              <td>Inconsistency, shadow usage, no learning loop</td>
             </tr>
             <tr>
-              <td><strong>Treatment</strong></td>
-              <td>Breadth — what is this</td>
-              <td>Depth — how do I work this way</td>
+              <td><strong>1</strong></td>
+              <td>Pilot</td>
+              <td>One small team proves value with a time-boxed experiment</td>
+              <td>Demo theater; unrepresentative wins</td>
             </tr>
             <tr>
-              <td><strong>Section length</strong></td>
-              <td>Short, many</td>
-              <td>Deep, fewer</td>
+              <td><strong>2</strong></td>
+              <td>Team</td>
+              <td>A team standardizes workflow, conventions, and enablement</td>
+              <td>Process ossification; uneven skill</td>
             </tr>
             <tr>
-              <td><strong>Tools</strong></td>
-              <td>Claude Code intro</td>
-              <td>Kilo Code + Claude Code + Gemini CLI deep dives + methodology layer</td>
+              <td><strong>3</strong></td>
+              <td>Org</td>
+              <td>Multiple teams; a platform and shared capabilities emerge</td>
+              <td>Config sprawl, cost runaway, duplicated effort</td>
             </tr>
             <tr>
-              <td><strong>Style</strong></td>
-              <td>Foundational</td>
-              <td>Practitioner + reference</td>
+              <td><strong>4</strong></td>
+              <td>Enterprise</td>
+              <td>Governance, compliance, and measurement at scale</td>
+              <td>Over-governance killing velocity; audit/security gaps</td>
             </tr>
           </tbody>
         </table>
-        <p>The short version: v1 teaches you the map; v2 teaches you how to drive.</p>
       </div>
 
       <div class="card">
-        <h2>What's Inside</h2>
-        <p>This guide is organized in three layers, built on three primary tools:</p>
+        <h4 class="ph">The three lenses — in depth</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Each stage transition must be evaluated through all three lenses. A change that succeeds on the Platform lens but fails on the People lens will stall or reverse.</p>
         <div class="flv-grid">
-          <div class="flv"><div class="flv-name">Foundations</div><div class="flv-desc">How agentic coding actually works: the loop, context, tools, models, surfaces (Ch 1–5)</div></div>
-          <div class="flv"><div class="flv-name">Methodology</div><div class="flv-desc">How you work: spec-driven dev, planning, TDD, debugging, review, parallel agents (Ch 6–11)</div></div>
-          <div class="flv"><div class="flv-name">Mastery</div><div class="flv-desc">The tools deep: Kilo Code, Claude Code, Gemini CLI, Superpowers, MCP (Ch 12–16)</div></div>
-          <div class="flv"><div class="flv-name">Kilo Code</div><div class="flv-desc">IDE-resident agent — modes, BYO model, custom rules</div></div>
-          <div class="flv"><div class="flv-name">Claude Code</div><div class="flv-desc">Terminal agent — skills, plugins, hooks, sub-agents</div></div>
-          <div class="flv"><div class="flv-name">Gemini CLI</div><div class="flv-desc">Free-tier terminal agent — 1M context, extensions</div></div>
+          <div class="flv">
+            <div class="flv-name" style="color:var(--green);">People &amp; Process</div>
+            <div class="flv-desc">Adoption curves, training programs, pairing norms, workflow conventions, and how skeptics become champions. The human side of every stage transition.</div>
+          </div>
+          <div class="flv">
+            <div class="flv-name" style="color:var(--blue);">Platform &amp; Infrastructure</div>
+            <div class="flv-desc">Golden configs, capability registries, CI/CD integration, sandbox isolation, cost controls, and the shared tooling layer that makes consistency possible at scale.</div>
+          </div>
+          <div class="flv">
+            <div class="flv-name" style="color:var(--orange);">Governance &amp; Risk</div>
+            <div class="flv-desc">Review gates, policy as code, compliance requirements, audit trails, incident playbooks, and the deliberate limits on agent autonomy that keep leadership comfortable.</div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>How to Read It</h2>
-        <div class="stp">
-          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Linear training path — first time through</div></div>
-          <p>Part 1 → Part 2 → Part 3 → Part 4. Each part builds on the previous. Part 4's worked example (<code>gitlog-report</code>) is most rewarding if you've absorbed the methodology in Part 2 first.</p>
-        </div>
-        <div class="stp">
-          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Dip-in reference — day-to-day use</div></div>
-          <p>Once you're working this way, Part 5 (Reference) is your home base. Decision matrices, cheat sheets, and the glossary are all designed for fast lookup, not linear reading.</p>
-        </div>
-        <div class="stp">
-          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">The three layers</div></div>
-          <p><strong>Foundations</strong> (Ch 1–5) — the mental model: agent loop, context, tools, model selection, surface choice. <strong>Methodology</strong> (Ch 6–11) — how you actually work: spec, plan, TDD, debug, review, parallel. <strong>Mastery</strong> (Ch 12–16) — the tools that make it real: Kilo Code, Claude Code, Gemini CLI, Superpowers, MCP.</p>
-        </div>
-        <div class="info purple"><strong>See The Map</strong> (next section) for a visual overview of how everything connects.</div>
-      </div>
-
-      <div class="card">
-        <h2>Prerequisites</h2>
-        <ul>
-          <li><strong>v1 mental model</strong> — tokens, context windows, LLM basics, RAG concept, what an agent is. You don't need to have memorized it; you need to have internalized the shape of it.</li>
-          <li><strong>Basic git and CLI fluency</strong> — you can clone a repo, run commands in a terminal, and read a diff without stress.</li>
-          <li><strong>Comfort installing tools</strong> — you can follow a README to install a CLI tool, set an API key, or add a VS Code extension without needing step-by-step hand-holding.</li>
-          <li><strong>No specific language required</strong> — the worked example uses Python, but the methodology applies to any stack. Adapt freely.</li>
+      <div class="case">
+        <div class="case-label">Meridian — The Running Case Study</div>
+        <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:10px;">Every chapter follows Meridian, a ~400-engineer B2B SaaS company, through the same stage transition the chapter covers. Meet the cast:</p>
+        <ul style="padding-left:18px;margin:0 0 12px;">
+          <li style="font-size:13.5px;margin-bottom:5px;"><strong>Riya</strong> — Staff engineer, skeptical. Loves rigor, hates hype. Becomes the toughest and most valuable critic of the rollout.</li>
+          <li style="font-size:13.5px;margin-bottom:5px;"><strong>Marcus</strong> — VP of Engineering. ROI-focused, politically savvy. Needs numbers before he will spend social capital on this.</li>
+          <li style="font-size:13.5px;margin-bottom:5px;"><strong>Priya</strong> — Senior engineer, quiet power user. Already shipping with AI tools on her own. Becomes the pilot lead almost by accident.</li>
+          <li style="font-size:13.5px;margin-bottom:5px;"><strong>The Platform/DevEx team</strong> — Four engineers who don't exist yet at Stage 0. They form at Stage 2 and own the internal tooling layer from Stage 3 onward.</li>
+          <li style="font-size:13.5px;margin-bottom:5px;"><strong>Dana</strong> — Security lead. Risk-averse by training. Her questions are always the right ones, even when they slow things down.</li>
         </ul>
+        <p style="font-size:12px;color:var(--text-muted);">Meridian is illustrative. All figures (headcount, cost, velocity improvements) are plausible based on public benchmarks, not drawn from any real company.</p>
       </div>
     </section>
 
