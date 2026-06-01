@@ -3835,6 +3835,168 @@ except Exception as e:
       </div>
     </section>
 
+    <!-- ===================== CH16 — CAPSTONE ===================== -->
+    <section id="ch16-rollout" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">16. Meridian's 12-Month Rollout</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <span class="lens-tag platform" style="margin-left:6px;">Platform &amp; Infrastructure</span>
+      <span class="lens-tag governance" style="margin-left:6px;">Governance &amp; Risk</span>
+      <p class="sec-sub" style="margin-top:14px;">Putting It Together — the whole journey, replayed as one continuous story</p>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:24px;line-height:1.75;">Every chapter in this guide met Meridian at a single stage transition. This capstone runs the tape from the beginning: the same ~400-engineer B2B SaaS company, the same cast, but the full arc end to end — twelve months from a stalled 12% adoption number to a governed, measured, paved-road enterprise. Each section maps to one stage and references the chapters where you saw the detail. Nothing here is new; it is the assembled narrative, so you can see how the pieces depend on each other before you adapt the playbook to your own org.</p>
+
+      <div class="info"><strong>Read this chapter as a continuity check.</strong> If you have read Ch 1–15, this is the story stitched together — proof that the stages compose. If you are skimming, this chapter is the fastest path to the shape of the whole rollout, with pointers back into the depth. The months are illustrative; the sequence and its dependencies are the point.</div>
+
+      <div class="card">
+        <h4 class="ph">The twelve months at a glance</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Months map to stages; each stage's chapters are noted. The transitions overlap in practice — a pilot does not end the day standardization begins — but the center of gravity moves left to right.</p>
+        <div class="pkt" style="min-height:60px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Month 0 · Stage 0</div>
+            <div class="v">Ad-hoc · Ch 1</div>
+          </div>
+          <div class="pkt-c bg-ipv6" style="flex:1.4;">
+            <div class="l">Months 1–2 · Stage 1</div>
+            <div class="v">Pilot · Ch 2–3</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:2;">
+            <div class="l">Months 3–5 · Stage 2</div>
+            <div class="v">Team · Ch 4–7</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:2.5;">
+            <div class="l">Months 6–9 · Stage 3</div>
+            <div class="v">Org &amp; Platform · Ch 8–11</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:2;">
+            <div class="l">Months 10–12 · Stage 4</div>
+            <div class="v">Enterprise · Ch 12–15</div>
+          </div>
+        </div>
+        <div class="ann">Stage 0 is where Parts 1 and 2 leave every org. The twelve months below are how Meridian moved across all four transitions, one at a time.</div>
+      </div>
+
+      <!-- 16.1 -->
+      <div class="card">
+        <h2>16.1 The starting state (Stage 0)</h2>
+        <p>Month zero. Meridian has 400 engineers and a three-month-old company-wide license to a leading AI coding tool. Aggregate telemetry shows <strong>12% daily-active adoption</strong>, and the number has not moved in six weeks. There is no shared standard, no shared data, and no shared story — three people looking at the same situation and drawing incompatible conclusions. This is the Stage 0 that <strong>Ch 1</strong> diagnosed.</p>
+
+        <h4 class="ph">What each person sees — and why none of them can act on it alone</h4>
+        <ul>
+          <li><strong>Priya</strong> is the quiet power user. She has shipped roughly <strong>2× the reviewable PRs</strong> of her teammates for two months, with a lower rework rate, using a personal prompting approach nobody has written down. Her wins are real — and trapped. She mentioned her method to one colleague, who tried it once, got a confusing result, and reverted. <em>Wins that do not propagate are Stage 0's defining symptom (Ch 1.2).</em></li>
+          <li><strong>Riya</strong>, a skeptical staff engineer, has reviewed hundreds of PRs and cannot tell a safe AI-assisted PR from one that looks fine but ships a subtle logic error the test suite misses. "We're optimizing for the appearance of speed. I can't tell if any of this is actually safe." Her discomfort is the correct discomfort — there is no quality signal to calibrate against (Ch 1.3).</li>
+          <li><strong>Marcus</strong>, VP of Engineering, approved the spend and expected a measurable velocity lift by now. The data is ambiguous and he is starting to question the investment. He needs numbers before he will spend social capital (Ch 1.4).</li>
+        </ul>
+
+        <div class="info orange"><strong>The Stage 0 trap is not low capability — it is the absence of a learning loop.</strong> Priya's method works; it simply has no channel to spread. Riya's rigor is sound; it has no data to attach to. Marcus's impatience is rational; he has no credible measurement. The next eleven months are the construction of the loop that connects them. <em>See Ch 1 for the full diagnosis.</em></div>
+      </div>
+
+      <!-- 16.2 -->
+      <div class="card">
+        <h2>16.2 Months 1–2: the pilot (Stage 1)</h2>
+        <p>Marcus will not fund an org-wide push on a hunch, and Riya will not endorse one on enthusiasm. The Stage 1 move — covered in <strong>Ch 2</strong> (the business case) and <strong>Ch 3</strong> (running a credible pilot) — is to convert the disagreement into a falsifiable experiment with a real budget owner and a real stop condition.</p>
+
+        <h4 class="ph">The decisions that made the pilot credible</h4>
+        <ul>
+          <li><strong>A one-page proposal Marcus could say yes to (Ch 2).</strong> Priya and Marcus reduce the ask to a single page: the workstream, the success hypothesis, the cost, the time-box, and what gets decided at the end. No multi-quarter roadmap — one falsifiable question. This is the artifact that earns the yes and gives the pilot something to be measured against.</li>
+          <li><strong>The payments team as pilot, Priya leading (Ch 3).</strong> Meridian picks the payments team — not because it is glamorous, but because its work is representative. A pilot on an unrepresentative team produces evidence that does not generalize. Priya leads almost by accident: she is already the person who knows what good looks like.</li>
+          <li><strong>Riya's falsifiable hypothesis and stop condition (Ch 3.2).</strong> Riya insists the pilot can <em>fail</em>. The success hypothesis is specific and measurable; the stop condition is written down before the pilot starts, so the result cannot be rationalized after the fact. Her rigor, which read as obstruction at Stage 0, is now the thing that makes the result trustworthy.</li>
+          <li><strong>A deliberately unglamorous workstream.</strong> The pilot runs on a representative bug-fix stream, not a cherry-picked greenfield demo. This is the explicit defense against demo theater (Ch 3.4) — the failure mode where a pilot proves only that the tool can do the one task it was staged to do.</li>
+          <li><strong>The real output is knowledge, captured in <code>pilot-learnings.md</code>.</strong> The pilot's durable deliverable is not the velocity number — it is the written record of what worked, what didn't, and what surprised the team. The <strong>legacy billing module</strong> surfaces here as a scoping signal: the agent struggles where the codebase is least legible, which tells Meridian something about where to invest before scaling.</li>
+        </ul>
+
+        <div class="info green"><strong>Stage 1 buys evidence, not adoption.</strong> At the end of month two Meridian does not have a transformed org — it has a credible answer to one question and a document (<code>pilot-learnings.md</code>) that the next stage turns into a standard. The pilot's job was to make Stage 2 fundable and grounded. It did. <em>See Ch 2–3.</em></div>
+      </div>
+
+      <!-- 16.3 -->
+      <div class="card">
+        <h2>16.3 Months 3–5: team standardization (Stage 2)</h2>
+        <p>The pilot proved value on one team. Stage 2 — <strong>Ch 4–7</strong> — is the work of turning one team's tacit habits into transferable practice, and learning the hard way that scaling people is not the same as scaling a tool.</p>
+
+        <h4 class="ph">From a power user's habits to a team's shared practice</h4>
+        <ul>
+          <li><strong>The versioned shared playbook (Ch 4).</strong> The payments team converts <code>pilot-learnings.md</code> into a versioned playbook: context-loading conventions, the spec-then-plan-then-implement loop, an AI-review checklist. Crucially it is <em>versioned</em> — a reviewed artifact with an owner, not a wiki page. This is the seed of what becomes the golden config two stages later.</li>
+          <li><strong>Champions, not just docs (Ch 5).</strong> <strong>Amir</strong> and <strong>Nadia</strong> emerge as payments-team champions — the human propagation channel that documents alone never replace. An onboarding checklist brings new members into the workflow from day one. The floor rises, not just the ceiling.</li>
+          <li><strong>Amir's bug, and the blameless response (Ch 6).</strong> Amir ships an agent-assisted bug to payments production. The response is blameless: the question is "what in our workflow let this through?" not "who is at fault?" This single incident sets the cultural precedent that makes every later incident survivable — and the pattern returns, deliberately, at Stage 3 scale (16.5).</li>
+          <li><strong>The first dashboard retires a vanity metric (Ch 7).</strong> Marcus asks Priya for an "AI-authored %" headline. Riya talks him out of it: it is unmeasurable, gameable, and silent on quality. The dashboard ships instead with <strong>PR cycle time</strong> (improving), <strong>escape defect rate</strong> (flat — the honest story), and <strong>adoption depth</strong> (which immediately exposes one team stuck at 35%). Marcus calls it the most credible engineering update he has seen in two years, <em>because it names the gaps</em>.</li>
+        </ul>
+
+        <div class="info"><strong>Stage 2's lesson is that standardization is a people problem wearing a process costume.</strong> The playbook (Ch 4) only works because champions carry it (Ch 5); the incident (Ch 6) only strengthens the team because the culture was set to learn rather than blame; the metrics (Ch 7) only earn trust because they refuse to flatter. <em>See Ch 4–7.</em></div>
+      </div>
+
+      <!-- 16.4 -->
+      <div class="card">
+        <h2>16.4 Months 6–9: org &amp; platform (Stage 3)</h2>
+        <p>One standardized team does not scale by cloning itself. Stage 3 — <strong>Ch 8–11</strong> — is where Meridian stops treating tooling as a team artifact and starts treating it as a platform, with a team that owns it. This is also the stage where every shortcut taken earlier presents its bill.</p>
+
+        <h4 class="ph">The platform forms — and the failures that shaped it</h4>
+        <ul>
+          <li><strong>The Platform/DevEx team forms.</strong> Four engineers take ownership of the shared tooling layer. From here on, the golden config, the registry, the CI integration, and the cost controls have an owner — which is the structural difference between Stage 2 and Stage 3.</li>
+          <li><strong>Golden config replaces copy-paste (Ch 8).</strong> The versioned playbook from Ch 4 becomes a real golden baseline that layers org → team → repo. Teams pull it instead of pasting it, so improvements propagate instead of fossilizing in forks.</li>
+          <li><strong>The capability registry launches (Ch 9).</strong> An internal registry lets teams discover and reuse shared capabilities; a shared MCP server (<code>meridian-deploy-mcp-server</code>) gets reused across teams instead of being rebuilt — the cure for Stage 2's most expensive hidden tax, duplicated effort.</li>
+          <li><strong>The review bot, retuned to advisory (Ch 10).</strong> An agent review bot runs on every PR. After an auto-approve configuration lets a bug through, it is retuned to <em>advisory-only</em> — agents assist the merge decision, they do not own it. The boundary between assistive and authoritative is drawn by an incident, not a slide.</li>
+          <li><strong>The cost spike and the FinOps rebuild (Ch 11).</strong> The AI invoice triples in four weeks. The cause is a single uncapped payments CI job (Amir and Nadia's test-suggestion agent) that ran 340 times in a high-commit week; the top 12 runs accounted for 60% of the month's spend. The fix: per-team quotas, a 10,000-token per-run cap with a 5-minute timeout, model routing that sends routine steps to a fast-cheap tier (cutting ~70% off those steps; 58% of calls didn't need the capable tier), and a circuit breaker at 80% of daily budget. Riya's verdict: "The spike was the best thing that could have happened. We built the cost infrastructure we should have built <em>before</em> Stage 3, not after."</li>
+        </ul>
+
+        <div class="info orange"><strong>Stage 3 is where deferred infrastructure comes due.</strong> The auto-approve bug (Ch 10) and the cost spike (Ch 11) were both predictable consequences of scaling before the guardrail existed. The platform team did not prevent every failure — it converted each one into a control that the whole org inherits. That is the Stage 3 pattern: build the platform, then let the first incidents tell you where it is thin. <em>See Ch 8–11.</em></div>
+      </div>
+
+      <!-- 16.5 -->
+      <div class="card">
+        <h2>16.5 Months 10–12: enterprise governance (Stage 4)</h2>
+        <p>Before agentic CI runs on every team's repositories, the stakes change: a single misconfiguration is now an org-wide exposure. Stage 4 — <strong>Ch 12–15</strong> — is the governance, security, and calibration work that makes scale safe without making it slow.</p>
+
+        <h4 class="ph">From a security gate to a paved road</h4>
+        <ul>
+          <li><strong>Dana's security review finds three issues (Ch 12).</strong> Security lead <strong>Dana</strong> treats the pre-rollout review as a gate, not an advisory. She finds: a <strong>staging API token</strong> that leaked into model context via a broad directory scan of <code>.env.test</code> (blocker — a redaction layer is deployed, tokens rotated); an <strong>over-broad MCP tool</strong> (<code>list_all_services</code>) exposing the internal service map (removed, replaced with a scoped <code>list_owned_services</code>, republished as <code>v1.2.0</code>); and an <strong>unreviewed community MCP server</strong> running in CI for six weeks (reviewed, scoped to a domain allowlist, added to the registry as <em>community</em> tier). Riya, the original skeptic: "I trust the rollout now — not because nothing was found, but because Dana found things and we fixed them."</li>
+          <li><strong>The review becomes a tiered, audited gate policy (Ch 13).</strong> Dana's three-item checklist hardens into a formal, tiered review-gate process backed by policy-as-code: human review scaled by blast radius, a reconstructable audit trail, and a mandatory security checklist before any workflow goes org-wide.</li>
+          <li><strong>The Ch 6 bug pattern recurs at scale (Ch 14).</strong> Amir's Stage 2 bug pattern returns — this time as a production DB-write incident at Stage 3 scale. It is caught via the audit trail the governance work put in place, and the blameless postmortem (the culture set in Ch 6) closes the loop by hardening a guardrail instead of assigning blame. The audit trail Dana fought for is what made the incident recoverable.</li>
+          <li><strong>The paved-road model settles the standardization tension (Ch 15).</strong> Meridian draws the line explicitly: <em>mandate</em> security and audit (non-negotiable), <em>recommend</em> the golden configs (the default, genuinely better), and leave the rest <em>free</em> within guardrails — with a documented escape hatch that is easier to file than to deviate silently. When six teams quietly deviate from the context-loading sequence, that signal revises the standard rather than punishing the teams.</li>
+        </ul>
+
+        <div class="info green"><strong>Stage 4 is calibration, not lockdown.</strong> The governance arc (Ch 12–14) pulls hard toward control; Ch 15 is the deliberate counterweight that keeps velocity and local fit alive. The end state is a paved road teams choose because it is easier — with mandates only where a single failure would harm the whole org. <em>See Ch 12–15.</em></div>
+      </div>
+
+      <!-- 16.6 -->
+      <div class="card">
+        <h2>16.6 What they'd do differently</h2>
+        <p>An honest retrospective. Meridian's rollout worked, but not because the team got everything right the first time — it worked because the team treated each mistake as a signal and corrected. These are the lessons Riya, Marcus, and the Platform/DevEx team would tell their past selves.</p>
+
+        <h4 class="ph">Candid lessons from twelve months</h4>
+        <ul>
+          <li><strong>We started measuring too late.</strong> The metrics dashboard (Ch 7) did not exist until six weeks into Stage 2. For months, every conversation about value was an argument about anecdotes. If we had instrumented even two honest metrics — cycle time and escape rate — during the pilot, Marcus would have had a scoreboard from week one and the Stage 0 stalemate would have ended sooner.</li>
+          <li><strong>We under-resourced the platform team and formed it late.</strong> The Platform/DevEx team did not exist until Stage 3, by which point config sprawl, duplicated MCP servers, and the cost spike were already in motion. Standing up even a two-person platform function at the <em>start</em> of Stage 2 would have prevented the worst of the Stage 3 cleanup. The platform was treated as a Stage 3 deliverable; it should have been a Stage 2 investment.</li>
+          <li><strong>We built cost controls reactively, after the bill.</strong> The Ch 11 spike was avoidable. Per-run token caps and a circuit breaker are cheap to add up front and expensive to add after a tripled invoice. "Build the cost infrastructure before Stage 3, not after" is the one-line version.</li>
+          <li><strong>We over-gated early, then corrected.</strong> The Ch 10 review bot started in auto-approve mode (too much trust), overcorrected toward blocking everything after the first bug got through, and only landed on advisory-only after two retunes. We would skip straight to advisory: let the agent inform the human decision from day one rather than discovering the right autonomy level through incidents.</li>
+          <li><strong>We let escape-hatch friction hide real signal.</strong> Six teams silently deviated from a standard (Ch 15) because filing an escape hatch was harder than ignoring the rule. Shadow deviation is data we nearly lost. Making the escape hatch a five-field form, not a one-page template, should have been the original design.</li>
+          <li><strong>We treated security as a Stage 4 gate instead of a Stage 1 habit.</strong> Dana's review (Ch 12) found a leaked token that had been flowing to a model provider since the pilot. Two of her three findings predated Stage 4 by months. A lightweight egress check during the pilot would have caught the secret-in-context problem before it became a rotation exercise across the org.</li>
+        </ul>
+
+        <div class="info red"><strong>The through-line: most of Meridian's pain came from doing the right thing one stage too late.</strong> Metrics, platform investment, cost controls, and security all worked once they existed — they just existed later than they should have. When you adapt this playbook, the highest-leverage move is to pull each of these earlier than Meridian did. The stages still apply; the timing is yours to improve.</div>
+      </div>
+
+      <!-- 16.7 -->
+      <div class="card">
+        <h2>16.7 Your turn</h2>
+        <p>Meridian is one path through the five stages, not the path. Your org has a different size, a different risk posture, a different starting adoption number. The stages and lenses transfer; the months, the cast, and the specific decisions are yours to set. Here is how to adapt the playbook deliberately rather than copying the timeline.</p>
+
+        <h4 class="ph">How to adapt the playbook to your org</h4>
+        <ul>
+          <li><strong>Locate yourself first.</strong> Run the <a onclick="go('ref-scorecard')">Maturity Scorecard</a> across all three lenses — People &amp; Process, Platform &amp; Infrastructure, Governance &amp; Risk. Most orgs are not at a single clean stage: you may be Stage 2 on people and Stage 0 on platform. The scorecard tells you which lens is your bottleneck, and the bottleneck lens is where you invest next.</li>
+          <li><strong>Do not skip a stage, but do compress the timeline.</strong> The dependencies are real — you cannot run a credible Stage 3 platform without the Stage 2 standards it is built from. But Meridian's twelve months can be three or eighteen depending on your size and urgency. Compress by pulling metrics, platform, and security earlier (16.6); do not compress by skipping the pilot's falsifiable evidence (Ch 3) or the security gate (Ch 12).</li>
+          <li><strong>Work the per-stage checklists.</strong> Each stage transition has a concrete entry and exit checklist in the <a onclick="go('ref-checklists')">Adoption Checklists</a>. Use them as gates: do not start Stage 3 platform work until the Stage 2 exit checklist is green. The checklists are the operational form of everything this chapter narrated.</li>
+          <li><strong>Find your Priya, Riya, Marcus, and Dana.</strong> The rollout ran on roles, not just process: a credible power user to prove value, a respected skeptic to keep it honest, an executive sponsor who owns the budget and the numbers, and a security lead who gates before scale. If any of these roles is empty in your org, fill it before the corresponding stage — an unstaffed skeptic role is how vanity metrics survive, and an unstaffed security role is how tokens leak for months.</li>
+          <li><strong>Build the learning loop early, whatever your stage.</strong> Meridian's core failure at Stage 0 was the absence of a loop connecting wins, evidence, and decisions. Your first move at any stage is to make sure that what one team learns can reach the next team — through a versioned playbook, a champion, a metric, or a registry entry. The loop is the engine; the stages just describe where it runs.</li>
+        </ul>
+
+        <div class="info purple"><strong>Start where you are, measure honestly, and pull the hard infrastructure earlier than feels comfortable.</strong> The scorecard tells you your stage, the checklists tell you the gates, and this chapter told you the story of what happens when you respect the sequence but improve the timing. Meridian got from a stalled 12% to a governed paved road in a year. Your numbers will differ; the shape will not.</div>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('map')">→ The Map: Five Stages &amp; Three Lenses</a>
+        <a onclick="go('ref-scorecard')">→ Maturity Scorecard</a>
+        <a onclick="go('ref-checklists')">→ Adoption Checklists</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
