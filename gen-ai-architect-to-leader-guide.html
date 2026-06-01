@@ -842,6 +842,246 @@
       </div>
     </section>
 
+    <!-- ===================== CH2 ===================== -->
+    <section id="ch2-case" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">2. The Business Case</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <span class="lens-tag governance" style="margin-left:6px;">Governance &amp; Risk</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: the three questions every leader actually asks before committing budget; why many published ROI claims don't survive contact with a real engineering org; what AI tooling genuinely costs (seat licenses are the visible tip); how to think about build-vs-buy and vendor posture before you standardize; and how to structure a one-page pilot proposal that earns a yes and gives you something falsifiable to measure.</p>
+
+      <!-- 2.1 -->
+      <div class="card">
+        <h2>2.1 What leaders actually ask</h2>
+        <p>When you bring an AI tooling proposal to a VP or a CFO, the question in the room is never "is this technology interesting?" It is always one of three questions — often all three, in rapid succession.</p>
+
+        <h4 class="ph">"What does this buy us?"</h4>
+        <ul>
+          <li>Leaders think in outcomes, not features. Saying "engineers can autocomplete code faster" is a feature description. Saying "we expect to reduce the time from ticket to reviewable PR on a class of well-scoped tasks" is an outcome claim — and it immediately invites the follow-up: "how will you know?"</li>
+          <li>The outcome framing forces you to be specific about which work changes. Not all engineering work is equally susceptible to AI acceleration. Greenfield feature work on well-documented APIs looks different from debugging a race condition in a legacy service that has no tests and a decade of undocumented decisions baked into the binary.</li>
+          <li>If you can't describe the outcome in terms that appear in your existing engineering metrics — cycle time, PR throughput, rework rate, time-to-first-review — the claim will not land with a data-oriented leader.</li>
+        </ul>
+
+        <h4 class="ph">"What's the risk?"</h4>
+        <ul>
+          <li>This question comes in two flavors. The first is about security and compliance: where does our code go, who sees it, what are the data-residency implications? The second is subtler: what happens to our codebase quality, our engineers' skills, and our review process if we get this wrong?</li>
+          <li>Most leaders asking this question are not trying to kill the proposal. They are trying to understand whether the person proposing it has thought about the downside. A confident, specific answer ("here are the two risks we've identified and here is how the pilot controls for them") is almost always more persuasive than a reassuring vague one.</li>
+          <li>If you don't surface the risks yourself, a skeptic in the room will do it for you — at a worse moment, with worse framing.</li>
+        </ul>
+
+        <h4 class="ph">"What does it cost?"</h4>
+        <ul>
+          <li>This is not just about the line-item on the license invoice. It is about the full cost of the initiative: license fees, token spend, the engineering time required to enable people properly, the review load increase in the short term, and the opportunity cost of the platform work the pilot requires.</li>
+          <li>A leader who only hears the per-seat number and later discovers the hidden costs will feel misled — even if none of the costs were concealed intentionally. Enumerate them upfront, even when the estimates are rough.</li>
+          <li>The most credible cost answer includes a timebox: "here is what we expect to spend in a 6-week pilot, here is what we expect to learn, and here is the decision we'll make at the end." That framing transforms a cost question into a structured investment question.</li>
+        </ul>
+
+        <div class="info"><strong>Speak to outcomes, not features.</strong> Every element of your business case should be answerable in terms of what changes for the engineering org and how you will know. Features describe the tool. Outcomes describe the work.</div>
+      </div>
+
+      <!-- 2.2 -->
+      <div class="card">
+        <h2>2.2 ROI without snake oil</h2>
+        <p>AI coding tool vendors publish impressive-sounding productivity numbers. Some of those numbers are real under specific conditions. Many collapse when the underlying methodology is examined. Understanding the gap matters before you build a business case on top of someone else's claim.</p>
+
+        <h4 class="ph">Where time savings are real</h4>
+        <ul>
+          <li>Tasks with a clear, bounded scope and sufficient context available in the codebase tend to benefit genuinely. Writing a new endpoint that follows an existing pattern, generating a test suite for a function with well-defined inputs and outputs, or drafting a migration script for a well-specified schema change — these are real wins, and the time savings are measurable.</li>
+          <li>Boilerplate-heavy work is consistently where the gains are largest. Engineers who spend meaningful portions of their week writing glue code, configuration files, or repetitive test scaffolding see the most pronounced throughput increases.</li>
+          <li>Exploratory understanding of unfamiliar code — "explain what this module does and what would break if I changed this interface" — is genuinely faster with an AI tool than with unaided reading, for most engineers.</li>
+        </ul>
+
+        <h4 class="ph">Where "X% faster" claims collapse</h4>
+        <ul>
+          <li>Most published productivity benchmarks measure time-to-first-completion of a specific, isolated task under controlled conditions. They do not measure cycle time on a real ticket in a real codebase with a real review process and a real deployment pipeline.</li>
+          <li>The claim "developers are 55% faster" typically refers to a narrow category of tasks, not to the aggregate velocity of an engineering team. Once you add the time for reviewing AI-assisted output (which requires more care, not less), verifying edge cases, and correcting subtle errors the test suite missed, the gain compresses significantly.</li>
+          <li>Productivity also does not aggregate linearly. If one engineer is 40% faster on code generation tasks but those tasks represent 30% of their actual week, the net impact on ticket throughput is roughly 12% — much less than the headline number suggests.</li>
+          <li>Variance matters more than averages. A tool that makes your best engineers 20% faster while making your median engineers 5% faster and your most cautious engineers slightly slower (due to review overhead on generated code they distrust) is a different business case than one where the gains are uniform.</li>
+        </ul>
+
+        <h4 class="ph">Value delivered vs activity generated</h4>
+        <ul>
+          <li>Throughput metrics (PRs per week, lines written, commits per day) are activity metrics. They measure motion, not value. An engineer who generates twice as many PRs but introduces twice as many defects has not become more valuable.</li>
+          <li>The right measure is value delivered: features shipped that work, bugs fixed that stay fixed, technical debt retired that actually reduces future velocity. These are harder to measure but they are what leaders actually care about.</li>
+          <li>Design your pilot metrics around value delivered, not activity generated. This is harder upfront, but it produces a business case that holds up to scrutiny — and that scales from your pilot into how you justify the broader rollout.</li>
+        </ul>
+
+        <div class="info orange"><strong>An honest framing is more durable than an optimistic one.</strong> A business case that projects 40% productivity improvement and delivers 12% will destroy trust in the next proposal. A business case that projects 10–15% reduction in cycle time on well-scoped tasks and delivers 13% will earn you the next conversation.</div>
+      </div>
+
+      <!-- 2.3 -->
+      <div class="card">
+        <h2>2.3 Cost realities</h2>
+        <p>The visible cost of an AI coding tool is the seat license. The full cost is considerably higher, and the gap between visible and full cost is where most initial proposals go wrong.</p>
+
+        <h4 class="ph">Token spend</h4>
+        <ul>
+          <li>Tools backed by frontier models (Claude Opus/Sonnet 4.7, GPT-5, Gemini 3 series) charge per token consumed — not per session, not per user action. An agentic coding tool that runs a multi-step task across a large codebase can consume tens of thousands of tokens in a single session.</li>
+          <li>In agentic mode, token consumption is harder to predict than in chat mode. Multi-step tasks compound: each loop iteration re-sends context, tool results, and prior turns. A task that takes 20 iterations can cost 10–20× what a single well-structured prompt would cost.</li>
+          <li>Teams that go from chat-mode tool use to agentic-mode tool use often see a 3–5× increase in per-engineer monthly token spend. Budget accordingly.</li>
+        </ul>
+
+        <h4 class="ph">The hidden costs</h4>
+        <ul>
+          <li><strong>Enablement time:</strong> Giving engineers access is not the same as enabling them. A realistic enablement program for a 20-person pilot team includes 3–5 hours of structured onboarding per engineer, ongoing office hours, and the time cost of the engineer or team lead who facilitates it. At 400 engineers, that is not a rounding error.</li>
+          <li><strong>Review load:</strong> Code review of AI-assisted PRs requires more discipline, not less. Reviewers need to check for subtly plausible-but-wrong logic that a less experienced engineer would not produce. In the short term, this increases review time before the team develops good review norms for AI-assisted code. Budget for a temporary review-load increase during the pilot.</li>
+          <li><strong>Infrastructure and integration:</strong> Custom system prompts, shared context files, CI pipeline integration for agentic review steps, and secret-detection tooling to prevent accidental credential exposure all require engineering time to build and maintain. A pilot that skips this infrastructure creates the shadow-usage risk described in Chapter 1.</li>
+        </ul>
+
+        <table class="tbl" style="margin-top:20px;">
+          <thead>
+            <tr>
+              <th>Cost component</th>
+              <th>Illustrative monthly figure (20-person pilot team)</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Seat licenses</td>
+              <td>$800–$4,000</td>
+              <td>Varies widely by tool and tier; check current vendor pricing</td>
+            </tr>
+            <tr>
+              <td>Token / API spend</td>
+              <td>$1,000–$6,000</td>
+              <td>Highly variable; agentic workloads consume far more than chat workloads</td>
+            </tr>
+            <tr>
+              <td>Enablement time (one-time)</td>
+              <td>~$8,000–$12,000 fully-loaded</td>
+              <td>~4 hrs × 20 engineers × blended eng cost; amortized over pilot duration</td>
+            </tr>
+            <tr>
+              <td>Review overhead (temporary)</td>
+              <td>~5–10% of pilot team's review hours</td>
+              <td>Decreases as review norms mature; track actuals</td>
+            </tr>
+            <tr>
+              <td>Platform / infra work</td>
+              <td>0.25–0.5 FTE-months</td>
+              <td>Shared context files, CI integration, secret scanning hooks</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info" style="margin-top:12px;"><strong>Illustrative only — verify current pricing.</strong> The figures above are representative ranges to illustrate cost structure, not current vendor quotes. Licensing models, token prices, and API tiers change frequently. Verify current pricing directly with each provider before building a budget.</div>
+      </div>
+
+      <!-- 2.4 -->
+      <div class="card">
+        <h2>2.4 Build-vs-buy &amp; vendor posture</h2>
+        <p>Before committing to a tool at the org level, you face two related decisions: whether to standardize on a single tool or allow multiple tools, and what your posture is on vendor lock-in. Both decisions are reversible, but reversing them is expensive — think carefully before the pilot ends.</p>
+
+        <h4 class="ph">Single-tool standardization vs multi-tool flexibility</h4>
+        <ul>
+          <li>Standardizing on one tool simplifies enablement, shared context management, and review norms. It is also easier to measure: when everyone is using the same tool, attribution of outcomes is more tractable.</li>
+          <li>Multi-tool environments reflect reality for most engineering orgs. Some engineers will have strong preferences; some teams will have different workflows; some tasks genuinely benefit from different tools. Forcing uniformity too early creates resistance.</li>
+          <li>A practical middle ground: standardize on one tool for team-level workflows (shared context files, CI integration, review norms) while allowing personal-use variation for individual coding sessions where it doesn't touch shared infrastructure.</li>
+        </ul>
+
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--green);">Single-tool standardization</h4>
+            <p style="font-size:13px;"><strong>Simpler governance:</strong> One data-residency agreement, one audit log format, one set of review norms to teach.<br><br>
+            <strong>Better shared context:</strong> One CLAUDE.md or equivalent system-prompt file that the whole team maintains and improves.<br><br>
+            <strong>Cleaner measurement:</strong> All productivity signals come from the same tool, so attribution is more tractable.<br><br>
+            <strong>Watch for:</strong> Forcing uniformity before teams have found what works can kill adoption — engineers who hate the mandated tool will stop using any tool.</p>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--blue);">Multi-tool flexibility</h4>
+            <p style="font-size:13px;"><strong>Accommodates preferences:</strong> Engineers are more likely to adopt a tool they chose than one mandated from above.<br><br>
+            <strong>Model diversity:</strong> Using Claude Opus/Sonnet for one pass and GPT-5 for a second independent review catches more issues than a single-model workflow.<br><br>
+            <strong>Vendor negotiation leverage:</strong> A portfolio posture prevents single-vendor lock-in and creates pricing pressure.<br><br>
+            <strong>Watch for:</strong> Each additional tool adds a governance surface: a new data-residency agreement, new review norms, new enablement content, new cost center to track.</p>
+          </div>
+        </div>
+
+        <h4 class="ph" style="margin-top:20px;">Lock-in vs flexibility</h4>
+        <ul>
+          <li>AI coding tools are not as sticky as infrastructure databases, but switching costs are real: shared context files, team conventions, CI integrations, and engineers' muscle memory are all tool-specific.</li>
+          <li>Avoid embedding a specific vendor's proprietary format deeply into your CI pipeline or your shared context conventions during the pilot. Prefer portable conventions (a plain-text AGENTS.md or equivalent that any tool can consume) over tool-specific configuration that creates migration cost later.</li>
+          <li>Negotiate pilot contracts that include an opt-out window. A 6-week pilot that converts automatically to a 12-month enterprise contract is a negotiating position, not a requirement.</li>
+        </ul>
+      </div>
+
+      <!-- 2.5 -->
+      <div class="card">
+        <h2>2.5 Framing the ask</h2>
+        <p>The most effective pilot proposal is not a slide deck — it is a one-page document that answers the questions a skeptical leader will ask before they have a chance to ask them. The structure below is a template; the content is yours to fill with specifics from your org.</p>
+
+        <h4 class="ph">One-page pilot proposal template</h4>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Element</th>
+              <th>What belongs here</th>
+              <th>Common mistakes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Problem</strong></td>
+              <td>One or two sentences describing the specific engineering pain this pilot addresses. Cite a metric if you have one (e.g., "average cycle time on service-layer tickets is 6 days; industry benchmark for our stage is 3–4 days").</td>
+              <td>Describing the technology ("AI coding tools are powerful") instead of the problem. If there's no problem, there's no business case.</td>
+            </tr>
+            <tr>
+              <td><strong>Hypothesis</strong></td>
+              <td>A falsifiable statement: "If we give the payments team structured access to [tool] with a shared context file and 4 hours of onboarding, we expect to see [metric] move by [range] over 6 weeks."</td>
+              <td>Hypotheses that can't be falsified ("productivity will improve") give you nothing to stand behind when the pilot ends and the outcome is ambiguous.</td>
+            </tr>
+            <tr>
+              <td><strong>Scope</strong></td>
+              <td>Team name, size, and why this team (they're a good test bed, not the most critical path, representative of your broader org). Explicit out-of-scope: what this pilot does not try to do.</td>
+              <td>Picking a team that is either too small to generalize from or too critical to absorb the disruption of a learning experiment.</td>
+            </tr>
+            <tr>
+              <td><strong>Success metrics</strong></td>
+              <td>2–3 specific, measurable outcomes with a baseline and a threshold. Example: "PR cycle time ≤ 4 days (baseline: 6.2 days); rework rate does not increase beyond ±10% of current baseline."</td>
+              <td>Metrics that are activity-based rather than outcome-based. "Number of PRs created" measures effort, not value.</td>
+            </tr>
+            <tr>
+              <td><strong>Cost</strong></td>
+              <td>Full cost estimate: license/token spend + enablement time + infra work. Use ranges, not point estimates. Cite assumptions explicitly so they can be challenged.</td>
+              <td>Presenting only the seat-license number. When the full cost emerges later, it reads as concealment even when it wasn't.</td>
+            </tr>
+            <tr>
+              <td><strong>Timebox</strong></td>
+              <td>A fixed end date — typically 4–8 weeks. The timebox creates urgency, limits downside, and makes it easier to get a yes. "Try it for 6 weeks" is a different ask than "give us a year."</td>
+              <td>Open-ended pilots with no defined end state drift into the normal state of affairs without ever generating a decision.</td>
+            </tr>
+            <tr>
+              <td><strong>Exit criteria</strong></td>
+              <td>Two explicit decision paths at the end of the timebox: what you will recommend if the pilot succeeds, and what you will recommend if it doesn't. Include a stop condition: "If we see rework rate increase >20% in weeks 1–2, we pause and recalibrate."</td>
+              <td>No exit criteria means the pilot never ends — it just becomes the status quo, which is exactly the shadow-usage pattern Chapter 1 described.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="tool-alt">
+          <strong>Tool-agnostic note on pilot tooling.</strong> The proposal template above works regardless of which AI coding tool you are piloting. If you are running a comparative pilot across tools (e.g., Claude Code vs Cursor vs Kilo Code), scope each tool to a sub-group and ensure the success metrics and enablement are equivalent so you can compare outcomes fairly. Avoid the common mistake of giving one tool more enablement investment than another and then attributing the outcome difference to the tools.
+        </aside>
+
+        <div class="info green"><strong>The one-page constraint is the point.</strong> If you cannot fit the business case onto one page, you have not yet made the key decisions. A tight proposal is not a sign of insufficient rigor — it is evidence that you have done the hard work of prioritizing the things that matter.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 0→1: Drafting the Proposal</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus</strong>, VP of Engineering, has been asked to justify the license spend at the next board prep. He has aggregate usage numbers (12% daily active) and no outcome data. He tells Priya: "I need something I can stand behind. Give me a page that tells me what we're actually trying to prove and what it costs."</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Priya drafts a one-page proposal: the payments team (18 engineers), a 6-week structured pilot, shared context files and 4 hours of onboarding per engineer, and a primary metric of PR cycle time on service-layer tickets (baseline: 5.8 days). The cost section includes token spend, enablement time, and 0.25 FTE-months of platform work — not just the seat licenses already paid.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong> reviews the draft. Her first comment: "The success metric is 'cycle time improves.' That's not falsifiable — what does failure look like? You need a threshold and you need a stop condition." Priya revises: cycle time ≤ 4.5 days by week 6; rework rate does not increase beyond 15% of current baseline; if rework rate exceeds 25% in weeks 1–2, the pilot pauses for a calibration week.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;">Marcus approves the revised proposal. His comment: "This is the first time I've seen a proposal that tells me what we're buying, what it costs including the parts people don't usually mention, and what we'll do if it doesn't work. I can take this to the board."</li>
+          <li style="font-size:13.5px;margin-bottom:0px;">The key move was not making the proposal more optimistic. It was making it more specific — and therefore more credible. Falsifiable success metrics and explicit exit criteria are not signs of caution; they are what earns organizational trust for the next ask.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch3-pilot')">→ Ch 3. Running a Credible Pilot</a>
+        <a onclick="go('ch7-metrics')">→ Ch 7. Measuring What Matters</a>
+        <a onclick="go('ch11-cost')">→ Ch 11. Sandboxing, Isolation &amp; Cost Control</a>
+      </div>
+    </section>
+
 
   </main>
 </div>
