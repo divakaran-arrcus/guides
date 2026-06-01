@@ -1267,6 +1267,203 @@
     </section>
 
 
+    <!-- ===================== CH4 ===================== -->
+    <section id="ch4-standards" class="section">
+      <h1 style="font-family:'Source Serif 4',serif;font-size:32px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:-0.5px;">4. Workflow Standards</h1>
+      <span class="lens-tag people">People &amp; Process</span>
+      <span class="lens-tag platform" style="margin-left:6px;">Platform &amp; Infrastructure</span>
+      <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: why the individual habits that made your pilot succeed do not transfer automatically to the next team; which parts of an AI-assisted workflow are worth standardizing and which are better left to personal taste; how to define, document, and maintain shared conventions without turning them into bureaucracy; how to express the same convention as a versioned config artifact across different tools; and how the standards you write today become the onboarding baseline for every engineer who joins Stage 2.</p>
+
+      <!-- 4.1 -->
+      <div class="card">
+        <h2>4.1 From personal habits to shared conventions</h2>
+        <p>Every successful pilot produces at least one engineer — often Priya — whose personal workflow is visibly better than everyone else's. The temptation is to treat that as the answer: just get everyone to do what Priya does. That rarely works, and understanding why is the foundation of building actual standards.</p>
+
+        <h4 class="ph">Why personal habits don't transfer</h4>
+        <ul>
+          <li>A habit that lives in one person's head is not transferable. When Priya says "I always give the agent context on the service contract before asking it to change anything," she is describing a principle. The next engineer who hears it has to figure out what that looks like for their codebase, their ticket type, and their tool configuration. Most will get it roughly right; some will miss the point entirely; a few will give up and revert to their old workflow.</li>
+          <li>Personal habits are also selection effects. Priya's approach works in part because Priya has two months of daily experimentation behind it. A median engineer starting fresh encounters different failure modes and arrives at different intuitions. Copying Priya's outputs without understanding the reasoning beneath them is fragile.</li>
+          <li>The pilot's <code>pilot-learnings.md</code> is a capture artifact, not a standard. It records what happened. A standard describes what should happen — and is specific enough that a new engineer can follow it without already knowing what worked.</li>
+        </ul>
+
+        <h4 class="ph">What to standardize vs leave to taste</h4>
+        <ul>
+          <li><strong>Standardize the loop, not the style.</strong> The sequence — spec, plan, implement with tests, review — is worth standardizing because skipping steps causes predictable failures. The exact prompting style an engineer uses within a step is personal taste; different engineers legitimately develop different phrasings that work for them.</li>
+          <li><strong>Standardize context-loading.</strong> Which files the agent reads at the start of a task (service contracts, adjacent tests, the relevant section of your API spec) directly determines output quality. This is too important to leave to per-engineer discretion. Define a minimum context set for the task types your team works on most.</li>
+          <li><strong>Standardize review expectations.</strong> What a reviewer should check specifically on an AI-assisted PR — beyond the normal review checklist — should be written down. Without this, review quality varies by individual opinion and the consistency Riya cares about is impossible to audit.</li>
+          <li><strong>Leave model selection to taste, with guardrails.</strong> Some engineers prefer faster, cheaper models for drafting and reserve frontier models for complex reasoning tasks. Let them. Define a spend ceiling and a list of approved models; let engineers choose within that envelope.</li>
+          <li><strong>Leave prompt wording to taste.</strong> Two engineers can reach the same output quality with noticeably different prompts. Do not over-specify wording; you will produce cargo-cult behavior where engineers copy-paste prompts without understanding them.</li>
+        </ul>
+
+        <h4 class="ph">Standards as a floor, not a ceiling</h4>
+        <ul>
+          <li>A standard defines the minimum acceptable practice — the floor every engineer stands on. It is not the ceiling. Engineers who develop better approaches should document them and propose them for inclusion in the next standard revision.</li>
+          <li>Frame standards as "this is what we've learned works consistently, and it is the starting point, not the end point." That framing prevents the learned-helplessness failure mode where engineers stop experimenting because the standard exists.</li>
+          <li>Build a review cadence into the standard from day one. A standard that is never revisited becomes a relic within six months. Every major team incident that involves AI-assisted code is a trigger to review whether the standard would have prevented it.</li>
+        </ul>
+
+        <div class="info"><strong>The goal is consistency, not uniformity.</strong> Shared conventions should narrow the range of bad outcomes, not eliminate individual judgment. An engineer who understands why a convention exists will apply it better than one who just follows it by rote.</div>
+      </div>
+
+      <!-- 4.2 -->
+      <div class="card">
+        <h2>4.2 Standardizing the loop</h2>
+        <p>The core AI-assisted workflow — spec → plan → TDD → review — becomes a team standard when it is written down, consistently practiced, and refined through real experience. The individual mechanics of each step are covered in depth in Part 2 (Chapters 6–11); this section focuses on what changes when you apply those mechanics at the team level.</p>
+
+        <div class="info purple"><strong>Part 2 reference.</strong> The following loop steps build directly on the methodology in <a href="gen-ai-hero-to-architect-guide.html" style="color:var(--purple);">Part 2: Hero to Architect</a>. Chapters 6 (Spec-Driven Dev), 7 (Plan-Driven Execution), 8 (TDD with Agents), and 10 (Safety, Review &amp; Verification) describe the individual-level mechanics. This section addresses what needs to change when you standardize those mechanics across a team.</div>
+
+        <h4 class="ph">Step 1 — Spec before session</h4>
+        <ul>
+          <li>Before starting an agent session, the engineer writes a brief spec: what the change is, what it must not break, and which adjacent systems are in scope. This does not need to be formal; it needs to be explicit. "Fix the retry logic in the payment processor so it does not retry on 4xx responses" is enough. "Improve error handling" is not.</li>
+          <li>At the team level, standardize the minimum elements: the observable outcome, the scope boundary, and any known constraints. Capture these in the ticket or as a comment in the task file, not just in the engineer's head.</li>
+          <li>The spec becomes the first thing you load into the agent's context. An agent that starts with an explicit scope boundary is far less likely to drift into adjacent changes than one that starts from "here is the function, improve it."</li>
+        </ul>
+
+        <h4 class="ph">Step 2 — Plan before code</h4>
+        <ul>
+          <li>Ask the agent to produce a step-by-step plan before writing any code. Review the plan for scope creep, missing steps, and incorrect assumptions before approving it. This is the cheapest possible quality gate — catching a bad plan costs a few seconds; catching a bad implementation costs hours.</li>
+          <li>At the team level, define a norm: plan review is not optional on tasks estimated above a threshold complexity. For Meridian's payments team, that threshold was "any change that touches more than two files." Choose a threshold that fits your codebase and revisit it.</li>
+          <li>Version-control generated plans alongside the code change — in the PR description or as a comment. When a reviewer asks "why did it do it this way," the plan is the answer.</li>
+        </ul>
+
+        <h4 class="ph">Step 3 — TDD with agents</h4>
+        <ul>
+          <li>Write or specify the tests before asking the agent to write the implementation. An agent given failing tests and asked to make them pass produces more bounded, verifiable output than one asked to "implement and test" in a single pass.</li>
+          <li>At the team level, mandate that the agent's implementation must pass a specified test suite before the PR is opened. Define which test suite — unit, integration, or both — based on task type. This gives reviewers a concrete first question: "Did it pass the required tests?" rather than "Is the code good?"</li>
+          <li>Track agent-generated test coverage separately during Stage 2. If agents are writing tests that pass trivially but do not cover the actual failure modes, that is a pattern the standard should address.</li>
+        </ul>
+
+        <h4 class="ph">Step 4 — Review with an AI-specific lens</h4>
+        <ul>
+          <li>AI-assisted PRs require a review posture that is different from hand-written PRs in one specific way: the reviewer must not assume that code which looks correct is correct. AI-generated code is often syntactically clean, structurally plausible, and subtly wrong at the edge-case level.</li>
+          <li>Add a brief AI-review checklist to your PR template: (1) Does the implementation match the plan? (2) Are there edge cases the tests do not cover? (3) Does the change touch any area outside its declared scope? These three questions catch the majority of the failure modes the pilot's failure log documented.</li>
+          <li>At the team level, require that reviewers note on AI-assisted PRs whether they ran any additional verification beyond the automated test suite. This data feeds your Stage 2 measurement system and eventually answers the question "how much does AI review add to total cycle time?"</li>
+        </ul>
+
+        <div class="info green"><strong>The loop is a forcing function, not a formula.</strong> A team that has internalized the spec → plan → TDD → review loop will apply it with judgment — skipping a step when it is clearly unnecessary, extending a step when the task is complex. The goal is that every engineer knows the default and can articulate why they are departing from it.</div>
+      </div>
+
+      <!-- 4.3 -->
+      <div class="card">
+        <h2>4.3 Where to write standards down</h2>
+        <p>The decision of where to store standards is not administrative trivia. Storage format determines who can edit them, whether they have a review history, whether new engineers will find them, and how quickly they rot. Get this wrong and your standards become a Google Doc no one has opened in four months.</p>
+
+        <h4 class="ph">Living docs vs versioned config</h4>
+        <ul>
+          <li><strong>Wikis and shared docs</strong> (Confluence, Notion, Google Docs) are discoverable and low-friction to edit. They are also easy to edit without review, have weak audit trails, and decouple from the codebase they describe. A standard in a wiki is not the same as a standard in the repo — the wiki version will drift.</li>
+          <li><strong>Versioned Markdown files in the repo</strong> are the better home for workflow standards. They travel with the code, are subject to PR review, have a git-blame history, and can be automatically loaded by your AI tool as context. A <code>CLAUDE.md</code>, <code>.cursorrules</code>, or <code>AGENTS.md</code> at the repo root is read by the tool every session. That is a forcing function for freshness: if the standard is wrong, engineers notice immediately because the tool is following it.</li>
+          <li>The right pattern is a two-layer system: a versioned config file that the tool reads automatically (tactical, specific, short), plus a narrative standards doc (also versioned, but more prose-oriented) that explains the why behind the conventions. One is for the agent; one is for the engineer.</li>
+        </ul>
+
+        <h4 class="ph">Who owns the standard</h4>
+        <ul>
+          <li>Ownership must be a named person, not a team. "The platform team owns it" means no one owns it. Assign a named engineer as the standard's steward. Their job is not to be the sole editor — it is to ensure the standard is reviewed when it needs to be and to be the tie-breaker when there is disagreement about what it should say.</li>
+          <li>In Stage 2, the steward is often the pilot lead by default. Priya, who created the original <code>pilot-learnings.md</code>, is a natural steward for the team's workflow standard — she has the context, the credibility, and the prior investment. Make it explicit; don't assume it.</li>
+          <li>When the standard reaches multiple teams (Stage 3), ownership shifts to a platform or DevEx function. But in Stage 2, a named engineer steward is more effective than a committee.</li>
+        </ul>
+
+        <h4 class="ph">Keeping standards current vs letting them rot</h4>
+        <ul>
+          <li>Standards rot in one of two ways: through neglect (no one edits them) or through over-editing (they become a changelog with no stable surface). Both are failures.</li>
+          <li>Define a review cadence before the standard is published. A quarterly review is reasonable for a Stage 2 team. Triggers for out-of-cycle review: any incident that involves AI-assisted code, any major model capability update (e.g., moving from Sonnet 4.7 to a new generation), or a team size change that doubles the number of engineers using the standard.</li>
+          <li>Add a "last reviewed" date at the top of the file. A standard with no visible review date is implicitly abandoned. A standard with a review date three weeks ago is implicitly maintained. The date is a commitment device.</li>
+          <li>Treat proposed changes to the standard like code changes: open a PR, describe the motivation, get at least one other engineer's review, and merge. This prevents both drift and over-editing — proposed changes are visible and the history is auditable.</li>
+        </ul>
+
+        <div class="info orange"><strong>If your standard is not version-controlled, it is not a standard.</strong> A convention that lives in a Google Doc or a Confluence page is a suggestion. A convention that lives in the repo, travels with every branch, and is loaded into the agent's context automatically is infrastructure. Design accordingly.</div>
+      </div>
+
+      <!-- 4.4 -->
+      <div class="card">
+        <h2>4.4 Examples across tools</h2>
+        <p>The same workflow convention looks different depending on which AI coding tool your team uses. Below is an illustrative example: a convention requiring spec-before-session, plan review, and review checklist notation, expressed as a config artifact. The Claude Code version is the primary reference; the aside shows the equivalent for Cursor and generic tool harnesses.</p>
+
+        <h4 class="ph">The convention</h4>
+        <ul>
+          <li>Every agent session for a task touching more than one file must begin with: (1) an explicit spec comment in the task file or ticket, (2) a plan produced by the agent and reviewed by the engineer before any code is written, and (3) a note in the PR description indicating which tests were required to pass before the PR was opened.</li>
+          <li>These three requirements are the minimum. They are not the only things in the config file — the config also carries coding style, test framework preferences, and repo-specific context — but they are the workflow conventions that must survive across all team members and tool updates.</li>
+        </ul>
+
+        <h4 class="ph">Claude Code — <code>CLAUDE.md</code></h4>
+        <p>Add the following block to the <code>CLAUDE.md</code> at the repo root. Claude Code loads this automatically at every session start; no additional setup is needed.</p>
+        <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;margin:10px 0;"><code><span style="color:var(--text-muted);"># Workflow Standards — Payments Team (reviewed: 2026-Q2)</span>
+
+<span style="color:var(--cyan);">## Required loop for any task touching &gt;1 file</span>
+1. Read the spec comment in the ticket or task file before writing any code.
+2. Produce a step-by-step plan and wait for engineer approval before proceeding.
+3. Implement against failing tests first; do not open a PR until all required
+   tests pass.
+4. Add a one-line note to the PR description: "Tests required: &lt;test suite&gt;."
+
+<span style="color:var(--cyan);">## Context to load at session start</span>
+- Always read `docs/service-contracts/payments-api.md` when working in
+  `services/payments/`.
+- Read adjacent test files before modifying any function with existing tests.
+
+<span style="color:var(--cyan);">## Out of scope without explicit approval</span>
+- Do not modify files in `services/billing/` — that module is under a separate
+  team's ownership.
+- Do not add new dependencies without opening a separate discussion ticket.</code></pre>
+
+        <aside class="tool-alt">
+          <strong>Equivalent for Cursor (<code>.cursorrules</code>) and generic harnesses (<code>AGENTS.md</code>)</strong>
+          <p style="margin:8px 0 6px;">The same conventions expressed for other tool harnesses. Content is identical; the filename and load mechanism differ.</p>
+          <table class="tbl" style="margin-top:8px;">
+            <thead>
+              <tr><th>Tool</th><th>File</th><th>How it loads</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cursor</td>
+                <td><code>.cursorrules</code> (legacy) or <code>.cursor/rules/*.mdc</code></td>
+                <td>Auto-loaded into system prompt at workspace open. Use <code>.cursor/rules/workflow.mdc</code> for structured rule files (verify current path against Cursor docs — the rules format has evolved).</td>
+              </tr>
+              <tr>
+                <td>Generic / Copilot</td>
+                <td><code>AGENTS.md</code> at repo root</td>
+                <td>Recognized by OpenAI Codex and compatible harnesses as the instruction file. Place at repo root or in a subdirectory; some harnesses walk the directory tree.</td>
+              </tr>
+              <tr>
+                <td>Kilo Code</td>
+                <td><code>.kilocode/</code> rules directory</td>
+                <td>Rules files concatenated into system prompt at session start. Naming convention within the directory is arbitrary; one file per concern is a maintainable pattern.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="margin-top:10px;font-size:13px;color:var(--text-dim);">The content of the convention block is the same in all cases — required loop steps, context-loading instructions, out-of-scope declarations. Copy the block above, adjust file paths to match your repo layout, and place it in the appropriate file for your tool. The tool-agnostic content is your standard; the filename is a detail.</p>
+        </aside>
+
+        <h4 class="ph">What makes a config artifact maintainable</h4>
+        <ul>
+          <li>Keep it short. A config file longer than one screen invites scanning rather than reading. If your conventions require extensive prose explanation, that explanation belongs in the narrative standards doc, not the config file. The config file carries rules; the doc carries reasoning.</li>
+          <li>Include the review date as a comment. The agent ignores it; engineers don't. A visible date creates accountability — someone has to update it, or the date becomes evidence of neglect.</li>
+          <li>Scope out-of-scope declarations explicitly. Telling the agent what it must not touch is as important as telling it what it should do. Ambiguous boundaries are where agents cause unintended changes.</li>
+          <li>Version-control the file from day one, with PR-based changes. A config file that is edited directly without review will drift from the team's agreed standard within weeks. The PR process is the review process.</li>
+        </ul>
+
+        <div class="info"><strong>The config file is the standard.</strong> An agent that reads your <code>CLAUDE.md</code> (or its equivalent) at every session start is working from your team's current, versioned standard — automatically. That is infrastructure. A PDF in a shared drive is a document. Build the former.</div>
+      </div>
+
+      <!-- Meridian case -->
+      <div class="case">
+        <div class="case-label">Meridian — Stage 1→2: From Pilot Learnings to Team Standard</div>
+        <ul style="padding-left:18px;margin:0;">
+          <li style="font-size:13.5px;margin-bottom:6px;">The payments team's pilot ends with a clean retrospective: PR cycle time moved from 5.8 days to 4.3 days on well-scoped service-layer tickets; the failure log documented 11 distinct patterns, the most important being unreliable output on the legacy billing module. Priya's <code>pilot-learnings.md</code> has grown to two pages of annotated findings. The question now is how to turn that document into something the next three teams can actually use.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Priya</strong> drafts a first-pass <code>CLAUDE.md</code> for the payments repo, drawing directly from the pilot's highest-signal learnings: the required loop (spec → plan → TDD → review), the mandatory context files for sessions in <code>services/payments/</code>, and an explicit out-of-scope declaration for the billing module. She opens it as a PR so the whole team can see it before it goes live. Three engineers suggest additions; one suggests removing a line that had already proven unenforceable in practice.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong> reviews the PR with the same eye she would give a change to the CI pipeline: "This is a configuration artifact. It needs a change history, a stated owner, and a review date. Add all three or it's just a fancy comment." Priya adds a header block: owner, last reviewed date, and a link to the retrospective document that explains the reasoning behind each rule.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus</strong> sees the merged PR in his weekly engineering digest. His comment: "This is the first AI-tooling artifact we've produced that I can actually review. I know who owns it, I know when it was last looked at, and I can read the reasoning. This is what Stage 2 should look like." He asks Priya to present the pattern at the next engineering all-hands as the template other teams should follow.</li>
+          <li style="font-size:13.5px;margin-bottom:0px;">The key insight: the <code>pilot-learnings.md</code> was a capture artifact — valuable but not actionable by someone who wasn't on the pilot. The <code>CLAUDE.md</code> is a standard — concise, versioned, automatically loaded, and owned. The transition from the former to the latter is the moment Meridian crosses the Stage 1→2 threshold on the Platform &amp; Infrastructure lens.</li>
+        </ul>
+      </div>
+
+      <div class="see-also">
+        <a onclick="go('ch8-config')">→ Ch 8. Golden Configuration as Code</a>
+        <a onclick="go('ch5-enablement')">→ Ch 5. Enablement &amp; Onboarding</a>
+        <a href="gen-ai-hero-to-architect-guide.html">Part 2: Hero to Architect (Ch 6–11)</a>
+      </div>
+    </section>
+
+
   </main>
 </div>
 
