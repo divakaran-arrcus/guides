@@ -2290,6 +2290,26 @@
           <li><strong>Repo/subtree layer:</strong> per-directory overrides for sub-systems with different conventions. A monorepo might have <code>services/payments/CLAUDE.md</code> that adds payment-specific rules without repeating the org baseline. This layer is additive — it cannot override the org layer, only extend it.</li>
         </ul>
 
+        <div class="pkt" style="min-height:60px;margin:18px 0 6px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Org baseline</div>
+            <div class="v">Platform/DevEx owns; security &amp; workflow mandates; PR-reviewed</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Team overrides</div>
+            <div class="v">Service context, task patterns, local conventions; team-owned</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Repo / subtree</div>
+            <div class="v">Sub-directory additions; additive only; cannot override org layer</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:1;">
+            <div class="l">Effective config</div>
+            <div class="v">Composed at session start; org baseline always wins on mandated lines</div>
+          </div>
+        </div>
+        <div class="ann">Layers compose left to right; each layer can only extend, never remove, what the org baseline mandates.</div>
+
         <h4 class="ph">Sync mechanics — how teams stay current</h4>
         <ul>
           <li>A generation script — not manual copying — is the sync mechanism. The script fetches the current tagged release of the org baseline and writes it into the appropriate location in each repo, clearly delimited. Teams run the script on update (or it runs in CI). The output is always a PR, not a silent file change — so the team sees what changed.</li>
@@ -2662,6 +2682,30 @@ scripts/sync-mcp-config.sh --registry-version 2.1.0 --target cursor,kilo,claude<
         </ul>
 
         <div class="info orange"><strong>Agents advise; deterministic checks decide.</strong> This is the architectural principle that makes agents safe in CI. An agent can tell you the PR looks risky. Only a passing test suite, a clean security scan, and a human approver can let it merge.</div>
+
+        <div class="pkt" style="min-height:68px;margin:18px 0 6px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Commit</div>
+            <div class="v">Engineer pushes; PR opens</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1.4;">
+            <div class="l">CI deterministic gates <em style="font-size:10px;font-weight:400;">(required)</em></div>
+            <div class="v">Build · tests · security scan · lint — pass/fail is objective &amp; reproducible</div>
+          </div>
+          <div class="pkt-c" style="flex:1.4;background:var(--surface2);border:1px solid var(--border);">
+            <div class="l" style="color:var(--text-dim);">Agent advisory review <em style="font-size:10px;font-weight:400;">(non-gating)</em></div>
+            <div class="v" style="color:var(--text-muted);">Convention checks · diff summary · risk labels — fails safely; pipeline continues</div>
+          </div>
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">Human approval</div>
+            <div class="v">Semantic review; reads agent output as advisory input</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:0.8;">
+            <div class="l">Merge</div>
+            <div class="v">All required gates green + human approved</div>
+          </div>
+        </div>
+        <div class="ann">Deterministic gates decide; the agent advises. A failed advisory step must never prevent a merge.</div>
       </div>
 
       <!-- 10.2 -->
@@ -3094,6 +3138,26 @@ except Exception as e:
           <li>Log every run termination that was caused by a cap or circuit breaker. The aggregate log is a leading indicator of which teams need cap adjustments, which workflows are misconfigured, and where to invest in cost-optimization next.</li>
         </ul>
 
+        <div class="pkt" style="min-height:64px;margin:18px 0 6px;">
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">Normal usage</div>
+            <div class="v">Within per-run &amp; per-day budgets; cost visible on dashboard</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Soft cap — alert</div>
+            <div class="v">75–80% of daily budget consumed; alert fires to team lead &amp; Platform/DevEx</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Hard cap — block</div>
+            <div class="v">Per-run token ceiling reached; run terminates; pipeline continues non-blocking</div>
+          </div>
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Circuit breaker — kill</div>
+            <div class="v">Daily budget exhausted; all agentic calls blocked for remainder of day; alert + investigation</div>
+          </div>
+        </div>
+        <div class="ann">Each rung is a harder stop. Runaway loops should hit the hard cap long before the circuit breaker trips.</div>
+
         <div class="info red"><strong>Runaway loops are not hypothetical.</strong> At org scale, a runaway agentic loop will happen. The question is whether your platform catches it in seconds (with per-run caps and monitoring) or in days (when someone reads the invoice). The protection is worth more than its setup cost by the first incident it prevents.</div>
       </div>
 
@@ -3173,6 +3237,22 @@ except Exception as e:
           <li><strong>Supply-chain risk:</strong> agent-installed dependencies, third-party MCP servers, and unreviewed community registry entries. Covered in 12.4.</li>
           <li><strong>IP and license provenance:</strong> generated code with unknown training-data lineage introducing license obligations. Covered in 12.5.</li>
         </ul>
+
+        <div class="pkt" style="min-height:72px;margin:18px 0 6px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Secrets &amp; data egress</div>
+            <div class="v"><strong>Threat:</strong> credentials, source code, PII sent to provider in prompts<br><strong>Control:</strong> pre-prompt redaction gateway; context allowlisting; secret scanning</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Prompt injection</div>
+            <div class="v"><strong>Threat:</strong> untrusted content in agent context hijacks agent actions<br><strong>Control:</strong> least-privilege tool permissions; sandbox isolation; audit log anomaly detection</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Supply-chain &amp; deps</div>
+            <div class="v"><strong>Threat:</strong> agent-added packages, unreviewed MCP servers, community registry entries<br><strong>Control:</strong> dependency allowlist; internal registry gate; SCA in CI before install</div>
+          </div>
+        </div>
+        <div class="ann">All three surfaces widen at org scale. Platform controls — not per-engineer policy — are the only approach that scales.</div>
 
         <div class="info"><strong>Security at org scale is a platform problem, not a policy problem.</strong> You cannot policy-train 400 engineers into perfect security hygiene around a new and fast-moving threat model. You build controls into the platform — API gateways, redaction pipelines, allowlists, registry review gates — so that the secure path is the default path. Policy reinforces the platform; it does not replace it.</div>
       </div>
@@ -3600,6 +3680,32 @@ except Exception as e:
 
         <div class="info red"><strong>Git is your org-scale safety net — but only if you use it correctly.</strong> Agent-authored changes that bypass version control, write directly to a database, or deploy without a tracked artifact cannot be reverted via git. The containment sequence above works because git preserves every state. Design your agent tooling so that every consequential change goes through a reviewable, revertable, version-controlled artifact. If an agent can act outside that boundary — writing directly to a database, modifying a deployed secret — that action requires High or Sensitive tier approval before it runs, not after it fails.</div>
 
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n red">1</div><div class="stp-t">Detect — name the failure category</div></div>
+          <p>Alert fires or engineer notices unexpected behavior. Immediately classify: runaway, destructive action, injection, silent-wrong, hallucinated dep, or over-trusted merge? Category determines what comes next.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n red">2</div><div class="stp-t">Stop the agent</div></div>
+          <p>Execute the documented kill-switch — pipeline cancel, session revoke, or service account disable. Confirm the agent has stopped before proceeding. Under 60 seconds; no escalation needed.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Contain blast radius</div></div>
+          <p>Revoke or restrict access to all resources the agent could have touched. You may not know what it did yet; contain what it could have done. Rotate any credentials in scope.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">4</div><div class="stp-t">Roll back</div></div>
+          <p>Revert agent-authored commits via git; execute deployment rollback for infrastructure changes. Preserve the session log and audit trail before cleaning up — it is evidence for the postmortem.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">5</div><div class="stp-t">Blameless postmortem</div></div>
+          <p>Within 48 hours. Reconstruct the timeline from the audit trail. Identify contributing factors by layer — spec, model, platform, review. Name system gaps, not people. Produce 1–3 specific action items.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">6</div><div class="stp-t">Harden the guardrail</div></div>
+          <p>Apply the fix: update the AI-review checklist, golden config, CI gate, or risk-tier classification. Log the entry in the org-wide failure log with a link to the postmortem and the PR that applied the change.</p>
+        </div>
+        <div class="ann">Steps 1–4 bound the damage; steps 5–6 prevent the next incident. Both halves are required.</div>
+
         <h4 class="ph">After containment: immediate post-incident hygiene</h4>
         <ul>
           <li>Rotate any credentials the agent had access to, even if you believe they were not used inappropriately. A compromised session may have exfiltrated credentials without leaving an obvious trace. Rotation is cheap; credential-reuse exposure is not.</li>
@@ -3761,6 +3867,22 @@ except Exception as e:
         </aside>
 
         <div class="info green"><strong>The paved road is a product, not a policy.</strong> A policy tells teams what they must do. A product teams choose to use because it makes their work better. Design the golden config as a product: it should be fast to adopt, well-documented, actively improved, and genuinely easier than the alternative. If you find yourself writing enforcement mechanisms for the paved road, ask whether the road is paved enough.</div>
+
+        <div class="pkt" style="min-height:72px;margin:18px 0 6px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l" style="color:var(--red);">Mandate</div>
+            <div class="v">Security controls · audit trail · kill-switch paths. CI blocks on violation. No escape hatch — escalate if there's a conflict.</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l" style="color:var(--orange);">Recommend</div>
+            <div class="v">Golden config · AI-review checklist · model-tier routing. Default path with platform support. Deviate via a filed escape hatch with a named owner.</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l" style="color:var(--green);">Leave free</div>
+            <div class="v">Prompt style · IDE plugins · personal workflow scripts. Team or individual discretion. No gate, no escape hatch needed.</div>
+          </div>
+        </div>
+        <div class="ann">Mixing tiers — treating a recommendation as a mandate, or a mandate as a suggestion — is the most common governance dysfunction at Stage 3.</div>
       </div>
 
       <!-- 15.3 -->
