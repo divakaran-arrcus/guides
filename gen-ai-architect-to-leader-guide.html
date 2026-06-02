@@ -725,6 +725,18 @@
         </ul>
 
         <div class="info orange"><strong>The cliff is structural, not motivational.</strong> Engineers who haven't adopted the tool are not lazy or resistant to change. They lack the right onramp: a concrete use case, a social environment where the tool is normal, and a feedback loop that rewards the early awkwardness of learning a new workflow. Fix the structure, not the people.</div>
+
+        <div class="pkt" style="min-height:64px;margin:18px 0 6px;">
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">~12% — Power users</div>
+            <div class="v">Fluent, shipping fast</div>
+          </div>
+          <div class="pkt-c bg-pay" style="flex:3.5;">
+            <div class="l">~88% — The long tail</div>
+            <div class="v">Access without adoption — the cliff</div>
+          </div>
+        </div>
+        <div class="ann">Tool access is not adoption. A small group ships faster while the rest stay flat — the gap widens without deliberate intervention.</div>
       </div>
 
       <!-- 1.2 -->
@@ -1088,6 +1100,31 @@
       <span class="lens-tag people">People &amp; Process</span>
       <p class="lede" style="font-size:16px;color:var(--text-dim);margin-top:14px;margin-bottom:32px;line-height:1.75;">What you'll learn: how to select a pilot team that produces generalizable evidence; why falsifiable success metrics and explicit stop conditions are what make a pilot credible rather than just optimistic; how to time-box and guard-rail a pilot so it can't cause real damage; how to avoid the demo trap of cherry-picked wins; and what to capture so the pilot's real output — organizational knowledge — survives into Stage 2.</p>
 
+      <div class="card">
+        <h4 class="ph">The pilot lifecycle at a glance</h4>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Select a representative team</div></div>
+          <p>Pick 8–20 engineers whose work generalises to the broader org. Exclude all-stars and conscripted cynics. Document why you chose them before results are in.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Capture a baseline</div></div>
+          <p>Measure PR cycle time, rework rate, and engineer confidence for ≥ 2 weeks before the pilot starts. Store it where the whole team can see it.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Define success criteria &amp; a stop condition</div></div>
+          <p>Write one falsifiable primary hypothesis. Add a circuit-breaker: if rework rate rises &gt; 25% in any two-week window, pause and calibrate.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n pur">4</div><div class="stp-t">Time-box &amp; run</div></div>
+          <p>Fix the duration (typically 4–6 weeks). Run the pilot inside the guardrails; resist scope-creep from stakeholders mid-flight.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n red">5</div><div class="stp-t">Synthesise &amp; decide</div></div>
+          <p>Compare results to the pre-stated hypothesis. Publish a retrospective — success or failure. The evidence, not sentiment, drives the Stage 2 recommendation.</p>
+        </div>
+        <div class="ann">A pilot that can't fail isn't an experiment — it's a demonstration. Steps 3 and 5 are what make the difference.</div>
+      </div>
+
       <!-- 3.1 -->
       <div class="card">
         <h2>3.1 Choosing the pilot team</h2>
@@ -1303,6 +1340,26 @@
         </ul>
 
         <div class="info"><strong>The goal is consistency, not uniformity.</strong> Shared conventions should narrow the range of bad outcomes, not eliminate individual judgment. An engineer who understands why a convention exists will apply it better than one who just follows it by rote.</div>
+
+        <div class="pkt" style="min-height:60px;margin:18px 0 6px;">
+          <div class="pkt-c bg-pay" style="flex:1;">
+            <div class="l">Personal habit</div>
+            <div class="v">Lives in one head; not transferable</div>
+          </div>
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">Team convention</div>
+            <div class="v">Written down; shared, but informal</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Versioned standard</div>
+            <div class="v">In the repo; reviewed &amp; iterated</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Auto-loaded config</div>
+            <div class="v">Default for every session; no opt-in needed</div>
+          </div>
+        </div>
+        <div class="ann">Each step to the right raises the floor: more engineers benefit without extra individual effort.</div>
       </div>
 
       <!-- 4.2 -->
@@ -1531,6 +1588,26 @@
         </ul>
 
         <div class="info green"><strong>Train-the-trainer is not a training program — it is a knowledge distribution architecture.</strong> Documents are static. Champions are adaptive. They answer the question the engineer actually has, not the question someone wrote a doc answer to six months ago.</div>
+
+        <div class="pkt" style="min-height:60px;margin:18px 0 6px;">
+          <div class="pkt-c bg-seg" style="flex:1;">
+            <div class="l">Champions</div>
+            <div class="v">2–3 credible, patient engineers; given protected time</div>
+          </div>
+          <div class="pkt-c bg-mpls" style="flex:1;">
+            <div class="l">Pairing &amp; review</div>
+            <div class="v">Tacit knowledge transferred on real tickets</div>
+          </div>
+          <div class="pkt-c bg-ipv6" style="flex:1;">
+            <div class="l">Onboarding</div>
+            <div class="v">New hires enter the workflow from day one</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1;">
+            <div class="l">Floor raised</div>
+            <div class="v">Every engineer solid at the baseline loop</div>
+          </div>
+        </div>
+        <div class="ann">The cascade runs left to right; each stage depends on the previous. Skip champions and pairing loses its multiplier.</div>
       </div>
 
       <!-- 5.3 -->
@@ -1903,6 +1980,22 @@
         </ul>
 
         <div class="info"><strong>The practical rule:</strong> track leading indicators weekly and act on them; report lagging indicators monthly and contextualize them. Never report a lagging number without showing the leading signals that preceded it — that pairing is the only honest narrative.</div>
+
+        <div class="pkt" style="min-height:64px;margin:18px 0 6px;">
+          <div class="pkt-c bg-ipv6" style="flex:1.2;">
+            <div class="l">Leading — act on these</div>
+            <div class="v">Adoption depth · Review load · Plan-review completion</div>
+          </div>
+          <div class="pkt-c bg-seg" style="flex:0.6;">
+            <div class="l">→ Behaviour change</div>
+            <div class="v">Consistent loop; calibrated trust</div>
+          </div>
+          <div class="pkt-c bg-srh" style="flex:1.2;">
+            <div class="l">Lagging — report honestly</div>
+            <div class="v">Cycle time · Escape rate · Change failure rate</div>
+          </div>
+        </div>
+        <div class="ann">Act on leading indicators while you still can; report lagging outcomes honestly — including when they disappoint.</div>
       </div>
 
       <!-- 7.2 -->
