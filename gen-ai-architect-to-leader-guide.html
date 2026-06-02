@@ -829,7 +829,7 @@
         <ul style="padding-left:18px;margin:0;">
           <li style="font-size:13.5px;margin-bottom:6px;">Meridian has 400 engineers and a three-month-old company-wide license to a leading AI coding tool. Aggregate usage telemetry shows 12% daily-active adoption. The number has not meaningfully moved in six weeks.</li>
           <li style="font-size:13.5px;margin-bottom:6px;"><strong>Riya</strong>, a staff engineer who has reviewed hundreds of PRs in the past quarter, is skeptical. She has seen AI-assisted PRs that were structurally fine and AI-assisted PRs that looked fine but shipped subtle logic errors the test suite missed. She has no way to tell which is which from the outside, and she finds that unsettling. "We're optimizing for the appearance of speed," she says at a retro. "I can't tell if any of this is actually safe."</li>
-          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Priya</strong>, a senior engineer on the platform team, has been using the tool every day for two months. She has developed a personal prompting approach that reliably produces clean, well-scoped changes — she ships roughly twice as many reviewable PRs per week as her teammates, with a lower rework rate. Her tech lead has noticed but doesn't know what Priya is doing differently. Priya has mentioned it to one colleague; the colleague tried once, got a confusing result, and went back to their old workflow.</li>
+          <li style="font-size:13.5px;margin-bottom:6px;"><strong>Priya</strong>, a senior engineer on the payments team, has been using the tool every day for two months. She has developed a personal prompting approach that reliably produces clean, well-scoped changes — she ships roughly twice as many reviewable PRs per week as her teammates, with a lower rework rate. Her tech lead has noticed but doesn't know what Priya is doing differently. Priya has mentioned it to one colleague; the colleague tried once, got a confusing result, and went back to their old workflow.</li>
           <li style="font-size:13.5px;margin-bottom:6px;"><strong>Marcus</strong>, VP of Engineering, approved the license spend. He expected to see a measurable velocity improvement across the org by now. The data is ambiguous. He is starting to question whether the investment made sense.</li>
           <li style="font-size:13.5px;margin-bottom:0px;">Priya's wins are real. Riya's concerns are real. Marcus's impatience is real. They are all looking at the same situation from different angles and drawing incompatible conclusions — because there is no shared standard, no shared data, and no shared story. That's Stage 0. The rest of this guide is how Meridian gets out of it.</li>
         </ul>
@@ -922,7 +922,7 @@
 
         <h4 class="ph">The hidden costs</h4>
         <ul>
-          <li><strong>Enablement time:</strong> Giving engineers access is not the same as enabling them. A realistic enablement program for a 20-person pilot team includes 3–5 hours of structured onboarding per engineer, ongoing office hours, and the time cost of the engineer or team lead who facilitates it. At 400 engineers, that is not a rounding error.</li>
+          <li><strong>Enablement time:</strong> Giving engineers access is not the same as enabling them. A realistic enablement program for a 20-person pilot team includes about 4 hours of structured onboarding per engineer, ongoing office hours, and the time cost of the engineer or team lead who facilitates it. At 400 engineers, that is not a rounding error.</li>
           <li><strong>Review load:</strong> Code review of AI-assisted PRs requires more discipline, not less. Reviewers need to check for subtly plausible-but-wrong logic that a less experienced engineer would not produce. In the short term, this increases review time before the team develops good review norms for AI-assisted code. Budget for a temporary review-load increase during the pilot.</li>
           <li><strong>Infrastructure and integration:</strong> Custom system prompts, shared context files, CI pipeline integration for agentic review steps, and secret-detection tooling to prevent accidental credential exposure all require engineering time to build and maintain. A pilot that skips this infrastructure creates the shadow-usage risk described in Chapter 1.</li>
         </ul>
@@ -1045,7 +1045,7 @@
             </tr>
             <tr>
               <td><strong>Timebox</strong></td>
-              <td>A fixed end date — typically 4–8 weeks. The timebox creates urgency, limits downside, and makes it easier to get a yes. "Try it for 6 weeks" is a different ask than "give us a year."</td>
+              <td>A fixed end date — typically 6–8 weeks. The timebox creates urgency, limits downside, and makes it easier to get a yes. "Try it for 6 weeks" is a different ask than "give us a year."</td>
               <td>Open-ended pilots with no defined end state drift into the normal state of affairs without ever generating a decision.</td>
             </tr>
             <tr>
@@ -1141,7 +1141,7 @@
         <h4 class="ph">Capturing a baseline before you start</h4>
         <ul>
           <li>Measure everything you intend to claim movement on <em>before the pilot starts</em>. This sounds obvious. It is consistently skipped — because the baseline measurement is boring, and starting the pilot feels exciting.</li>
-          <li>A minimum viable baseline: PR cycle time (open to first review, first review to merge), rework rate (PRs that need significant rework after review), and subjective confidence (a short weekly survey asking engineers to rate confidence in the AI-assisted changes they're shipping).</li>
+          <li>A minimum viable baseline: PR cycle time (first commit to merge), rework rate (PRs that need significant rework after review), and subjective confidence (a short weekly survey asking engineers to rate confidence in the AI-assisted changes they're shipping).</li>
           <li>Run the baseline measurement for at least two weeks before the pilot begins. A single week's baseline can be contaminated by a sprint anomaly, a holiday, or an unusually large ticket that distorts the average.</li>
           <li>Store the baseline in a place the whole team can see. Transparency on the baseline number before the pilot starts removes the accusation that the baseline was chosen to make the results look good.</li>
         </ul>
@@ -2026,7 +2026,7 @@
 
         <h4 class="ph">What an honest upward report looks like</h4>
         <ul>
-          <li>Lead with what improved, stated conservatively. "PR cycle time on the payments team fell by 18% over the quarter, from a baseline of 4.2 days to 3.4 days" is a credible claim. "We are 20% faster" is not — it rounds up, it generalizes across teams with different results, and it will be hard to defend when cycle time goes back up in a quarter where the team is working on a harder class of problem.</li>
+          <li>Lead with what improved, stated conservatively. "PR cycle time on a team fell by 18% over the quarter, from a baseline of 4.2 days to 3.4 days" is a credible claim. "We are 20% faster" is not — it rounds up, it generalizes across teams with different results, and it will be hard to defend when cycle time goes back up in a quarter where the team is working on a harder class of problem.</li>
           <li>Name what didn't move, and say why you think it didn't. A report that only shows green metrics is not credible to a skeptical reader. Riya will notice the missing metrics faster than Marcus will notice the green ones. "Review latency held flat — we believe this is because reviewer headcount did not change proportionally to PR volume, and we are proposing a solution" is a professional, actionable update. Omitting review latency because it didn't move is a credibility risk.</li>
           <li>State your confidence level explicitly. "We believe cycle time improvement is attributable to the agentic workflow, but we cannot rule out that the Q3 task mix was also simpler than Q2" is honest. It shows you understand the limits of your measurement. Leadership that trusts your honesty will trust your confident claims more, not less.</li>
           <li>Separate tool adoption metrics from outcome metrics. "80% of engineers used the tool at least twice this sprint" is an adoption metric. It is not an outcome metric. Do not present it in the same sentence as an outcome result unless you have evidence of a causal link. Marcus will conflate them if you allow the conflation in the slide structure.</li>
@@ -2710,7 +2710,7 @@ jobs:
           <span style="color:var(--text-muted);"># The '|| echo' ensures a non-zero agent exit does not fail the build step.</span>
           <span style="color:var(--text-muted);"># This step is advisory. A failed agent run is a warning, not a build failure.</span></code></pre>
 
-        <p style="font-size:13.5px;color:var(--text-dim);margin-top:8px;"><strong>Key decisions in this pattern:</strong> the API key is CI-scoped; a wall-clock timeout limits runaway runs; the <code>|| echo</code> fallback makes the step non-blocking; the agent is explicitly instructed not to approve or request changes. Verify the exact <code>--headless</code>, <code>--print</code>, and <code>--max-tokens</code> flags (or their current equivalents) against the Claude Code documentation — CLI interfaces evolve and flags may differ from the illustrative names shown here.</p>
+        <p style="font-size:13.5px;color:var(--text-dim);margin-top:8px;"><strong>Key decisions in this pattern:</strong> the API key is CI-scoped; a wall-clock timeout limits runaway runs; the <code>|| echo</code> fallback makes the step non-blocking; the agent is explicitly instructed not to approve or request changes. Verify the exact <code>--headless</code>, <code>--print</code>, <code>--input</code>, and <code>--max-tokens</code> flags (or their current equivalents) against the Claude Code documentation — CLI interfaces evolve and flags may differ from the illustrative names shown here.</p>
 
         <aside class="tool-alt">
           <strong>API-based approach — tool-agnostic headless runner</strong>
@@ -2904,7 +2904,7 @@ except Exception as e:
 
         <aside class="tool-alt">
           <strong>Quota enforcement — tool-agnostic patterns</strong>
-          <p style="margin:8px 0 6px;">If your agentic tool vendor does not natively support per-team quotas, the common implementation patterns are: (1) route all LLM calls through a shared API gateway or proxy (e.g., LiteLLM, a custom FastAPI proxy, or a cloud-provider AI gateway) that enforces per-team rate and spend limits; (2) use provider-side API key scoping — create one API key per team with a spend limit configured in the provider console (Anthropic, OpenAI, and Google Vertex all support some form of usage-capped API keys — verify current capabilities); (3) for CI jobs specifically, set per-job token caps using the CLI flag or SDK parameter (e.g., <code>--max-tokens</code> on Claude Code CLI, <code>max_tokens</code> in the API, or equivalent in your tool). The proxy approach is the most robust because it is independent of which tool or model any given team is using.</p>
+          <p style="margin:8px 0 6px;">If your agentic tool vendor does not natively support per-team quotas, the common implementation patterns are: (1) route all LLM calls through a shared API gateway or proxy (e.g., LiteLLM, a custom FastAPI proxy, or a cloud-provider AI gateway) that enforces per-team rate and spend limits; (2) use provider-side API key scoping — create one API key per team with a spend limit configured in the provider console (Anthropic, OpenAI, and Google Vertex all support some form of usage-capped API keys — verify current capabilities); (3) for CI jobs specifically, set per-job token caps using the CLI flag or SDK parameter (e.g., a per-run token-cap flag on the Claude Code CLI (verify the current flag name), <code>max_tokens</code> in the API, or equivalent in your tool). The proxy approach is the most robust because it is independent of which tool or model any given team is using.</p>
         </aside>
       </div>
 
@@ -3691,7 +3691,7 @@ except Exception as e:
               <td><span style="color:var(--red);font-weight:700;">Mandate</span></td>
               <td>No secrets in agent context; no direct production write without High-tier approval; approved model list only; prompt-injection sanitization on tool outputs</td>
               <td>A single breach affects the whole org. Local-fit arguments do not override compliance and security obligations. Consistency here is non-negotiable.</td>
-              <td>CI gate blocks merge if violated; policy-as-code enforcement (Ch 13.2); platform config prevents deviation at the tool level where possible</td>
+              <td>CI gate blocks merge if violated; policy-as-code enforcement (Ch 13.3); platform config prevents deviation at the tool level where possible</td>
             </tr>
             <tr>
               <td><strong>Audit &amp; traceability</strong></td>
@@ -3705,7 +3705,7 @@ except Exception as e:
               <td><span style="color:var(--red);font-weight:700;">Mandate</span></td>
               <td>Every agentic CI pipeline must have a documented, tested kill-switch procedure; every agent service account must be individually revocable; on-call runbook addendum required before Stage 3 go-live</td>
               <td>An agent-caused incident that cannot be stopped quickly compounds in blast radius. Incident response infrastructure is not optional at org scale.</td>
-              <td>Stage gate checklist item (Ch 13.3); platform will not provision a service account for an agent workflow without a documented revocation path</td>
+              <td>Kill-switch & revocation requirement (Ch 14.5); platform will not provision a service account for an agent workflow without a documented revocation path</td>
             </tr>
             <tr>
               <td><strong>Workflow configs &amp; golden path</strong></td>
@@ -4121,7 +4121,7 @@ except Exception as e:
           <li>Have you identified a <strong>pilot team that is representative</strong> of your broader engineering org — not the most enthusiastic team, not a cherry-picked greenfield project? <em>(Ch 3)</em></li>
           <li>Have you written a <strong>falsifiable success hypothesis</strong> — a specific, measurable claim that the pilot can disprove, not just validate? <em>(Ch 3.2)</em></li>
           <li>Have you set a <strong>written stop condition</strong> — a clear trigger that would cause you to halt the pilot — agreed before the pilot starts? <em>(Ch 3.2)</em></li>
-          <li>Have you captured a <strong>baseline measurement</strong> for the metric(s) you intend to move (e.g., PR cycle time, escape defect rate) before any AI tooling is introduced? <em>(Ch 7)</em></li>
+          <li>Have you captured a <strong>baseline measurement</strong> for the metric(s) you intend to move (e.g., PR cycle time, escape defect rate) before any AI tooling is introduced? <em>(Ch 3.2)</em></li>
           <li>Have you set a <strong>time-box</strong> — a fixed end date, not "until we feel ready"? <em>(Ch 3)</em></li>
           <li>Have you produced a <strong>one-page pilot proposal</strong> that a budget owner can approve, with cost, scope, success criteria, and what gets decided at the end? <em>(Ch 2)</em></li>
           <li>Have you defined <strong>guardrails for the pilot</strong> — what the agent can and cannot touch, and that human review is required before every merge? <em>(Ch 3.3)</em></li>
@@ -4275,7 +4275,7 @@ except Exception as e:
         <dd>A metric measuring the fraction of engineers who use the AI workflow for more than a threshold percentage of their eligible tasks, sustained over multiple consecutive sprints. Distinguishes genuine integration from trial or occasional use — a team with 90% login rate and 20% sustained-task adoption has an enablement problem, not a tooling problem. <a onclick="go('ch7-metrics')">→ Ch 7</a></dd>
 
         <dt><strong>Audit Trail</strong></dt>
-        <dd>A reconstructable, append-only record of which agent actions were taken, by whom, when, and with what effect. Required at Stage 4 for compliance and incident reconstruction — the audit trail is what lets you answer "how did this change happen?" after an agentic incident. <a onclick="go('ch13-gates')">→ Ch 13</a></dd>
+        <dd>A reconstructable, append-only record of which agent actions were taken, by whom, when, and with what effect. Required from Stage 3 onward for compliance and incident reconstruction — the audit trail is what lets you answer "how did this change happen?" after an agentic incident. <a onclick="go('ch13-gates')">→ Ch 13</a></dd>
 
         <dt><strong>Blast Radius</strong></dt>
         <dd>The maximum scope of damage a single agent action or agentic workflow failure could cause — e.g., deleting files, pushing to production, or touching infrastructure shared by many teams. Governance at org scale is largely a discipline of keeping blast radius small through scoped permissions, dry-run flags, and reversible operations. <a onclick="go('ch12-security')">→ Ch 12</a></dd>
