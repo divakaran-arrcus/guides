@@ -1,0 +1,6 @@
+{ "unit": "illustrative monthly $", "bars": [
+  { "label": "Payments", "value": 4200, "display": "$4.2k" },
+  { "label": "Platform", "value": 3100, "display": "$3.1k" },
+  { "label": "Web", "value": 2600, "display": "$2.6k" },
+  { "label": "Mobile", "value": 1800, "display": "$1.8k" },
+  { "label": "Data", "value": 1200, "display": "$1.2k" } ] }

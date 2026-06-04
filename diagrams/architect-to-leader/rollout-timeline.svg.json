@@ -1,0 +1,5 @@
+{ "events": [
+  { "year": "M1-2",  "label": "Pilot" },
+  { "year": "M3-5",  "label": "Team" },
+  { "year": "M6-9",  "label": "Org + platform" },
+  { "year": "M10-12","label": "Enterprise gov." } ] }

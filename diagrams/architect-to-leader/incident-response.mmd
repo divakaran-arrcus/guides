@@ -1,0 +1,7 @@
+flowchart LR
+  D[Detect] --> ST[Stop the agent]
+  ST --> CO[Contain blast radius]
+  CO --> RB[Roll back]
+  RB --> PM[Blameless postmortem]
+  PM --> HG[Harden the guardrail]
+  HG --> D
