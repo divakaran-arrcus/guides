@@ -1,0 +1,5 @@
+flowchart LR
+  T[Tokens] --> E[Embeddings]
+  E --> A[Self-attention: weigh related tokens]
+  A --> FF[Feed-forward layers]
+  FF --> P[Next-token probabilities]

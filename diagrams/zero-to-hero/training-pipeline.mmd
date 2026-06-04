@@ -1,0 +1,5 @@
+flowchart LR
+  D[Raw text corpus] --> PT[Pre-training: predict next token]
+  PT --> FT[Fine-tuning: task examples]
+  FT --> RL[RLHF: human preference tuning]
+  RL --> M[Helpful, aligned model]

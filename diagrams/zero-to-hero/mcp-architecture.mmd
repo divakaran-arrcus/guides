@@ -1,0 +1,6 @@
+flowchart LR
+  H[Host app e.g. Claude Code] --> CL[MCP client]
+  CL <--> S1[MCP server: files]
+  CL <--> S2[MCP server: database]
+  CL <--> S3[MCP server: web]
+  S1 -.exposes.-> T[tools / resources / prompts]

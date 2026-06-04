@@ -5,12 +5,18 @@ import { THEME_MAP, SENTINEL_RE } from './theme-map.mjs';
 // raw survives. .arrowheadPath blue is rendered (it's the edge arrowheads) and
 // must track the edge/line color; the black KaTeX/state-start rules are for
 // unused diagram features but still ship in the inlined <style>.
+// sequenceDiagram also emits its own hardcoded greys (#eaeaea, #666, #999) and
+// a slightly different arrowhead blue (#0f5ffa) that are not theme-driven.
 const DEFAULT_COLOR_MAP = {
   '#0f5ffe': 'var(--text-dim)', // .arrowheadPath -> same token as lineColor (#f0a005)
+  '#0f5ffa': 'var(--text-dim)', // sequenceDiagram arrowhead variant
+  '#eaeaea': 'var(--border)',   // sequenceDiagram actor/loop box stroke
+  '#666':    'var(--text-muted)', // sequenceDiagram label text
+  '#999':    'var(--text-muted)', // sequenceDiagram loop/alt text
   '#000000': 'currentColor',    // .node circle .state-start (unused here)
   '#000': 'currentColor',       // .node .katex path (unused here)
 };
-const DEFAULT_COLOR_RE = /#0f5ffe|#000000|#000(?![0-9a-fA-F])/gi;
+const DEFAULT_COLOR_RE = /#0f5ffa|#0f5ffe|#eaeaea|#666(?![0-9a-fA-F])|#999(?![0-9a-fA-F])|#000000|#000(?![0-9a-fA-F])/gi;
 
 // Make a raw mmdc SVG safe to inline: unique ids, themed colors, scoped <style>, responsive, a11y.
 export function postprocess(rawSvg, id, title, desc = '') {

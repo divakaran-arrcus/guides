@@ -1,0 +1,6 @@
+flowchart LR
+  Q[User question] --> EM[Embed query]
+  EM --> R[(Vector store)]
+  R --> C[Retrieve top-k chunks]
+  C --> AUG[Augment prompt with context]
+  AUG --> G[LLM generates grounded answer]
