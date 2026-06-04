@@ -30,20 +30,23 @@ export function postprocess(rawSvg, id, title, desc = '') {
     if (!idMap.has(old)) idMap.set(old, `${prefix}-n${n++}`);
     return `id="${idMap.get(old)}"`;
   });
-  // 2) Rewrite references to those ids: url(#old), href="#old", xlink:href="#old".
+  // 2) Rewrite EVERY reference to a renamed id — url(#id), href="#id", AND CSS
+  //    id-selectors inside the inlined <style>. mmdc already scopes every rule
+  //    under the root id (e.g. "#my-svg .node {…}"), so renaming that id here
+  //    makes the rules both correct AND unique-per-diagram. The single
+  //    "#old (not followed by an id char)" replace covers url()/href/CSS at once.
+  //    DO NOT add an extra "#root " prefix to selectors — that produced
+  //    "#newroot #my-svg …", which matches nothing, so nodes/edges fell back to
+  //    default black fills and invisible strokes.
   for (const [old, neu] of idMap) {
     const esc = old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    svg = svg.replace(new RegExp(`url\\(#${esc}\\)`, 'g'), `url(#${neu})`);
-    svg = svg.replace(new RegExp(`(href=")#${esc}(")`, 'g'), `$1#${neu}$2`);
+    svg = svg.replace(new RegExp(`#${esc}(?![\\w-])`, 'g'), `#${neu}`);
   }
-
-  // 3) Scope the inlined <style> so it can't bleed: prefix each selector with the root svg id.
-  const rootId = idMap.get([...idMap.keys()][0]) || `${prefix}-root`;
-  svg = svg.replace(/<style>([\s\S]*?)<\/style>/g, (_, css) => {
-    const scoped = css.replace(/([^{}]+)\{/g, (m, sel) =>
-      sel.split(',').map(s => `#${rootId} ${s.trim()}`).join(',') + '{');
-    return `<style>${scoped}</style>`;
-  });
+  // 2b) Mop up any residual "my-svg" stem — mmdc's stock CSS contains dangling
+  //     refs like url(#my-svg-gradient) for shape types this diagram doesn't use;
+  //     those ids are never defined as elements, so they weren't in idMap. Rename
+  //     the whole stem so no shared "my-svg" token survives (theming + uniqueness).
+  svg = svg.replace(/my-svg/g, prefix);
 
   // 4) Recolor: every sentinel hex -> token. (Assert none remain via lintSvg.)
   svg = svg.replace(SENTINEL_RE, (hex) => THEME_MAP[hex.toLowerCase()] || 'currentColor');
@@ -70,5 +73,9 @@ export function lintSvg(svg) {
   const hexes = svg.match(/#[0-9a-fA-F]{3,8}\b/g);
   if (hexes) problems.push(`raw hex colors remain: ${[...new Set(hexes)].join(', ')}`);
   if (/#f0a00/i.test(svg)) problems.push('unmapped sentinel remains');
+  // Guard against the black-diagram bug: mmdc scopes its CSS under the root id
+  // "#my-svg"; if that token survives, the rename/scope failed and the diagram
+  // would render with default black fills + invisible edges.
+  if (/#my-svg|id="my-svg"/.test(svg)) problems.push('unrenamed mermaid root id "#my-svg" present — CSS rules will not match (black diagram)');
   return problems;
 }
