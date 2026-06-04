@@ -7,4 +7,9 @@ export const REGISTRY = {
   'rag-pipeline':      { kind: 'mermaid', title: 'RAG: embed query, retrieve chunks, augment prompt, generate' },
   'mcp-architecture':  { kind: 'mermaid', title: 'MCP: a host app client connects to tool/resource servers' },
   'tool-use':          { kind: 'mermaid', title: 'Tool use: user, model, tool round-trip' },
+  'context-window-sizes': { kind: 'barChart', data: 'context-window-sizes.chart.json', title: 'Context window sizes by model' },
+  'pricing':              { kind: 'barChart', data: 'pricing.chart.json', title: 'Illustrative API pricing per 1M tokens' },
+  'history-timeline':     { kind: 'timeline', data: 'history-timeline.svg.json', title: 'A brief history of AI' },
+  'embeddings-space':     { kind: 'scatter',  data: 'embeddings-space.svg.json', title: 'Embeddings: similar meanings cluster together' },
+  'token-fill':           { kind: 'tokenFill', data: 'token-fill.svg.json', title: 'A context window filling up' },
 };

@@ -586,6 +586,11 @@
         </div>
       </div>
 
+      <figure class="diagram"><!--DIAGRAM:history-timeline-->
+<svg viewBox="0 0 760 120" role="img" style="max-width:100%;height:auto" font-family="inherit"><title>A brief history of AI</title><line x1="30" y1="60" x2="730" y2="60" stroke="var(--border)" stroke-width="2"/><circle cx="30" cy="60" r="5" fill="var(--blue)"/><text x="30" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">1950</text><text x="30" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">Turing test</text><circle cx="170" cy="60" r="5" fill="var(--blue)"/><text x="170" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">1956</text><text x="170" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">"AI" coined</text><circle cx="310" cy="60" r="5" fill="var(--blue)"/><text x="310" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">2012</text><text x="310" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">Deep learning</text><circle cx="450" cy="60" r="5" fill="var(--blue)"/><text x="450" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">2017</text><text x="450" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">Transformers</text><circle cx="590" cy="60" r="5" fill="var(--blue)"/><text x="590" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">2022</text><text x="590" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">ChatGPT</text><circle cx="730" cy="60" r="5" fill="var(--blue)"/><text x="730" y="46" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">2025+</text><text x="730" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="11">Agents</text></svg>
+<!--/DIAGRAM:history-timeline-->
+<figcaption class="ann">Seven decades from the Turing test to autonomous agents.</figcaption></figure>
+
       <div class="card">
         <h2>Why Does This History Matter?</h2>
         <p>Understanding the past helps you see that AI isn't magic &mdash; it's engineering built on decades of trial and error. Every "breakthrough" stands on previous work. And every "AI winter" was caused by overpromising and under-delivering.</p>
@@ -1216,6 +1221,11 @@
           <tr><td>Gemini 3 Pro</td><td>1,000,000 tokens</td><td>~1,500 pages</td></tr>
         </table>
 
+        <figure class="diagram"><!--DIAGRAM:context-window-sizes-->
+<svg viewBox="0 0 720 190" role="img" style="max-width:100%;height:auto" font-family="inherit"><title>Context window sizes by model</title><desc>tokens</desc><text x="142" y="27" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">GPT-3.5 (2023)</text><rect x="150" y="16" width="2.048" height="20" rx="3" fill="var(--blue)"/><text x="160.048" y="27" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">4K</text><text x="142" y="61" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">GPT-4 / GPT-5 tier</text><rect x="150" y="50" width="64" height="20" rx="3" fill="var(--blue)"/><text x="222" y="61" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">128K+</text><text x="142" y="95" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Claude (default)</text><rect x="150" y="84" width="100" height="20" rx="3" fill="var(--blue)"/><text x="258" y="95" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">200K</text><text x="142" y="129" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Claude (extended)</text><rect x="150" y="118" width="500" height="20" rx="3" fill="var(--blue)"/><text x="658" y="129" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">1M</text><text x="142" y="163" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Gemini 3 Pro</text><rect x="150" y="152" width="500" height="20" rx="3" fill="var(--blue)"/><text x="658" y="163" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">1M</text></svg>
+<!--/DIAGRAM:context-window-sizes-->
+<figcaption class="ann">Context windows have grown from a few thousand tokens to a million.</figcaption></figure>
+
         <div class="info orange"><strong>Important:</strong> The context window includes EVERYTHING &mdash; your message, the system prompt, the entire conversation history, and the model's response. A long conversation gradually fills up the window. When it's full, the oldest messages get dropped.</div>
       </div>
 
@@ -1242,6 +1252,11 @@
         </div>
         <div class="info green"><strong>Why this matters:</strong> If you had a great conversation with Claude yesterday, it doesn't remember today (unless the platform adds memory features). Each conversation starts fresh with an empty context window.</div>
       </div>
+
+      <figure class="diagram"><!--DIAGRAM:token-fill-->
+<svg viewBox="0 0 720 80" role="img" style="max-width:100%;height:auto" font-family="inherit"><title>A context window filling up</title><rect x="10" y="24" width="700" height="30" rx="3" fill="var(--surface2)" stroke="var(--border)"/><rect x="10.0" y="24" width="14.0" height="30" fill="var(--purple)"/><text x="17.0" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="11">system prompt</text><rect x="24.0" y="24" width="420.0" height="30" fill="var(--blue)"/><text x="234.0" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="11">history</text><rect x="444.0" y="24" width="21.0" height="30" fill="var(--teal)"/><text x="454.5" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="11">your message</text><rect x="465.0" y="24" width="245.0" height="30" fill="var(--surface3)"/><text x="587.5" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="11">free space</text></svg>
+<!--/DIAGRAM:token-fill-->
+<figcaption class="ann">Everything shares one context window: system prompt, history, your message, and remaining free space.</figcaption></figure>
 
       <div class="try-this">
         <div class="try-this-label">Try This</div>
@@ -1890,6 +1905,11 @@ def login(username, password):
         </div>
 
         <div class="info"><strong>Analogy:</strong> Think of GPS coordinates. "Paris" and "Lyon" have similar coordinates (both in France). "Paris" and "Tokyo" have very different coordinates. Embeddings are like GPS coordinates for <em>meaning</em> &mdash; similar concepts end up at nearby coordinates in a high-dimensional space.</div>
+
+        <figure class="diagram"><!--DIAGRAM:embeddings-space-->
+<svg viewBox="0 0 520 360" role="img" style="max-width:100%;height:auto" font-family="inherit"><title>Embeddings: similar meanings cluster together</title><rect x="1" y="1" width="518" height="358" rx="8" fill="none" stroke="var(--border)"/><circle cx="109.0" cy="111.4" r="6" fill="var(--blue)" opacity="0.85"/><circle cx="137.3" cy="130.1" r="6" fill="var(--blue)" opacity="0.85"/><circle cx="85.4" cy="148.8" r="6" fill="var(--blue)" opacity="0.85"/><text x="119.0" y="103.4" fill="currentColor" font-size="12">animals</text><circle cx="363.8" cy="92.6" r="6" fill="var(--purple)" opacity="0.85"/><circle cx="401.6" cy="117.6" r="6" fill="var(--purple)" opacity="0.85"/><circle cx="335.5" cy="123.8" r="6" fill="var(--purple)" opacity="0.85"/><text x="373.8" y="84.6" fill="currentColor" font-size="12">royalty</text><circle cx="260.0" cy="273.6" r="6" fill="var(--orange)" opacity="0.85"/><circle cx="297.8" cy="251.8" r="6" fill="var(--orange)" opacity="0.85"/><circle cx="231.7" cy="286.1" r="6" fill="var(--orange)" opacity="0.85"/><text x="270.0" y="265.6" fill="currentColor" font-size="12">food</text></svg>
+<!--/DIAGRAM:embeddings-space-->
+<figcaption class="ann">Embeddings place similar meanings near each other in vector space.</figcaption></figure>
       </div>
 
       <div class="card">
@@ -3015,6 +3035,11 @@ Can you spot the issue?"</pre>
           <tr><td>GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>&lt; $0.001</td></tr>
         </table>
         <div class="ann">Illustrative rates. Pricing and model lineups (e.g. GPT-5, Gemini 3) change frequently &mdash; verify current models and rates at each provider's website.</div>
+
+        <figure class="diagram"><!--DIAGRAM:pricing-->
+<svg viewBox="0 0 720 156" role="img" style="max-width:100%;height:auto" font-family="inherit"><title>Illustrative API pricing per 1M tokens</title><desc>USD per 1M tokens</desc><text x="142" y="27" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Claude Haiku 4.5</text><rect x="150" y="16" width="8.333333333333334" height="20" rx="3" fill="var(--blue)"/><text x="166.33333333333334" y="27" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">$0.25 / $1.25</text><text x="142" y="61" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Claude Sonnet 4.7</text><rect x="150" y="50" width="100" height="20" rx="3" fill="var(--blue)"/><text x="258" y="61" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">$3 / $15</text><text x="142" y="95" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">Claude Opus 4.7</text><rect x="150" y="84" width="500" height="20" rx="3" fill="var(--blue)"/><text x="658" y="95" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">$15 / $75</text><text x="142" y="129" text-anchor="end" dominant-baseline="middle" fill="currentColor" font-size="13">GPT-4o (ref)</text><rect x="150" y="118" width="66.66666666666667" height="20" rx="3" fill="var(--blue)"/><text x="224.66666666666669" y="129" dominant-baseline="middle" fill="var(--text-dim)" font-size="12">$2.50 / $10</text></svg>
+<!--/DIAGRAM:pricing-->
+<figcaption class="ann">Illustrative output-token pricing across model tiers — verify current rates at each provider.</figcaption></figure>
       </div>
 
       <div class="card">

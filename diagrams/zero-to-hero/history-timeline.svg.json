@@ -1,0 +1,7 @@
+{ "events": [
+  { "year": "1950", "label": "Turing test" },
+  { "year": "1956", "label": "\"AI\" coined" },
+  { "year": "2012", "label": "Deep learning" },
+  { "year": "2017", "label": "Transformers" },
+  { "year": "2022", "label": "ChatGPT" },
+  { "year": "2025+", "label": "Agents" } ] }

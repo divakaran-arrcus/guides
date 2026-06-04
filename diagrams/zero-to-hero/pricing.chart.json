@@ -1,0 +1,5 @@
+{ "unit": "USD per 1M tokens", "bars": [
+  { "label": "Claude Haiku 4.5", "value": 1.25, "display": "$0.25 / $1.25" },
+  { "label": "Claude Sonnet 4.7", "value": 15, "display": "$3 / $15" },
+  { "label": "Claude Opus 4.7", "value": 75, "display": "$15 / $75" },
+  { "label": "GPT-4o (ref)", "value": 10, "display": "$2.50 / $10" } ] }
