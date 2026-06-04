@@ -1,0 +1,5 @@
+flowchart LR
+  R["Read / Grep / Glob (reversible)"] --> E["Edit tracked file (git-revertible)"]
+  E --> B["Bash: build / test (mostly safe)"]
+  B --> W["Write outside repo, commit, push"]
+  W --> X["Destructive: rm -rf, deploy, DB (never auto)"]

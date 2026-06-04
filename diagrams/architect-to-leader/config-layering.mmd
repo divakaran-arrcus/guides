@@ -1,0 +1,4 @@
+flowchart TB
+  O["Org baseline config"] --> T["Team overrides"]
+  T --> R["Repo-local additions"]
+  R --> E["Effective config the agent sees"]

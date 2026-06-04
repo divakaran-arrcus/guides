@@ -1,0 +1,7 @@
+flowchart LR
+  S[Spec / task] --> P[Plan the step]
+  P --> A[Act: edit + run]
+  A --> O[Observe: tests, output, errors]
+  O --> V{Pass and complete?}
+  V -- no --> P
+  V -- yes --> D[Commit / done]

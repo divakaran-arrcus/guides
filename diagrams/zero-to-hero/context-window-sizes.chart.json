@@ -1,0 +1,6 @@
+{ "unit": "tokens", "bars": [
+  { "label": "GPT-3.5 (2023)", "value": 4096, "display": "4K" },
+  { "label": "GPT-4 / GPT-5 tier", "value": 128000, "display": "128K+" },
+  { "label": "Claude Sonnet 4.7", "value": 200000, "display": "200K" },
+  { "label": "Claude (via Claude Code)", "value": 1000000, "display": "1M" },
+  { "label": "Gemini 3 Pro", "value": 1000000, "display": "1M" } ] }

@@ -1,0 +1,5 @@
+flowchart LR
+  G[gitlog-report spec] --> P1["Pass 1: Kilo Code (IDE, mode-driven)"]
+  P1 --> P2["Pass 2: Claude Code (terminal, subagents)"]
+  P2 --> P3["Pass 3: Gemini CLI (free-tier highlights)"]
+  P3 --> S[Shipped CLI tool]

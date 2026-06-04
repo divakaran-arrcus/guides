@@ -1,0 +1,7 @@
+flowchart LR
+  C[Commit / PR] --> G["Deterministic gates (build, tests, lint)"]
+  G --> AB["Agent review bot (advisory)"]
+  AB --> HR[Human review]
+  HR --> M{Gates green and approved?}
+  M -- yes --> MG[Merge]
+  M -- no --> C

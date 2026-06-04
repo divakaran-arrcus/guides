@@ -1,0 +1,7 @@
+flowchart TB
+  A[Agent acts on your behalf] --> S1["Secrets and data egress"]
+  A --> S2["Prompt injection (untrusted content / tool output)"]
+  A --> S3["Supply chain (deps, third-party MCP)"]
+  S1 --> CT["Controls: redaction, allowlists, review gates"]
+  S2 --> CT
+  S3 --> CT

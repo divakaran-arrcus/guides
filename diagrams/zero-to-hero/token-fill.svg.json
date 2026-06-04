@@ -1,0 +1,5 @@
+{ "total": 200000, "segments": [
+  { "label": "system prompt", "count": 4000,   "color": "--purple" },
+  { "label": "history",       "count": 120000, "color": "--blue" },
+  { "label": "your message",  "count": 6000,   "color": "--teal" },
+  { "label": "free space",    "count": 70000,  "color": "--surface3" } ] }

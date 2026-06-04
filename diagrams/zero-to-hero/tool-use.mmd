@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant U as User
+  participant M as Model
+  participant T as Tool
+  U->>M: question
+  M->>T: tool call (args)
+  T->>M: result
+  M->>U: final answer

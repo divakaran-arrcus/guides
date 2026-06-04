@@ -1,0 +1,6 @@
+flowchart LR
+  P[Plan: decide next step] --> A[Act: call a tool]
+  A --> O[Observe: read result]
+  O --> D{Goal met?}
+  D -- no --> P
+  D -- yes --> E[Done]

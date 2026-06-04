@@ -1,0 +1,7 @@
+flowchart TB
+  ORC[Orchestrator] --> A["Subagent A (worktree A)"]
+  ORC --> B["Subagent B (worktree B)"]
+  ORC --> C["Subagent C (worktree C)"]
+  A --> M[Integrate / merge]
+  B --> M
+  C --> M

@@ -1,0 +1,6 @@
+flowchart TB
+  T[Incoming task] --> Q{Hard reasoning or broad context?}
+  Q -- yes --> O["Capable model (e.g. Opus)"]
+  Q -- no --> R{Routine / mechanical?}
+  R -- yes --> H["Fast, cheap model (e.g. Haiku)"]
+  R -- no --> S["Balanced model (e.g. Sonnet)"]
