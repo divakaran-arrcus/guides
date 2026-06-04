@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant H as Host (Claude Code)
+  participant C as MCP client
+  participant S as MCP server
+  H->>C: needs a capability
+  C->>S: call tool (JSON-RPC)
+  S->>C: result / resource
+  C->>H: tool output in context

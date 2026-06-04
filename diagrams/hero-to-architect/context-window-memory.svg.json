@@ -1,0 +1,5 @@
+{ "total": 200000, "segments": [
+  { "label": "system + tools", "count": 15000, "color": "--purple" },
+  { "label": "project files / CLAUDE.md", "count": 40000, "color": "--blue" },
+  { "label": "conversation history", "count": 95000, "color": "--teal" },
+  { "label": "working headroom", "count": 50000, "color": "--surface3" } ] }
