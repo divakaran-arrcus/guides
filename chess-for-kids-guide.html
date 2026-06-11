@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess for Kids — Learn to Play, Step by Step</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090e1a;
+    --bg-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    --surface: #0f1629;
+    --surface2: #162040;
+    --surface3: #1c2a52;
+    --border: #1e2d55;
+    --border-light: #2a3d6b;
+    --text: #dce4f8;
+    --text-dim: #7e90b8;
+    --text-muted: #4d5f84;
+    --blue: #4f9fff;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fb923c;
+    --purple: #a78bfa;
+    --yellow: #fbbf24;
+    --pink: #f472b6;
+    --teal: #2dd4bf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grain);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== LAYOUT ===== */
+  .page { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 24px 0;
+  }
+
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-brand h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .nav-group { padding: 0 12px; margin-bottom: 16px; }
+
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+  }
+
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: #fff; background: rgba(79,159,255,0.15); border-left: 2px solid var(--blue); }
+
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 32px 40px;
+    max-width: 920px;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px 16px; }
+  }
+
+  /* ===== SECTIONS ===== */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===== TYPOGRAPHY ===== */
+  .sec-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .sec-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .card h3 { font-size: 15px; font-weight: 600; margin: 16px 0 8px; color: var(--blue); }
+  .card h4 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: var(--purple); }
+  .card p { font-size: 14px; line-height: 1.75; margin-bottom: 8px; }
+  .card ul { padding-left: 18px; margin: 6px 0 10px; }
+  .card li { font-size: 14px; margin-bottom: 4px; line-height: 1.65; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(79,159,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  /* ===== INFO BOXES ===== */
+  .info { border-left: 3px solid var(--blue); background: rgba(79,159,255,0.06); padding: 12px 16px; border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 13.5px; }
+  .info.green { border-color: var(--green); background: rgba(52,211,153,0.06); }
+  .info.orange { border-color: var(--orange); background: rgba(251,146,60,0.06); }
+  .info.red { border-color: var(--red); background: rgba(248,113,113,0.06); }
+  .info.purple { border-color: var(--purple); background: rgba(167,139,250,0.06); }
+  .info.yellow { border-color: var(--yellow); background: rgba(251,191,36,0.06); }
+  .info strong { color: var(--text); }
+
+  /* ===== TABLES ===== */
+  .tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 12px 0; font-size: 13px; }
+  .tbl th { background: var(--surface2); padding: 9px 12px; text-align: left; font-weight: 600; color: var(--cyan); border-bottom: 2px solid var(--border); font-size: 12px; }
+  .tbl th:first-child { border-radius: 6px 0 0 0; } .tbl th:last-child { border-radius: 0 6px 0 0; }
+  .tbl td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .tbl tr:last-child td:first-child { border-radius: 0 0 0 6px; } .tbl tr:last-child td:last-child { border-radius: 0 0 6px 0; }
+
+  /* ===== DIAGRAM BLOCKS ===== */
+  .pkt { display: flex; align-items: stretch; border-radius: 5px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; min-height: 40px; margin: 4px 0; }
+  .pkt-c { padding: 7px 10px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid rgba(0,0,0,0.3); min-width: 50px; }
+  .pkt-c:last-child { border-right: none; }
+  .pkt-c .l { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.6; margin-bottom: 2px; }
+  .pkt-c .v { font-size: 11.5px; font-weight: 600; }
+
+  .bg-ipv6 { background: rgba(37,99,235,0.3); color: #93c5fd; }
+  .bg-srh { background: rgba(124,58,237,0.25); color: #c4b5fd; }
+  .bg-seg { background: rgba(5,150,105,0.22); color: #6ee7b7; }
+  .bg-vpn { background: rgba(13,148,136,0.25); color: #5eead4; }
+  .bg-pay { background: rgba(107,114,128,0.18); color: #d1d5db; }
+  .bg-mpls { background: rgba(251,146,60,0.25); color: #fed7aa; }
+  .bg-tilfa { background: rgba(251,146,60,0.2); color: #fed7aa; }
+  .bg-rem { background: repeating-linear-gradient(45deg, rgba(248,113,113,0.06), rgba(248,113,113,0.06) 4px, rgba(248,113,113,0.01) 4px, rgba(248,113,113,0.01) 8px); color: #fca5a5; border: 1px dashed rgba(248,113,113,0.3); }
+
+  .ann { font-size: 11.5px; color: var(--text-dim); margin: 4px 0 4px 4px; display: flex; gap: 5px; line-height: 1.5; }
+  .ann::before { content: '\2192'; color: var(--blue); font-weight: bold; flex-shrink: 0; }
+
+  .action { text-align: center; padding: 4px 0; color: var(--green); font-size: 12px; font-weight: 600; }
+
+  /* ===== FORMAT BLOCKS ===== */
+  .sid-fmt { display: flex; align-items: stretch; margin: 10px 0; border-radius: 6px; overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+  .sid-p { padding: 12px 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid rgba(0,0,0,0.3); }
+  .sid-p:last-child { border-right: none; }
+  .sid-p .n { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; opacity: 0.65; margin-bottom: 3px; }
+  .sid-p .val { font-size: 12px; font-weight: 700; }
+  .sid-p .bits { font-size: 8.5px; opacity: 0.45; margin-top: 2px; }
+
+  /* ===== COMPARISON GRID ===== */
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  @media (max-width: 700px) { .cmp { grid-template-columns: 1fr; } }
+  .cmp-c { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .cmp-c h4 { font-size: 14px; margin-bottom: 8px; }
+
+  /* ===== STEP BLOCKS ===== */
+  .stp { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 12px 0; }
+  .stp-h { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+  .stp-n { background: var(--blue); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .stp-n.grn { background: var(--green); } .stp-n.org { background: var(--orange); } .stp-n.red { background: var(--red); } .stp-n.pur { background: var(--purple); }
+  .stp-t { font-size: 14px; font-weight: 600; }
+  .stp p { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* ===== FEATURE CARDS ===== */
+  .flv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  @media (max-width: 700px) { .flv-grid { grid-template-columns: 1fr; } }
+  .flv { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .flv-name { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+  .flv-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+
+  /* ===== TAG ===== */
+  .tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .t-r { background: rgba(248,113,113,0.18); color: var(--red); }
+  .t-g { background: rgba(52,211,153,0.18); color: var(--green); }
+  .t-o { background: rgba(251,146,60,0.18); color: var(--orange); }
+  .t-b { background: rgba(79,159,255,0.18); color: var(--blue); }
+  .t-p { background: rgba(167,139,250,0.18); color: var(--purple); }
+
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .marker-ok { background: rgba(52,211,153,0.08); border: 1px dashed var(--green); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--green); text-align: center; font-weight: 600; }
+  .marker-bad { background: rgba(248,113,113,0.08); border: 1px dashed var(--red); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--red); text-align: center; font-weight: 600; }
+
+  /* ===== CHESS BOARD (custom) ===== */
+  .boardwrap { display: flex; flex-direction: column; align-items: center; margin: 16px 0; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    width: min(90vw, 360px);
+    border: 4px solid #5a3d28;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  }
+  .sq {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: min(7.6vw, 30px);
+    line-height: 1;
+  }
+  .sq.lt { background: #ead9b4; }
+  .sq.dk { background: #a3713f; }
+  .pc { position: relative; z-index: 2; }
+  .pc.w { color: #ffffff; text-shadow: 0 0 1px #000, 0 0 2px #000, 0 1px 1px rgba(0,0,0,0.6); }
+  .pc.b { color: #161616; text-shadow: 0 0 1px rgba(255,255,255,0.35); }
+  .sq.hl::before { content: ''; position: absolute; inset: 0; background: rgba(251,191,36,0.45); box-shadow: inset 0 0 0 3px var(--yellow); z-index: 0; }
+  .sq.xx::before { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 3px var(--red); background: rgba(248,113,113,0.28); z-index: 0; }
+  .mv { position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(34,211,238,0.75); z-index: 1; }
+  .cr { position: absolute; font-size: 8.5px; font-weight: 700; font-family: 'JetBrains Mono', monospace; z-index: 3; pointer-events: none; }
+  .cr.rk { top: 1px; left: 2px; }
+  .cr.fl { bottom: 0px; right: 3px; }
+  .sq.lt .cr { color: #8a6a3a; }
+  .sq.dk .cr { color: #ead9b4; }
+  .bcap { font-size: 12px; color: var(--text-muted); margin-top: 9px; text-align: center; font-style: italic; max-width: 360px; }
+
+  /* ===== COACH NOTE ===== */
+  .coach { border-left: 3px solid var(--purple); background: rgba(167,139,250,0.09); padding: 12px 16px; border-radius: 0 7px 7px 0; margin: 12px 0; font-size: 13.5px; }
+  .coach .clbl { display: block; font-weight: 700; color: var(--purple); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
+  .coach strong { color: var(--text); }
+
+  /* ===== PUZZLE REVEAL ===== */
+  .qbtn { background: var(--surface3); border: 1px solid var(--border-light); color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; padding: 7px 16px; border-radius: 7px; cursor: pointer; margin-top: 6px; transition: all 0.15s; }
+  .qbtn:hover { background: var(--surface2); }
+  .ans { display: none; margin-top: 12px; }
+  .ans.show { display: block; animation: fadeIn 0.2s ease; }
+
+  /* ===== LIGHT MODE ===== */
+  body.light {
+    --bg: #f5f7fa;
+    --bg-grain: none;
+    --surface: #ffffff;
+    --surface2: #eef1f6;
+    --surface3: #e2e7ef;
+    --border: #d1d8e4;
+    --border-light: #b8c3d4;
+    --text: #1a2332;
+    --text-dim: #4a5568;
+    --text-muted: #8694a7;
+    --blue: #2563eb;
+    --cyan: #0891b2;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #d97706;
+    --purple: #7c3aed;
+    --yellow: #b45309;
+    --pink: #db2777;
+    --teal: #0d9488;
+  }
+
+  body.light .bg-ipv6 { background: rgba(37,99,235,0.12); color: #1e40af; }
+  body.light .bg-srh { background: rgba(124,58,237,0.1); color: #5b21b6; }
+  body.light .bg-seg { background: rgba(5,150,105,0.1); color: #065f46; }
+  body.light .bg-vpn { background: rgba(13,148,136,0.1); color: #115e59; }
+  body.light .bg-pay { background: rgba(107,114,128,0.08); color: #374151; }
+  body.light .bg-mpls { background: rgba(217,119,6,0.1); color: #92400e; }
+  body.light .bg-tilfa { background: rgba(217,119,6,0.08); color: #92400e; }
+  body.light .bg-rem { background: repeating-linear-gradient(45deg, rgba(220,38,38,0.04), rgba(220,38,38,0.04) 4px, rgba(220,38,38,0.01) 4px, rgba(220,38,38,0.01) 8px); color: #991b1b; border: 1px dashed rgba(220,38,38,0.3); }
+
+  body.light code { background: rgba(37,99,235,0.08); color: var(--cyan); }
+  body.light .info { background: rgba(37,99,235,0.05); }
+  body.light .info.green { background: rgba(5,150,105,0.05); }
+  body.light .info.orange { background: rgba(217,119,6,0.05); }
+  body.light .info.red { background: rgba(220,38,38,0.05); }
+  body.light .info.purple { background: rgba(124,58,237,0.05); }
+  body.light .info.yellow { background: rgba(180,83,9,0.05); }
+  body.light .coach { background: rgba(124,58,237,0.06); }
+  body.light .marker-ok { background: rgba(5,150,105,0.06); }
+  body.light .marker-bad { background: rgba(220,38,38,0.06); }
+
+  body.light .nav-item.active { color: var(--blue); background: rgba(37,99,235,0.08); border-left: 2px solid var(--blue); }
+  body.light .sidebar { background: #ffffff; border-right-color: var(--border); }
+  body.light .card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  body.light .t-r { background: rgba(220,38,38,0.1); color: var(--red); }
+  body.light .t-g { background: rgba(5,150,105,0.1); color: var(--green); }
+  body.light .t-o { background: rgba(217,119,6,0.1); color: var(--orange); }
+  body.light .t-b { background: rgba(37,99,235,0.1); color: var(--blue); }
+  body.light .t-p { background: rgba(124,58,237,0.1); color: var(--purple); }
+
+  /* ===== THEME TOGGLE ===== */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    margin-top: 4px;
+  }
+
+  .theme-toggle-btn {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .theme-toggle-btn::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.2s;
+  }
+
+  body.light .theme-toggle-btn::after {
+    left: 20px;
+    background: var(--blue);
+  }
+
+  .theme-toggle-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    user-select: none;
+  }
+
+  /* ===== PRINT-ONLY ELEMENTS (cover, TOC, answer key) ===== */
+  .print-only { display: none; }
+  .print-cover { text-align: center; padding-top: 55mm; }
+  .print-cover .pc-glyphs { font-size: 46px; letter-spacing: 10px; color: #a3713f; }
+  .print-cover .pc-title { font-family: 'Source Serif 4', serif; font-size: 54px; font-weight: 700; margin: 20px 0 8px; color: #0e7490; letter-spacing: -1px; }
+  .print-cover .pc-sub { font-size: 20px; color: #3a4655; font-weight: 600; }
+  .print-cover .pc-tag { font-size: 14px; color: #6b7888; margin-top: 26px; }
+  .print-toc h2 { font-family: 'Source Serif 4', serif; font-size: 28px; color: #0e7490; margin-bottom: 16px; }
+  .print-toc .toc-group { font-weight: 700; color: #1d4ed8; margin: 14px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
+  .print-toc ul { list-style: none; margin: 0 0 4px 4px; padding: 0; }
+  .print-toc li { font-size: 14.5px; margin: 3px 0; color: #15202e; }
+  .print-toc li::before { content: '\265F'; color: #a3713f; margin-right: 8px; }
+  .print-answer-key .sec-title { color: #0e7490; }
+  .print-answer-key h3 { font-size: 15px; margin: 14px 0 4px; }
+  .pchk { list-style: none; padding: 0; margin: 0; }
+  .pchk li { font-size: 15px; margin: 9px 0; line-height: 1.5; }
+  .pchk li::before { content: '\2610'; font-size: 22px; margin-right: 12px; vertical-align: -3px; color: #0e7490; }
+  .scoresheet { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .scoresheet th { background: #f1f4f9; border: 1px solid #cbd5e3; padding: 7px 8px; color: #0e7490; text-align: left; }
+  .scoresheet td { border: 1px solid #cbd5e3; padding: 11px 8px; height: 26px; }
+  .scoresheet td.num { text-align: center; color: #6b7888; width: 34px; background: #f8fafc; }
+  .certificate { border: 5px double #a3713f; border-radius: 12px; padding: 42px 32px; text-align: center; margin-top: 16mm; }
+  .certificate .cert-glyphs { font-size: 34px; color: #a3713f; letter-spacing: 8px; }
+  .certificate .cert-title { font-family: 'Source Serif 4', serif; font-size: 42px; font-weight: 700; color: #0e7490; margin: 16px 0; letter-spacing: -0.5px; }
+  .certificate .cert-line { font-size: 16px; margin: 14px 0; color: #15202e; }
+  .certificate .cert-blank { display: inline-block; border-bottom: 2px solid #15202e; min-width: 260px; height: 22px; }
+  .certificate .cert-row { display: flex; justify-content: space-around; margin-top: 40px; }
+  .certificate .cert-sign { border-top: 1.5px solid #15202e; padding-top: 6px; min-width: 170px; font-size: 13px; color: #3a4655; }
+
+  /* ===== PRINT / PDF ===== */
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body {
+      background: #fff !important; background-image: none !important;
+      --bg: #ffffff; --surface: #ffffff; --surface2: #f1f4f9; --surface3: #e8edf4;
+      --border: #cbd5e3; --border-light: #aebccf;
+      --text: #15202e; --text-dim: #3a4655; --text-muted: #6b7888;
+      --blue: #1d4ed8; --cyan: #0e7490; --green: #047857; --red: #b91c1c;
+      --orange: #b45309; --purple: #6d28d9; --yellow: #92600a; --pink: #be185d; --teal: #0d7c72;
+      color: #15202e !important;
+    }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .sidebar, .theme-toggle, .qbtn { display: none !important; }
+    .main { margin: 0 !important; max-width: none !important; padding: 0 !important; }
+    .section { display: block !important; page-break-before: always; }
+    #welcome { page-break-before: avoid; }
+    .ans { display: none !important; }                  /* inline answers hidden — key is at the back */
+    .print-only { display: block !important; }
+    .print-cover { page-break-after: always; }
+    .print-toc { page-break-after: always; }
+    .print-answer-key, .print-checklist, .print-scoresheet, .print-certificate { page-break-before: always; }
+    .boardwrap, .info, .coach, .stp, .cmp-c, .flv, .marker-ok, .marker-bad, .pkt, .sid-fmt { break-inside: avoid; }
+    #puzzles .card { break-inside: avoid; }            /* keep each puzzle (heading + board) on one page */
+    .card { box-shadow: none !important; margin-bottom: 12px; }
+    a { color: inherit !important; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <h1>&#9823; Chess for Kids</h1>
+      <p>Learn to play, step by step</p>
+    </div>
+
+    <div class="theme-toggle">
+      <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle light/dark mode"></button>
+      <span class="theme-toggle-label">Light mode</span>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Get Started</div>
+      <button class="nav-item active" onclick="go('welcome')">Welcome!</button>
+      <button class="nav-item" onclick="go('the-board')">The Board &amp; Setup</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Meet the Pieces</div>
+      <button class="nav-item" onclick="go('pawn')">The Pawn</button>
+      <button class="nav-item" onclick="go('rook')">The Rook</button>
+      <button class="nav-item" onclick="go('bishop')">The Bishop</button>
+      <button class="nav-item" onclick="go('knight')">The Knight</button>
+      <button class="nav-item" onclick="go('queen')">The Queen</button>
+      <button class="nav-item" onclick="go('king')">The King</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">How to Play</div>
+      <button class="nav-item" onclick="go('capturing')">Capturing &amp; Turns</button>
+      <button class="nav-item" onclick="go('check-mate')">Check &amp; Checkmate</button>
+      <button class="nav-item" onclick="go('mates')">Basic Checkmates</button>
+      <button class="nav-item" onclick="go('draws')">Stalemate &amp; Draws</button>
+      <button class="nav-item" onclick="go('special')">Special Moves</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Get Good</div>
+      <button class="nav-item" onclick="go('notation')">Reading Moves</button>
+      <button class="nav-item" onclick="go('value')">What Pieces Are Worth</button>
+      <button class="nav-item" onclick="go('tactics')">Tricks &amp; Tactics</button>
+      <button class="nav-item" onclick="go('think')">Think Before You Move</button>
+      <button class="nav-item" onclick="go('openings')">Starting Smart</button>
+      <button class="nav-item" onclick="go('endgame')">Finishing the Game</button>
+      <button class="nav-item" onclick="go('first-game')">Your First Game</button>
+      <button class="nav-item" onclick="go('next')">Keep Getting Better</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Practice &amp; Manners</div>
+      <button class="nav-item" onclick="go('puzzles')">Practice Puzzles</button>
+      <button class="nav-item" onclick="go('manners')">Good Manners</button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Reference</div>
+      <button class="nav-item" onclick="go('cheatsheet')">Cheat Sheet</button>
+      <button class="nav-item" onclick="go('glossary')">Glossary A&ndash;Z</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ===================== PRINT COVER (print only) ===================== -->
+    <div class="print-only print-cover">
+      <div class="pc-glyphs">&#9812; &#9813; &#9814; &#9815; &#9816; &#9817;</div>
+      <div class="pc-title">Chess for Kids</div>
+      <div class="pc-sub">Learn to Play, Step by Step</div>
+      <div class="pc-tag">A printable guide &mdash; from your very first move to your first checkmate.</div>
+    </div>
+
+    <!-- ===================== PRINT TABLE OF CONTENTS (print only) ===================== -->
+    <div class="print-only print-toc">
+      <h2>What's Inside</h2>
+      <div class="toc-group">Get Started</div>
+      <ul><li>Welcome!</li><li>The Board &amp; Setup</li></ul>
+      <div class="toc-group">Meet the Pieces</div>
+      <ul><li>The Pawn</li><li>The Rook</li><li>The Bishop</li><li>The Knight</li><li>The Queen</li><li>The King</li></ul>
+      <div class="toc-group">How to Play</div>
+      <ul><li>Capturing &amp; Turns</li><li>Check &amp; Checkmate</li><li>Basic Checkmates</li><li>Stalemate &amp; Draws</li><li>Special Moves</li></ul>
+      <div class="toc-group">Get Good</div>
+      <ul><li>Reading Moves (Notation)</li><li>What Pieces Are Worth</li><li>Tricks &amp; Tactics</li><li>Think Before You Move</li><li>Starting Smart (Openings)</li><li>Finishing the Game (Endgame)</li><li>Your First Whole Game</li><li>Keep Getting Better</li></ul>
+      <div class="toc-group">Practice &amp; Manners</div>
+      <ul><li>Practice Puzzles</li><li>Good Manners &amp; Habits</li></ul>
+      <div class="toc-group">Reference</div>
+      <ul><li>Cheat Sheet</li><li>Glossary A&ndash;Z</li><li>Puzzle Answer Key</li></ul>
+      <div class="toc-group">Printables</div>
+      <ul><li>My Progress Checklist</li><li>My Games Scoresheet</li><li>Chess Champion Certificate</li></ul>
+    </div>
+
+    <!-- ===================== WELCOME ===================== -->
+    <div id="welcome" class="section active">
+      <div class="sec-title">Welcome, Future Chess Champion! &#9818;</div>
+      <p class="sec-sub">A friendly guide for first-time players &mdash; read it on your own or with a grown-up.</p>
+
+      <div class="card">
+        <h2>What is chess?</h2>
+        <p>Chess is a game for <strong>two players</strong>. Think of it like a friendly battle between two little armies &mdash; a <strong>white</strong> army and a <strong>black</strong> army.</p>
+        <p>Each army has a <strong>King</strong> who must be kept safe, a powerful <strong>Queen</strong>, and lots of helpers: tall <strong>Rooks</strong>, sneaky <strong>Bishops</strong>, jumping <strong>Knights</strong>, and brave little <strong>Pawns</strong>.</p>
+        <p>Your big goal is to trap the <strong>other</strong> king so he cannot escape. When you do that, you win! That trap has a special name: <strong>checkmate</strong>.</p>
+        <div class="info green">&#127942; <strong>The one-sentence rule of chess:</strong> Move your pieces to trap the enemy king &mdash; while keeping your own king safe.</div>
+      </div>
+
+      <div class="card">
+        <h2>How to use this guide</h2>
+        <p>Go in order using the menu on the left, like steps on a ladder. Each page teaches just one small new thing, so it never feels too hard.</p>
+        <p>Along the way you'll see little colored boxes. Here's what they mean:</p>
+        <div class="info green">&#9989; <strong>Tip</strong> &mdash; a smart idea to help you play better.</div>
+        <div class="info orange">&#9888;&#65039; <strong>Watch out</strong> &mdash; a common mistake to avoid.</div>
+        <div class="info yellow">&#11088; <strong>Remember</strong> &mdash; something important to keep in your head.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Extra detail and the "real" chess words &mdash; great for older kids and the grown-up reading along. Little kids can skip these and come back later.</div>
+      </div>
+
+      <div class="card">
+        <h2>What you'll be able to do at the end</h2>
+        <ul>
+          <li>Set up the board the right way &#9812;</li>
+          <li>Move every single piece correctly</li>
+          <li>Say "check!" and deliver a checkmate</li>
+          <li>Do the cool special moves (castling, promotion, en passant)</li>
+          <li>Read and write chess moves like the pros</li>
+          <li>Use clever tricks called <strong>tactics</strong> to win pieces</li>
+          <li>Play a whole game from start to finish &mdash; with good manners!</li>
+        </ul>
+        <div class="action">Ready? Let's meet the board! &#8594;</div>
+      </div>
+    </div>
+
+    <!-- ===================== THE BOARD ===================== -->
+    <div id="the-board" class="section">
+      <div class="sec-title">The Board &amp; Setting Up</div>
+      <p class="sec-sub">Before the battle starts, everyone lines up in the right spot.</p>
+
+      <div class="card">
+        <h2>The battlefield: 64 squares</h2>
+        <p>A chessboard is a big square made of <strong>64 small squares</strong> &mdash; 8 across and 8 down. The squares take turns being <strong>light</strong> and <strong>dark</strong>, like a checkerboard.</p>
+        <p>The board has two kinds of lines:</p>
+        <ul>
+          <li><strong>Files</strong> &mdash; the columns that go <em>up and down</em>. We name them with letters <code>a</code> to <code>h</code>.</li>
+          <li><strong>Ranks</strong> &mdash; the rows that go <em>left and right</em>. We name them with numbers <code>1</code> to <code>8</code>.</li>
+        </ul>
+        <p>Every square has its own name made of a letter and a number, like <code>e4</code> or <code>g7</code>. (Look at the small letters and numbers on the edge of the board below!)</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/8/8/8/8" data-hl="e4 g7"></div>
+          <div class="bcap">The two yellow squares are <code>e4</code> (letter e, row 4) and <code>g7</code> (letter g, row 7).</div>
+        </div>
+        <div class="info">&#129513; Square names are like seats in a movie theater: a letter for the column, a number for the row. <code>e4</code> means "go to column e, row 4."</div>
+      </div>
+
+      <div class="card">
+        <h2>Two golden setup rules</h2>
+        <div class="info yellow">&#11088; <strong>Rule 1: "Light on the right."</strong> When you sit down, the square in your bottom-right corner should be a <em>light</em> square. If it's dark, turn the board around!</div>
+        <div class="info yellow">&#11088; <strong>Rule 2: "The queen loves her own color."</strong> The white queen starts on a light square, and the black queen starts on a dark square. (The kings stand right next to their queens.)</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> An easy way to remember Rule 2: <strong>"Queen on her own color."</strong> If your queen is sitting on the wrong color at the start, the kings and queens are swapped &mdash; fix it before you begin.</div>
+      </div>
+
+      <div class="card">
+        <h2>Where everyone stands</h2>
+        <p>The pieces line up on the two rows closest to each player. The <strong>pawns</strong> stand in front like a wall of soldiers. Behind them stand the bigger pieces.</p>
+        <p>From the corners going in, the back row goes: <strong>Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook.</strong></p>
+        <div class="boardwrap">
+          <div class="board" data-fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"></div>
+          <div class="bcap">The starting position. White is at the bottom and always moves first.</div>
+        </div>
+        <div class="info green">&#9989; <strong>Memory trick:</strong> The big towers (Rooks) guard the corners. Knights stand next to them. Bishops next. And in the middle, the King and Queen sit together like royalty.</div>
+        <div class="info">&#9816; <strong>Who goes first?</strong> White always makes the first move. Then players take turns &mdash; white, black, white, black &mdash; one move each turn.</div>
+      </div>
+    </div>
+
+    <!-- ===================== PAWN ===================== -->
+    <div id="pawn" class="section">
+      <div class="sec-title">The Pawn &#9823;</div>
+      <p class="sec-sub">Small and brave &mdash; the little soldier who only marches forward.</p>
+
+      <div class="card">
+        <h2>How the pawn moves</h2>
+        <p>A pawn is the smallest piece, but don't laugh at it! Pawns are brave little soldiers who march straight ahead and never go backward.</p>
+        <ul>
+          <li>A pawn moves <strong>one square straight forward</strong>.</li>
+          <li><strong>Special first move:</strong> the very first time a pawn moves, it may jump <strong>two</strong> squares forward instead of one &mdash; like an excited sprint at the start!</li>
+        </ul>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/8/8/4P3/8" data-dot="e3 e4"></div>
+          <div class="bcap">This pawn hasn't moved yet, so it can step to <code>e3</code> or sprint to <code>e4</code> (the blue dots).</div>
+        </div>
+        <div class="info orange">&#9888;&#65039; <strong>Watch out:</strong> A pawn can never move backward or sideways. Once it marches forward, there's no turning back!</div>
+      </div>
+
+      <div class="card">
+        <h2>How the pawn captures (this is the tricky part!)</h2>
+        <p>Here's the funny thing about pawns: they move straight, but they <strong>capture diagonally</strong> &mdash; one square forward to the left, or one square forward to the right.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/3p1p2/4P3/8/8/8" data-x="d5 f5"></div>
+          <div class="bcap">The white pawn on <code>e4</code> can capture either black pawn on the red squares (<code>d5</code> or <code>f5</code>) &mdash; but it can't capture straight ahead.</div>
+        </div>
+        <div class="info yellow">&#11088; <strong>Remember:</strong> Pawns walk straight but punch sideways (diagonally). If an enemy stands <em>directly in front</em> of a pawn, the pawn is stuck and cannot capture it.</div>
+      </div>
+
+      <div class="card">
+        <h2>The pawn's amazing superpower: Promotion</h2>
+        <p>If a pawn is brave enough to march <em>all the way</em> to the far end of the board, something magical happens. It gets <strong>promoted</strong> &mdash; you turn it into a much stronger piece, almost always a <strong>Queen</strong>!</p>
+        <div class="info green">&#127881; A tiny pawn that reaches the other side becomes a mighty queen. You can even have <em>two</em> queens this way! (We'll practice this in <strong>Special Moves</strong>.)</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> A promoting pawn can become a <strong>queen, rook, bishop, or knight</strong> &mdash; your choice. 99% of the time you pick the queen because it's strongest. The rare times a knight is better are called "underpromotion."</div>
+      </div>
+    </div>
+
+    <!-- ===================== ROOK ===================== -->
+    <div id="rook" class="section">
+      <div class="sec-title">The Rook &#9820;</div>
+      <p class="sec-sub">The tall castle tower that rolls in straight lines.</p>
+
+      <div class="card">
+        <h2>How the rook moves</h2>
+        <p>The rook looks like a little castle tower. It moves in <strong>straight lines</strong> &mdash; up, down, left, or right &mdash; as far as you like, as long as nothing is in the way.</p>
+        <p>Think of it like a train on tracks: it can go a long, long way, but only straight, never diagonally.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/3R4/8/8/8" data-dot="a4 b4 c4 e4 f4 g4 h4 d1 d2 d3 d5 d6 d7 d8"></div>
+          <div class="bcap">The rook on <code>d4</code> can slide to any blue dot &mdash; all along its row and its column.</div>
+        </div>
+        <div class="info green">&#9989; <strong>Rooks love open lines.</strong> A rook is happiest when there's a long empty row or column in front of it &mdash; it can zoom across the whole board.</div>
+        <div class="info orange">&#9888;&#65039; A rook cannot jump over pieces. If a friend or enemy is in the way, the rook must stop. (It <em>can</em> capture an enemy that's blocking it!)</div>
+      </div>
+    </div>
+
+    <!-- ===================== BISHOP ===================== -->
+    <div id="bishop" class="section">
+      <div class="sec-title">The Bishop &#9821;</div>
+      <p class="sec-sub">The diagonal slider that lives on one color forever.</p>
+
+      <div class="card">
+        <h2>How the bishop moves</h2>
+        <p>The bishop moves in <strong>diagonal lines</strong> &mdash; like sliding on ice corner-to-corner. It can go as far as it wants, as long as the path is clear.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/3B4/8/8/8" data-dot="a1 b2 c3 e5 f6 g7 h8 a7 b6 c5 e3 f2 g1"></div>
+          <div class="bcap">The bishop on <code>d4</code> zooms along both diagonals (the blue dots).</div>
+        </div>
+        <div class="info yellow">&#11088; <strong>A funny rule:</strong> A bishop that starts on a light square stays on light squares for the <em>whole game</em>. It can never reach a dark square! Each army has one "light-squared" bishop and one "dark-squared" bishop.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Because the two bishops cover different colors, they make a great team &mdash; together they can reach <em>every</em> square. Having both bishops is called the <strong>"bishop pair,"</strong> and it's a small but real advantage.</div>
+      </div>
+    </div>
+
+    <!-- ===================== KNIGHT ===================== -->
+    <div id="knight" class="section">
+      <div class="sec-title">The Knight &#9822;</div>
+      <p class="sec-sub">The jumping horse that moves in an L &mdash; the trickiest piece of all!</p>
+
+      <div class="card">
+        <h2>How the knight moves</h2>
+        <p>The knight is the funny one. It doesn't slide in a line at all. It hops in the shape of the letter <strong>"L"</strong>: <strong>two squares one way, then one square to the side.</strong></p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/3N4/8/8/8" data-dot="b3 b5 c2 c6 e2 e6 f3 f5"></div>
+          <div class="bcap">The knight on <code>d4</code> can jump to any of the 8 blue dots &mdash; each one is an "L" away.</div>
+        </div>
+        <div class="info green">&#128052; <strong>The knight's superpower: it can JUMP!</strong> It's the only piece that hops right over other pieces &mdash; friends or enemies. Nothing can block a knight.</div>
+        <div class="info yellow">&#11088; <strong>Color trick:</strong> A knight always lands on the <em>opposite</em> color from where it started. Light square &#8594; dark square &#8594; light square, every single hop.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Knights are strongest in the <strong>middle</strong> of the board (up to 8 jumps) and weakest in the corner (only 2 jumps). There's an old chess saying: <strong>"A knight on the rim is dim."</strong> Keep your knights near the center!</div>
+      </div>
+    </div>
+
+    <!-- ===================== QUEEN ===================== -->
+    <div id="queen" class="section">
+      <div class="sec-title">The Queen &#9819;</div>
+      <p class="sec-sub">The superhero of the army &mdash; your most powerful piece.</p>
+
+      <div class="card">
+        <h2>How the queen moves</h2>
+        <p>The queen is the strongest piece on the board. Why? Because she moves like a <strong>rook AND a bishop combined</strong> &mdash; straight lines <em>and</em> diagonals, as far as she wants!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/3Q4/8/8/8" data-dot="a4 b4 c4 e4 f4 g4 h4 d1 d2 d3 d5 d6 d7 d8 a1 b2 c3 e5 f6 g7 h8 a7 b6 c5 e3 f2 g1"></div>
+          <div class="bcap">Look how many squares the queen controls from <code>d4</code>! She's a true superhero.</div>
+        </div>
+        <div class="info orange">&#9888;&#65039; <strong>Watch out:</strong> Because the queen is so precious, don't rush her into battle too early. If she gets chased around or captured, you'll be very sad. Protect your queen!</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> The queen is worth about <strong>9 points</strong> (more on values later). Losing her for nothing usually loses the game. Bring her out only <em>after</em> your smaller pieces are developed.</div>
+      </div>
+    </div>
+
+    <!-- ===================== KING ===================== -->
+    <div id="king" class="section">
+      <div class="sec-title">The King &#9818;</div>
+      <p class="sec-sub">The most important piece &mdash; slow, but you must protect him at all costs.</p>
+
+      <div class="card">
+        <h2>How the king moves</h2>
+        <p>The king is the <strong>most important</strong> piece &mdash; if he gets trapped, the game is over. But he's also slow: he can only move <strong>one square at a time</strong>, in any direction (straight or diagonal), like a careful grandpa taking small steps.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/3K4/8/8/8" data-dot="c3 c4 c5 d3 d5 e3 e4 e5"></div>
+          <div class="bcap">The king on <code>d4</code> can step to any of the 8 squares around him &mdash; just one square per turn.</div>
+        </div>
+        <div class="info red">&#128272; <strong>The most important rule in chess:</strong> You can never let your king be captured. And a king can <em>never</em> move onto a square where an enemy could capture him. He must always stay safe.</div>
+        <div class="info orange">&#9888;&#65039; <strong>Kings can't touch!</strong> The two kings can never stand right next to each other &mdash; they must always have at least one square between them.</div>
+        <div class="info green">&#9989; <strong>Keep your king cozy.</strong> In the early game, tuck your king safely in a corner (we'll learn the special "castling" move for that). A king out in the open is in big danger.</div>
+      </div>
+    </div>
+
+    <!-- ===================== CAPTURING ===================== -->
+    <div id="capturing" class="section">
+      <div class="sec-title">Capturing &amp; Taking Turns</div>
+      <p class="sec-sub">How to win pieces from the other army.</p>
+
+      <div class="card">
+        <h2>Taking turns</h2>
+        <p>Chess is polite: players take turns, <strong>one move each</strong>. White moves, then black moves, then white again, and so on. You can't skip your turn, and you can't move twice.</p>
+        <div class="info">&#9203; You <em>must</em> make a move on your turn &mdash; even if you don't want to. There's no "passing" in chess.</div>
+      </div>
+
+      <div class="card">
+        <h2>How capturing works</h2>
+        <p>To <strong>capture</strong> means to take an enemy piece off the board. You do it by moving your piece <em>onto</em> the square where the enemy piece is standing. Your piece takes its place, and the enemy piece is gone for good.</p>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">1</div><div class="stp-t">Move the way your piece is allowed to move</div></div>
+          <p>A rook captures along straight lines, a bishop along diagonals, and so on. Capturing follows the same movement rules.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Land on the enemy's square</div></div>
+          <p>Lift the enemy piece off the board and put your piece there instead.</p>
+        </div>
+        <div class="info yellow">&#11088; <strong>You never <em>have</em> to capture</strong> (except to save your king). Capturing is a choice. Sometimes it's smart, sometimes it's a trap!</div>
+        <div class="info orange">&#9888;&#65039; <strong>Remember the pawn is different:</strong> it captures <em>diagonally</em>, not straight ahead. Every other piece captures the same way it moves.</div>
+      </div>
+
+      <div class="card">
+        <h2>"Is it protected?" &mdash; the most useful question</h2>
+        <p>Before you capture something, ask: <strong>"If I take that piece, can the enemy take me back?"</strong> A piece that a friend is guarding is called <strong>protected</strong> (or defended).</p>
+        <div class="info green">&#9989; Trading a small piece to win a big one is great. Trading a big piece to win a small one is usually a mistake. We'll learn exactly how much each piece is worth in the <strong>What Pieces Are Worth</strong> page.</div>
+      </div>
+    </div>
+
+    <!-- ===================== CHECK & CHECKMATE ===================== -->
+    <div id="check-mate" class="section">
+      <div class="sec-title">Check &amp; Checkmate</div>
+      <p class="sec-sub">This is how you actually win the game!</p>
+
+      <div class="card">
+        <h2>Check = the king is in danger</h2>
+        <p>When a piece is attacking the enemy king &mdash; meaning it <em>could</em> capture the king next turn &mdash; we say the king is in <strong>check</strong>. It's like shouting "Watch out!" to warn the king.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="4r3/8/8/8/8/8/8/4K3" data-x="e1"></div>
+          <div class="bcap">The black rook attacks straight down the column at the white king. The king is in <strong>check</strong>!</div>
+        </div>
+        <div class="info red">&#128680; <strong>When you're in check, you MUST get out of it right away.</strong> You can't ignore it and do something else.</div>
+        <h3>Three ways to escape check</h3>
+        <div class="flv-grid">
+          <div class="flv"><div class="flv-name">&#128694;</div><div class="flv-desc"><strong>Move</strong> the king to a safe square</div></div>
+          <div class="flv"><div class="flv-name">&#128737;&#65039;</div><div class="flv-desc"><strong>Block</strong> &mdash; put a piece in the way</div></div>
+          <div class="flv"><div class="flv-name">&#9876;&#65039;</div><div class="flv-desc"><strong>Capture</strong> the attacking piece</div></div>
+        </div>
+        <div class="info yellow">&#11088; If you can do <em>any</em> one of these three things, you're safe and the game continues.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Two exceptions for older players: you <strong>can't block</strong> a check from a knight (it jumps, so there's nothing to block) or a piece right next to the king. And in a <strong>double check</strong> (two pieces checking at once), blocking and capturing don't help &mdash; the king <em>must</em> move.</div>
+      </div>
+
+      <div class="card">
+        <h2>Checkmate = the king is trapped &mdash; YOU WIN! &#127942;</h2>
+        <p>If the king is in check and there is <strong>no way to escape</strong> &mdash; can't move, can't block, can't capture &mdash; then it's <strong>checkmate</strong>. The game is over and the player who gave checkmate <strong>wins</strong>!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/8/8/8/5PPP/4r1K1" data-hl="e1" data-x="g1"></div>
+          <div class="bcap">The black rook checks the white king. The king can't escape &mdash; his own pawns block him in. This is <strong>checkmate</strong>!</div>
+        </div>
+        <div class="info green">&#9989; This famous pattern is called the <strong>"back-rank mate."</strong> The king got trapped on the edge by his own pawns. (Tip: make a little escape hole for your king so this can't happen to you!)</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> The word "checkmate" comes from an old phrase meaning <strong>"the king is helpless."</strong> Notice: in checkmate, nobody actually captures the king &mdash; the game ends the instant escape becomes impossible. The whole game is one long race to checkmate the other king first.</div>
+      </div>
+    </div>
+
+    <!-- ===================== BASIC CHECKMATES ===================== -->
+    <div id="mates" class="section">
+      <div class="sec-title">Basic Checkmates</div>
+      <p class="sec-sub">You know what checkmate is &mdash; now here's how to actually deliver it.</p>
+
+      <div class="card">
+        <h2>The two-rook ladder &mdash; the easiest mate to learn</h2>
+        <p>Two rooks can checkmate a lonely king all by themselves &mdash; you don't even need your own king to help! Because it's so simple, this is the first checkmate every young player should learn. It works like climbing a <strong>staircase</strong>.</p>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Build a wall</div></div>
+          <p>Put one rook on a row right next to the enemy king. Now the king can't cross that line toward you.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Push with the other rook</div></div>
+          <p>Use your second rook to give <strong>check</strong> on the king's own row. The king has to step back one row.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Climb the staircase</div></div>
+          <p>Move your first rook up to the next row and check again. Step by step, the two rooks walk the king to the edge of the board.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n red">4</div><div class="stp-t">Checkmate on the edge</div></div>
+          <p>One rook checks the king on the very last row; the other guards the row right next to it, so there's nowhere to run.</p>
+        </div>
+        <div class="boardwrap">
+          <div class="board" data-fen="R3k3/1R6/8/8/8/8/8/8" data-hl="a8 b7" data-x="e8"></div>
+          <div class="bcap">The finish: one rook checks along the back row, the other seals the row below. The king is trapped &mdash; checkmate!</div>
+        </div>
+        <div class="info green">&#9989; <strong>If the king runs at one of your rooks, don't panic</strong> &mdash; just slide that rook far away along its row (stay on the same line!) and keep laddering.</div>
+      </div>
+
+      <div class="card">
+        <h2>King + Rook mate</h2>
+        <p>With only <em>one</em> rook, your king has to help. The two kings stand face-to-face with one square between them, and the rook delivers the check from the side. The enemy king can't step forward (your king guards those squares) and can't step back (it's already on the edge).</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="k6R/8/K7/8/8/8/8/8" data-hl="a6 h8" data-x="a8"></div>
+          <div class="bcap">The rook checks along the top row; the white king covers the escape squares below. Checkmate!</div>
+        </div>
+        <div class="info orange">&#9888;&#65039; This one is trickier than two rooks &mdash; it takes practice to walk the enemy king to the edge. Keep your king close to help, and watch out for stalemate.</div>
+      </div>
+
+      <div class="card">
+        <h2>Two famous fast mates (just for fun!)</h2>
+        <h3>Fool's Mate &mdash; the fastest checkmate of all</h3>
+        <p>Believe it or not, a game can end in just <strong>two moves</strong>! It only happens if a player makes two terrible opening moves and opens the door to their own king: <code>1.f3 e5 2.g4?? Qh4#</code>.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="rnbqkbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR" data-hl="h4" data-x="e1"></div>
+          <div class="bcap">The black queen swoops to <code>h4</code>. The white king has no escape and nothing can block. Mate in two moves!</div>
+        </div>
+        <div class="info yellow">&#11088; You'll almost never see this in a real game &mdash; but it shows why you shouldn't weaken the squares right around your own king.</div>
+        <h3>Smothered Mate &mdash; trapped by your own team</h3>
+        <p>A <strong>smothered mate</strong> is when a knight checkmates a king that is boxed in by its <em>own</em> pieces. The king has nowhere to go because his own friends block every escape square &mdash; and only the jumping knight can reach him!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="6rk/5Npp/8/8/8/8/8/8" data-hl="f7" data-x="h8"></div>
+          <div class="bcap">The knight checks the king in the corner. His own rook and pawns block every escape. Checkmate!</div>
+        </div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Smothered mate often arrives after a dazzling <strong>queen sacrifice</strong> called <em>Philidor's Legacy</em>: the queen gives itself up with <code>Qg8+!!</code>, the rook is forced to take (<code>Rxg8</code>), and then <code>Nf7#</code> snaps shut. One of the prettiest patterns in chess &mdash; worth showing the older kid.</div>
+      </div>
+    </div>
+
+    <!-- ===================== DRAWS ===================== -->
+    <div id="draws" class="section">
+      <div class="sec-title">Stalemate &amp; Draws</div>
+      <p class="sec-sub">Sometimes nobody wins &mdash; the game is a tie.</p>
+
+      <div class="card">
+        <h2>What is a draw?</h2>
+        <p>A <strong>draw</strong> means the game ends in a <strong>tie</strong> &mdash; nobody wins, nobody loses. It happens more than you'd think! There are a few ways a game can be a draw.</p>
+      </div>
+
+      <div class="card">
+        <h2>Stalemate (the sneaky tie)</h2>
+        <p><strong>Stalemate</strong> is the trickiest one. It happens when a player <strong>is NOT in check</strong>, but has <strong>no legal move</strong> at all &mdash; every move would be against the rules. When that happens, the game is a draw instead of a win.</p>
+        <div class="info orange">&#9888;&#65039; <strong>Super important when you're winning!</strong> If you have lots of pieces and the enemy has only a king, be careful not to accidentally stalemate them. You'd throw away your win and only get a tie! Always leave the lonely king at least one safe square &mdash; until you're ready to checkmate.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> The difference is simple: <strong>checkmate</strong> = king is in check AND has no escape (you win). <strong>Stalemate</strong> = king is NOT in check BUT has no legal move (it's a draw). One letter of difference in the result &mdash; a whole win thrown away. Beginners lose half-points to stalemate all the time, so slow down when finishing.</div>
+      </div>
+
+      <div class="card">
+        <h2>Other ways to draw</h2>
+        <table class="tbl">
+          <tr><th>Type of draw</th><th>What it means</th></tr>
+          <tr><td><strong>Agreement</strong></td><td>Both players simply agree to call it a tie.</td></tr>
+          <tr><td><strong>Not enough pieces</strong></td><td>Neither side has enough material to checkmate (for example, just two lonely kings).</td></tr>
+          <tr><td><strong>Repetition</strong></td><td>The exact same position happens three times &mdash; the game goes in circles.</td></tr>
+          <tr><td><strong>50-move rule</strong></td><td>If 50 moves pass with no capture and no pawn move, it's a draw.</td></tr>
+        </table>
+        <div class="info green">&#9989; A draw isn't a loss! If you're playing someone stronger, holding a draw can feel like a victory.</div>
+      </div>
+    </div>
+
+    <!-- ===================== SPECIAL MOVES ===================== -->
+    <div id="special" class="section">
+      <div class="sec-title">Special Moves</div>
+      <p class="sec-sub">Three cool moves that surprise beginners &mdash; learn them and feel like a pro!</p>
+
+      <div class="card">
+        <h2>1. Castling &mdash; hide your king &#9812;</h2>
+        <p>Castling is a special move where the <strong>king and a rook move at the same time</strong>. It's the only time you ever move two of your own pieces in one turn. It does two great things at once: it tucks your king safely into the corner <em>and</em> brings a rook toward the action.</p>
+        <p>The king slides <strong>two squares</strong> toward a rook, and the rook hops over to the king's other side.</p>
+        <div class="cmp">
+          <div class="cmp-c">
+            <h4 style="color:var(--orange);">Before castling</h4>
+            <div class="boardwrap">
+              <div class="board" data-fen="8/8/8/8/8/8/8/4K2R" data-dot="f1 g1"></div>
+            </div>
+          </div>
+          <div class="cmp-c">
+            <h4 style="color:var(--green);">After castling</h4>
+            <div class="boardwrap">
+              <div class="board" data-fen="8/8/8/8/8/8/8/5RK1"></div>
+            </div>
+          </div>
+        </div>
+        <p>The king moved from <code>e1</code> to <code>g1</code>, and the rook jumped from <code>h1</code> to <code>f1</code>. Safe and snug!</p>
+        <h3>You can only castle if&hellip;</h3>
+        <ul>
+          <li>Your king and that rook have <strong>never moved</strong> yet.</li>
+          <li>There are <strong>no pieces between</strong> them.</li>
+          <li>Your king is <strong>not in check</strong>, and doesn't pass through or land on a square the enemy attacks.</li>
+        </ul>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Castling toward the near rook (the <code>h</code>-file) is <strong>kingside</strong> castling, written <code>O-O</code>. Toward the far rook (the <code>a</code>-file) is <strong>queenside</strong> castling, written <code>O-O-O</code>. Castling early (usually kingside) is one of the best beginner habits &mdash; a safe king wins more games.</div>
+      </div>
+
+      <div class="card">
+        <h2>2. Promotion &mdash; pawn becomes a queen &#9819;</h2>
+        <p>Remember the pawn's superpower? When a pawn marches all the way to the far end, it gets <strong>promoted</strong> &mdash; you swap it for a queen (or rook, bishop, or knight, but almost always a queen).</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/P7/8/8/8/8/8/8" data-dot="a8"></div>
+          <div class="bcap">One more step to <code>a8</code> &mdash; and this little pawn becomes a powerful queen!</div>
+        </div>
+        <div class="info green">&#127881; This is why even a single extra pawn matters &mdash; it might grow up into a brand-new queen and win the game.</div>
+      </div>
+
+      <div class="card">
+        <h2>3. En passant &mdash; the surprise pawn capture</h2>
+        <p>This one has a fancy French name (say it "on-pass-ON"). It means <strong>"in passing."</strong> It's a special way one pawn can capture another.</p>
+        <p>If an enemy pawn uses its big two-square first move to zoom <em>right past</em> your pawn &mdash; landing beside it &mdash; you're allowed to capture it as if it had only moved one square. But you must do it <strong>immediately</strong>, on the very next move, or you lose the chance!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="8/8/8/3pP3/8/8/8/8" data-x="d6"></div>
+          <div class="bcap">The black pawn just sprinted from <code>d7</code> to <code>d5</code>, sliding past the white pawn. White may capture "en passant" by moving to the red square <code>d6</code> &mdash; and the black pawn is removed.</div>
+        </div>
+        <div class="info orange">&#9888;&#65039; En passant is the most-forgotten rule in chess! Don't worry if it feels strange &mdash; even grown-ups forget it. Just remember: it only works <em>right away</em>, and only against a pawn's two-square sprint.</div>
+      </div>
+    </div>
+
+    <!-- ===================== NOTATION ===================== -->
+    <div id="notation" class="section">
+      <div class="sec-title">Reading &amp; Writing Moves</div>
+      <p class="sec-sub">The secret code chess players use to write down their games.</p>
+
+      <div class="card">
+        <h2>Why learn the code?</h2>
+        <p>Chess has its own little writing system called <strong>notation</strong>. Once you know it, you can read chess books, follow famous games, and write down your own moves to look at later. It's like learning a secret language &mdash; and it's easier than it looks!</p>
+      </div>
+
+      <div class="card">
+        <h2>Each piece has a letter</h2>
+        <table class="tbl">
+          <tr><th>Piece</th><th>Letter</th><th>Why</th></tr>
+          <tr><td>&#9818; King</td><td><code>K</code></td><td>K for King</td></tr>
+          <tr><td>&#9819; Queen</td><td><code>Q</code></td><td>Q for Queen</td></tr>
+          <tr><td>&#9820; Rook</td><td><code>R</code></td><td>R for Rook</td></tr>
+          <tr><td>&#9821; Bishop</td><td><code>B</code></td><td>B for Bishop</td></tr>
+          <tr><td>&#9822; Knight</td><td><code>N</code></td><td>N (because K is taken by the King!)</td></tr>
+          <tr><td>&#9823; Pawn</td><td><em>(no letter)</em></td><td>Pawns are so common they don't need one</td></tr>
+        </table>
+        <div class="info yellow">&#11088; The sneaky one: a <strong>knight is N</strong>, not K. The King already grabbed the letter K!</div>
+      </div>
+
+      <div class="card">
+        <h2>How to write a move</h2>
+        <p>To write a move, put the piece's letter and then the square it moves to.</p>
+        <div class="sid-fmt">
+          <div class="sid-p bg-seg" style="flex:1;"><div class="n">Piece</div><div class="val">N</div><div class="bits">Knight</div></div>
+          <div class="sid-p bg-ipv6" style="flex:1;"><div class="n">Square</div><div class="val">f3</div><div class="bits">where it goes</div></div>
+        </div>
+        <p style="text-align:center;"><code>Nf3</code> means "Knight goes to f3."</p>
+        <p>For a pawn, just write the square: <code>e4</code> means "the pawn moves to e4." Easy!</p>
+
+        <h3>Special symbols</h3>
+        <table class="tbl">
+          <tr><th>Symbol</th><th>Means</th><th>Example</th></tr>
+          <tr><td><code>x</code></td><td>capture (takes a piece)</td><td><code>Bxf7</code> = bishop takes on f7</td></tr>
+          <tr><td><code>+</code></td><td>check</td><td><code>Qh5+</code> = queen to h5, check!</td></tr>
+          <tr><td><code>#</code></td><td>checkmate (you win!)</td><td><code>Qxf7#</code> = checkmate!</td></tr>
+          <tr><td><code>O-O</code></td><td>castle kingside</td><td>short castle</td></tr>
+          <tr><td><code>O-O-O</code></td><td>castle queenside</td><td>long castle</td></tr>
+          <tr><td><code>=Q</code></td><td>promote to queen</td><td><code>e8=Q</code> = pawn becomes a queen</td></tr>
+        </table>
+        <div class="info green">&#9989; <strong>Try reading this:</strong> <code>e4 e5 Nf3</code> means: white pawn to e4, black pawn to e5, white knight to f3. You just read your first chess moves!</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> This is called <strong>algebraic notation</strong> &mdash; the standard worldwide. Sometimes two of the same piece can reach a square, so we add the starting file or rank to be clear (e.g. <code>Nbd2</code> = the knight from the b-file goes to d2). Writing down your games lets you review them afterward &mdash; the #1 way to improve fast.</div>
+      </div>
+    </div>
+
+    <!-- ===================== VALUE ===================== -->
+    <div id="value" class="section">
+      <div class="sec-title">What Each Piece Is Worth</div>
+      <p class="sec-sub">Knowing the points helps you make smart trades.</p>
+
+      <div class="card">
+        <h2>The point values</h2>
+        <p>Pieces aren't all equal. We give each one a number of <strong>points</strong> to show how valuable it is. This helps you decide whether a trade is good or bad. (The points are just for thinking &mdash; you don't actually score them.)</p>
+        <table class="tbl">
+          <tr><th>Piece</th><th>Points</th><th>Think of it as&hellip;</th></tr>
+          <tr><td>&#9823; Pawn</td><td><strong>1</strong></td><td>a brave little helper</td></tr>
+          <tr><td>&#9822; Knight</td><td><strong>3</strong></td><td>a tricky jumper</td></tr>
+          <tr><td>&#9821; Bishop</td><td><strong>3</strong></td><td>a long-range slider</td></tr>
+          <tr><td>&#9820; Rook</td><td><strong>5</strong></td><td>a powerful tower</td></tr>
+          <tr><td>&#9819; Queen</td><td><strong>9</strong></td><td>the superhero</td></tr>
+          <tr><td>&#9818; King</td><td><strong>&#8734; (priceless)</strong></td><td>you can never lose him!</td></tr>
+        </table>
+        <div class="info yellow">&#11088; Easy way to remember: <strong>pawn 1, knight and bishop 3, rook 5, queen 9.</strong> The king has no number because losing him means losing the game.</div>
+      </div>
+
+      <div class="card">
+        <h2>Making smart trades</h2>
+        <p>When you think about capturing, compare the points. Winning <em>more</em> points than you give up is a good trade.</p>
+        <div class="marker-ok">&#9989; GOOD: Give a knight (3) to win a rook (5). You gained 2 points!</div>
+        <div class="marker-bad">&#10060; BAD: Give your queen (9) to win a pawn (1). You lost 8 points!</div>
+        <div class="info green">&#9989; Knights and bishops are both worth 3, so trading one for the other is usually fair &mdash; it depends on the position.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Having more total points than your opponent is called being <strong>"up material."</strong> A common goal: win material safely, trade pieces to simplify, then turn your extra power into a winning attack or a new queen. Just remember points are a guide, not a law &mdash; a well-placed knight can be worth more than a sleepy rook.</div>
+      </div>
+    </div>
+
+    <!-- ===================== TACTICS ===================== -->
+    <div id="tactics" class="section">
+      <div class="sec-title">Tricks &amp; Tactics</div>
+      <p class="sec-sub">Clever short combos that win pieces &mdash; the fun part of chess!</p>
+
+      <div class="card">
+        <h2>What's a tactic?</h2>
+        <p>A <strong>tactic</strong> is a short, clever trick that wins a piece or delivers checkmate. Spotting tactics is the fastest way to start beating opponents. Here are the three most important ones to learn first.</p>
+      </div>
+
+      <div class="card">
+        <h2>The Fork &mdash; attack two things at once! &#127860;</h2>
+        <p>A <strong>fork</strong> is when one of your pieces attacks <strong>two enemy pieces at the same time</strong>. The enemy can only save one &mdash; so you win the other! Knights are the kings of forking.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="k3r3/2N5/8/8/8/8/8/8" data-hl="a8 e8"></div>
+          <div class="bcap">The white knight on <code>c7</code> attacks the king AND the rook at once. The king must move &mdash; then the knight grabs the rook!</div>
+        </div>
+        <div class="info green">&#9989; A knight that forks the king and queen is so good it has a nickname: the <strong>"royal fork."</strong> Hunt for these!</div>
+      </div>
+
+      <div class="card">
+        <h2>The Pin &mdash; freeze a piece in place &#128204;</h2>
+        <p>A <strong>pin</strong> is when you attack a piece that can't move out of the way, because something <em>more</em> valuable is hiding right behind it. The pinned piece is stuck!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="4k3/8/2n5/1B6/8/8/8/8" data-hl="b5 c6 d7 e8"></div>
+          <div class="bcap">The white bishop pins the black knight to the king. The knight can't move &mdash; that would expose the king, which is against the rules!</div>
+        </div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> When the piece behind is the <strong>king</strong>, the pinned piece <em>legally cannot move</em> (it's an "absolute pin"). When it's just a valuable piece (like a queen) behind, moving is allowed but usually loses material (a "relative pin"). Pins freeze enemy pieces &mdash; then you can pile up more attackers and win the frozen piece.</div>
+      </div>
+
+      <div class="card">
+        <h2>The Skewer &mdash; the pin's big brother &#9876;&#65039;</h2>
+        <p>A <strong>skewer</strong> is like a pin flipped around. You attack a <em>valuable</em> piece in front; when it moves out of the way to safety, you grab the piece that was hiding behind it.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="q7/8/8/k7/8/8/8/R7" data-hl="a1 a5 a8"></div>
+          <div class="bcap">The rook checks the king. The king must step aside &mdash; and the rook captures the queen behind it!</div>
+        </div>
+        <div class="info yellow">&#11088; <strong>Pin vs. Skewer:</strong> In a pin, the <em>small</em> piece is in front. In a skewer, the <em>big</em> piece is in front and has to move, giving up the piece behind it.</div>
+        <div class="info green">&#9989; <strong>The golden tactic habit:</strong> every turn, ask "Is anything attacking <em>me</em>? Can I attack <em>two</em> things at once?" That one question will win you lots of pieces.</div>
+      </div>
+
+      <div class="card">
+        <h2>The Discovered Attack &mdash; the sneaky uncover &#128064;</h2>
+        <p>A <strong>discovered attack</strong> happens when you move one piece <em>out of the way</em> to uncover an attack from a piece hiding behind it. You make <strong>two</strong> threats with one move &mdash; the piece that moved, and the piece it unmasks!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="4k3/8/2q5/4N3/8/8/8/4R3" data-hl="e1 e5 e8" data-x="c6"></div>
+          <div class="bcap">The knight jumps away to grab the queen (<code>Nxc6</code>) &mdash; and uncovers the rook, which now checks the king! Because it's check, black must save the king and can't rescue the queen.</div>
+        </div>
+        <div class="info green">&#9989; A discovered attack where the uncovered piece gives <strong>check</strong> is the strongest kind &mdash; your opponent must answer the check, so your moving piece grabs something for free.</div>
+      </div>
+
+      <div class="card">
+        <h2>The Double Check &mdash; the unstoppable one &#128165;</h2>
+        <p>Sometimes the moving piece gives check <em>at the very same time</em> as the piece it uncovers. That's a <strong>double check</strong> &mdash; two pieces checking the king at once. You can't block two checks, and you can't capture two attackers in one move, so the king is <strong>forced</strong> to move.</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="4k3/8/4N3/8/8/8/8/4R3" data-hl="e1 e8" data-dot="c7"></div>
+          <div class="bcap">If the knight jumps to <code>c7</code>, the knight AND the rook both attack the king at once. The only way out is to move the king.</div>
+        </div>
+        <div class="info purple">&#129504; Double check is so powerful it's the secret behind smothered mate &mdash; the king is forced into the corner, then the knight finishes it.</div>
+      </div>
+    </div>
+
+    <!-- ===================== THINK BEFORE YOU MOVE ===================== -->
+    <div id="think" class="section">
+      <div class="sec-title">Think Before You Move</div>
+      <p class="sec-sub">The one habit that wins more games than any fancy opening.</p>
+
+      <div class="card">
+        <h2>The blunder-check routine</h2>
+        <p>The most common way beginners lose isn't a clever trap &mdash; it's giving away a piece for free by moving too fast. We call that a <strong>blunder</strong>. The cure is a quick check you do <em>every single turn</em>, before you touch a piece.</p>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">What did my opponent just do?</div></div>
+          <p>Did their last move <strong>attack</strong> something of mine, or set up a threat? Don't just answer their move &mdash; understand it first.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Is anything of mine in danger?</div></div>
+          <p>Scan the whole board for your pieces that are attacked and <strong>not protected</strong>. Those are the ones that get lost.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Is the move I want to play safe?</div></div>
+          <p>Before you let go, ask: "If I move here, can it be captured for free? Am I leaving something else undefended behind it?"</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n pur">4</div><div class="stp-t">Can I do something great?</div></div>
+          <p>Now look for <em>your</em> chances: a check, a capture that wins material, or a tactic like a fork, pin, or skewer.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Make it a habit</h2>
+        <div class="info yellow">&#11088; <strong>The golden question:</strong> before your hand leaves a piece, ask &mdash; <em>"Is it safe? And what will my opponent do back?"</em></div>
+        <div class="info orange">&#9888;&#65039; <strong>The #1 beginner blunder:</strong> moving quickly and leaving a piece "hanging" (attacked and undefended). Slowing down for one breath fixes most of your losses.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> A classic trick to stop impulsive moves is <strong>"sit on your hands"</strong> &mdash; literally don't touch a piece until you've finished the four checks above. Even strong players blunder-check on every move; it's not a beginner crutch, it's a lifelong habit. And reviewing your own games afterward to find where you blundered is the single fastest way to improve.</div>
+      </div>
+    </div>
+
+    <!-- ===================== OPENINGS ===================== -->
+    <div id="openings" class="section">
+      <div class="sec-title">Starting Smart (The Opening)</div>
+      <p class="sec-sub">The first few moves set up your whole game. Here's how to start strong.</p>
+
+      <div class="card">
+        <h2>The 3 golden opening rules</h2>
+        <p>The beginning of the game is called the <strong>opening</strong>. You don't need to memorize anything fancy &mdash; just follow three simple ideas and you'll be ahead of most beginners.</p>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Grab the center</div></div>
+          <p>Move a center pawn out (like <code>e4</code> or <code>d4</code>) to claim the middle of the board. The center is like the high ground &mdash; your pieces are strongest there.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Wake up your pieces (develop!)</div></div>
+          <p>Bring your knights and bishops off the back row toward the center. A piece sitting at home is fast asleep &mdash; "developing" means putting it to work. Knights usually come out before bishops.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Castle to keep your king safe</div></div>
+          <p>Once your knight and bishop on the kingside have moved, castle (<code>O-O</code>) to tuck your king into the corner. A safe king lets you attack without worry.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Opening "don'ts"</h2>
+        <div class="info orange">&#9888;&#65039; <strong>Don't bring your queen out too early.</strong> The enemy's little pieces will chase her around, and you'll waste moves running away.</div>
+        <div class="info orange">&#9888;&#65039; <strong>Don't move the same piece over and over</strong> in the opening. Wake up a <em>new</em> piece each turn instead &mdash; get your whole army into the game.</div>
+        <div class="info orange">&#9888;&#65039; <strong>Don't grab pawns on the edge</strong> while your king is still in the middle. Safety first!</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> A great first opening to teach is the <strong>Italian Game</strong>: <code>1.e4 e5 2.Nf3 Nc6 3.Bc4</code>. It naturally follows all three rules &mdash; center pawn, knight out, bishop aimed at the enemy's weak <code>f7</code> square, ready to castle. Simple, classical, and it teaches good habits.</div>
+      </div>
+    </div>
+
+    <!-- ===================== ENDGAME ===================== -->
+    <div id="endgame" class="section">
+      <div class="sec-title">Finishing the Game (The Endgame)</div>
+      <p class="sec-sub">When few pieces are left, here's how to land the win.</p>
+
+      <div class="card">
+        <h2>What is the endgame?</h2>
+        <p>The <strong>endgame</strong> is the last part of the game, when most pieces have been traded off and only a few are left. Two big ideas matter most here: <strong>making a new queen</strong> from a pawn, and <strong>checkmating the lonely king</strong>.</p>
+        <div class="info green">&#9989; In the endgame the king wakes up! With fewer pieces around, it's safe for your king to march into the middle and help fight. A brave endgame king is a strong piece.</div>
+      </div>
+
+      <div class="card">
+        <h2>The easiest checkmate: King + Queen vs. King</h2>
+        <p>If you have a queen and a king against a lonely king, you can always win. The trick: use your <strong>queen to push</strong> the enemy king toward the edge, and bring your <strong>own king up to help</strong>. The queen alone can't do it &mdash; the king must come and help finish!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="7k/6Q1/6K1/8/8/8/8/8" data-hl="g7 g6" data-x="h8"></div>
+          <div class="bcap">Checkmate! The queen traps the king on the edge, and the white king guards the queen so she can't be captured.</div>
+        </div>
+        <div class="info orange">&#9888;&#65039; Going for this mate? Watch out for <strong>stalemate</strong>! Don't take away all the king's squares unless it's a real checkmate. Always give him room until the final blow.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> The method: keep your queen a <strong>knight's-move away</strong> from the enemy king to herd it to the edge without stalemating, then march your own king up so the queen can deliver mate <em>protected</em>. The <strong>two-rook "ladder" (or "staircase") mate</strong> is even easier to learn first &mdash; the rooks cut off ranks one by one and walk the king off the board, and your own king isn't even needed.</div>
+      </div>
+
+      <div class="card">
+        <h2>Pawns become queens</h2>
+        <p>In the endgame, an extra pawn is gold. Push it toward the far side, protect it with your king, and turn it into a queen &mdash; then use your new queen to checkmate. This is how most simple endgames are won.</p>
+        <div class="info yellow">&#11088; <strong>Endgame motto:</strong> "Push the pawn, make a queen, then checkmate." If you're ahead, trade pieces (not pawns) to make winning easier.</div>
+      </div>
+    </div>
+
+    <!-- ===================== FIRST GAME ===================== -->
+    <div id="first-game" class="section">
+      <div class="sec-title">Your First Whole Game</div>
+      <p class="sec-sub">Let's put it all together &mdash; and learn a famous trap to avoid.</p>
+
+      <div class="card">
+        <h2>A friendly opening, move by move</h2>
+        <p>Here's how a smart, simple game might begin. Try playing these moves on a real board as you read &mdash; notice how each one follows our golden rules.</p>
+        <table class="tbl">
+          <tr><th>Move</th><th>White</th><th>Black</th><th>The idea</th></tr>
+          <tr><td>1</td><td><code>e4</code></td><td><code>e5</code></td><td>Both grab the center with a pawn.</td></tr>
+          <tr><td>2</td><td><code>Nf3</code></td><td><code>Nc6</code></td><td>Knights develop and guard pawns.</td></tr>
+          <tr><td>3</td><td><code>Bc4</code></td><td><code>Bc5</code></td><td>Bishops come out, aiming at the action.</td></tr>
+          <tr><td>4</td><td><code>O-O</code></td><td><code>Nf6</code></td><td>White castles to safety; black develops.</td></tr>
+        </table>
+        <div class="info green">&#9989; In just four moves, white grabbed the center, woke up two pieces, and tucked the king away safely. That's a textbook start!</div>
+      </div>
+
+      <div class="card">
+        <h2>&#9888;&#65039; The trap every beginner must know: Scholar's Mate</h2>
+        <p>This is a sneaky 4-move checkmate that catches new players all the time. If you know it, you can <strong>avoid it</strong> &mdash; and even use it!</p>
+        <p>The trick: <code>1.e4 e5 2.Bc4 Bc5 3.Qh5 Nf6?? 4.Qxf7#</code>. The queen and bishop team up to attack the weak <code>f7</code> square (right next to the king), and&hellip; checkmate!</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="rnbqk2r/pppp1Qpp/5n2/2b1p3/2B1P3/8/PPPP1PPP/RNB1K1NR" data-hl="f7" data-x="e8"></div>
+          <div class="bcap">Scholar's Mate. The white queen captures on <code>f7</code>, protected by the bishop on <code>c4</code>. The black king has no escape &mdash; checkmate!</div>
+        </div>
+        <h3>How to defend against it</h3>
+        <ul>
+          <li>Watch for the enemy queen and bishop both aiming at your <code>f7</code> (or <code>f2</code> for white) square.</li>
+          <li>When the queen comes out early to <code>h5</code>, calmly defend: a move like <code>g6</code> kicks the queen away, or <code>Qe7</code> guards f7.</li>
+          <li>Remember the opening rule: <strong>don't panic, develop, and protect f7!</strong></li>
+        </ul>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> The <code>??</code> after <code>Nf6</code> means "blunder" &mdash; it defended the wrong thing. The defense <code>3...g6!</code> attacks the queen <em>and</em> blocks the path to f7; or <code>3...Qe7</code> defends f7 directly. Teaching the Scholar's Mate is wonderful because it shows <em>why</em> the opening rules exist &mdash; bring the queen out too early and it can backfire badly once your opponent knows the defense.</div>
+        <div class="info yellow">&#11088; The big lesson: always ask "what is my opponent's piece <em>threatening</em>?" before you make your own move.</div>
+      </div>
+    </div>
+
+    <!-- ===================== KEEP GETTING BETTER ===================== -->
+    <div id="next" class="section">
+      <div class="sec-title">Keep Getting Better</div>
+      <p class="sec-sub">You know how to play &mdash; here's how to grow into a strong player.</p>
+
+      <div class="card">
+        <h2>Play, play, play!</h2>
+        <p>The number-one way to improve is simply to <strong>play lots of games</strong> &mdash; and not be afraid of losing. Every single game teaches you something new.</p>
+        <div class="flv-grid">
+          <div class="flv"><div class="flv-name">&#128106;</div><div class="flv-desc">Play family &amp; friends at home</div></div>
+          <div class="flv"><div class="flv-name">&#127979;</div><div class="flv-desc">Join a school or local chess club</div></div>
+          <div class="flv"><div class="flv-name">&#128187;</div><div class="flv-desc">Play on a kid-friendly chess app (with a grown-up)</div></div>
+        </div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> Two great kid-safe places to play and learn online are <strong>ChessKid.com</strong> (built just for children, with parent controls) and <strong>Lichess.org</strong> (completely free, no ads). A grown-up should set up and supervise any online account.</div>
+      </div>
+
+      <div class="card">
+        <h2>The chess clock &amp; time controls</h2>
+        <p>In many games each player has a <strong>chess clock</strong> &mdash; a special double timer. When it's your turn, your clock counts down; after you move, you press the button and your opponent's clock starts. If your time runs out, you lose &mdash; so the clock keeps games from lasting forever!</p>
+        <table class="tbl">
+          <tr><th>Type</th><th>Time each player</th><th>How it feels</th></tr>
+          <tr><td><strong>Classical</strong></td><td>30+ minutes</td><td>Slow and thoughtful</td></tr>
+          <tr><td><strong>Rapid</strong></td><td>about 10&ndash;15 min</td><td>Quicker, still time to think</td></tr>
+          <tr><td><strong>Blitz</strong></td><td>about 3&ndash;5 min</td><td>Fast and exciting</td></tr>
+          <tr><td><strong>Bullet</strong></td><td>1&ndash;2 min</td><td>Super speedy!</td></tr>
+        </table>
+        <div class="info green">&#9989; While you're learning, play <strong>slow</strong> games (classical or rapid) &mdash; you need time to do your blunder-check! Save blitz and bullet for fun once you're comfortable.</div>
+      </div>
+
+      <div class="card">
+        <h2>Three habits of players who improve</h2>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n">1</div><div class="stp-t">Do a puzzle a day</div></div>
+          <p>Solving a few tactics puzzles every day trains your eyes to spot forks, pins, and checkmates in your real games. It's the fastest &mdash; and funnest &mdash; practice there is.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n grn">2</div><div class="stp-t">Look back at your games</div></div>
+          <p>After a game &mdash; especially one you lost &mdash; go back and find the move where it went wrong. Write your games down (use the scoresheet at the back of this book!) so you can review them later.</p>
+        </div>
+        <div class="stp">
+          <div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">Learn one new thing at a time</div></div>
+          <p>Don't try to learn everything at once. Pick one idea &mdash; a checkmate pattern, a tactic, an opening move &mdash; and practice it until it feels easy. Then pick the next one.</p>
+        </div>
+        <div class="info yellow">&#11088; Remember: every grandmaster was once a beginner who lost lots of games. Keep playing, keep learning, and have fun &mdash; that's the real secret!</div>
+      </div>
+    </div>
+
+    <!-- ===================== PUZZLES ===================== -->
+    <div id="puzzles" class="section">
+      <div class="sec-title">Practice Puzzles</div>
+      <p class="sec-sub">Your turn! Try each one, then tap the button to check your answer.</p>
+
+      <div class="info purple">&#129504; <strong>How to solve:</strong> Look at the board, think hard, maybe set it up on a real board. When you have your answer, press the button to see if you're right. No peeking too early &mdash; that's where the brain muscles grow!</div>
+
+      <div class="card">
+        <h2>Puzzle 1 &mdash; Checkmate in one move &#9812;</h2>
+        <p><strong>White to move.</strong> Can you find a move that checkmates the black king right away?</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="6k1/5ppp/8/8/8/8/8/3R2K1"></div>
+          <div class="bcap">White has a rook. The black king is hiding behind his pawns&hellip;</div>
+        </div>
+        <button class="qbtn" onclick="reveal('a1')">Show the answer</button>
+        <div class="ans" id="a1">
+          <div class="marker-ok">&#9989; <strong>Rd8#</strong> &mdash; the rook slides to <code>d8</code> and checks along the back row. The king can't escape because his own pawns block the only exits. A classic <strong>back-rank mate</strong>!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Puzzle 2 &mdash; Win the queen with a fork &#127860;</h2>
+        <p><strong>White to move.</strong> Your knight can attack the king and the queen at the same time. Where does it jump?</p>
+        <div class="boardwrap">
+          <div class="board" data-fen="3q3k/6pp/8/4N3/8/8/8/6K1"></div>
+          <div class="bcap">The black king is on <code>h8</code>, the queen on <code>d8</code>. Find the forking square!</div>
+        </div>
+        <button class="qbtn" onclick="reveal('a2')">Show the answer</button>
+        <div class="ans" id="a2">
+          <div class="marker-ok">&#9989; <strong>Nf7+</strong> &mdash; the knight jumps to <code>f7</code>, giving check to the king AND attacking the queen. The king must move out of check, and then your knight captures the queen with <strong>Nxd8</strong>. A royal fork!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Puzzle 3 &mdash; Escape the check &#128737;&#65039;</h2>
+        <p>Your king is in check. Without looking at any board &mdash; can you name the <strong>three different ways</strong> a king can get out of check?</p>
+        <button class="qbtn" onclick="reveal('a3')">Show the answer</button>
+        <div class="ans" id="a3">
+          <div class="marker-ok">&#9989; <strong>1. Move</strong> the king to a safe square. &nbsp; <strong>2. Block</strong> the check by putting a piece in the way. &nbsp; <strong>3. Capture</strong> the piece that's giving check. If none of the three is possible, it's checkmate!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Puzzle 4 &mdash; Smart trade or silly trade? &#129488;</h2>
+        <p>You can capture the enemy's <strong>knight</strong> with your <strong>queen</strong>. But if you do, their <strong>pawn</strong> will capture your queen right back. Should you do it?</p>
+        <button class="qbtn" onclick="reveal('a4')">Show the answer</button>
+        <div class="ans" id="a4">
+          <div class="marker-bad">&#10060; <strong>No way!</strong> You'd give up your queen (worth 9) to win just a knight (worth 3). That's losing 6 points &mdash; a terrible trade. Always ask "can they take me back?" before you capture.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Puzzle 5 &mdash; Checkmate or stalemate? &#129300;</h2>
+        <p>It's the enemy's turn. Their king is <strong>not in check</strong>, but they have <strong>no legal move</strong> at all. Did you win, or is it a tie?</p>
+        <button class="qbtn" onclick="reveal('a5')">Show the answer</button>
+        <div class="ans" id="a5">
+          <div class="info yellow">&#11088; It's a <strong>tie (stalemate)</strong>, not a win! Checkmate needs the king to be <em>in check</em> with no escape. No check + no moves = stalemate = draw. Always leave the lonely king a square to breathe until you're ready for the real checkmate.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== MANNERS ===================== -->
+    <div id="manners" class="section">
+      <div class="sec-title">Good Manners &amp; Habits</div>
+      <p class="sec-sub">A great chess player is also a kind and fair player.</p>
+
+      <div class="card">
+        <h2>The handshake</h2>
+        <p>Chess players shake hands (or say "good luck!") <strong>before</strong> the game starts and <strong>after</strong> it ends &mdash; win or lose. It's a way of saying "thanks for the game, you were a good opponent."</p>
+        <div class="info green">&#129309; Win politely, lose politely. Saying "good game!" with a smile is the mark of a real champion.</div>
+      </div>
+
+      <div class="card">
+        <h2>The touch-move rule</h2>
+        <p>This is a real chess rule, and it's also good manners:</p>
+        <ul>
+          <li><strong>If you touch a piece, you must move it</strong> (if it has a legal move).</li>
+          <li><strong>If you let go of a piece on a square, your move is finished</strong> &mdash; no take-backs!</li>
+          <li>If you touch an enemy piece, you must capture it (if you legally can).</li>
+        </ul>
+        <div class="info yellow">&#11088; So think first, <em>then</em> touch. Plan your move in your head before your fingers reach out.</div>
+        <div class="coach"><span class="clbl">&#128104;&#8205;&#127979; Coach note</span> If you only want to <em>straighten</em> a piece on its square (not move it), say <strong>"adjust"</strong> (or the French "j'adoube," say "zha-DOOB") <em>before</em> you touch it. For very young kids learning at home, it's fine to allow gentle take-backs &mdash; but in clubs and tournaments, touch-move is taken seriously.</div>
+      </div>
+
+      <div class="card">
+        <h2>Being a good sport</h2>
+        <div class="flv-grid">
+          <div class="flv"><div class="flv-name">&#128522;</div><div class="flv-desc">Stay calm and quiet while your opponent thinks</div></div>
+          <div class="flv"><div class="flv-name">&#127881;</div><div class="flv-desc">Never brag or gloat when you win</div></div>
+          <div class="flv"><div class="flv-name">&#128170;</div><div class="flv-desc">Don't sulk when you lose &mdash; learn instead!</div></div>
+        </div>
+        <div class="info">&#127891; <strong>Resigning:</strong> If a position is totally hopeless, older players sometimes "resign" (gently tip over their king) to politely end the game. But when you're learning, it's great to play every game to the very end &mdash; you'll learn how to finish, and your opponent might still make a mistake!</div>
+        <div class="info green">&#9989; <strong>The best habit of all:</strong> every game you lose teaches you something. Champions aren't people who never lose &mdash; they're people who learn from losing.</div>
+      </div>
+    </div>
+
+    <!-- ===================== CHEAT SHEET ===================== -->
+    <div id="cheatsheet" class="section">
+      <div class="sec-title">Cheat Sheet</div>
+      <p class="sec-sub">Everything important on one page &mdash; come back here any time!</p>
+
+      <div class="card">
+        <h2>How the pieces move</h2>
+        <table class="tbl">
+          <tr><th>Piece</th><th>Moves</th><th>Worth</th></tr>
+          <tr><td>&#9823; Pawn</td><td>1 forward (2 on first move); captures diagonally; promotes at the end</td><td>1</td></tr>
+          <tr><td>&#9822; Knight</td><td>In an "L" &mdash; and can jump over pieces</td><td>3</td></tr>
+          <tr><td>&#9821; Bishop</td><td>Diagonally, any distance (stays on one color)</td><td>3</td></tr>
+          <tr><td>&#9820; Rook</td><td>Straight lines, any distance</td><td>5</td></tr>
+          <tr><td>&#9819; Queen</td><td>Straight AND diagonal, any distance</td><td>9</td></tr>
+          <tr><td>&#9818; King</td><td>One square in any direction</td><td>&#8734;</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>The golden rules</h2>
+        <div class="flv-grid">
+          <div class="flv"><div class="flv-name">&#127919;</div><div class="flv-desc"><strong>Control the center</strong> with your pawns and pieces</div></div>
+          <div class="flv"><div class="flv-name">&#9876;&#65039;</div><div class="flv-desc"><strong>Develop</strong> your knights and bishops early</div></div>
+          <div class="flv"><div class="flv-name">&#9812;</div><div class="flv-desc"><strong>Castle</strong> to keep your king safe</div></div>
+          <div class="flv"><div class="flv-name">&#128065;&#65039;</div><div class="flv-desc"><strong>Check threats</strong> &mdash; what is the enemy attacking?</div></div>
+          <div class="flv"><div class="flv-name">&#128272;</div><div class="flv-desc"><strong>Protect</strong> before you capture &mdash; "can they take back?"</div></div>
+          <div class="flv"><div class="flv-name">&#129504;</div><div class="flv-desc"><strong>Look for tactics</strong> &mdash; forks, pins, skewers, discoveries</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Notation symbols</h2>
+        <table class="tbl">
+          <tr><th>Symbol</th><th>Meaning</th></tr>
+          <tr><td><code>K Q R B N</code></td><td>King, Queen, Rook, Bishop, kNight (pawns have no letter)</td></tr>
+          <tr><td><code>x</code> / <code>+</code> / <code>#</code></td><td>capture / check / checkmate</td></tr>
+          <tr><td><code>O-O</code> / <code>O-O-O</code></td><td>castle kingside / castle queenside</td></tr>
+          <tr><td><code>=Q</code></td><td>pawn promotes to a queen</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>How a game can end</h2>
+        <div class="cmp">
+          <div class="cmp-c"><h4 style="color:var(--green);">You win &#127942;</h4><p><strong>Checkmate</strong> &mdash; the enemy king is in check and can't escape. Also, the enemy may <strong>resign</strong>.</p></div>
+          <div class="cmp-c"><h4 style="color:var(--orange);">It's a tie &#129309;</h4><p><strong>Draw</strong> &mdash; stalemate, agreement, repetition, the 50-move rule, or too few pieces to mate.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== GLOSSARY ===================== -->
+    <div id="glossary" class="section">
+      <div class="sec-title">Glossary A&ndash;Z</div>
+      <p class="sec-sub">All the chess words in this guide, explained simply.</p>
+
+      <div class="card">
+        <h2>Chess words, A to Z</h2>
+        <table class="tbl">
+          <tr><th>Word</th><th>What it means</th></tr>
+          <tr><td><strong>Bishop</strong></td><td>A piece that slides diagonally and stays on one color all game. Worth 3.</td></tr>
+          <tr><td><strong>Blunder</strong></td><td>A bad move that gives away a piece or the game &mdash; usually from moving too fast. Blunder-check every turn!</td></tr>
+          <tr><td><strong>Capture</strong></td><td>Taking an enemy piece off the board by moving onto its square.</td></tr>
+          <tr><td><strong>Castling</strong></td><td>A special move where the king and a rook move at once, to keep the king safe.</td></tr>
+          <tr><td><strong>Check</strong></td><td>When the king is being attacked. You must get out of it immediately.</td></tr>
+          <tr><td><strong>Checkmate</strong></td><td>Check with no escape. The game is over &mdash; and you win!</td></tr>
+          <tr><td><strong>Develop</strong></td><td>Bringing your pieces out from the back row to do their jobs.</td></tr>
+          <tr><td><strong>Diagonal</strong></td><td>A slanted line of same-colored squares, corner to corner.</td></tr>
+          <tr><td><strong>Discovered attack</strong></td><td>Moving one piece to uncover an attack from a piece hiding behind it &mdash; two threats in one move.</td></tr>
+          <tr><td><strong>Double check</strong></td><td>Two pieces checking the king at once. It can't be blocked or captured away &mdash; the king must move.</td></tr>
+          <tr><td><strong>Draw</strong></td><td>A tied game &mdash; nobody wins.</td></tr>
+          <tr><td><strong>En passant</strong></td><td>A special pawn capture against a pawn that just made its two-square sprint.</td></tr>
+          <tr><td><strong>Endgame</strong></td><td>The last part of the game, with only a few pieces left.</td></tr>
+          <tr><td><strong>File</strong></td><td>A column of squares going up and down, named <code>a</code>&ndash;<code>h</code>.</td></tr>
+          <tr><td><strong>Fork</strong></td><td>One piece attacking two enemy pieces at the same time.</td></tr>
+          <tr><td><strong>King</strong></td><td>The most important piece. Moves one square. Must never be captured.</td></tr>
+          <tr><td><strong>Knight</strong></td><td>The horse that jumps in an "L" shape and hops over pieces. Worth 3.</td></tr>
+          <tr><td><strong>Material</strong></td><td>Your pieces and their total point value. "Up material" means you have more.</td></tr>
+          <tr><td><strong>Notation</strong></td><td>The written code for chess moves, like <code>Nf3</code> or <code>e4</code>.</td></tr>
+          <tr><td><strong>Opening</strong></td><td>The first part of the game, when you set up your army.</td></tr>
+          <tr><td><strong>Pawn</strong></td><td>The little soldier. Moves forward, captures diagonally, can promote. Worth 1.</td></tr>
+          <tr><td><strong>Pin</strong></td><td>Freezing a piece because something more valuable hides behind it.</td></tr>
+          <tr><td><strong>Promotion</strong></td><td>When a pawn reaches the far end and turns into a queen (usually).</td></tr>
+          <tr><td><strong>Queen</strong></td><td>The strongest piece &mdash; moves like a rook and bishop combined. Worth 9.</td></tr>
+          <tr><td><strong>Rank</strong></td><td>A row of squares going left to right, named <code>1</code>&ndash;<code>8</code>.</td></tr>
+          <tr><td><strong>Resign</strong></td><td>Politely giving up a hopeless game by tipping over your king.</td></tr>
+          <tr><td><strong>Rook</strong></td><td>The castle tower. Moves in straight lines. Worth 5.</td></tr>
+          <tr><td><strong>Skewer</strong></td><td>Attacking a valuable piece in front so it moves, letting you grab the one behind.</td></tr>
+          <tr><td><strong>Smothered mate</strong></td><td>A knight checkmate of a king that is trapped by its own pieces.</td></tr>
+          <tr><td><strong>Stalemate</strong></td><td>No check, but no legal move &mdash; the game is a draw.</td></tr>
+          <tr><td><strong>Tactic</strong></td><td>A short clever trick that wins pieces or checkmates.</td></tr>
+          <tr><td><strong>Touch-move</strong></td><td>The rule that if you touch a piece, you must move it.</td></tr>
+        </table>
+        <div class="action">You did it &mdash; you've learned chess! Now go play. &#9818;&#9819;&#9820;&#9821;&#9822;&#9823;</div>
+      </div>
+    </div>
+
+    <!-- ===================== PRINT ANSWER KEY (print only) ===================== -->
+    <div class="print-only print-answer-key">
+      <div class="sec-title">Puzzle Answer Key &#128273;</div>
+      <p class="sec-sub">No peeking until you've tried each one! Solutions to the Practice Puzzles.</p>
+      <div class="card">
+        <h3 style="color:var(--blue);">Puzzle 1 &mdash; Checkmate in one move</h3>
+        <p><strong>Rd8#</strong> &mdash; the rook slides to <code>d8</code> and checks along the back row. The king can't escape because his own pawns block the only exits. A classic <strong>back-rank mate</strong>!</p>
+        <h3 style="color:var(--blue);">Puzzle 2 &mdash; Win the queen with a fork</h3>
+        <p><strong>Nf7+</strong> &mdash; the knight jumps to <code>f7</code>, checking the king AND attacking the queen. After the king moves out of check, <strong>Nxd8</strong> captures the queen. A royal fork!</p>
+        <h3 style="color:var(--blue);">Puzzle 3 &mdash; Escape the check</h3>
+        <p>The three ways: <strong>1. Move</strong> the king to a safe square. <strong>2. Block</strong> the check with another piece. <strong>3. Capture</strong> the attacker. If none of the three is possible, it's checkmate!</p>
+        <h3 style="color:var(--blue);">Puzzle 4 &mdash; Smart trade or silly trade?</h3>
+        <p><strong>No way!</strong> Giving up your queen (9) to win just a knight (3) loses 6 points &mdash; a terrible trade. Always ask "can they take me back?" before you capture.</p>
+        <h3 style="color:var(--blue);">Puzzle 5 &mdash; Checkmate or stalemate?</h3>
+        <p>It's a <strong>tie (stalemate)</strong>, not a win! Checkmate needs the king to be <em>in check</em> with no escape. No check + no legal move = stalemate = draw.</p>
+      </div>
+    </div>
+
+    <!-- ===================== PRINT: PROGRESS CHECKLIST ===================== -->
+    <div class="print-only print-checklist">
+      <div class="sec-title">My Progress Checklist &#9989;</div>
+      <p class="sec-sub">Tick each box when you can do it without any help!</p>
+      <div class="card">
+        <ul class="pchk">
+          <li>I can set up the board the right way (light square on the right)</li>
+          <li>I know how the pawn, rook, bishop, knight, queen, and king all move</li>
+          <li>I can capture pieces correctly &mdash; including the pawn's diagonal capture</li>
+          <li>I know what <em>check</em> means and the three ways to escape it</li>
+          <li>I can deliver a checkmate</li>
+          <li>I know the difference between checkmate and stalemate</li>
+          <li>I can castle, promote a pawn, and capture en passant</li>
+          <li>I can read and write moves in notation (like <code>e4</code> and <code>Nf3</code>)</li>
+          <li>I know how many points each piece is worth</li>
+          <li>I can spot a fork, a pin, and a skewer</li>
+          <li>I do a blunder-check before every move</li>
+          <li>I can checkmate a lonely king with two rooks (the ladder)</li>
+          <li>I know the three opening rules: center, develop, castle</li>
+          <li>I have played a whole game from start to finish</li>
+          <li>I shook hands and was a good sport</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===================== PRINT: GAMES SCORESHEET ===================== -->
+    <div class="print-only print-scoresheet">
+      <div class="sec-title">My Games &#9999;&#65039;</div>
+      <p class="sec-sub">Write down your moves as you play, then look back at them later. Example: <code>1. e4 e5</code></p>
+      <div class="card">
+        <table class="scoresheet">
+          <tr><th>#</th><th>White</th><th>Black</th><th>#</th><th>White</th><th>Black</th></tr>
+          <tr><td class="num">1</td><td></td><td></td><td class="num">21</td><td></td><td></td></tr>
+          <tr><td class="num">2</td><td></td><td></td><td class="num">22</td><td></td><td></td></tr>
+          <tr><td class="num">3</td><td></td><td></td><td class="num">23</td><td></td><td></td></tr>
+          <tr><td class="num">4</td><td></td><td></td><td class="num">24</td><td></td><td></td></tr>
+          <tr><td class="num">5</td><td></td><td></td><td class="num">25</td><td></td><td></td></tr>
+          <tr><td class="num">6</td><td></td><td></td><td class="num">26</td><td></td><td></td></tr>
+          <tr><td class="num">7</td><td></td><td></td><td class="num">27</td><td></td><td></td></tr>
+          <tr><td class="num">8</td><td></td><td></td><td class="num">28</td><td></td><td></td></tr>
+          <tr><td class="num">9</td><td></td><td></td><td class="num">29</td><td></td><td></td></tr>
+          <tr><td class="num">10</td><td></td><td></td><td class="num">30</td><td></td><td></td></tr>
+          <tr><td class="num">11</td><td></td><td></td><td class="num">31</td><td></td><td></td></tr>
+          <tr><td class="num">12</td><td></td><td></td><td class="num">32</td><td></td><td></td></tr>
+          <tr><td class="num">13</td><td></td><td></td><td class="num">33</td><td></td><td></td></tr>
+          <tr><td class="num">14</td><td></td><td></td><td class="num">34</td><td></td><td></td></tr>
+          <tr><td class="num">15</td><td></td><td></td><td class="num">35</td><td></td><td></td></tr>
+          <tr><td class="num">16</td><td></td><td></td><td class="num">36</td><td></td><td></td></tr>
+          <tr><td class="num">17</td><td></td><td></td><td class="num">37</td><td></td><td></td></tr>
+          <tr><td class="num">18</td><td></td><td></td><td class="num">38</td><td></td><td></td></tr>
+          <tr><td class="num">19</td><td></td><td></td><td class="num">39</td><td></td><td></td></tr>
+          <tr><td class="num">20</td><td></td><td></td><td class="num">40</td><td></td><td></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== PRINT: CERTIFICATE ===================== -->
+    <div class="print-only print-certificate">
+      <div class="certificate">
+        <div class="cert-glyphs">&#9818; &#9819; &#9820; &#9821; &#9822; &#9823;</div>
+        <div class="cert-title">Chess Champion</div>
+        <div class="cert-line">This certificate proudly says that</div>
+        <div class="cert-line"><span class="cert-blank">&nbsp;</span></div>
+        <div class="cert-line">has learned how to play chess &mdash; setting up the board,<br>moving every piece, and delivering checkmate!</div>
+        <div class="cert-row">
+          <div class="cert-sign">Date</div>
+          <div class="cert-sign">Coach / Grown-up</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+    document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.querySelector('.theme-toggle-label').textContent = isLight ? 'Dark mode' : 'Light mode';
+    localStorage.setItem('guide-theme', isLight ? 'light' : 'dark');
+  }
+
+  // Restore saved theme preference
+  (function() {
+    const saved = localStorage.getItem('guide-theme');
+    if (saved === 'light') {
+      document.body.classList.add('light');
+      document.querySelector('.theme-toggle-label').textContent = 'Dark mode';
+    }
+  })();
+
+  // Reveal puzzle answers
+  function reveal(id) {
+    document.getElementById(id).classList.toggle('show');
+  }
+
+  // ===== Chess board renderer =====
+  // Renders any <div class="board" data-fen="..."> into an 8x8 grid of squares
+  // with Unicode pieces, coordinates, and optional highlights.
+  //   data-fen   : piece placement (FEN-style, rank 8 first)
+  //   data-dot   : space/comma list of squares to mark with a move-dot (e.g. "e3 e4")
+  //   data-hl    : squares to highlight yellow
+  //   data-x     : squares to highlight red (danger / capture target)
+  //   data-coords: "0" to hide a/b/c and 1/2/3 labels (shown by default)
+  const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+  const FILES = 'abcdefgh';
+
+  function parseSet(str) {
+    return new Set((str || '').split(/[\s,]+/).filter(Boolean));
+  }
+
+  function buildCell(fileIdx, rankNum, piece, hl, dot, xx, coords) {
+    const name = FILES[fileIdx] + rankNum;
+    const light = (fileIdx + rankNum) % 2 === 0;
+    let cls = 'sq ' + (light ? 'lt' : 'dk');
+    if (hl.has(name)) cls += ' hl';
+    if (xx.has(name)) cls += ' xx';
+    let inner = '';
+    if (piece) inner += '<span class="pc ' + (piece.white ? 'w' : 'b') + '">' + piece.g + '</span>';
+    if (dot.has(name)) inner += '<span class="mv"></span>';
+    if (coords) {
+      if (fileIdx === 0) inner += '<span class="cr rk">' + rankNum + '</span>';
+      if (rankNum === 1) inner += '<span class="cr fl">' + FILES[fileIdx] + '</span>';
+    }
+    return '<div class="' + cls + '">' + inner + '</div>';
+  }
+
+  function renderBoards() {
+    document.querySelectorAll('.board').forEach(el => {
+      if (el.dataset.rendered) return;
+      el.dataset.rendered = '1';
+      const fen = (el.dataset.fen || '8/8/8/8/8/8/8/8').split(' ')[0];
+      const hl = parseSet(el.dataset.hl);
+      const dot = parseSet(el.dataset.dot);
+      const xx = parseSet(el.dataset.x);
+      const coords = el.dataset.coords !== '0';
+      const rows = fen.split('/');
+      let html = '';
+      for (let ri = 0; ri < 8; ri++) {
+        const rankNum = 8 - ri;
+        const row = rows[ri] || '8';
+        let fileIdx = 0;
+        for (const ch of row) {
+          if (/\d/.test(ch)) {
+            let n = +ch;
+            while (n-- > 0 && fileIdx < 8) {
+              html += buildCell(fileIdx, rankNum, null, hl, dot, xx, coords);
+              fileIdx++;
+            }
+          } else {
+            const white = ch === ch.toUpperCase();
+            html += buildCell(fileIdx, rankNum, { g: GLYPH[ch.toLowerCase()], white }, hl, dot, xx, coords);
+            fileIdx++;
+          }
+        }
+      }
+      el.innerHTML = html;
+    });
+  }
+
+  renderBoards();
+</script>
+</body>
+</html>

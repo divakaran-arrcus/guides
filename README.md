@@ -45,6 +45,14 @@ From AI fundamentals to the modern agentic coding stack.
 | Gen AI: Hero to Architect | [gen-ai-hero-to-architect-guide.html](gen-ai-hero-to-architect-guide.html) | Advanced companion to Zero to Hero — agentic coding loop, context engineering, OpenSpec, SpecKit, Superpowers, Kilo Code, Claude Code, Gemini CLI, MCP, multi-agent workflows, and a worked example shipping a CLI tool across three tools |
 | Gen AI: Architect to Leader | [gen-ai-architect-to-leader-guide.html](gen-ai-architect-to-leader-guide.html) | Tool-agnostic playbook for scaling agentic coding org-wide — maturity model, people/platform/governance pillars, and the Meridian case study |
 
+### For Kids
+
+A gentle, playful guide for first-time players.
+
+| Guide | File | Description |
+|-------|------|-------------|
+| Chess for Kids | [chess-for-kids-guide.html](chess-for-kids-guide.html) · [📄 printable PDF](chess-for-kids-guide.pdf) | Learn chess from scratch — board & setup, how every piece moves (with real Unicode boards), capturing, check & checkmate, stalemate/draws, castling/promotion/en passant, notation, piece values, tactics (fork/pin/skewer), opening principles, basic endgames, a first full game + Scholar's Mate trap, interactive practice puzzles, good manners, cheat sheet, and an A–Z glossary. Written simply for young kids with 💜 coach notes for older kids and parents. The HTML includes a print stylesheet (cover, table of contents, answers-at-the-back), so a fresh PDF can be re-made any time via the browser's **Print → Save as PDF** |
+
 ## Usage
 
 Open any `.html` file directly in a browser. No build step or server required.
