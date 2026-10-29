@@ -1,0 +1,13 @@
+flowchart TB
+  U[Goal / task] --> CTX
+  subgraph Harness
+    CTX["Context assembly<br/>What does it see?"] --> MOD((Model))
+    MOD --> TOOLS["Tool calls under permissions<br/>What can it do?"]
+    TOOLS --> STATE[("State files, checkpoints<br/>What does it remember?")]
+    TOOLS --> CHK{"Checker<br/>How is it checked?"}
+    CHK -- "fail: retry / adjust" --> LOOP["Loop control, budgets<br/>How does it repeat?"]
+    LOOP --> CTX
+    STATE --> CTX
+    CHK -- pass --> GRAPH["Next node in the graph<br/>How do the pieces connect?"]
+  end
+  GRAPH --> R[Result]

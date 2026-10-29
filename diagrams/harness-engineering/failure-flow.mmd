@@ -1,0 +1,14 @@
+flowchart TB
+  S[Agent misbehaved] --> Q1{Was the needed fact<br/>in its context?}
+  Q1 -- no --> F1["What does it see?<br/>fix context"]
+  Q1 -- yes --> Q2{Did it have the right tool<br/>and permission?}
+  Q2 -- no --> F2["What can it do?<br/>fix tools"]
+  Q2 -- yes --> Q3{Did it lose earlier work<br/>or redo a step?}
+  Q3 -- yes --> F3["What does it remember?<br/>fix state"]
+  Q3 -- no --> Q4{Did a bad result<br/>pass the check?}
+  Q4 -- yes --> F4["How is it checked?<br/>fix the checker"]
+  Q4 -- no --> Q5{Did it stop too early,<br/>or never stop?}
+  Q5 -- yes --> F5["How does it repeat?<br/>fix loop rules"]
+  Q5 -- no --> Q6{Did a step run in the wrong<br/>order or skip a gate?}
+  Q6 -- yes --> F6["How do the pieces connect?<br/>fix the graph"]
+  Q6 -- no --> F7["Model limit:<br/>split the task or change model"]

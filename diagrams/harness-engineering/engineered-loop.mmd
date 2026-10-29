@@ -1,0 +1,9 @@
+flowchart LR
+  G[Goal + exit condition] --> A[Act]
+  A --> O[Observe: tool output, tests, state]
+  O --> J{Checker passes?}
+  J -- yes --> X[Exit: done]
+  J -- no --> B{Budget or<br/>max 3 attempts left?}
+  B -- yes --> D[Adjust: feed the failure back]
+  D --> A
+  B -- no --> E[Escalate to a human, fail loud]
