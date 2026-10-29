@@ -1,0 +1,12 @@
+flowchart TB
+  D{{"The determinism dial:<br/>same answer every time, or judgement?"}}
+  D --> CODE
+  D --> MODEL
+  subgraph CODE["Put it in deterministic code"]
+    direction TB
+    c1[Parse CLI output] --> c2[Match success / failure strings] --> c3[Order steps, enforce stop rules] --> c4[Assert observed state] --> c5[Commit / roll back]
+  end
+  subgraph MODEL["Give it to the model"]
+    direction TB
+    m1[Turn intent into config] --> m2[Summarise a diff for a human] --> m3[Diagnose an unfamiliar error] --> m4[Choose among open-ended options]
+  end

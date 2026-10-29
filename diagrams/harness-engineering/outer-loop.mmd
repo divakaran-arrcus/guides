@@ -1,0 +1,8 @@
+flowchart LR
+  R[Agent runs] --> T[Traces + failures]
+  T --> P["Propose a harness edit<br/>(lesson, rule, tool change)"]
+  P --> E{"Held-out evals<br/>outside the agent's reach"}
+  E -- better --> K[Keep the edit]
+  E -- worse or same --> D[Discard]
+  K --> R
+  D --> R
