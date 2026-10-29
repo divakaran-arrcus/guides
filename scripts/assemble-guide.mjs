@@ -12,15 +12,21 @@ const DIR = join(ROOT, '.build', SLUG);
 
 let html = readFileSync(HTML, 'utf8');
 const opens = [...html.matchAll(/<!--PART:([a-z0-9-]+)-->/g)].map(m => m[1]);
-let n = 0;
+// Refuse before writing anything: a missing or empty fragment would blank that Part in place.
+const missing = opens.filter(id => {
+  const frag = join(DIR, `${id}.html`);
+  return !existsSync(frag) || !readFileSync(frag, 'utf8').trim();
+});
+if (missing.length) {
+  console.error(`missing or empty fragment(s) in ${DIR}: ${missing.join(', ')} — nothing written`);
+  process.exit(1);
+}
 for (const id of opens) {
   const open = `<!--PART:${id}-->`, close = `<!--/PART:${id}-->`;
   const i = html.indexOf(open), j = html.indexOf(close);
   if (j === -1 || j < i) { console.error(`unpaired marker: ${id}`); process.exit(1); }
-  const frag = join(DIR, `${id}.html`);
-  const body = existsSync(frag) ? readFileSync(frag, 'utf8').trim() : '';
-  if (body) n++;
+  const body = readFileSync(join(DIR, `${id}.html`), 'utf8').trim();
   html = html.slice(0, i + open.length) + '\n' + body + '\n' + html.slice(j);
 }
 writeFileSync(HTML, html);
-console.log(`assembled ${n}/${opens.length} fragment(s) into ${HTML}`);
+console.log(`assembled ${opens.length} fragment(s) into ${HTML}`);

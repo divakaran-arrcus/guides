@@ -2947,8 +2947,8 @@ approval: {status: pending}</code></pre>
         <table class="tbl">
           <tr><th>Question</th><th>How netpush v1 answers it</th><th>Verdict</th></tr>
           <tr><td><strong>What does it see?</strong></td><td>Each worker gets only its slice: preflight sees one router; generate sees intent + snapshots; dry-run sees one router's config. Subagents keep raw CLI dumps out of the orchestrator's window.</td><td><span class="tag t-g">strong</span></td></tr>
-          <tr><td><strong>What can it do?</strong></td><td>preflight is read-only. Only deploy can commit. <em>But</em> generate can write anywhere in the run directory — including verify's expectations.</td><td><span class="tag t-r">gap 2</span></td></tr>
-          <tr><td><strong>What does it remember?</strong></td><td><code>plan.yaml</code> + per-stage reports; resume reads files, not chat. <em>But</em> nothing records "this router is already committed" before the report is written.</td><td><span class="tag t-r">gap 3</span></td></tr>
+          <tr><td><strong>What can it do?</strong></td><td>preflight is read-only. Only deploy can commit. <em>But</em> generate can write anywhere in the run directory — including verify's expectations.</td><td><span class="tag t-r">gap 3</span></td></tr>
+          <tr><td><strong>What does it remember?</strong></td><td><code>plan.yaml</code> + per-stage reports; resume reads files, not chat. <em>But</em> nothing records "this router is already committed" before the report is written.</td><td><span class="tag t-r">gap 2</span></td></tr>
           <tr><td><strong>How is it checked?</strong></td><td>dry-run catches syntax; verify asserts on state values. <em>But</em> deploy decided success with <code>grep -i error</code>.</td><td><span class="tag t-r">gap 1</span></td></tr>
           <tr><td><strong>How does it repeat?</strong></td><td>generate &harr; dry-run, <code>max 3 attempts</code>, then escalate; budgets stop the run loudly.</td><td><span class="tag t-g">strong</span></td></tr>
           <tr><td><strong>How do the pieces connect?</strong></td><td>Fan-out/fan-in, a human gate before the irreversible edge, serial deploy core first, stop on first failure. <em>But</em> the gate shows raw config, not a diff.</td><td><span class="tag t-r">gap 4</span></td></tr>
@@ -2984,20 +2984,20 @@ approval: {status: pending}</code></pre>
         <ul>
           <li><span class="tag t-g">strong</span> netpush knows its checkers' limits: dry-run is labelled syntax/staging only — parse-passing is not commit-passing.</li>
           <li><span class="tag t-g">strong</span> verify asserts on state values (sessions up, prefixes present), never on "the command exited 0".</li>
-          <li><span class="tag t-r">gap 1</span> deploy's own success check was a substring search. <span class="tag t-r">gap 2</span> verify's expectations were editable by the agent being checked.</li>
+          <li><span class="tag t-r">gap 1</span> deploy's own success check was a substring search. <span class="tag t-r">gap 3</span> verify's expectations were editable by the agent being checked.</li>
         </ul>
 
         <h4 class="ph">State and gates (<a onclick="go('ch6-state')">Ch 6</a>, <a onclick="go('ch12-humans')">Ch 12</a>)</h4>
         <ul>
           <li><span class="tag t-g">strong</span> All coordination goes through files, so a crashed or compacted orchestrator can resume.</li>
-          <li><span class="tag t-r">gap 3</span> Files record <em>finished</em> stages, not <em>started</em> ones — the window between commit and report is unguarded.</li>
+          <li><span class="tag t-r">gap 2</span> Files record <em>finished</em> stages, not <em>started</em> ones — the window between commit and report is unguarded.</li>
           <li><span class="tag t-g">strong</span> The gate sits on the only irreversible edge. <span class="tag t-r">gap 4</span> But what it shows makes approval a rubber stamp.</li>
         </ul>
       </div>
 
       <!-- 16.4 -->
       <div class="card">
-        <h2>16.4 Gaps 1 &amp; 2: the checkers that couldn't be trusted</h2>
+        <h2>16.4 Gaps 1 &amp; 3: the checkers that couldn't be trusted</h2>
 
         <h4 class="ph">Gap 1 — deploy matched <code>grep -i error</code> (first flagged in <a onclick="go('ch2-code-vs-model')">Ch 2</a>)</h4>
         <ul>
@@ -3031,7 +3031,7 @@ else:
           <li>The raw output is saved to the report, so a human (or a later model call) can explain <em>why</em>. The model may summarise the failure; it never decides whether one happened.</li>
         </ul>
 
-        <h4 class="ph">Gap 2 — verify's checker was editable by generate (first flagged in <a onclick="go('ch7-checker')">Ch 7</a>)</h4>
+        <h4 class="ph">Gap 3 — verify's checker was editable by generate (first flagged in <a onclick="go('ch7-checker')">Ch 7</a>)</h4>
         <ul>
           <li><strong>What happened.</strong> generate wrote <code>checks/verify.yaml</code> alongside its configs, and verify read its expectations from it. On any re-run — a dry-run retry, or an operator re-run after a verify failure — nothing stopped generate from relaxing <code>neighbors_up == 4</code> to <code>neighbors_up &gt;= 0</code>.</li>
           <li><strong>Why it matters.</strong> An agent optimising for "pass" will find the cheapest path to pass. If the judge is reachable, editing the judge is cheapest. That's reward hacking — no malice required.</li>
@@ -3051,14 +3051,14 @@ else:
             Changing a checker is a reviewed change to the harness, never a step inside a run.</p>
           </div>
         </div>
-        <div class="info green"><strong>One principle, two gaps.</strong> Both fixes move the judge out of reach: gap 1 takes judgement away from a fuzzy text match, gap 2 takes write access away from the thing being judged. The same rule shows up at harness scale in <a onclick="go('ch14-self-improving')">Ch 14</a>: evaluator and permissions sit outside the loop that changes things.</div>
+        <div class="info green"><strong>One principle, two gaps.</strong> Both fixes move the judge out of reach: gap 1 takes judgement away from a fuzzy text match, gap 3 takes write access away from the thing being judged. The same rule shows up at harness scale in <a onclick="go('ch14-self-improving')">Ch 14</a>: evaluator and permissions sit outside the loop that changes things.</div>
       </div>
 
       <!-- 16.5 -->
       <div class="card">
-        <h2>16.5 Gaps 3 &amp; 4: the resume hole and the rubber stamp</h2>
+        <h2>16.5 Gaps 2 &amp; 4: the resume hole and the rubber stamp</h2>
 
-        <h4 class="ph">Gap 3 — no idempotency marker (first flagged in <a onclick="go('ch6-state')">Ch 6</a>)</h4>
+        <h4 class="ph">Gap 2 — no idempotency marker (first flagged in <a onclick="go('ch6-state')">Ch 6</a>)</h4>
         <ul>
           <li><strong>What happened.</strong> The run stopped (budget hit, session crash) after core1 committed but before <code>reports/deploy-core1.json</code> was written. On resume, the orchestrator saw no report and deployed core1 again.</li>
           <li><strong>Why it matters.</strong> Some changes are harmless twice; many aren't (sequence-numbered entries, appended lists, anything that flaps a session on re-commit). "Resume from files" is only safe if the files say what has <em>started</em>, not just what has <em>finished</em>.</li>
@@ -3131,8 +3131,8 @@ if state(r) == "started":
         <table class="tbl">
           <tr><th>Symptom in v1</th><th>Layer</th><th>v2 change</th></tr>
           <tr><td>"Deploy succeeded" but the router never took the change</td><td>How is it checked?</td><td>Anchored positive match on full output (gap 1)</td></tr>
-          <tr><td>verify passes on a half-converged network</td><td>What can it do? (and How is it checked?)</td><td>Frozen, hash-checked expectations; generate can't write <code>checks/</code> (gap 2)</td></tr>
-          <tr><td>A router flaps after a resumed run</td><td>What does it remember?</td><td>started/committed markers + device label (gap 3)</td></tr>
+          <tr><td>A router flaps after a resumed run</td><td>What does it remember?</td><td>started/committed markers + device label (gap 2)</td></tr>
+          <tr><td>verify passes on a half-converged network</td><td>What can it do? (and How is it checked?)</td><td>Frozen, hash-checked expectations; generate can't write <code>checks/</code> (gap 3)</td></tr>
           <tr><td>A bad change was "approved"</td><td>How do the pieces connect?</td><td>Diff-first approval bound to the plan hash (gap 4)</td></tr>
         </table>
         <ul>
@@ -3141,7 +3141,7 @@ if state(r) == "started":
       </div>
 
       <div class="np"><div class="np-label">netpush</div><ul>
-        <li>v2 = v1 + four changes: allow-list commit match, frozen out-of-reach verify expectations, started/committed markers with a device label, diff-first approval bound to the plan hash.</li>
+        <li>v2 = v1 + four changes: allow-list commit match, started/committed markers with a device label, frozen out-of-reach verify expectations, diff-first approval bound to the plan hash.</li>
         <li>Nothing in the graph shape changed — same nodes, same order, same <code>max 3 attempts</code>, same core-first serial deploy. The fixes are all in what each node trusts.</li>
         <li>Ch 17 scores v1 and v2 with the same rubric you'll use on your own skills.</li>
       </ul></div>
@@ -3235,7 +3235,7 @@ if state(r) == "started":
           <tr><td><strong>What does it see?</strong></td><td>1</td><td>All sample files are pasted into context at once, including near-duplicates. Fine for one command, crowds the window for big ones. Samples could stay on disk and be read on demand (<a onclick="go('ch4-sees')">Ch 4</a>).</td></tr>
           <tr><td><strong>What can it do?</strong></td><td>1</td><td>The skill can write anywhere in the repo, including <em>existing</em> parsers' tests. "Only touch the new files" is a prompt line, not a permission (<a onclick="go('ch5-can-do')">Ch 5</a>).</td></tr>
           <tr><td><strong>What does it remember?</strong></td><td>0</td><td>The approved schema lives only in chat. After compaction, step 3 works from a paraphrase of what you approved. Nothing on disk says "approved, version X" (<a onclick="go('ch6-state')">Ch 6</a>).</td></tr>
-          <tr><td><strong>How is it checked?</strong></td><td>1</td><td>The tests are written by the same agent, from the same schema, in the same run. They prove the parser agrees with itself, not that it matches the captured sample. The agent can also edit the tests to make them pass — netpush gap 2 in a new outfit (<a onclick="go('ch7-checker')">Ch 7</a>).</td></tr>
+          <tr><td><strong>How is it checked?</strong></td><td>1</td><td>The tests are written by the same agent, from the same schema, in the same run. They prove the parser agrees with itself, not that it matches the captured sample. The agent can also edit the tests to make them pass — netpush gap 3 in a new outfit (<a onclick="go('ch7-checker')">Ch 7</a>).</td></tr>
           <tr><td><strong>How does it repeat?</strong></td><td>0</td><td>"Keep editing until tests pass" has no cap and no budget. A schema mismatch can loop until the context fills (<a onclick="go('ch9-budgets')">Ch 9</a>).</td></tr>
           <tr><td><strong>How do the pieces connect?</strong></td><td>1</td><td>The gate exists and sits in the right place. But nothing checks that generated code matches the <em>approved</em> schema, and on a re-proposal the human sees the full schema again, not what changed (<a onclick="go('ch12-humans')">Ch 12</a>).</td></tr>
           <tr><td><strong>Model</strong></td><td>1</td><td>Schema proposal is good model work. But the model also decides "the tests look right" after editing them — judgement standing in for a check (<a onclick="go('ch2-code-vs-model')">Ch 2</a>).</td></tr>
