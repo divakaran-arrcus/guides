@@ -1,0 +1,11 @@
+flowchart TB
+  OR["Orchestrator<br/>reads plan.yaml"] --> PF["Preflight<br/>per router, parallel, read-only"]
+  PF --> GE["Generate<br/>once, central (model)"]
+  GE --> DR["Dry-run<br/>per router, parallel"]
+  DR -- "fail (max 3 attempts)" --> GE
+  DR -- pass --> HU{{"Human approval gate"}}
+  HU -- reject --> GE
+  HU -- approve --> DE["Deploy<br/>serial, core first"]
+  DE -- "a router fails" --> ST["Stop and report<br/>no blind rollback of peers"]
+  DE -- "all committed" --> VE["Verify<br/>per router, assert state"]
+  VE --> RP[("reports/*.json")]

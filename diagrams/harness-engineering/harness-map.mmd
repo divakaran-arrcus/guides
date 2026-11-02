@@ -1,0 +1,15 @@
+flowchart LR
+  M["Model<br/>(predicts the<br/>next token)"] --> H
+  subgraph H["Harness: everything that is not the model"]
+    direction TB
+    Q1["1 · What does it see?<br/>context, incl. the prompt"]
+    Q2["2 · What can it do?<br/>tools + permissions"]
+    Q3["3 · What does it remember?<br/>state outside the window"]
+    Q4["4 · How is it checked?<br/>verification + evals"]
+    Q5["5 · How does it repeat?<br/>the loop"]
+    Q6["6 · How do the pieces connect?<br/>the graph, incl. humans"]
+    Q1 ~~~ Q2 ~~~ Q3 ~~~ Q4 ~~~ Q5 ~~~ Q6
+  end
+  H --> A["Agent =<br/>Model + Harness"]
+  A -. traces .-> O["Outer loop:<br/>improve the harness"]
+  O -. harness edits .-> H
