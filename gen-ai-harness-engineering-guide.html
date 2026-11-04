@@ -113,8 +113,14 @@
   @media (max-width: 900px) {
     .sidebar { display: none; }
     .main { margin-left: 0; padding: 20px 16px; }
+  }
+  @media screen and (max-width: 900px) {
+    /* Wide content scrolls inside its own box instead of the page. Screen only: print keeps full-width tables. */
     .tbl { display: block; overflow-x: auto; }
-    pre { overflow-x: auto; }
+    .section table:not(.tbl) :is(td, th) { overflow-wrap: anywhere; }
+    pre, .card, .info { overflow-x: auto; }
+    .main { overflow-wrap: break-word; }
+    .ann > *, .flv { min-width: 0; }
   }
   .main { min-width: 0; }
   .main a { color: var(--cyan); }
