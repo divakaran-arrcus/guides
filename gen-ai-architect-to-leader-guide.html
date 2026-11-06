@@ -114,6 +114,16 @@
     .sidebar { display: none; }
     .main { margin-left: 0; padding: 20px 16px; }
   }
+  @media screen and (max-width: 900px) {
+    /* Wide content scrolls inside its own box instead of the page. Screen only: print keeps full-width tables. */
+    .tbl { display: block; overflow-x: auto; }
+    .section table:not(.tbl) :is(td, th) { overflow-wrap: anywhere; }
+    pre, .card, .info { overflow-x: auto; }
+    .main { overflow-wrap: break-word; }
+    .cmp-c { min-width: 0; overflow-wrap: anywhere; }
+    .ann > *, .flv { min-width: 0; }
+  }
+  .main { min-width: 0; }
 
   .section { display: none; }
   .section.active { display: block; animation: fadeIn 0.25s ease; }
@@ -4508,10 +4518,10 @@ except Exception as e:
 
 <script>
   function go(id) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    event.target.classList.add('active');
+    // Highlight the sidebar entry for the target, not the clicked element: in-content links call go() too.
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.nav-item').forEach(n =>
+      n.classList.toggle('active', (n.getAttribute('onclick') || '').match(/go\('([^']+)'/)?.[1] === id));
     document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
