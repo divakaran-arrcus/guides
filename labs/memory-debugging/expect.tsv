@@ -79,6 +79,11 @@ t2.build-id	stripped
 07-leak.heaptrack	^112\.00K leaked over 2000 calls from:?$
 07-leak.heaptrack	^ +session_open$
 07-leak.heaptrack	total memory leaked: [0-9.]+K
+07-leak.core	^0 of 64 slots in use$
+07-leak.core	^\$1 = 0x[0-9a-f]+$
+07-leak.core	^0x[0-9a-f]+ - 0x[0-9a-f]+ is load[0-9a-z]*$
+07-leak.core	^2000 patterns found\.$
+07-leak.core	refcnt = 1, id = 1999, .*name = "sess-1999"
 08-race.tsan	WARNING: ThreadSanitizer: data race
 08-race.tsan	Previous (write|read) of size 8
 08-race.tsan	Location is global 'stats'

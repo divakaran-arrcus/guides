@@ -27,6 +27,7 @@ t2.build-id	01-null.c	make -s 01-null.stripped; file 01-null.stripped; readelf -
 07-leak.memcheck	07-leak.c	make -s 07-leak.plain && valgrind --leak-check=full ./07-leak.plain
 07-leak.massif	07-leak.c	make -s 07-leak.plain && valgrind --tool=massif --massif-out-file=/tmp/m ./07-leak.plain; ms_print /tmp/m | head -40
 07-leak.heaptrack	07-leak.c	make -s 07-leak.plain && heaptrack -o /tmp/h ./07-leak.plain; heaptrack_print -a 0 -p 0 -T 0 -l 1 "$(ls /tmp/h*.gz | head -1)"
+07-leak.core	07-leak.c,pktd-gdb.py,gdb/07-leak-core.gdb	make -s 07-leak.plain && mkdir -p cores && rm -f cores/07-leak.exit.core && gdb -q -batch -nx -ex 'break main' -ex run -ex 'break _exit' -ex continue -ex 'generate-core-file cores/07-leak.exit.core' ./07-leak.plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/07-leak-core.gdb ./07-leak.plain cores/07-leak.exit.core
 08-race.tsan	08-race.c	make -s 08-race.tsan && ./08-race.tsan
 08-race.tsan-atomic	08-race.c	make -s 08-race.tsan && ./08-race.tsan atomic; echo "exit=$?"
 08-race.helgrind	08-race.c	make -s 08-race.plain && valgrind --tool=helgrind ./08-race.plain
