@@ -433,12 +433,13 @@
   ol.callouts > li::before { content: counter(callout); position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%;
     background: var(--accent); color: var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .ab { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 16px 0; }
-  @media (min-width: 768px) { .ab { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1200px) { .ab { grid-template-columns: 1fr 1fr; } }
   .ab-a, .ab-b { min-width: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; }
   .ab-a { border-top: 3px solid var(--green); } .ab-b { border-top: 3px solid var(--orange); }
   .ab-a::before, .ab-b::before { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
   .ab-a::before { content: 'It reproduces'; color: var(--green); }
   .ab-b::before { content: 'Only a core'; color: var(--orange); }
+  .ab-b[data-label]::before { content: attr(data-label); }
   details.deep { border: 1px solid var(--border); border-left: 3px solid var(--purple); border-radius: 8px; background: var(--surface); padding: 0 18px; margin: 16px 0; }
   details.deep > summary { cursor: pointer; padding: 12px 0; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--purple); }
   details.deep[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 12px; }
@@ -559,17 +560,18 @@
       <li><strong>Part I · Foundations</strong> explains how memory works: the process map, stack frames, the allocator, how tools instrument a program, the memory model, and locks.</li>
       <li><strong>Part II · Tool primers</strong> shows how to drive each tool, in about one screen each. The <em>why</em> already lives in Part I.</li>
       <li><strong>Part III · The bug ladder</strong> climbs from a NULL dereference to a refcount use-after-free that crashes far from its cause. Every rung is solved twice: once when <em>it reproduces</em>, and once when you have <em>only a core</em>.</li>
-      <li><strong>Part IV · Reference</strong> holds the cheat sheet, the flag matrix, the glossary and the complete lab kit.</li>
+      <li><strong>Part IV · Reference</strong> holds the <a onclick="go('ref-decision')">Decision Matrix</a>, <a onclick="go('ref-cheat')">Cheat Sheet</a>, <a onclick="go('ref-gdb-lldb')">GDB ↔ LLDB Table</a>, <a onclick="go('ref-flags')">Build-Flag Matrix</a>, <a onclick="go('ref-labkit')">Lab Kit</a>, <a onclick="go('ref-glossary')">Glossary A–Z</a> and <a onclick="go('ref-reading')">Further Reading</a>. The Lab Kit is the complete set of lab files.</li>
     </ul>
     <div class="info">The platform is Linux on x86-64, with glibc and GCC or Clang. Most ideas carry over to other platforms. Exact offsets, registers and abort messages do not.</div>
+    <div class="info orange"><strong>Run the labs on an x86-64 Linux host or VM.</strong> On an Apple Silicon Mac or any arm64 host, Docker gives you an arm64 container, or an x86-64 one under emulation. Offsets and registers won't match the captures, and rr and Valgrind may not run at all.</div>
   </div>
 
   <div class="card">
     <h2>Every terminal block is real</h2>
-    <p>Nothing in a terminal block was typed by hand. Each one is the output of a lab that ran in a pinned container. A script then copied it into this page.</p>
+    <p>Nothing in a terminal block was typed by hand, except the one block marked <em>Representative output — not captured</em>. Each of the others is the output of a lab that ran in a pinned container. A script then copied it into this page.</p>
     <figure class="diagram"><!--DIAGRAM:capture-pipeline-->
 <svg id="d-capture-pipeline-n0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" viewBox="0 0 1222.984375 863.0390625" role="img" style="max-width:100%;height:auto"><title>How a lab run becomes a terminal block: build, capture, check, sync</title><desc>How a lab run becomes a terminal block: build, capture, check, sync</desc><style>#d-capture-pipeline-n0{font-family:inherit;font-size:16px;fill:currentColor;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#d-capture-pipeline-n0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#d-capture-pipeline-n0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#d-capture-pipeline-n0 .error-icon{fill:var(--surface3);}#d-capture-pipeline-n0 .error-text{fill:currentColor;stroke:currentColor;}#d-capture-pipeline-n0 .edge-thickness-normal{stroke-width:1px;}#d-capture-pipeline-n0 .edge-thickness-thick{stroke-width:3.5px;}#d-capture-pipeline-n0 .edge-pattern-solid{stroke-dasharray:0;}#d-capture-pipeline-n0 .edge-thickness-invisible{stroke-width:0;fill:none;}#d-capture-pipeline-n0 .edge-pattern-dashed{stroke-dasharray:3;}#d-capture-pipeline-n0 .edge-pattern-dotted{stroke-dasharray:2;}#d-capture-pipeline-n0 .marker{fill:var(--text-dim);stroke:var(--text-dim);}#d-capture-pipeline-n0 .marker.cross{stroke:var(--text-dim);}#d-capture-pipeline-n0 svg{font-family:inherit;font-size:16px;}#d-capture-pipeline-n0 p{margin:0;}#d-capture-pipeline-n0 .label{font-family:inherit;color:currentColor;}#d-capture-pipeline-n0 .cluster-label text{fill:currentColor;}#d-capture-pipeline-n0 .cluster-label span{color:currentColor;}#d-capture-pipeline-n0 .cluster-label span p{background-color:transparent;}#d-capture-pipeline-n0 .label text,#d-capture-pipeline-n0 span{fill:currentColor;color:currentColor;}#d-capture-pipeline-n0 .node rect,#d-capture-pipeline-n0 .node circle,#d-capture-pipeline-n0 .node ellipse,#d-capture-pipeline-n0 .node polygon,#d-capture-pipeline-n0 .node path{fill:var(--surface2);stroke:var(--border);stroke-width:1px;}#d-capture-pipeline-n0 .rough-node .label text,#d-capture-pipeline-n0 .node .label text,#d-capture-pipeline-n0 .image-shape .label,#d-capture-pipeline-n0 .icon-shape .label{text-anchor:middle;}#d-capture-pipeline-n0 .node .katex path{fill:currentColor;stroke:currentColor;stroke-width:1px;}#d-capture-pipeline-n0 .rough-node .label,#d-capture-pipeline-n0 .node .label,#d-capture-pipeline-n0 .image-shape .label,#d-capture-pipeline-n0 .icon-shape .label{text-align:center;}#d-capture-pipeline-n0 .node.clickable{cursor:pointer;}#d-capture-pipeline-n0 .root .anchor path{fill:var(--text-dim)!important;stroke-width:0;stroke:var(--text-dim);}#d-capture-pipeline-n0 .arrowheadPath{fill:var(--text-dim);}#d-capture-pipeline-n0 .edgePath .path{stroke:var(--text-dim);stroke-width:1px;}#d-capture-pipeline-n0 .flowchart-link{stroke:var(--text-dim);fill:none;}#d-capture-pipeline-n0 .edgeLabel{background-color:var(--bg);text-align:center;}#d-capture-pipeline-n0 .edgeLabel p{background-color:var(--bg);}#d-capture-pipeline-n0 .edgeLabel rect{opacity:0.5;background-color:var(--bg);fill:var(--bg);}#d-capture-pipeline-n0 .labelBkg{background-color:rgba(240, 160, 1, 0.5);}#d-capture-pipeline-n0 .cluster rect{fill:var(--bg);stroke:var(--border);stroke-width:1px;}#d-capture-pipeline-n0 .cluster text{fill:currentColor;}#d-capture-pipeline-n0 .cluster span{color:currentColor;}#d-capture-pipeline-n0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:inherit;font-size:12px;background:var(--surface3);border:1px solid var(--border);border-radius:2px;pointer-events:none;z-index:100;}#d-capture-pipeline-n0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:currentColor;}#d-capture-pipeline-n0 rect.text{fill:none;stroke-width:0;}#d-capture-pipeline-n0 .icon-shape,#d-capture-pipeline-n0 .image-shape{background-color:var(--bg);text-align:center;}#d-capture-pipeline-n0 .icon-shape p,#d-capture-pipeline-n0 .image-shape p{background-color:var(--bg);padding:2px;}#d-capture-pipeline-n0 .icon-shape .label rect,#d-capture-pipeline-n0 .image-shape .label rect{opacity:0.5;background-color:var(--bg);fill:var(--bg);}#d-capture-pipeline-n0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#d-capture-pipeline-n0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#d-capture-pipeline-n0 .node .neo-node{stroke:var(--border);}#d-capture-pipeline-n0 [data-look="neo"].node rect,#d-capture-pipeline-n0 [data-look="neo"].cluster rect,#d-capture-pipeline-n0 [data-look="neo"].node polygon{stroke:url(#d-capture-pipeline-n45);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#d-capture-pipeline-n0 [data-look="neo"].node path{stroke:url(#d-capture-pipeline-n45);stroke-width:1px;}#d-capture-pipeline-n0 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#d-capture-pipeline-n0 [data-look="neo"].node .neo-line path{stroke:var(--border);filter:none;}#d-capture-pipeline-n0 [data-look="neo"].node circle{stroke:url(#d-capture-pipeline-n45);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#d-capture-pipeline-n0 [data-look="neo"].node circle .state-start{fill:currentColor;}#d-capture-pipeline-n0 [data-look="neo"].icon-shape .icon{fill:url(#d-capture-pipeline-n45);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#d-capture-pipeline-n0 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#d-capture-pipeline-n45);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#d-capture-pipeline-n0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="d-capture-pipeline-n1" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n2" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n3" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n4" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n5" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n6" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n7" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n8" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n9" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n10" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="d-capture-pipeline-n11" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="d-capture-pipeline-n12" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M611.492,204L611.492,208.167C611.492,212.333,611.492,220.667,611.492,228.333C611.492,236,611.492,243,611.492,246.5L611.492,250" id="d-capture-pipeline-n13" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n14" data-points="W3sieCI6NjExLjQ5MjE4NzUsInkiOjIwNH0seyJ4Ijo2MTEuNDkyMTg3NSwieSI6MjI5fSx7IngiOjYxMS40OTIxODc1LCJ5IjoyNTR9XQ==" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="d-capture-pipeline-n14" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="root" transform="translate(0, 246)"><g class="clusters"><g class="cluster" id="d-capture-pipeline-n15" data-look="classic"><rect style="" x="8" y="8" width="1206.984375" height="601.0390625"/><g class="cluster-label" transform="translate(516.2265625, 8)"><foreignObject width="190.53125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Before it reaches the page</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M188.862,361.393L203.653,350.063C218.444,338.733,248.027,316.074,270.326,304.744C292.625,293.414,307.641,293.414,315.148,293.414L322.656,293.414" id="d-capture-pipeline-n16" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n17" data-points="W3sieCI6MTg4Ljg2MTYwODgyODcxMjYsInkiOjM2MS4zOTI4NTg4Mjg3MTI2fSx7IngiOjI3Ny42MDkzNzUsInkiOjI5My40MTQwNjI1fSx7IngiOjMyNi42NTYyNSwieSI6MjkzLjQxNDA2MjV9XQ==" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M532.417,246.456L548.418,236.994C564.419,227.531,596.42,208.605,619.929,199.142C643.438,189.68,658.453,189.68,665.961,189.68L673.469,189.68" id="d-capture-pipeline-n18" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n19" data-points="W3sieCI6NTMyLjQxNzI2NzUyNzI4OCwieSI6MjQ2LjQ1NjMzMDAyNzI4OH0seyJ4Ijo2MjguNDIxODc1LCJ5IjoxODkuNjc5Njg3NX0seyJ4Ijo2NzcuNDY4NzUsInkiOjE4OS42Nzk2ODc1fV0=" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M881.657,156.93L895.29,151.722C908.922,146.513,936.188,136.097,957.328,130.888C978.469,125.68,993.484,125.68,1000.992,125.68L1008.5,125.68" id="d-capture-pipeline-n20" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n21" data-points="W3sieCI6ODgxLjY1Njg0MDUzNzg5NTYsInkiOjE1Ni45MzAyNzgwMzc4OTU2NX0seyJ4Ijo5NjMuNDUzMTI1LCJ5IjoxMjUuNjc5Njg3NX0seyJ4IjoxMDEyLjUsInkiOjEyNS42Nzk2ODc1fV0=" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M188.862,440.795L203.653,452.124C218.444,463.454,248.027,486.114,281.265,497.444C314.503,508.773,351.396,508.773,369.842,508.773L388.289,508.773" id="d-capture-pipeline-n22" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n23" data-points="W3sieCI6MTg4Ljg2MTYwODgyODcxMjYsInkiOjQ0MC43OTQ2NDExNzEyODc0fSx7IngiOjI3Ny42MDkzNzUsInkiOjUwOC43NzM0Mzc1fSx7IngiOjM5Mi4yODkwNjI1LCJ5Ijo1MDguNzczNDM3NX1d" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M531.311,341.478L547.496,351.414C563.681,361.35,596.051,381.222,629.368,391.158C662.685,401.094,696.948,401.094,714.079,401.094L731.211,401.094" id="d-capture-pipeline-n24" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n25" data-points="W3sieCI6NTMxLjMxMDY2MjYwMTc2NjIsInkiOjM0MS40NzgzOTk4OTgyMzM3Nn0seyJ4Ijo2MjguNDIxODc1LCJ5Ijo0MDEuMDkzNzV9LHsieCI6NzM1LjIxMDkzNzUsInkiOjQwMS4wOTM3NX1d" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M868.051,236.035L883.952,246.255C899.852,256.476,931.653,276.918,957.468,287.139C983.284,297.359,1003.115,297.359,1013.03,297.359L1022.945,297.359" id="d-capture-pipeline-n26" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n27" data-points="W3sieCI6ODY4LjA1MTI1MjY2MTQ2MjEsInkiOjIzNi4wMzQ2ODQ4Mzg1Mzc5N30seyJ4Ijo5NjMuNDUzMTI1LCJ5IjoyOTcuMzU5Mzc1fSx7IngiOjEwMjYuOTQ1MzEyNSwieSI6Mjk3LjM1OTM3NX1d" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(277.609375, 293.4140625)"><g class="label" data-id="d-capture-pipeline-n17" transform="translate(-11.546875, -12)"><foreignObject width="23.09375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>yes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(628.421875, 189.6796875)"><g class="label" data-id="d-capture-pipeline-n19" transform="translate(-11.546875, -12)"><foreignObject width="23.09375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>yes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(963.453125, 125.6796875)"><g class="label" data-id="d-capture-pipeline-n21" transform="translate(-11.546875, -12)"><foreignObject width="23.09375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>yes</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(277.609375, 508.7734375)"><g class="label" data-id="d-capture-pipeline-n23" transform="translate(-8.6640625, -12)"><foreignObject width="17.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>no</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(628.421875, 401.09375)"><g class="label" data-id="d-capture-pipeline-n25" transform="translate(-8.6640625, -12)"><foreignObject width="17.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>no</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(963.453125, 297.359375)"><g class="label" data-id="d-capture-pipeline-n27" transform="translate(-8.6640625, -12)"><foreignObject width="17.328125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>no</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="d-capture-pipeline-n28" data-look="classic" transform="translate(137.03125, 401.09375)"><polygon points="91.53125,0 183.0625,-91.53125 91.53125,-183.0625 0,-91.53125" class="label-container" transform="translate(-91.03125, 91.53125)"/><g class="label" style="" transform="translate(-40.53125, -36)"><rect/><foreignObject width="81.0625" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>check.sh:<br />matches<br />expect.tsv?</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n29" data-look="classic" transform="translate(453.015625, 293.4140625)"><polygon points="126.359375,0 252.71875,-126.359375 126.359375,-252.71875 0,-126.359375" class="label-container" transform="translate(-125.859375, 126.359375)"/><g class="label" style="" transform="translate(-75.359375, -36)"><rect/><foreignObject width="150.71875" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>On your workstation:<br />leak-gate.sh over<br />captures/ clean?</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n30" data-look="classic" transform="translate(795.9375, 189.6796875)"><polygon points="118.46875,0 236.9375,-118.46875 118.46875,-236.9375 0,-118.46875" class="label-container" transform="translate(-117.96875, 118.46875)"/><g class="label" style="" transform="translate(-67.46875, -36)"><rect/><foreignObject width="134.9375" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>sync-labs.mjs:<br />sources unchanged<br />since capture?</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n31" data-look="classic" transform="translate(1094.9921875, 125.6796875)"><rect class="basic label-container" style="" x="-82.4921875" y="-39" width="164.984375" height="78"/><g class="label" style="" transform="translate(-52.4921875, -24)"><rect/><foreignObject width="104.984375" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Terminal block<br />in this guide</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n32" data-look="classic" transform="translate(453.015625, 508.7734375)"><rect class="basic label-container" style="" x="-60.7265625" y="-39" width="121.453125" height="78"/><g class="label" style="" transform="translate(-30.7265625, -24)"><rect/><foreignObject width="61.453125" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Capture<br />rejected</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n33" data-look="classic" transform="translate(795.9375, 401.09375)"><rect class="basic label-container" style="" x="-60.7265625" y="-39" width="121.453125" height="78"/><g class="label" style="" transform="translate(-30.7265625, -24)"><rect/><foreignObject width="61.453125" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Run<br />rejected</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n34" data-look="classic" transform="translate(1094.9921875, 297.359375)"><rect class="basic label-container" style="" x="-68.046875" y="-39" width="136.09375" height="78"/><g class="label" style="" transform="translate(-38.046875, -24)"><rect/><foreignObject width="76.09375" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Refuses:<br />re-capture</p></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(133.171875, 0)"><g class="clusters"><g class="cluster" id="d-capture-pipeline-n35" data-look="classic"><rect style="" x="8" y="8" width="940.640625" height="196"/><g class="cluster-label" transform="translate(389.390625, 8)"><foreignObject width="177.859375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>In the mdg-lab container</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M278.906,106L285.156,106C291.406,106,303.906,106,315.74,106C327.573,106,338.74,106,344.323,106L349.906,106" id="d-capture-pipeline-n36" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n37" data-points="W3sieCI6Mjc4LjkwNjI1LCJ5IjoxMDZ9LHsieCI6MzE2LjQwNjI1LCJ5IjoxMDZ9LHsieCI6MzUzLjkwNjI1LCJ5IjoxMDZ9XQ==" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/><path d="M576.141,106L582.391,106C588.641,106,601.141,106,612.974,106C624.807,106,635.974,106,641.557,106L647.141,106" id="d-capture-pipeline-n38" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="d-capture-pipeline-n39" data-points="W3sieCI6NTc2LjE0MDYyNSwieSI6MTA2fSx7IngiOjYxMy42NDA2MjUsInkiOjEwNn0seyJ4Ijo2NTEuMTQwNjI1LCJ5IjoxMDZ9XQ==" data-look="classic" marker-end="url(#d-capture-pipeline-n1)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="d-capture-pipeline-n37" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="d-capture-pipeline-n39" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="d-capture-pipeline-n40" data-look="classic" transform="translate(162.203125, 106)"><rect class="basic label-container" style="" x="-116.703125" y="-39" width="233.40625" height="78"/><g class="label" style="" transform="translate(-86.703125, -24)"><rect/><foreignObject width="173.40625" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Lab sources<br />*.c, gdb/*.gdb, Makefile</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n41" data-look="classic" transform="translate(465.0234375, 106)"><rect class="basic label-container" style="" x="-111.1171875" y="-51" width="222.234375" height="102"/><g class="label" style="" transform="translate(-81.1171875, -36)"><rect/><foreignObject width="162.234375" height="72"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>run-capture.sh<br />builds and runs the<br />captures.tsv command</p></span></div></foreignObject></g></g><g class="node default" id="d-capture-pipeline-n42" data-look="classic" transform="translate(781.140625, 106)"><rect class="basic label-container" style="" x="-130" y="-63" width="260" height="126"/><g class="label" style="" transform="translate(-100, -48)"><rect/><foreignObject width="200" height="96"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>captures/ID.txt<br /># src: SHA-256 per source<br /># cmd, then the real output</p></span></div></foreignObject></g></g></g></g></g></g></g><defs><filter id="d-capture-pipeline-n43" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="currentColor"/></filter></defs><defs><filter id="d-capture-pipeline-n44" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="currentColor"/></filter></defs><linearGradient id="d-capture-pipeline-n45" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="var(--border)" stop-opacity="1"/><stop offset="100%" stop-color="var(--border)" stop-opacity="1"/></linearGradient></svg>
-<!--/DIAGRAM:capture-pipeline--><figcaption class="ann">A lab builds in the <code>mdg-lab</code> container. <code>run-capture.sh</code> runs it and writes <code>captures/&lt;id&gt;.txt</code>, headed by the SHA-256 of every source it used. <code>check.sh</code> matches it against <code>expect.tsv</code>. Back on your workstation, <code>leak-gate.sh</code> scans the returned captures and rejects the run on a hit. A sync step copies it into this page, and refuses if a source changed since the capture.</figcaption></figure>
+<!--/DIAGRAM:capture-pipeline--><figcaption class="ann">A lab builds in the <code>mdg-lab</code> container. <code>run-capture.sh</code> runs it and writes <code>captures/&lt;id&gt;.txt</code>, headed by the SHA-256 of every source it used. <code>check.sh</code> matches it against <code>expect.tsv</code>. Back on your workstation, <code>leak-gate.sh</code> scans the returned captures for private names and hosts (it has nothing to do with memory leaks) and rejects the run on a hit. A sync step copies it into this page, and refuses if a source changed since the capture.</figcaption></figure>
     <h4 class="ph">What that buys you</h4>
     <ul>
       <li>A capture can't drift from its source without the build noticing.</li>
@@ -598,7 +600,7 @@ rr-smoke(sys_admin)
       <li>Line 3: GDB 15 drives every live session and reads every core.</li>
       <li>Lines 4–5: Valgrind 3.22 and rr 5.7.</li>
       <li>Line 6: glibc 2.39. The allocator chapter's chunk layout, tcache key and abort messages are glibc 2.39's.</li>
-      <li>Line 8: <code>ulimit -c</code> is 0, so no core file is written from this container. GDB writes the cores the labs use. <a onclick="go('t2-cores-symbols')">Ch 8</a> explains why.</li>
+      <li>Line 8: <code>ulimit -c</code> is 0, so no kernel core lands in your directory from this container. GDB writes the cores the labs use. <a onclick="go('t2-cores-symbols')">Ch 8</a> explains why.</li>
       <li>Line 9: rr worked only once the container had <code>--cap-add SYS_ADMIN</code>. On that host, <code>CAP_PERFMON</code> alone was not enough. Try the weakest option first on yours.</li>
     </ol>
   </div>
@@ -930,8 +932,8 @@ static inline void table_dump(void)
     <table class="tbl">
       <thead><tr><th>Ch</th><th>Bug class</th><th>Typical symptom</th><th>Path A: it reproduces</th><th>Path B: only a core</th></tr></thead>
       <tbody>
-        <tr><td><a onclick="go('b1-null')">14</a></td><td>NULL dereference</td><td>SIGSEGV at a small address, or <code>rip=0</code></td><td>GDB: <code>bt</code>, <code>info registers</code></td><td><code>x/i $pc</code>, <code>ptype /o</code> to map the offset to a field, the caller from <code>[$rsp]</code></td></tr>
-        <tr><td><a onclick="go('b2-uninit')">15</a></td><td>Uninitialized pointer / stack garbage</td><td>Wrong values; crashes that move around</td><td>Memcheck <code>--track-origins</code>, MSan, pattern init</td><td>GDB on the frame's locals: spot garbage or pattern bytes</td></tr>
+        <tr><td><a onclick="go('b1-null')">14</a></td><td>NULL dereference</td><td>SIGSEGV at a small address, or <code>rip=0</code></td><td><code>asan</code> build: UBSan + ASan zero-page report</td><td><code>x/i $pc</code>, <code>ptype /o</code> to map the offset to a field, the caller from <code>[$rsp]</code></td></tr>
+        <tr><td><a onclick="go('b2-uninit')">15</a></td><td>Uninitialized pointer / stack garbage</td><td>Wrong values; crashes that move around</td><td>Memcheck <code>--track-origins</code>, MSan, pattern init</td><td>Usually no core; <code>gcore</code> a live process and read the frame's locals for pattern bytes</td></tr>
         <tr><td><a onclick="go('b3-heap-overflow')">16</a></td><td>Heap overflow, off-by-one</td><td>SIGABRT inside <code>free</code> or <code>malloc</code>, later</td><td>ASan redzones</td><td>The corrupted header of the neighbouring chunk</td></tr>
         <tr><td><a onclick="go('b4-stack-smash')">17</a></td><td>Stack smashing</td><td><code>*** stack smashing detected ***</code>, a garbled <code>bt</code></td><td>ASan stack redzones</td><td>The canary abort; unwinding by hand</td></tr>
         <tr><td><a onclick="go('b5-double-free')">18</a></td><td>Double free</td><td><code>free(): double free detected in tcache 2</code></td><td>ASan</td><td>The glibc abort string; the tcache key</td></tr>
@@ -955,7 +957,7 @@ static inline void table_dump(void)
         <tr><td>Shared state</td><td><code>session_table</code> (an array of <code>struct session *</code>) under <code>table_lock</code>; a global <code>stats</code> struct under <code>stats_lock</code></td></tr>
         <tr><td>Objects</td><td><code>struct session</code> and <code>struct pktbuf</code>, both 56 bytes. <code>session-&gt;peer</code> is a pointer at offset <code>0x18</code></td></tr>
         <tr><td>Ref API</td><td><code>session_get()</code> adds a reference; <code>session_put()</code> drops one and frees the session at 0</td></tr>
-        <tr><td>Lock order</td><td>Always <code>table_lock</code> → <code>stats_lock</code>. Bug 9 breaks this on purpose</td></tr>
+        <tr><td>Lock order</td><td>Always <code>table_lock</code> → <code>stats_lock</code>. Lab 09 (<a onclick="go('b9-deadlock')">Ch 22</a>) breaks this on purpose</td></tr>
       </tbody>
     </table>
     <h4 class="ph">The two objects</h4>
@@ -1129,7 +1131,7 @@ int main(void)
       <li>Its <code>[stack]</code> mapping grows on demand, up to <code>RLIMIT_STACK</code>.</li>
       <li>The kernel keeps a gap below it (<code>stack_guard_gap</code>, 256 pages by default) that no other mapping may take.</li>
     </ul>
-    <div class="info red"><strong>Stack overflow is a SIGSEGV on the guard.</strong> Deep recursion or a huge local array walks the stack pointer into the guard page. The next push faults. The fault address sits just below the thread's stack. That is how you tell a stack overflow from a wild pointer.</div>
+    <div class="info red"><strong>Stack overflow is a SIGSEGV on the guard.</strong> Deep recursion or a huge local array walks the stack pointer into the guard page. The next push faults. The fault address sits just below the thread's stack. That is how you tell a stack overflow from a wild pointer. A frame bigger than the guard can step right over it, though. <code>-fstack-clash-protection</code> (on by default in Ubuntu's GCC) probes every page as the frame grows, so the fault reliably hits the guard. Without it, a large frame may fault somewhere else or silently write over another mapping.</div>
   </div>
 
   <div class="card">
@@ -1142,7 +1144,7 @@ int main(void)
         <tr><td>Just below a thread's stack</td><td>Stack overflow into the guard page</td></tr>
         <tr><td>Inside <code>[heap]</code> or a heap-like mmap region</td><td>Mapped, so no fault on read. If the data is wrong, suspect use-after-free</td></tr>
         <tr><td>Repeated bytes: <code>0xfefefefe…</code>, <code>0xaaaaaaaa…</code></td><td>A pattern fill: uninitialized memory (<a onclick="go('b2-uninit')">Ch 15</a>)</td></tr>
-        <tr><td>Looks like ASCII, e.g. <code>0x504f4e4d4c4b4a49</code></td><td>Text where a pointer should be. The object was overwritten or reused (<a onclick="go('b10-refcount-uaf')">Ch 23</a>)</td></tr>
+        <tr><td>Looks like ASCII, e.g. <code>0x504f4e4d4c4b4a49</code></td><td>Text where a pointer should be. The object was overwritten or reused (<a onclick="go('b10-refcount-uaf')">Ch 23</a>). This example is also non-canonical (next row), so dereferencing it gives a fault with no address</td></tr>
         <tr><td>Bits 63–47 not all the same</td><td>Non-canonical. The CPU raises a general-protection fault instead of a page fault, so the kernel can't report the address</td></tr>
       </tbody>
     </table>
@@ -1195,7 +1197,7 @@ int main(void)
         <tr><td>Return value</td><td><code>rax</code> (and <code>rdx</code> for a second word)</td><td>Step out with <code>finish</code> and GDB shows it</td></tr>
         <tr><td>Callee-saved</td><td><code>rbx</code>, <code>rbp</code>, <code>r12</code>–<code>r15</code></td><td>Preserved across calls, so the unwinder can recover them in outer frames</td></tr>
         <tr><td>Caller-saved (scratch)</td><td><code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>rsi</code>, <code>rdi</code>, <code>r8</code>–<code>r11</code></td><td>Clobbered by any call. Don't trust their values in an outer frame</td></tr>
-        <tr><td>Stack pointer</td><td><code>rsp</code></td><td>16-byte aligned just before each <code>call</code>, so at function entry <code>rsp+8</code> is a multiple of 16</td></tr>
+        <tr><td>Stack pointer</td><td><code>rsp</code></td><td>The ABI wants it 16-byte aligned just before each <code>call</code>, so at function entry <code>rsp+8</code> is a multiple of 16. GCC may drop that for a <code>static</code> callee that doesn't need it: <code>checksum</code> below is one (its frame sits at <code>0x…eb98</code>, 8 mod 16)</td></tr>
       </tbody>
     </table>
     <h4 class="ph">The red zone</h4>
@@ -1321,7 +1323,7 @@ continue
     <h2>2.4 Frame pointers, unwind tables and canaries</h2>
     <h4 class="ph">Frame pointer or not</h4>
     <ul>
-      <li>The labs build with <code>-fno-omit-frame-pointer</code>, so the <code>rbp</code> chain is always there.</li>
+      <li>The labs' <code>plain</code> and <code>asan</code> builds use <code>-fno-omit-frame-pointer</code>, so the <code>rbp</code> chain is there. The <code>tsan</code> and <code>msan</code> builds are <code>-O1</code> without it.</li>
       <li>At <code>-O1</code> and above, GCC on x86-64 omits it by default and uses <code>rbp</code> as a normal register.</li>
       <li>GDB doesn't need the chain. It unwinds from DWARF call-frame information (<code>.eh_frame</code>), which says, for every instruction, where the CFA and the saved registers are.</li>
       <li>Profilers and some quick unwinders do rely on the chain. That's why many shops keep frame pointers on in production builds.</li>
@@ -1352,7 +1354,7 @@ continue
     <h4 class="ph"><code>_FORTIFY_SOURCE</code></h4>
     <ul>
       <li>When optimizing, many distro compilers also define <code>_FORTIFY_SOURCE</code>. Calls like <code>memcpy</code> and <code>strcpy</code> into objects of known size become checked variants that abort with <code>*** buffer overflow detected ***</code>.</li>
-      <li>It has no effect at <code>-O0</code>, which is how the labs build.</li>
+      <li>It has no effect at <code>-O0</code>, which is how the labs' <code>plain</code> and <code>asan</code> builds compile.</li>
     </ul>
   </details>
 
@@ -1538,7 +1540,7 @@ next    = (pos &gt;&gt; 12) ^ stored</code></pre>
     </table>
     <ul>
       <li>The abort happens in whichever thread next hits the check. That thread is often innocent.</li>
-      <li>In a core, frame <code>malloc_printerr (str=…)</code> carries the message even when stderr is lost.</li>
+      <li>In a core, frame <code>malloc_printerr (str=…)</code> carries the message even when stderr is lost. GDB shows <code>str</code> only with libc debug info; the lab image has it from <code>libc6-dbg</code>.</li>
     </ul>
     <h4 class="ph">glibc's own debugging knobs</h4>
     <ul>
@@ -1550,7 +1552,7 @@ next    = (pos &gt;&gt; 12) ^ stored</code></pre>
   </details>
 
   <div class="hook">
-    <p>This layout is what you read in a core with <code>x/8gx ptr-16</code> (<a onclick="go('t3-gdb-core')">Ch 9, GDB on a Core</a>). A neighbour's smashed size field explains a heap overflow's late abort (<a onclick="go('b3-heap-overflow')">Ch 16</a>). The tcache key is how glibc spots a double free (<a onclick="go('b5-double-free')">Ch 18</a>). A safe-linked <code>next</code> sitting where a field should be gives away a use-after-free (<a onclick="go('b6-uaf')">Ch 19</a>).</p>
+    <p>This layout is what you read in a core with <code>x/8gx (char *)ptr - 16</code> (<a onclick="go('t3-gdb-core')">Ch 9, GDB on a Core</a>). A neighbour's smashed size field explains a heap overflow's late abort (<a onclick="go('b3-heap-overflow')">Ch 16</a>). The tcache key is how glibc spots a double free (<a onclick="go('b5-double-free')">Ch 18</a>). A safe-linked <code>next</code> sitting where a field should be gives away a use-after-free (<a onclick="go('b6-uaf')">Ch 19</a>).</p>
   </div>
 
   <div class="see-also">
@@ -1624,7 +1626,7 @@ next    = (pos &gt;&gt; 12) ^ stored</code></pre>
     <h4 class="ph">Valgrind: dynamic binary translation</h4>
     <ul>
       <li>Valgrind loads your program itself. It translates each block of machine code into its own intermediate form (VEX IR). The tool (Memcheck, Helgrind, DRD, Massif) adds instrumentation. Then it compiles the block back to host code and caches it.</li>
-      <li>Memcheck tracks <strong>A bits</strong> (is this byte addressable?) and <strong>V bits</strong> (is this bit defined?) for all memory and registers.</li>
+      <li>Memcheck tracks <strong>A bits</strong> (is this byte addressable?) for memory, and <strong>V bits</strong> (is this bit defined?) for memory and registers.</li>
       <li>It replaces <code>malloc</code> and <code>free</code> with its own. Freed blocks wait in a queue (<code>--freelist-vol</code>, 20 MB by default) before reuse.</li>
       <li>It runs one thread at a time. Races still show in Helgrind and DRD, because they reason about ordering, not timing.</li>
     </ul>
@@ -1759,7 +1761,7 @@ void *worker(void *arg) { while (!stop) spins++; return NULL; }
       <li><strong>Still a data race.</strong> In C11, concurrent conflicting <code>volatile</code> accesses are undefined behaviour, and TSan reports them.</li>
       <li>It does stop the hoisting in 5.3, which is why it seems to work. The fix is <code>_Atomic</code> or a lock.</li>
     </ul>
-    <div class="info red"><strong>"Benign" races aren't.</strong> A racy flag or statistic may look harmless. The compiler is still allowed to tear it, re-read it, or cache it forever. Make it atomic, with <code>memory_order_relaxed</code> if ordering doesn't matter. It costs almost nothing on x86 and it makes the intent explicit.</div>
+    <div class="info red"><strong>"Benign" races aren't.</strong> A racy flag or statistic may look harmless. The compiler is still allowed to tear it, re-read it, or cache it forever. Make it atomic, with <code>memory_order_relaxed</code> if ordering doesn't matter. On x86 a relaxed load or store is a plain <code>mov</code>, so it costs almost nothing, and it makes the intent explicit. A counter increment is a read-modify-write and still needs a <code>lock</code>ed instruction (<a onclick="go('f6-atomics-locks')">Ch 6</a>, <em>Atomics are not free</em>).</div>
   </div>
 
   <details class="deep"><summary>Deep dive</summary>
@@ -1948,8 +1950,8 @@ static inline void session_put(struct session *s)
     <h4 class="ph">Getting GDB onto the process</h4>
     <ul>
       <li><code>gdb ./pktd</code>, then <code>run [args]</code>: GDB starts it, with ASLR off by default.</li>
-      <li><code>gdb -p &lt;pid&gt;</code>: attach to a daemon that's already running. It needs ptrace permission: the same user plus <code>kernel.yama.ptrace_scope</code> 0, or <code>CAP_SYS_PTRACE</code>. That's why the lab container adds <code>--cap-add SYS_PTRACE</code>.</li>
-      <li><code>gdb -q -batch -nx -x script.gdb ./prog</code>: run a command file and exit. Every GDB capture in this guide was made this way.</li>
+      <li><code>gdb -p &lt;pid&gt;</code>: attach to a daemon that's already running. It needs ptrace permission: the same user plus <code>kernel.yama.ptrace_scope</code> 0, or <code>CAP_SYS_PTRACE</code> (scope 3 forbids attaching at all, capability or not). That's why the lab container adds <code>--cap-add SYS_PTRACE</code>.</li>
+      <li><code>gdb -q -batch -nx -x script.gdb ./prog</code>: run a command file and exit. Almost every GDB capture in this guide was made this way. The exceptions: the rr capture fed its script to <code>rr replay</code>, and <code>make core-&lt;lab&gt;</code> writes each core with <code>gdb -batch -ex</code>.</li>
     </ul>
     <h4 class="ph">Breakpoints</h4>
     <table class="tbl">
@@ -2040,7 +2042,7 @@ table_dump () at /lab/pktd.h:191
 191	               (s-&gt;peer-&gt;addr &gt;&gt; 8) &amp; 0xff, s-&gt;peer-&gt;addr &amp; 0xff, s-&gt;peer-&gt;port);<!--/CAP:10.watch--></code></pre>
     <ol class="callouts">
       <li>Lines 1–3: stopped at the hook. The watchpoint is a hardware one: <code>refcnt</code> is a 4-byte <code>int</code>, one debug register.</li>
-      <li>Lines 5–11: thread 4 writes 1 → 2 inside <code>session_get</code>. Each hit prints <code>Old value</code>, <code>New value</code> and the location just after the store. That thread didn't exist yet when the watchpoint was set, and the write is still caught: GDB arms new threads too.</li>
+      <li>Lines 5–11: thread 4 writes 1 → 2 inside <code>session_get</code>. Each hit prints <code>Old value</code>, <code>New value</code> and the location just after the store. In this run that thread didn't exist yet when the watchpoint was set (the order depends on timing), and the write is still caught: GDB arms new threads too.</li>
       <li>Lines 13–22: thread 5 writes 2 → 1 in <code>session_put</code>. The <code>commands</code> block's <code>$_caller_is</code> test (line 19) and <code>bt 3</code> (lines 20–22) show who called it: <code>handle_timeout</code>.</li>
       <li>Lines 24–30: thread 4 writes 1 → 0.</li>
       <li>Lines 32–35: the crash, in a different thread and function. Two more writes to the same 4 bytes happen in between, from inside <code>free</code> and from a new allocation; <a onclick="go('b10-refcount-uaf')">Ch 23</a> explains them.</li>
@@ -2241,7 +2243,7 @@ Stack level 0, frame at 0x7fffffffeb98:
     <h2>7.5 All-stop and scheduler-locking</h2>
     <p>By default GDB runs in <strong>all-stop</strong> mode. When any thread stops, GDB stops all of them. When you resume, all of them resume. That includes <code>step</code> and <code>next</code>.</p>
     <ul>
-      <li>So while you <code>next</code> over one line in worker 2, the other five threads run too. One of them may hit a breakpoint, and GDB switches you to it mid-step.</li>
+      <li>So while you <code>next</code> over one line in worker 2, the other six threads run too. One of them may hit a breakpoint, and GDB switches you to it mid-step.</li>
       <li><code>set scheduler-locking</code> controls which threads run when you resume:</li>
     </ul>
     <table class="tbl">
@@ -2324,7 +2326,7 @@ $ coredumpctl debug 4127         # opens GDB on the binary and the core</code></
     </ul>
     <h4 class="ph">Why the labs let GDB write the core</h4>
     <ul>
-      <li><strong>A container can't change <code>core_pattern</code>.</strong> The setting belongs to the host kernel and isn't namespaced. On a host that pipes cores to a handler, a crash inside a container goes to the <em>host's</em> handler, not to your working directory.</li>
+      <li><strong>An unprivileged container can't change <code>core_pattern</code>.</strong> The setting belongs to the host kernel and isn't namespaced. A <code>--privileged</code> container can write it, and then it changes the host's setting for every process. On a host that pipes cores to a handler, a crash inside a container goes to the <em>host's</em> handler, not to your working directory.</li>
       <li><strong>So the lab container runs with <code>--ulimit core=0</code>.</strong> With a file pattern, the kernel writes nothing when the limit is 0. With a pipe, the kernel ignores the limit: it still starts the handler and passes the limit to it (<code>%c</code>). systemd-coredump honours 0 and keeps no core; other handlers may not.</li>
       <li><strong><code>make core-&lt;lab&gt;</code> runs the lab under GDB and writes the core at the fault.</strong> GDB reads the stopped process through ptrace and writes the file itself, so the core limit doesn't apply. The same target works on your own box and on a shared host.</li>
     </ul>
@@ -2366,7 +2368,7 @@ core-%: %.$(V)
     <h4 class="ph">Where GDB looks</h4>
     <ul>
       <li><strong>By build ID:</strong> <code>&lt;debug-file-directory&gt;/.build-id/ab/cdef….debug</code>, where <code>ab</code> is the first byte of the ID. The default directory is <code>/usr/lib/debug</code>. Distro <code>-dbg</code>/<code>-dbgsym</code> packages install there.</li>
-      <li><strong>By debuglink:</strong> the named file in the binary's own directory, then in its <code>.debug/</code> subdirectory, then under the debug directory.</li>
+      <li><strong>By debuglink:</strong> the named file in the binary's own directory, then in its <code>.debug/</code> subdirectory, then under the debug directory plus the binary's absolute directory: <code>/usr/lib/debug/&lt;abs dir of binary&gt;/&lt;name&gt;.debug</code>, not the debug directory's root.</li>
     </ul>
     <p>The rr capture in Ch 13 shows a build-ID lookup, for the dynamic loader:</p>
     <pre class="term"><code><!--CAP:10.rr lines=15-16-->Reading symbols from /lib64/ld-linux-x86-64.so.2...
@@ -2456,7 +2458,7 @@ quit
     </ul>
     <h4 class="ph">Cores and sanitizers</h4>
     <ul>
-      <li>ASan disables cores by default on 64-bit, because its shadow reserves terabytes of address space. <code>ASAN_OPTIONS=disable_coredump=0:abort_on_error=1</code> gets you one (<a onclick="go('t4-asan')">Ch 10</a>).</li>
+      <li>ASan disables cores by default on 64-bit, because its shadow reserves terabytes of address space. <code>ASAN_OPTIONS=disable_coredump=0:abort_on_error=1</code> gets you one (<a onclick="go('t4-asan')">Ch 10</a>), as long as <code>ulimit -c</code> allows it. The lab container runs with <code>--ulimit core=0</code>, so there use <code>make core-&lt;lab&gt; V=asan</code> and let GDB write it.</li>
     </ul>
   </details>
 
@@ -2528,7 +2530,7 @@ Program terminated with signal SIGSEGV, Segmentation fault.
         <tr><td><code>frame N</code>, <code>info locals</code>, <code>p *s</code></td><td>The variables in one frame</td></tr>
         <tr><td><code>info proc mappings</code></td><td>Which file-backed mapping (binary, library) a pointer falls in. On a core it has no heap or stack lines (<code>NT_FILE</code> only)</td></tr>
         <tr><td><code>info files</code>, <code>maint info sections</code>, <code>info symbol</code></td><td>The core's own load segments, heap and stacks included; the object and symbol an address belongs to</td></tr>
-        <tr><td><code>x/8gx ptr-16</code></td><td>A heap object with its chunk header</td></tr>
+        <tr><td><code>x/8gx (char *)ptr - 16</code></td><td>A heap object with its chunk header. Keep the cast: on a typed pointer GDB scales the arithmetic, so <code>s-16</code> on a <code>struct session *</code> is 16 × 56 bytes back</td></tr>
         <tr><td><code>info sharedlibrary</code></td><td>Which libraries were loaded, and whether their symbols were found</td></tr>
       </tbody>
     </table>
@@ -2959,7 +2961,7 @@ int main(void)
       <li>Instrument every file that touches shared state. Accesses in uninstrumented code are invisible.</li>
       <li>TSan keeps running after a report, prints a count at exit, and exits with status 66 if it reported anything (<code>TSAN_OPTIONS=exitcode=N</code> changes it). That makes it easy to gate in CI.</li>
     </ul>
-    <div class="info yellow"><strong>The <code>setarch</code> note.</strong> On some newer kernels with more mmap randomization, older TSan runtimes abort at startup with an "unexpected memory mapping" error. Running the program under <code>setarch $(uname -m) -R</code>, which disables ASLR for that one process, works around it. The labs' toolchain didn't need it.</div>
+    <div class="info yellow"><strong>The <code>setarch</code> note.</strong> On some newer kernels with more mmap randomization, older TSan runtimes abort at startup with an "unexpected memory mapping" error. Running the program under <code>setarch $(uname -m) -R</code>, which disables ASLR for that one process, works around it. The labs' toolchain didn't need it on the capture host, but a kernel with <code>vm.mmap_rnd_bits=32</code> may need <code>setarch -R</code> even with this toolchain.</div>
   </div>
 
   <div class="card">
@@ -3336,7 +3338,7 @@ expected=4000000 actual=4000000 lost=0
       <li>Lines 1–3: a load by thread 3 at line 26 conflicts with another thread. Valgrind numbers threads from 1, the main thread.</li>
       <li>Line 7: the memory is in the binary's BSS: <code>stats</code>.</li>
       <li>Lines 8–11: the other side is a <em>segment</em> of thread 2: a stretch of its code between two synchronization points. Thread 2 has finished, so its stack is gone.</li>
-      <li>Line 14: no updates lost. Valgrind serialized the threads, so the race couldn't bite, and DRD still found it. It reasons about ordering, not timing.</li>
+      <li>Line 14: no updates lost. Valgrind runs one thread at a time and switches only between translated blocks, so the load-add-store of <code>++</code> was never split. DRD still found the race. It reasons about ordering, not timing.</li>
       <li>Line 16: DRD counts every occurrence: millions of errors, from just 2 contexts.</li>
     </ol>
     <p>Helgrind reports the same race in a different shape, with <code>Locks held: none</code> for each access. It also catches the lock-order inversion from Ch 11 (<a onclick="go('b8-race')">Ch 21</a>, <a onclick="go('b9-deadlock')">Ch 22</a>).</p>
@@ -3681,7 +3683,7 @@ static void rx_field(uint32_t id)
     uint32_t addr = s-&gt;peer-&gt;addr;  /* BUG: loads s-&gt;peer from 0x0 + 0x18 */
     printf(&quot;peer %#x\n&quot;, addr);
 }<!--/SRC:01-null.c--></code></pre>
-    <p>All three crash on the line with the bug. That makes NULL the first rung: the cause and the crash are in the same place.</p>
+    <p>All three crash at the bug or one call away from it. <code>field</code> faults on the buggy line itself. <code>plain</code> faults in <code>session_id</code>, and the missing check is one frame up, in <code>rx_plain</code>. <code>fnptr</code> jumps to address 0, so frame #0 is <code>??</code> and the bug is in its caller. That makes NULL the first rung: the cause is in the crash frame or its caller.</p>
     <details class="src"><summary>01-null.c — full source</summary><button class="copy">Copy</button><pre><code><!--SRC:01-null.c-->/* 01-null.c — three ways pktd dereferences NULL. Pick one with argv[1]:
  *   plain  session_lookup() misses and the caller uses the NULL it got back
  *   field  same miss, but the code reads s-&gt;peer-&gt;addr: the fault is at 0x18
@@ -3772,26 +3774,28 @@ SUMMARY: AddressSanitizer: SEGV /lab/01-null.c:31 in session_id<!--/CAP:01-null.
       </div>
       <div class="ab-b">
         <p>No rerun: one core, from the plain build. Nothing in it says "NULL". You read it off the frames and the fault address.</p>
-        <pre class="term"><code><!--CAP:01-null.core lines=4-13-->Core was generated by `/lab/01-null.plain plain&#39;.
+        <pre class="term"><code><!--CAP:01-null.core lines=4-14-->Core was generated by `/lab/01-null.plain plain&#39;.
 Program terminated with signal SIGSEGV, Segmentation fault.
 #0  0x0000555555555390 in session_id (s=0x0) at 01-null.c:31
 31	    return s-&gt;id;                   /* plain: faults at address 0x8 */
 #0  0x0000555555555390 in session_id (s=0x0) at 01-null.c:31
 #1  0x00005555555553be in rx_plain (id=7) at 01-null.c:37
 #2  0x000055555555548a in main (argc=2, argv=0x7fffffffecc8) at 01-null.c:54
+$1 = (void *) 0x8
 #1  0x00005555555553be in rx_plain (id=7) at 01-null.c:37
 37	    printf(&quot;rx for session %u\n&quot;, session_id(s));   /* BUG: s unchecked */
-$1 = (struct session *) 0x0<!--/CAP:01-null.core--></code></pre>
+$2 = (struct session *) 0x0<!--/CAP:01-null.core--></code></pre>
         <ol class="callouts">
           <li>Line 2: <code>SIGSEGV</code>, a bad access. No message, no file name for the bug.</li>
-          <li>Lines 3–4: frame #0 is <code>session_id (s=0x0)</code>, on the line that reads <code>s-&gt;id</code>. <code>id</code> is at offset <code>0x8</code>, the same address ASan reported: a NULL base plus a field offset.</li>
+          <li>Lines 3–4: frame #0 is <code>session_id (s=0x0)</code>, on the line that reads <code>s-&gt;id</code>.</li>
           <li>Lines 5–7: <code>bt</code>. <code>rx_plain</code> called it, from <code>main</code>.</li>
-          <li>Lines 8–10: in frame 1, <code>s</code> is NULL too. <code>rx_plain</code> took it from <code>session_lookup</code> and passed it on without a check. That's where the fix goes.</li>
+          <li>Line 8: the fault address, from the signal info saved in the core (<code>p $_siginfo._sifields._sigfault.si_addr</code>): <code>0x8</code>. <code>id</code> is at offset <code>0x8</code> in <code>struct session</code>, so this is a NULL base plus a field offset. It's the same address ASan reported, but you got it from the core alone.</li>
+          <li>Lines 9–11: in frame 1, <code>s</code> is NULL too. <code>rx_plain</code> took it from <code>session_lookup</code> and passed it on without a check. That's where the fix goes.</li>
           <li>This build has <code>-g</code> and <code>-O0</code>, so GDB can show <code>s</code>. In an optimized or stripped build it may print <code>&lt;optimized out&gt;</code> or nothing; then 14.3's recipe, from the fault address and the instruction, still works.</li>
         </ol>
       </div>
     </div>
-    <div class="info green"><strong>Symptom → class:</strong> SIGSEGV at a small address (&lt; 0x1000), or rip = 0 → NULL dereference</div>
+    <div class="info green"><strong>Symptom → class:</strong> SIGSEGV at a small address (&lt; 0x10000, below <code>vm.mmap_min_addr</code>), or rip = 0 → NULL dereference</div>
   </div>
 
   <div class="card">
@@ -3869,10 +3873,11 @@ ctrl_dispatch + 50 in section .text of /lab/01-null.plain<!--/CAP:01-null.fnptr.
       <li>Line 4: GDB's backtrace found the same frame. With no function at <code>pc</code> to describe the frame, its fallback assumes nothing was pushed yet and reads the return address from <code>[$rsp]</code>. When it can't (a stripped binary, a confused unwind), do it by hand as on lines 7–8.</li>
       <li>Line 4 also shows <code>op=1</code>: the slot that holds NULL.</li>
     </ol>
-    <details class="src"><summary>gdb/01-null-core.gdb — full source</summary><button class="copy">Copy</button><pre><code><!--SRC:gdb/01-null-core.gdb--># 01-null-core.gdb — open the plain NULL-deref core: where, and which pointer.
+    <details class="src"><summary>gdb/01-null-core.gdb — full source</summary><button class="copy">Copy</button><pre><code><!--SRC:gdb/01-null-core.gdb--># 01-null-core.gdb — open the plain NULL-deref core: where, what address, and which pointer.
 #   gdb -q -batch -nx -x gdb/01-null-core.gdb ./01-null.plain cores/01-null.plain-plain.core
 set pagination off
 bt
+p $_siginfo._sifields._sigfault.si_addr
 frame 1
 p s
 <!--/SRC:gdb/01-null-core.gdb--></code></pre></details>
@@ -4036,7 +4041,7 @@ active: connecting to the peer
           <li>Line 18: six errors. Five come from inside <code>printf</code> as it formats the number; the sixth is line 40.</li>
         </ol>
       </div>
-      <div class="ab-b">
+      <div class="ab-b" data-label="No crash, no core">
         <p>There is no crash, so no core. And a core from a normal build can't help: it holds bytes, not definedness. Garbage in <code>flags</code> looks exactly like data. The <code>0</code> Memcheck's run printed would pass for a real value.</p>
         <p>A fingerprint exists only if the <em>shipped</em> build already used <code>-ftrivial-auto-var-init=pattern</code>. This capture is a rerun of such a build, to show what you would then see:</p>
         <pre class="term"><code><!--CAP:02-uninit.pattern-->session 2 flags = 0xfefefefe
@@ -4046,7 +4051,7 @@ active: connecting to the peer
           <li>Line 1: <code>0xfefefefe</code>. GCC's <code>-ftrivial-auto-var-init=pattern</code> filled <code>flags</code> with <code>0xFE</code> bytes at its declaration. Nothing wrote it after that.</li>
           <li>Line 2: still "active". <code>0xfefefefe &amp; 0x1</code> is 0. A pattern doesn't force a crash; it makes the value recognizable.</li>
         </ol>
-        <p>In a core from such a build, <code>p/x *s</code> would show <code>flags = 0xfefefefe</code>. No code path writes that value. Look for the variable it was copied from, in the function that set the field.</p>
+        <p>Not captured here: with no crash, you'd need <code>gcore</code> on the live process to get a core at all. In a core from such a build, <code>p/x *s</code> would show <code>flags = 0xfefefefe</code>. No code path writes that value. Look for the variable it was copied from, in the function that set the field.</p>
       </div>
     </div>
     <div class="info green"><strong>Symptom → class:</strong> a value that changes between builds, or reads 0xfefefefe / 0xaaaaaaaa → uninitialized memory</div>
@@ -4288,7 +4293,7 @@ Shadow bytes around the buggy address:
       <li>With <code>size</code> 0, <code>-size</code> is 0 too. Every non-NULL <code>p</code> is greater than 0, so the check fires.</li>
       <li>The next check, <code>size</code> below the minimum → <code>free(): invalid size</code>, would describe the problem better. It never runs.</li>
     </ul>
-    <div class="info yellow"><strong>Read glibc's message as "this chunk's header is wrong".</strong> The message names the check that failed, not the bug (<a onclick="go('f3-allocator')">Ch 3</a> has the full table). Dump the header with <code>x/4gx ptr-16</code>, then look one chunk down: an overflow almost always comes from the chunk just below the damaged header.</div>
+    <div class="info yellow"><strong>Read glibc's message as "this chunk's header is wrong".</strong> The message names the check that failed, not the bug (<a onclick="go('f3-allocator')">Ch 3</a> has the full table). Dump the header with <code>x/4gx (char *)ptr - 16</code>, then look one chunk down: an overflow almost always comes from the chunk just below the damaged header.</div>
     <details class="src"><summary>gdb/03-heap-overflow-core.gdb — full source</summary><button class="copy">Copy</button><pre><code><!--SRC:gdb/03-heap-overflow-core.gdb--># 03-heap-overflow-core.gdb — free() aborted: look at the chunk header it read.
 #   gdb -q -batch -nx -x gdb/03-heap-overflow-core.gdb ./03-heap-overflow.plain cores/03-heap-overflow.plain.core
 set pagination off
@@ -4412,7 +4417,7 @@ Address 0x7f01e7500070 is located in stack of thread T0 at offset 48 in frame
           <li>Lines 3–5: in <code>strcpy</code>, called from <code>ctrl_set_hostname</code> line 16. That's the bug line, not the closing brace.</li>
           <li>Lines 7–10: the frame's layout as ASan built it. <code>host</code> is <code>[32, 48)</code>; the bad access is at offset 48, the first byte past it.</li>
           <li>Line 12: the shadow. <code>f1 f1 f1 f1</code> is the 32-byte left redzone, <code>00 00</code> is <code>host</code>, <code>[f3]</code> is the right redzone the copy ran into.</li>
-          <li>Line 12, first eight bytes: <code>f5</code>, stack-after-return. Those bytes belong to an earlier frame that has already returned; they are not part of this one.</li>
+          <li>Line 12, first eight shadow bytes (64 bytes of stack): <code>f5</code>, stack-after-return. The address <code>0x7f01e75…</code> isn't the thread stack (<code>bp</code> is <code>0x7ffd…</code>): ASan has put <code>host</code> in its fake stack, and <code>f5</code> marks a released fake-frame slot next to this one.</li>
           <li>Lines 14–16: legend entries for the stack values; <code>f2</code> (mid redzone) doesn't appear in this row, because the frame has only one object.</li>
         </ol>
       </div>
@@ -4421,7 +4426,7 @@ Address 0x7f01e7500070 is located in stack of thread T0 at offset 48 in frame
         <pre class="term"><code><!--CAP:04-stack-smash.plain-->*** stack smashing detected ***: terminated
 <!--/CAP:04-stack-smash.plain--></code></pre>
         <p>The core, from <code>make core-04-stack-smash</code>:</p>
-        <pre class="term"><code><!--CAP:04-stack-smash.core lines=5,15-19,23-35-->Program terminated with signal SIGABRT, Aborted.
+        <pre class="term"><code><!--CAP:04-stack-smash.core lines=5,15-19,23-36-->Program terminated with signal SIGABRT, Aborted.
 ⋯
 #6  0x00007ffff7edce69 in __GI___fortify_fail (msg=msg@entry=0x7ffff7f75796 &quot;stack smashing detected&quot;) at ./debug/fortify_fail.c:24
 #7  0x00007ffff7ede0f4 in __stack_chk_fail () at ./debug/stack_chk_fail.c:24
@@ -4441,7 +4446,8 @@ Address 0x7f01e7500070 is located in stack of thread T0 at offset 48 in frame
 
 --- candidate return addresses ---
 No symbol matches *(long*)($rbp+8).
-ctrl_set_hostname + 126 in section .text of /lab/04-stack-smash.plain<!--/CAP:04-stack-smash.core--></code></pre>
+ctrl_set_hostname + 126 in section .text of /lab/04-stack-smash.plain
+__libc_start_call_main + 122 in section .text of /lib/x86_64-linux-gnu/libc.so.6<!--/CAP:04-stack-smash.core--></code></pre>
         <ol class="callouts">
           <li>Lines 3–4: <code>__stack_chk_fail</code> reports through <code>__fortify_fail</code>, with the message <code>stack smashing detected</code>.</li>
           <li>Line 5: frame #8 is still right: <code>ctrl_set_hostname</code>, at line 19, the closing brace where the canary is checked. Its arguments are intact.</li>
@@ -4450,6 +4456,7 @@ ctrl_set_hostname + 126 in section .text of /lab/04-stack-smash.plain<!--/CAP:04
           <li>Lines 10–17: the frame, 16 words from <code>$rsp</code>. 17.3 decodes them.</li>
           <li>Line 20: <code>info symbol</code> on the saved return address finds nothing.</li>
           <li>Line 21: <code>info symbol $pc</code> works: <code>ctrl_set_hostname + 126</code>, just after its call to <code>__stack_chk_fail</code>.</li>
+          <li>Line 22: <code>info symbol</code> on the word at <code>…ebf8</code> (<code>$rbp+0x38</code>): <code>__libc_start_call_main + 122</code>. 17.4 explains why that word matters.</li>
         </ol>
       </div>
     </div>
@@ -4486,11 +4493,11 @@ ctrl_set_hostname + 126 in section .text of /lab/04-stack-smash.plain<!--/CAP:04
     <h4 class="ph">In the dump (lines 14–17 of the core block)</h4>
     <ul>
       <li><strong>Line 15, <code>…ebe0</code>:</strong> <code>0x5555555592a0</code> and <code>0x555555556028</code>. The same two pointers as frame #8's <code>s</code> and <code>hostname</code>. They are the caller's locals, <code>s</code> and <code>from_peer</code>: the caller is <code>main</code>.</li>
-      <li><strong>Line 16, <code>…ebf0</code>:</strong> <code>0x7fffffffec90</code>, a stack address a little higher up, then <code>0x7ffff7dd01ca</code>, which falls between the libc addresses of <code>abort</code> and <code>raise</code> in the full backtrace. A stack address followed by a code address is the shape of a saved <code>rbp</code> and return address: <code>main</code>'s own frame record.</li>
+      <li><strong>Line 16, <code>…ebf0</code>:</strong> <code>0x7fffffffec90</code>, a stack address a little higher up, then <code>0x7ffff7dd01ca</code>. Line 22 resolves that to <code>__libc_start_call_main + 122</code>: the code that called <code>main</code>, just after the call. A stack address followed by a return address is the shape of a saved <code>rbp</code> and return address: <code>main</code>'s own frame record.</li>
     </ul>
     <h4 class="ph">Continue by hand</h4>
     <ul>
-      <li><code>x/2gx 0x7fffffffebf0</code>, then <code>x/2gx</code> at each saved <code>rbp</code> in turn, walks the rest of the chain.</li>
+      <li><code>x/2gx 0x7fffffffebf0</code>, then <code>x/2gx</code> at each saved <code>rbp</code> in turn, walks the rest of the chain. That works only while every frame keeps its frame pointer; libc's own frames may be built without one, and then the chain stops making sense there.</li>
       <li><code>info symbol</code> each return address. A real one follows a <code>call</code>: check with <code>x/2i &lt;addr&gt;-5</code>, for the common 5-byte direct call.</li>
       <li>Only the return address <em>into</em> <code>main</code> is lost, and the locals above already told you who the caller was.</li>
     </ul>
@@ -4505,6 +4512,7 @@ x/16gx $rsp
 echo \n--- candidate return addresses ---\n
 info symbol *(long*)($rbp+8)
 info symbol $pc
+info symbol *(long*)($rbp+0x38)
 <!--/SRC:gdb/04-stack-smash-core.gdb--></code></pre></details>
   </div>
 
@@ -4935,7 +4943,7 @@ p (unsigned long)job-&gt;buf == ((unsigned long)job &gt;&gt; 12)
     </ul>
     <h4 class="ph">A write after free is worse</h4>
     <ul>
-      <li>This lab only reads. A <em>write</em> to the first 8 bytes of a freed tcache chunk corrupts <code>next</code>. A later <code>malloc</code> of that size decodes it and may abort with <code>malloc(): unaligned tcache chunk detected</code>. The tcache is per thread, so that abort comes in the thread that freed the chunk, at its next <code>malloc</code> of that size.</li>
+      <li>This lab only reads. A <em>write</em> to the first 8 bytes of a freed tcache chunk corrupts <code>next</code>. A later <code>malloc</code> of that size decodes it and may abort with <code>malloc(): unaligned tcache chunk detected</code>. The tcache is per thread, so that abort comes in the thread that freed the chunk, at a later <code>malloc</code> of that size: usually the one after the malloc that gets the chunk back, because the corrupted <code>next</code> is only checked once it becomes the bin head.</li>
       <li>That abort is the allocator noticing, not the bug. Treat it like Ch 16's header damage: find who wrote the freed chunk.</li>
     </ul>
   </details>
@@ -5127,7 +5135,7 @@ peak heap memory consumption: 189.82K
 ⋯
 total memory leaked: 116.10K<!--/CAP:07-leak.heaptrack--></code></pre>
     <ol class="callouts">
-      <li>Lines 2–3: 10,002 allocations, 2,001 not freed by exit.</li>
+      <li>Lines 2–3: 10,002 allocations, 2,001 not freed by exit. That's one allocation more than Memcheck counted in 20.3: an allocation made and freed outside the lab's code (it's neither leaked nor temporary). Different tools hook in at different points, so don't expect their totals to match to the last call.</li>
       <li>Line 4: 8,000 <em>temporary</em> allocations: freed right after they were made, with no other allocation in between. The packet buffers. Not a leak, but in a hot path, a cost.</li>
       <li>Lines 7–17: 2,000 of the unfreed blocks: <code>session_new</code> from <code>session_open</code>, as before.</li>
       <li>Lines 19–20: the 2,001st, 4.10K from stdio: <code>stdout</code>'s buffer, made by <code>main</code>'s <code>printf</code> (stack trimmed). LSan didn't count it, because libc's <code>stdout</code> still points to it; heaptrack counts anything unfreed at exit. It's allocated once, so it isn't growth.</li>
@@ -5215,7 +5223,7 @@ expected=4000000 actual=4000000 lost=0
           <li>Line 13: two contexts, the read side and the write side of the same <code>++</code>.</li>
         </ol>
       </div>
-      <div class="ab-b">
+      <div class="ab-b" data-label="No crash, no core">
         <p>No crash, no report. Just a number that's wrong:</p>
         <pre class="term"><code><!--CAP:08-race.lost-updates-->expected=4000000 actual=1458198 lost=2541802
 <!--/CAP:08-race.lost-updates--></code></pre>
@@ -5980,9 +5988,9 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <table class="tbl">
       <thead><tr><th>Symptom → class</th><th>Ch</th><th>Path A: it reproduces</th><th>Path B: only a core</th></tr></thead>
       <tbody>
-        <tr><td>Symptom → class: SIGSEGV at a small address (&lt; 0x1000), or rip = 0 → NULL dereference</td><td><a onclick="go('b1-null')">14</a></td><td>The <code>asan</code> build: UBSan names the NULL member access, ASan the zero-page read</td><td><code>bt</code>, <code>p $_siginfo._sifields._sigfault.si_addr</code>, <code>x/i $pc</code>; map the offset to a field with <code>ptype /o</code></td></tr>
+        <tr><td>Symptom → class: SIGSEGV at a small address (&lt; 0x10000, below <code>vm.mmap_min_addr</code>), or rip = 0 → NULL dereference</td><td><a onclick="go('b1-null')">14</a></td><td>The <code>asan</code> build: UBSan names the NULL member access, ASan the zero-page read</td><td><code>bt</code>, <code>p $_siginfo._sifields._sigfault.si_addr</code>, <code>x/i $pc</code>; map the offset to a field with <code>ptype /o</code></td></tr>
         <tr><td>Symptom → class: a value that changes between builds, or reads 0xfefefefe / 0xaaaaaaaa → uninitialized memory</td><td><a onclick="go('b2-uninit')">15</a></td><td>Memcheck <code>--track-origins=yes</code> on the plain build, or the <code>msan</code> build</td><td>Usually no core. If the shipped build used <code>-ftrivial-auto-var-init=pattern</code>, <code>p/x *s</code> and look for <code>0xfe</code> (GCC) or <code>0xaa</code> (Clang) bytes</td></tr>
-        <tr><td>Symptom → class: SIGABRT inside free() or malloc(): "invalid pointer", "invalid size", "corrupted size" → heap overflow onto the next chunk's header (or freeing a non-heap pointer)</td><td><a onclick="go('b3-heap-overflow')">16</a></td><td>The <code>asan</code> build: heap redzones stop the write itself</td><td><code>malloc_printerr</code>'s <code>str</code> in <code>bt</code>; <code>x/8gx ptr-16</code> on the freed pointer; read the chunk just below the damaged header</td></tr>
+        <tr><td>Symptom → class: SIGABRT inside free() or malloc(): "invalid pointer", "invalid size", "corrupted size" → heap overflow onto the next chunk's header (or freeing a non-heap pointer)</td><td><a onclick="go('b3-heap-overflow')">16</a></td><td>The <code>asan</code> build: heap redzones stop the write itself</td><td><code>malloc_printerr</code>'s <code>str</code> in <code>bt</code>; <code>x/8gx (char *)ptr - 16</code> on the freed pointer; read the chunk just below the damaged header</td></tr>
         <tr><td>Symptom → class: "stack smashing detected", or a backtrace of ?? frames at ASCII-looking addresses → stack buffer overflow</td><td><a onclick="go('b4-stack-smash')">17</a></td><td>The <code>asan</code> build: stack redzones catch the copy</td><td>The last sane frame in <code>bt</code>; <code>x/16gx $rsp</code>; <code>info symbol</code> on each saved return address</td></tr>
         <tr><td>Symptom → class: SIGABRT with "free(): double free detected in tcache 2" → double free</td><td><a onclick="go('b5-double-free')">18</a></td><td>The <code>asan</code> build: the second free, the first free and the allocation, as three stacks</td><td>The frame of the second <code>free</code>; who else still holds the pointer; the chunk's tcache key word</td></tr>
         <tr><td>Symptom → class: SIGSEGV through a pointer field that equals its own object's address &gt;&gt; 12 → use-after-free</td><td><a onclick="go('b6-uaf')">19</a></td><td>The <code>asan</code> build (alloc, free and use stacks), or Memcheck on the plain build</td><td><code>p/x (unsigned long)obj &gt;&gt; 12</code> against the field; then list every <code>free</code> of that type</td></tr>
@@ -5999,7 +6007,7 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <table class="tbl">
       <thead><tr><th>You see</th><th>Likely class</th><th>Path A</th><th>Path B</th></tr></thead>
       <tbody>
-        <tr><td>SIGSEGV where <code>si_addr</code> reads 0, but the pointer isn't NULL: it's eight printable bytes</td><td>A non-canonical pointer made of data: an overflow, or a freed object reused by another type (<a onclick="go('f1-layout')">Ch 1</a>, <a onclick="go('b10-refcount-uaf')">Ch 23</a>)</td><td>The <code>asan</code> build</td><td><code>x/gx</code> the pointer and read it as ASCII, bytes right to left; then read the object as each same-sized type</td></tr>
+        <tr><td>SIGSEGV where <code>si_addr</code> reads 0, but the pointer isn't NULL: it's eight printable bytes</td><td>A non-canonical pointer made of data: an overflow, or a freed object reused by another type (<a onclick="go('f1-layout')">Ch 1</a>, <a onclick="go('b10-refcount-uaf')">Ch 23</a>)</td><td>The <code>asan</code> build</td><td><code>p/x</code> the field (or <code>x/gx &amp;field</code>) and read it as ASCII, bytes right to left; then read the object as each same-sized type</td></tr>
         <tr><td>A TSan or Helgrind lock-order report, but nothing ever hung</td><td>A latent lock-order deadlock (<a onclick="go('b9-deadlock')">Ch 22</a>)</td><td>Check both stacks against your documented lock order; fix the path that breaks it</td><td>Nothing to read until it hangs. Then as above: <code>gcore</code> and mutex owners</td></tr>
       </tbody>
     </table>
@@ -6010,6 +6018,11 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <a onclick="go('map')">→ The Map</a>
     <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
     <a onclick="go('x1-core-to-repro')">→ Ch 24. From a One-Shot Core to a Reproducer</a>
+    <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
+    <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
+    <a onclick="go('ref-labkit')">→ Lab Kit</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
+    <a onclick="go('ref-reading')">→ Further Reading</a>
   </div>
 </section>
 
@@ -6031,7 +6044,7 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
         <tr><td>Threads</td><td><code>info threads</code>, <code>thread 4</code>, <code>thread apply all bt</code></td></tr>
         <tr><td>Frames</td><td><code>bt full</code>, <code>frame 2</code>, <code>up</code>, <code>down</code>, <code>frame function table_dump</code>, <code>info frame</code>, <code>info locals</code></td></tr>
         <tr><td>Registers and the fault</td><td><code>info registers</code>, <code>x/i $pc</code>, <code>p $_siginfo._sifields._sigfault.si_addr</code></td></tr>
-        <tr><td>Memory</td><td><code>x/8gx ptr-16</code> (a chunk with its header), <code>x/16gx $rsp</code>, <code>x/16a $rsp</code>, <code>x/s</code>, <code>find /w start, end, value</code></td></tr>
+        <tr><td>Memory</td><td><code>x/8gx (char *)ptr - 16</code> (a chunk with its header), <code>x/16gx $rsp</code>, <code>x/16a $rsp</code>, <code>x/s</code>, <code>find /w start, end, value</code></td></tr>
         <tr><td>Types and addresses</td><td><code>ptype /o struct session</code>, <code>p/x *s</code>, <code>p *(struct pktbuf *)s</code>, <code>info symbol addr</code></td></tr>
         <tr><td>Where an address lives</td><td><code>info proc mappings</code> (live; file-backed only on a core), <code>info files</code>, <code>maint info sections</code>, <code>info sharedlibrary</code></td></tr>
         <tr><td>Decode a safe-linked pointer</td><td><code>p/x ((unsigned long)p &gt;&gt; 12) ^ *(unsigned long *)p</code></td></tr>
@@ -6133,6 +6146,10 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
     <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
     <a onclick="go('b10-refcount-uaf')">→ Ch 23. Boss Level</a>
+    <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-labkit')">→ Lab Kit</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
+    <a onclick="go('ref-reading')">→ Further Reading</a>
   </div>
 </section>
 
@@ -6189,6 +6206,11 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <a onclick="go('t1-gdb-live')">→ Ch 7. GDB on a Live Process</a>
     <a onclick="go('t3-gdb-core')">→ Ch 9. GDB on a Core</a>
     <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
+    <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
+    <a onclick="go('ref-labkit')">→ Lab Kit</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
+    <a onclick="go('ref-reading')">→ Further Reading</a>
   </div>
 </section>
 
@@ -6263,6 +6285,11 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
     <a onclick="go('f4-instrumentation')">→ Ch 4. Instrumentation Models</a>
     <a onclick="go('t4-asan')">→ Ch 10. The ASan Family</a>
     <a onclick="go('ref-labkit')">→ Lab Kit</a>
+    <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
+    <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
+    <a onclick="go('ref-reading')">→ Further Reading</a>
   </div>
 </section>
 
@@ -6508,6 +6535,7 @@ f3-chunks.gdb	0x0000000000000051
 f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 01-null.core	SIGSEGV
 01-null.core	Program terminated with signal SIGSEGV
+01-null.core	^\$1 = \(void \*\) 0x8$
 01-null.core	= \(struct session \*\) 0x0$
 01-null.field.core	0x18
 01-null.field.core	/\* 0x0018 .*peer
@@ -6531,6 +6559,7 @@ f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 04-stack-smash.plain	stack smashing detected
 04-stack-smash.asan	stack-buffer-overflow
 04-stack-smash.core	__stack_chk_fail
+04-stack-smash.core	^__libc_start_call_main \+ [0-9]+ in section \.text
 05-double-free.plain	free\(\): double free detected in tcache 2
 05-double-free.asan	attempting double-free
 05-double-free.asan	freed by thread
@@ -6763,6 +6792,11 @@ exit $run_rc
   <div class="see-also">
     <a onclick="go('welcome')">→ Welcome</a>
     <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
+    <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
+    <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
+    <a onclick="go('ref-reading')">→ Further Reading</a>
   </div>
 </section>
 
@@ -6777,7 +6811,7 @@ exit $run_rc
       <tbody>
         <tr><td>A bits / V bits</td><td>Memcheck's shadow state: an A bit says whether a byte is addressable, a V bit whether a bit is defined (<a onclick="go('f4-instrumentation')">Ch 4</a>).</td></tr>
         <tr><td>All-stop mode</td><td>GDB's default: when one thread stops, every thread stops, and they all resume together (<a onclick="go('t1-gdb-live')">Ch 7</a>).</td></tr>
-        <tr><td>Arena</td><td>A malloc heap with its own bins. The main arena uses the <code>brk</code> heap; other threads get mmap'd arenas, whose chunks carry the A bit (<a onclick="go('f3-allocator')">Ch 3</a>).</td></tr>
+        <tr><td>Arena</td><td>A malloc heap with its own bins. The main arena uses the <code>brk</code> heap; other threads get mmap'd arenas, whose chunks carry the A (non-main-arena, <code>0x4</code>) flag bit in their size field: not Memcheck's A bit (<a onclick="go('f3-allocator')">Ch 3</a>).</td></tr>
         <tr><td>ASan</td><td>AddressSanitizer: compile-time instrumentation with shadow memory, redzones and quarantine. Finds overflows, use-after-free and double free (<a onclick="go('t4-asan')">Ch 10</a>).</td></tr>
         <tr><td>ASLR</td><td>Address-space layout randomization: the heap, stacks, libraries and a PIE binary move on every run. GDB turns it off for programs it starts (<a onclick="go('f1-layout')">Ch 1</a>).</td></tr>
         <tr><td>Bins</td><td>The allocator's free lists: tcache, fastbins, the unsorted bin, small bins and large bins (<a onclick="go('f3-allocator')">Ch 3</a>).</td></tr>
@@ -6865,6 +6899,11 @@ exit $run_rc
   <div class="see-also">
     <a onclick="go('map')">→ The Map</a>
     <a onclick="go('ref-reading')">→ Further Reading</a>
+    <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
+    <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
+    <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
+    <a onclick="go('ref-labkit')">→ Lab Kit</a>
   </div>
 </section>
 
@@ -6901,6 +6940,11 @@ exit $run_rc
   <div class="see-also">
     <a onclick="go('welcome')">→ Welcome</a>
     <a onclick="go('ref-decision')">→ Decision Matrix</a>
+    <a onclick="go('ref-cheat')">→ Cheat Sheet</a>
+    <a onclick="go('ref-gdb-lldb')">→ GDB ↔ LLDB Table</a>
+    <a onclick="go('ref-flags')">→ Build-Flag Matrix</a>
+    <a onclick="go('ref-labkit')">→ Lab Kit</a>
+    <a onclick="go('ref-glossary')">→ Glossary A–Z</a>
   </div>
 </section>
 <!--/PART:ref-->
