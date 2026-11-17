@@ -1,0 +1,8 @@
+# id<TAB>POSIX ERE, matched against the capture body (the # src / # cmd header is skipped).
+# One or more lines per id; every regex must match somewhere in captures/<id>.txt.
+00-env	gcc .*13\.
+00-env	clang version 18
+00-env	GNU gdb
+00-env	valgrind-3\.2
+00-env	rr version
+00-env	rr-smoke\((perfmon|sys_admin|privileged|none)\)

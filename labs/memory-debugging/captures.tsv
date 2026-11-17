@@ -1,0 +1,2 @@
+# id<TAB>sources (comma-separated, "-" = none)<TAB>shell command, run in /lab by run-capture.sh
+00-env	-	gcc --version | head -1; clang --version | head -1; gdb --version | head -1; valgrind --version; rr --version; ldd --version | head -1; uname -m; echo "ulimit -c: $(ulimit -c)"; echo "rr-smoke($(head -1 .rr-caps 2>/dev/null || echo none))"
