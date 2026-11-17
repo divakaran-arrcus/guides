@@ -1,13 +1,18 @@
 #!/usr/bin/env node
-// Splice .build/<slug>/<part>.html fragments into gen-ai-<slug>-guide.html between <!--PART:x--> markers.
+// Splice .build/<slug>/<part>.html fragments into <slug>-guide.html (or gen-ai-<slug>-guide.html) between <!--PART:x--> markers.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveGuideHtml } from './lib/guide-path.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SLUG = process.argv[2];
-if (!SLUG) { console.error('usage: assemble-guide.mjs <slug>'); process.exit(2); }
-const HTML = join(ROOT, `gen-ai-${SLUG}-guide.html`);
+const argv = process.argv.slice(2);
+const oi = argv.indexOf('--out');
+if (oi !== -1 && !argv[oi + 1]) { console.error('--out needs a file'); process.exit(2); }
+const OUT = oi !== -1 ? argv[oi + 1] : null;
+const SLUG = argv.find((a, i) => !a.startsWith('--') && i !== oi + 1);
+if (!SLUG) { console.error('usage: assemble-guide.mjs <slug> [--out <file>]'); process.exit(2); }
+const HTML = resolveGuideHtml(ROOT, SLUG);
 const DIR = join(ROOT, '.build', SLUG);
 
 let html = readFileSync(HTML, 'utf8');
@@ -28,5 +33,5 @@ for (const id of opens) {
   const body = readFileSync(join(DIR, `${id}.html`), 'utf8').trim();
   html = html.slice(0, i + open.length) + '\n' + body + '\n' + html.slice(j);
 }
-writeFileSync(HTML, html);
-console.log(`assembled ${opens.length} fragment(s) into ${HTML}`);
+writeFileSync(OUT ?? HTML, html);
+console.log(`assembled ${opens.length} fragment(s) into ${OUT ?? HTML}`);
