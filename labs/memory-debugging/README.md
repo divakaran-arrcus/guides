@@ -81,4 +81,25 @@ checks, syncs `captures/` back and runs the repo's leak gate over them.
 `remote.sh --rr-probe` finds the weakest flag that lets `rr record` work on that host. It records
 the result in `.rr-caps`, a local file that is not committed.
 
+## Caveats
+
+- **You need an x86-64 Linux host or VM.** The captures come from x86-64, and addresses, frame
+  layouts and sanitizer reports are x86-64 specific. On arm64 (Apple Silicon) or under emulated
+  Docker they won't match, and rr and Valgrind may not run at all.
+- **Files made by the container are root-owned on a Linux host.** `remote.sh` fixes that for
+  you. When you run `docker` by hand, finish with the same step, from this directory:
+
+  ```sh
+  docker run --rm -v "$PWD":/lab mdg-lab chown -R "$(id -u):$(id -g)" /lab
+  ```
+
+- **`remote.sh` needs a leak-term list.** Its last step runs the repo's leak gate over the
+  captures. The list is read from `$(git rev-parse --git-common-dir)/info/leak-terms`, or from the
+  file named by `$LEAK_TERMS`. Without a readable, non-empty list the gate exits 2 and `remote.sh`
+  fails, by design. If you work outside the original project, provide a list of your own private
+  terms (hostnames, addresses, logins you don't want published), one pattern per line.
+- **`check.sh` normally runs inside the container**, right after `run-capture.sh`. It only reads
+  `captures/` and `expect.tsv`, so on a Mac (bash 3.2) it also works from a plain shell, with a list
+  of ids or with none.
+
 <!-- cspell:words apport asan coredump heaptrack msan perfmon pktd reftrace seccomp tsan valgrind -->

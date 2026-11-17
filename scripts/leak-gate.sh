@@ -1,7 +1,7 @@
 #!/bin/sh
 # Leak gate: scan files (or staged additions) for forbidden terms.
 # usage: leak-gate.sh --staged | <files...>
-# exit: 0 clean, 1 hit, 2 error (missing list/file, grep or git failure)
+# exit: 0 clean, 1 hit, 2 error (missing or empty list, missing file, grep or git failure)
 # Patterns: $LEAK_TERMS, else <git-common-dir>/info/leak-terms. If LAB_HOST (user@addr)
 # is set, its two parts are also checked, word-bounded. Matched text is never printed,
 # only file:line, so the list cannot leak through this script's output.
@@ -16,6 +16,8 @@ else
   list=$common/info/leak-terms
 fi
 [ -r "$list" ] || { echo "leak-gate: term list not readable" >&2; exit 2; }
+# An empty or whitespace-only list would match nothing (or, with blank lines, everything): fail closed.
+grep -q '[^[:space:]]' "$list" || { echo "leak-gate: term list is empty (fail closed)" >&2; exit 2; }
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/leakgate.XXXXXX") || exit 2
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM

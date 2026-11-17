@@ -10,13 +10,14 @@ TSV=expect.tsv
 exp() { grep -v -e '^#' -e '^[[:space:]]*$' "$TSV"; }
 
 if [ $# -eq 0 ]; then
-  mapfile -t ids < <(exp | cut -f1 | awk '!seen[$0]++')
+  ids=()  # bash 3.2 (macOS) has no mapfile
+  while IFS= read -r id; do ids+=("$id"); done < <(exp | cut -f1 | awk '!seen[$0]++')
 else
   ids=("$@")
 fi
 
 rc=0
-for id in "${ids[@]}"; do
+for id in ${ids[@]+"${ids[@]}"}; do
   f=captures/$id.txt
   if [ ! -f "$f" ]; then echo "FAIL $id: no captures/$id.txt"; rc=1; continue; fi
   body=$(awk 'h && /^# (src|cmd) /{next} {h=0; print}' h=1 "$f")

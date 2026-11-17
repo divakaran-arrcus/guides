@@ -134,3 +134,20 @@ test('CAP id charset excludes "/": CAP:a/b is not a CAP block', () => {
   assert.deepEqual(r.errors, []);
   assert.equal(r.html, page);
 });
+
+test('SRC path with .. segment or absolute path is an error (write and check)', () => {
+  const dir = lab({ 'a.txt': 'x\n' });
+  for (const p of ['../a.txt', 'gdb/../a.txt', '/etc/hosts']) {
+    for (const mode of ['write', 'check']) {
+      const r = syncHtml(src(p), dir, mode);
+      assert.equal(r.errors.length, 1, `${p} ${mode}`);
+      assert.match(r.errors[0], /unsafe|\.\./);
+    }
+  }
+});
+test('CLI: --write and --check together exits 2', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const script = join(import.meta.dirname, '..', 'sync-labs.mjs');
+  const r = spawnSync('node', [script, 'memory-debugging', '--write', '--check'], { encoding: 'utf8' });
+  assert.equal(r.status, 2);
+});

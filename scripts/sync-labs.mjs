@@ -32,6 +32,7 @@ const sha256 = buf => createHash('sha256').update(buf).digest('hex');
 const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
 
 function expectedSrc(path, spec, labsDir) {
+  if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
   const f = join(labsDir, path);
   if (!existsSync(f)) return { error: `SRC ${path}: file not found in ${labsDir}` };
   return { body: escapeHtml(selectLines(readFileSync(f, 'utf8'), spec)) };
@@ -91,6 +92,10 @@ export function syncHtml(html, labsDir, mode) {
 function main() {
   const args = process.argv.slice(2);
   const slug = args.find(a => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--labs');
+  if (args.includes('--write') && args.includes('--check')) {
+    console.error('sync-labs: --write and --check are mutually exclusive');
+    process.exit(2);
+  }
   const mode = args.includes('--write') ? 'write' : args.includes('--check') ? 'check' : null;
   const li = args.indexOf('--labs');
   if (!slug || !mode || (li !== -1 && !args[li + 1])) {

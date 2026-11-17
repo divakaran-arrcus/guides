@@ -49,6 +49,9 @@ for id in "$@"; do
   [[ $id =~ ^[A-Za-z0-9._-]+$ ]] || { echo "remote.sh: bad capture id: $id" >&2; exit 2; }
 done
 ids="$*"
+if [ -n "${CAP_TIMEOUT:-}" ]; then
+  [[ $CAP_TIMEOUT =~ ^[1-9][0-9]*$ ]] || { echo "remote.sh: CAP_TIMEOUT must be a positive integer (seconds), got: $CAP_TIMEOUT" >&2; exit 2; }
+fi
 caps=$(sed -n 2p .rr-caps 2>/dev/null || true)
 
 up; build

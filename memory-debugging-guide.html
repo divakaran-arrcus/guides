@@ -3074,6 +3074,7 @@ exit=0
       <li>Two atomic accesses never race with each other.</li>
       <li>Release and acquire create happens-before edges, exactly as in <a onclick="go('f5-memory-model')">Ch 5</a>. Relaxed atomics don't. So if a <em>relaxed</em> flag "publishes" plain data, TSan reports the plain data as racy. It's right.</li>
       <li>The lab casts a plain <code>uint64_t</code> to <code>_Atomic</code> for brevity. Real code should declare the field <code>_Atomic</code>, so no plain access can sneak in.</li>
+      <li>Strictly, casting a plain <code>uint64_t *</code> to <code>_Atomic uint64_t *</code> is not conforming C11. It works with GCC and Clang on x86-64. In real code, declare the field <code>_Atomic</code> or call <code>__atomic_fetch_add(&amp;x, 1, __ATOMIC_RELAXED)</code>, as <code>pktd.h</code> does.</li>
     </ul>
     <h4 class="ph">What it doesn't</h4>
     <ul>
@@ -6323,7 +6324,7 @@ replay matches lossy recording: actual=3000000<!--/CAP:x1.rr-chaos--></code></pr
         <tr><td><code>gdb/07-leak-core.gdb</code></td><td><a onclick="go('b7-leak')">Ch 20</a></td></tr>
         <tr><td><code>gdb/09-deadlock-core.gdb</code></td><td><a onclick="go('b9-deadlock')">Ch 22</a></td></tr>
         <tr><td><code>gdb/10-core.gdb</code></td><td><a onclick="go('b10-refcount-uaf')">Ch 23</a></td></tr>
-        <tr><td><code>README.md</code>, <code>captures.tsv</code>, <code>run-capture.sh</code>, <code>expect.tsv</code>, <code>check.sh</code>, <code>remote.sh</code></td><td>Below</td></tr>
+        <tr><td><code>README.md</code>, <code>captures.tsv</code>, <code>run-capture.sh</code>, <code>expect.tsv</code>, <code>check.sh</code>, <code>remote.sh</code>, <code>.gitignore</code></td><td>Below</td></tr>
       </tbody>
     </table>
     <div class="info">To rebuild the kit on disk, copy each block into a file of the same name in one directory, with the <code>gdb/</code> scripts in a <code>gdb/</code> subdirectory, and <code>chmod +x</code> the three <code>.sh</code> files. The <code>captures/</code> directory isn't reproduced here: every capture is already in the chapter that uses it.</div>
@@ -6414,6 +6415,27 @@ each capture against its regexes in `expect.tsv`.
 checks, syncs `captures/` back and runs the repo&#39;s leak gate over them.
 `remote.sh --rr-probe` finds the weakest flag that lets `rr record` work on that host. It records
 the result in `.rr-caps`, a local file that is not committed.
+
+## Caveats
+
+- **You need an x86-64 Linux host or VM.** The captures come from x86-64, and addresses, frame
+  layouts and sanitizer reports are x86-64 specific. On arm64 (Apple Silicon) or under emulated
+  Docker they won&#39;t match, and rr and Valgrind may not run at all.
+- **Files made by the container are root-owned on a Linux host.** `remote.sh` fixes that for
+  you. When you run `docker` by hand, finish with the same step, from this directory:
+
+  ```sh
+  docker run --rm -v &quot;$PWD&quot;:/lab mdg-lab chown -R &quot;$(id -u):$(id -g)&quot; /lab
+  ```
+
+- **`remote.sh` needs a leak-term list.** Its last step runs the repo&#39;s leak gate over the
+  captures. The list is read from `$(git rev-parse --git-common-dir)/info/leak-terms`, or from the
+  file named by `$LEAK_TERMS`. Without a readable, non-empty list the gate exits 2 and `remote.sh`
+  fails, by design. If you work outside the original project, provide a list of your own private
+  terms (hostnames, addresses, logins you don&#39;t want published), one pattern per line.
+- **`check.sh` normally runs inside the container**, right after `run-capture.sh`. It only reads
+  `captures/` and `expect.tsv`, so on a Mac (bash 3.2) it also works from a plain shell, with a list
+  of ids or with none.
 
 &lt;!-- cspell:words apport asan coredump heaptrack msan perfmon pktd reftrace seccomp tsan valgrind --&gt;
 <!--/SRC:README.md--></code></pre></details>
@@ -6696,13 +6718,14 @@ TSV=expect.tsv
 exp() { grep -v -e &#39;^#&#39; -e &#39;^[[:space:]]*$&#39; &quot;$TSV&quot;; }
 
 if [ $# -eq 0 ]; then
-  mapfile -t ids &lt; &lt;(exp | cut -f1 | awk &#39;!seen[$0]++&#39;)
+  ids=()  # bash 3.2 (macOS) has no mapfile
+  while IFS= read -r id; do ids+=(&quot;$id&quot;); done &lt; &lt;(exp | cut -f1 | awk &#39;!seen[$0]++&#39;)
 else
   ids=(&quot;$@&quot;)
 fi
 
 rc=0
-for id in &quot;${ids[@]}&quot;; do
+for id in ${ids[@]+&quot;${ids[@]}&quot;}; do
   f=captures/$id.txt
   if [ ! -f &quot;$f&quot; ]; then echo &quot;FAIL $id: no captures/$id.txt&quot;; rc=1; continue; fi
   body=$(awk &#39;h &amp;&amp; /^# (src|cmd) /{next} {h=0; print}&#39; h=1 &quot;$f&quot;)
@@ -6768,6 +6791,9 @@ for id in &quot;$@&quot;; do
   [[ $id =~ ^[A-Za-z0-9._-]+$ ]] || { echo &quot;remote.sh: bad capture id: $id&quot; &gt;&amp;2; exit 2; }
 done
 ids=&quot;$*&quot;
+if [ -n &quot;${CAP_TIMEOUT:-}&quot; ]; then
+  [[ $CAP_TIMEOUT =~ ^[1-9][0-9]*$ ]] || { echo &quot;remote.sh: CAP_TIMEOUT must be a positive integer (seconds), got: $CAP_TIMEOUT&quot; &gt;&amp;2; exit 2; }
+fi
 caps=$(sed -n 2p .rr-caps 2&gt;/dev/null || true)
 
 up; build
@@ -6787,6 +6813,18 @@ set -e
 [ $leak_rc -eq 0 ] || { echo &quot;remote.sh: leak gate failed (exit $leak_rc)&quot; &gt;&amp;2; exit 1; }
 exit $run_rc
 <!--/SRC:remote.sh--></code></pre></details>
+    <details class="src"><summary>.gitignore — full source</summary><button class="copy">Copy</button><pre><code><!--SRC:.gitignore--># Build products and run state; regenerated by make / remote.sh.
+cores/
+*.plain
+*.asan
+*.tsan
+*.msan
+*.pattern
+*.stripped
+*.reftrace
+*.debug
+.rr-caps
+<!--/SRC:.gitignore--></code></pre></details>
   </div>
 
   <div class="see-also">

@@ -127,7 +127,7 @@ Target: about 24 chapters plus front matter and reference. This is the largest g
 
 ## 7. Labs
 
-- `labs/memory-debugging/`: one `.c` file per lab (plus any shared `pktd.h`), a `Makefile` with targets per lab × instrumentation (`make uaf-asan`, `make race-tsan`, `make null-plain`, …), and a `Dockerfile` for the Linux environment (Ubuntu LTS with GCC, Clang, GDB, Valgrind, rr, heaptrack).
+- `labs/memory-debugging/`: one `.c` file per lab (plus any shared `pktd.h`), a `Makefile` with targets per lab × instrumentation (`make 06-uaf.asan`, `make 08-race.tsan`, `make 01-null.plain`, …, plus `make core-<lab>` for GDB-written cores), and a `Dockerfile` for the Linux environment (Ubuntu LTS with GCC, Clang, GDB, Valgrind, rr, heaptrack).
 - **Every lab file is embedded whole in the HTML** (`.c`, `pktd.h`, `Makefile`, `Dockerfile`), each in a collapsed full-source block with a copy button, so the guide works as a complete offline lab kit (repo rule: self-contained). Chapters show excerpts inline; the full file sits beneath. The labs are roughly 15 short files, about 30–40 KB in total, so the cost in page size is acceptable. *(Claude's call, from the builder check.)*
 - **Sync check:** a small script (`scripts/check-lab-sync.mjs`) verifies every embedded full-source block is byte-identical to its file under `labs/`. It runs alongside cspell and the leak gate before every commit.
 - **Every piece of tool output in the guide is captured from a real run** in that environment, then trimmed and annotated. Addresses and PIDs will differ on the reader's machine; the guide says so once, up front.

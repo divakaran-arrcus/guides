@@ -59,3 +59,12 @@ test('--staged with a leaking added line -> 1', () => {
   assert.equal(run(['--staged'], { LEAK_TERMS: list }, repo).status, 1);
   rmSync(repo, { recursive: true, force: true });
 });
+
+test('empty term list -> 2 (fail closed)', () => {
+  const empty = join(tmp, 'empty-terms'); writeFileSync(empty, '');
+  assert.equal(run([file('ec.txt', 'anything\n')], { LEAK_TERMS: empty }).status, 2);
+});
+test('whitespace-only term list -> 2 (fail closed)', () => {
+  const ws = join(tmp, 'ws-terms'); writeFileSync(ws, '  \n\t\n\n');
+  assert.equal(run([file('wc.txt', 'anything\n')], { LEAK_TERMS: ws }).status, 2);
+});
