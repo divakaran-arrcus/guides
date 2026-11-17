@@ -17,6 +17,7 @@ f3-chunks.gdb	0x0000000000000051
 f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 01-null.core	SIGSEGV
 01-null.core	Program terminated with signal SIGSEGV
+01-null.core	^\$1 = \(void \*\) 0x8$
 01-null.core	= \(struct session \*\) 0x0$
 01-null.field.core	0x18
 01-null.field.core	/\* 0x0018 .*peer
@@ -40,6 +41,7 @@ f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 04-stack-smash.plain	stack smashing detected
 04-stack-smash.asan	stack-buffer-overflow
 04-stack-smash.core	__stack_chk_fail
+04-stack-smash.core	^__libc_start_call_main \+ [0-9]+ in section \.text
 05-double-free.plain	free\(\): double free detected in tcache 2
 05-double-free.asan	attempting double-free
 05-double-free.asan	freed by thread

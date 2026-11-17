@@ -8,3 +8,4 @@ x/16gx $rsp
 echo \n--- candidate return addresses ---\n
 info symbol *(long*)($rbp+8)
 info symbol $pc
+info symbol *(long*)($rbp+0x38)
