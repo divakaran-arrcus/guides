@@ -1,0 +1,9 @@
+# src 08-race.c cf1bcf685c30a76f72bb5be40bc1a891243324df9c2c091f1580027cccdb2813
+# cmd make -s 08-race.plain && for i in $(seq 200); do ./08-race.plain; done >/tmp/stress; echo "runs=$(wc -l </tmp/stress)"; grep -o 'actual=[0-9]*' /tmp/stress | sort | uniq -c | sort -rn | head -5; echo "distinct=$(grep -o 'actual=[0-9]*' /tmp/stress | sort -u | wc -l)"
+runs=200
+      1 actual=2555002
+      1 actual=2517622
+      1 actual=2505098
+      1 actual=2435327
+      1 actual=2417413
+distinct=200

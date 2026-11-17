@@ -1,0 +1,16 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# cmd make -s 10-refcount-uaf.plain && for i in 1 2 3 4 5; do ./10-refcount-uaf.plain >/tmp/run$i 2>&1; echo "rc=$?" >>/tmp/run$i; echo "run $i: $(tail -1 /tmp/run$i)"; done 2>/dev/null; echo "--- run 1 output:"; cat /tmp/run1; echo "unique=$(for i in 1 2 3 4 5; do md5sum </tmp/run$i; done | sort -u | wc -l)"
+run 1: rc=139
+run 2: rc=139
+run 3: rc=139
+run 4: rc=139
+run 5: rc=139
+--- run 1 output:
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+rc=139
+unique=1

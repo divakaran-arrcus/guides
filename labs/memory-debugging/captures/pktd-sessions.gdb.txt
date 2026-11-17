@@ -1,0 +1,24 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# src pktd-gdb.py e810db0ca107aa466668fa3c91cb5c67611d5775612ef59edc0982f1c2bea7f5
+# src gdb/pktd-sessions.gdb 9a21da8543186b77987dd3bee963f2ae808a1f8c2f03c379b5e707497f6b2e48
+# cmd make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/pktd-sessions.gdb ./10-refcount-uaf.plain
+Breakpoint 1 at 0x15bb: file 10-refcount-uaf.c, line 38.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff7da26c0 (LWP 76)]
+[New Thread 0x7ffff75a16c0 (LWP 77)]
+[Switching to Thread 0x7ffff7da26c0 (LWP 76)]
+
+Thread 2 "10-refcount-uaf" hit Breakpoint 1, control_ready () at 10-refcount-uaf.c:38
+38	__attribute__((noinline)) void control_ready(void) { __asm__ volatile("" ::: "memory"); }
+[ 1] 0x7ffff0000b70  live  refcnt=1 id=1 name=sess-1 peer=10.0.0.1:179
+[ 2] 0x7ffff0000bb0  live  refcnt=1 id=2 name=sess-2 peer=10.0.0.2:179
+[ 3] 0x7ffff0000bf0  live  refcnt=1 id=3 name=sess-3 peer=10.0.0.3:179
+[ 4] 0x7ffff0000c30  live  refcnt=1 id=4 name=sess-4 peer=10.0.0.4:179
+[ 5] 0x7ffff0000c70  live  refcnt=1 id=5 name=sess-5 peer=10.0.0.1:179
+[ 6] 0x7ffff0000cb0  live  refcnt=1 id=6 name=sess-6 peer=10.0.0.2:179
+[ 7] 0x7ffff0000cf0  live  refcnt=1 id=7 name=sess-7 peer=10.0.0.3:179
+[ 8] 0x7ffff0000d30  live  refcnt=1 id=8 name=sess-8 peer=10.0.0.4:179
+8 of 64 slots in use
+Kill the program being debugged? (y or n) [answered Y; input not from terminal]
+[Inferior 1 (process 73) killed]

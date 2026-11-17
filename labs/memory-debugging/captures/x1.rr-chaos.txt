@@ -1,0 +1,12 @@
+# src 08-race.c cf1bcf685c30a76f72bb5be40bc1a891243324df9c2c091f1580027cccdb2813
+# cmd make -s 08-race.plain && export _RR_TRACE_DIR=/tmp/rr && rm -rf /tmp/rr && for i in 1 2 3; do rr record --chaos ./08-race.plain 2>&1 | tee /tmp/rec$i; done; echo "--- rr replay -a (recording 3):"; rr replay -a 2>&1 | tee /tmp/rep; r=$(grep -o 'actual=[0-9]*' /tmp/rec3); p=$(grep -o 'actual=[0-9]*' /tmp/rep); [ -n "$r" ] && [ "$r" = "$p" ] && echo "replay matches recording 3: $p" || echo "replay MISMATCH: $r vs $p"
+expected=4000000 actual=4000000 lost=0
+expected=4000000 actual=3122579 lost=877421
+expected=4000000 actual=4000000 lost=0
+--- rr replay -a (recording 3):
+[ERROR ./src/TraceStream.cc:1167:read_mapped_region()] Metadata of /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 changed: replay divergence likely, but continuing anyway. inode: 8282807/8288449; mode: 33261/33261; uid: 0/0; gid: 0/0; size: 236616/236616; mtime: 1793899106/1793899106
+[ERROR ./src/TraceStream.cc:1167:read_mapped_region()] Metadata of /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 changed: replay divergence likely, but continuing anyway. inode: 8282807/8288449; mode: 33261/33261; uid: 0/0; gid: 0/0; size: 236616/236616; mtime: 1793899106/1793899106
+[ERROR ./src/TraceStream.cc:1167:read_mapped_region()] Metadata of /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 changed: replay divergence likely, but continuing anyway. inode: 8282807/8288449; mode: 33261/33261; uid: 0/0; gid: 0/0; size: 236616/236616; mtime: 1793899106/1793899106
+[ERROR ./src/TraceStream.cc:1167:read_mapped_region()] Metadata of /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 changed: replay divergence likely, but continuing anyway. inode: 8282807/8288449; mode: 33261/33261; uid: 0/0; gid: 0/0; size: 236616/236616; mtime: 1793899106/1793899106
+expected=4000000 actual=4000000 lost=0
+replay matches recording 3: actual=4000000

@@ -94,3 +94,54 @@ t2.build-id	stripped
 09-deadlock.gcore	__lll_lock_wait .*<table_lock>
 09-deadlock.gcore	^\$1 = [1-9][0-9]*$
 09-deadlock.gcore	^\$2 = [1-9][0-9]*$
+pktd-sessions.gdb	^Thread [0-9]+ "10-refcount-uaf" hit Breakpoint 1, control_ready \(\) at 10-refcount-uaf\.c:[0-9]+$
+pktd-sessions.gdb	^\[ 7\] 0x[0-9a-f]+  live  refcnt=1 id=7 name=sess-7 peer=10\.0\.0\.3:179$
+pktd-sessions.gdb	^8 of 64 slots in use$
+10.plain-x5	^run 5: rc=139$
+10.plain-x5	^\[ 6\] id=6 refcnt=1 name=sess-6 peer=10\.0\.0\.2:179$
+10.plain-x5	^unique=1$
+10.core	^Program terminated with signal SIGSEGV, Segmentation fault\.$
+10.core	^#0 +table_dump \(\) at /lab/pktd\.h:[0-9]+$
+10.core	^#1 +0x[0-9a-f]+ in control_main \(arg=0x0\) at 10-refcount-uaf\.c:[0-9]+$
+10.core	^\$1 = \{magic = 40, refcnt = 179, .*, peer = 0x504f4e4d4c4b4a49, name = "QRSTUVWXYZabcdefghijklm"\}$
+10.core	^\$2 = 0x28$
+10.core	^\$3 = \{len = 40, port = 179, ts = [0-9]+, data = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm"\}$
+10.core	^\[ 7\] 0x[0-9a-f]+  BAD MAGIC 0x00000028 refcnt=179 id=[0-9]+  \(freed or corrupt\?\)$
+10.asan	ERROR: AddressSanitizer: heap-use-after-free on address 0x[0-9a-f]+
+10.asan	^READ of size 8 at 0x[0-9a-f]+ thread T[0-9]+$
+10.asan	^ +#0 0x[0-9a-f]+ in table_dump /lab/pktd\.h:[0-9]+$
+10.asan	is located 24 bytes inside of 56-byte region
+10.asan	^freed by thread T[0-9]+ here:$
+10.asan	^ +#1 0x[0-9a-f]+ in session_put /lab/pktd\.h:[0-9]+$
+10.asan	^ +#2 0x[0-9a-f]+ in worker_main /lab/10-refcount-uaf\.c:[0-9]+$
+10.asan	^ +#1 0x[0-9a-f]+ in session_new /lab/pktd\.h:[0-9]+$
+10.watch	^Hardware watchpoint 2: -location session_table\[7\]->refcnt$
+10.watch	^#1 +0x[0-9a-f]+ in worker_main \(arg=0x2\) at 10-refcount-uaf\.c:[0-9]+$
+10.watch	^Old value = 2$
+10.watch	^#1 +0x[0-9a-f]+ in handle_timeout \(s=0x[0-9a-f]+\) at 10-refcount-uaf\.c:[0-9]+$
+10.watch	^#0 +tcache_put \(tc_idx=[0-9]+, chunk=0x[0-9a-f]+\) at \./malloc/malloc\.c:[0-9]+$
+10.watch	^#1 +_int_free \(
+10.watch	^New value = 179$
+10.watch	received signal SIGSEGV, Segmentation fault\.$
+10.rr	^rr record: rc=139$
+10.rr	received signal SIGSEGV, Segmentation fault\.$
+10.rr	Hardware watchpoint 1: -location s->refcnt$
+10.rr	^Old value = 179$
+10.rr	#0 +0x[0-9a-f]+ in tcache_put \(tc_idx=[0-9]+, chunk=0x[0-9a-f]+\) at \./malloc/malloc\.c:[0-9]+$
+10.rr	^#1 +_int_free \(
+10.rr	^#1 +0x[0-9a-f]+ in worker_main \(arg=0x2\) at 10-refcount-uaf\.c:[0-9]+$
+10.rr	^#1 +0x[0-9a-f]+ in handle_timeout \(s=0x[0-9a-f]+\) at 10-refcount-uaf\.c:[0-9]+$
+10.reftrace	^session 7: use after final put$
+10.reftrace	^ +#0 +N refcnt=1 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(control_main\+0x[0-9a-f]+\)
+10.reftrace	^ +#1 +G refcnt=2 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(worker_main\+0x[0-9a-f]+\)
+10.reftrace	^ +#2 +P refcnt=1 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(handle_timeout\+0x[0-9a-f]+\)
+10.reftrace	^ +#3 +P refcnt=0 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(worker_main\+0x[0-9a-f]+\)
+t2.stripped-core	^#0 +0x[0-9a-f]+ in \?\? \(\)$
+t2.stripped-core	^#1 +0x[0-9a-f]+ in \?\? \(\)$
+t2.stripped-core	^#0 +table_dump \(\) at /lab/pktd\.h:[0-9]+$
+t2.stripped-core	^#1 +0x[0-9a-f]+ in control_main \(arg=0x0\) at 10-refcount-uaf\.c:[0-9]+$
+t2.stripped-core	^#1 +0x[0-9a-f]+ in worker_main \(arg=0x[1-4]\) at 10-refcount-uaf\.c:[0-9]+$
+x1.stress	^runs=200$
+x1.stress	^distinct=([2-9]|[1-9][0-9]+)$
+x1.rr-chaos	^expected=4000000 actual=[0-9]+ lost=[0-9]+$
+x1.rr-chaos	^replay matches recording 3: actual=[0-9]+$

@@ -1,0 +1,13 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# cmd make -s 10-refcount-uaf.reftrace && ./10-refcount-uaf.reftrace
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+session 7: use after final put
+  #0  N refcnt=1 tid=433  ./10-refcount-uaf.reftrace(control_main+0x52)[0x55e8a6c07b0d]
+  #1  G refcnt=2 tid=435  ./10-refcount-uaf.reftrace(worker_main+0x56)[0x55e8a6c079f3]
+  #2  P refcnt=1 tid=436  ./10-refcount-uaf.reftrace(handle_timeout+0x4c)[0x55e8a6c0799a]
+  #3  P refcnt=0 tid=435  ./10-refcount-uaf.reftrace(worker_main+0x9e)[0x55e8a6c07a3b]
