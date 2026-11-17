@@ -1,0 +1,74 @@
+# src 09-deadlock.c 013fdbb2a8e7d94aa1c7b57205dad88fd7c22f59a6acb9bdec6d0e00d6ee4036
+# cmd make -s 09-deadlock.plain && valgrind --tool=helgrind ./09-deadlock.plain inversion
+==253== Helgrind, a thread error detector
+==253== Copyright (C) 2007-2017, and GNU GPL'd, by OpenWorks LLP et al.
+==253== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==253== Command: ./09-deadlock.plain inversion
+==253== 
+==253== ---Thread-Announcement------------------------------------------
+==253== 
+==253== Thread #3 was created
+==253==    at 0x4990C73: clone (clone.S:76)
+==253==    by 0x4990DF2: __clone_internal_fallback (clone-internal.c:64)
+==253==    by 0x4990DF2: __clone_internal (clone-internal.c:109)
+==253==    by 0x490360F: create_thread (pthread_create.c:297)
+==253==    by 0x4904264: pthread_create@@GLIBC_2.34 (pthread_create.c:836)
+==253==    by 0x4854975: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x10960C: main (09-deadlock.c:64)
+==253== 
+==253== ----------------------------------------------------------------
+==253== 
+==253== Thread #3: lock order "0x10C040 before 0x10C080" violated
+==253== 
+==253== Observed (incorrect) order is: acquisition of lock at 0x10C080
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x1094BE: stats_thread (09-deadlock.c:45)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253== 
+==253==  followed by a later acquisition of lock at 0x10C040
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x1094E1: stats_thread (09-deadlock.c:48)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253== 
+==253== Required order was established by acquisition of lock at 0x10C040
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x1093F1: control_thread (09-deadlock.c:25)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253== 
+==253==  followed by a later acquisition of lock at 0x10C080
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x10942F: control_thread (09-deadlock.c:29)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253== 
+==253==  Lock at 0x10C040 was first observed
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x1093F1: control_thread (09-deadlock.c:25)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253==  Address 0x10c040 is 0 bytes inside data symbol "table_lock"
+==253== 
+==253==  Lock at 0x10C080 was first observed
+==253==    at 0x48512DC: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x10942F: control_thread (09-deadlock.c:29)
+==253==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==253==    by 0x4903B63: start_thread (pthread_create.c:447)
+==253==    by 0x4990C83: clone (clone.S:100)
+==253==  Address 0x10c080 is 0 bytes inside data symbol "stats_lock"
+==253== 
+==253== 
+stats: pkts=1 live=1
+pktd: clean exit
+==253== 
+==253== Use --history-level=approx or =none to gain increased speed, at
+==253== the cost of reduced accuracy of conflicting-access information
+==253== For lists of detected and suppressed errors, rerun with: -s
+==253== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 1 from 1)

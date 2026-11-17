@@ -1,0 +1,3 @@
+# src 08-race.c cf1bcf685c30a76f72bb5be40bc1a891243324df9c2c091f1580027cccdb2813
+# cmd make -s 08-race.plain && ./08-race.plain
+expected=4000000 actual=1458198 lost=2541802

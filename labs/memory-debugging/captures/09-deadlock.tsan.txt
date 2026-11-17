@@ -1,0 +1,29 @@
+# src 09-deadlock.c 013fdbb2a8e7d94aa1c7b57205dad88fd7c22f59a6acb9bdec6d0e00d6ee4036
+# cmd make -s 09-deadlock.tsan && ./09-deadlock.tsan inversion
+==================
+WARNING: ThreadSanitizer: lock-order-inversion (potential deadlock) (pid=243)
+  Cycle in lock order graph: M0 (0x562c5875a2a0) => M1 (0x562c5875a260) => M0
+
+  Mutex M1 acquired here while holding mutex M0 in thread T1:
+    #0 pthread_mutex_lock ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1341 (libtsan.so.2+0x59a13) (BuildId: 2a13a7710e361d06f7babbea53065ca2be93f738)
+    #1 control_thread /lab/09-deadlock.c:29 (09-deadlock.tsan+0x15fc) (BuildId: 95a74dd70908a69d9c6eb704cf96796d6af5aa78)
+
+    Hint: use TSAN_OPTIONS=second_deadlock_stack=1 to get more informative warning message
+
+  Mutex M0 acquired here while holding mutex M1 in thread T2:
+    #0 pthread_mutex_lock ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1341 (libtsan.so.2+0x59a13) (BuildId: 2a13a7710e361d06f7babbea53065ca2be93f738)
+    #1 stats_thread /lab/09-deadlock.c:48 (09-deadlock.tsan+0x1424) (BuildId: 95a74dd70908a69d9c6eb704cf96796d6af5aa78)
+
+  Thread T1 (tid=246, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x5ac1a) (BuildId: 2a13a7710e361d06f7babbea53065ca2be93f738)
+    #1 main /lab/09-deadlock.c:63 (09-deadlock.tsan+0x1733) (BuildId: 95a74dd70908a69d9c6eb704cf96796d6af5aa78)
+
+  Thread T2 (tid=247, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1022 (libtsan.so.2+0x5ac1a) (BuildId: 2a13a7710e361d06f7babbea53065ca2be93f738)
+    #1 main /lab/09-deadlock.c:64 (09-deadlock.tsan+0x1751) (BuildId: 95a74dd70908a69d9c6eb704cf96796d6af5aa78)
+
+SUMMARY: ThreadSanitizer: lock-order-inversion (potential deadlock) /lab/09-deadlock.c:29 in control_thread
+==================
+ThreadSanitizer: reported 1 warnings
+stats: pkts=1 live=1
+pktd: clean exit

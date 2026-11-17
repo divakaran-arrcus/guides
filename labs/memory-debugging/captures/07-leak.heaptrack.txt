@@ -1,0 +1,67 @@
+# src 07-leak.c 8c86e1c2a3ee9e5c04cbe224574084a1f67eb61ca72fe03742e9ebc1f8a01b6c
+# cmd make -s 07-leak.plain && heaptrack -o /tmp/h ./07-leak.plain; heaptrack_print -a 0 -p 0 -T 0 -l 1 "$(ls /tmp/h*.gz | head -1)"
+heaptrack output will be written to "/tmp/h.gz"
+starting application, this might take some time...
+pktd: 2000 sessions opened and closed, 8000 pkts
+heaptrack stats:
+	allocations:          	10002
+	leaked allocations:   	2001
+	temporary allocations:	8000
+Heaptrack finished! Now run the following to investigate the data:
+
+  heaptrack --analyze "/tmp/h.gz"
+reading file "/tmp/h.gz" - please wait, this might take some time...
+Debuggee command was: ./07-leak.plain
+finished reading file, now analyzing data:
+
+MEMORY LEAKS
+112.00K leaked over 2000 calls from
+session_new
+  at /lab/pktd.h:128
+  in /lab/07-leak.plain
+112.00K leaked over 2000 calls from:
+    session_open
+      at /lab/07-leak.c:17
+      in /lab/07-leak.plain
+    main
+      at /lab/07-leak.c:44
+      in /lab/07-leak.plain
+
+4.10K leaked over 1 calls from
+__GI__IO_file_doallocate
+  at ./libio/filedoalloc.c:101
+  in /lib/x86_64-linux-gnu/libc.so.6
+4.10K leaked over 1 calls from:
+    __GI__IO_doallocbuf
+      at ./libio/genops.c:347
+      in /lib/x86_64-linux-gnu/libc.so.6
+    _IO_new_file_overflow
+      at ./libio/fileops.c:747
+      in /lib/x86_64-linux-gnu/libc.so.6
+    _IO_new_file_xsputn::_IO_new_file_xsputn
+      at ./libio/fileops.c:1246
+      in /lib/x86_64-linux-gnu/libc.so.6
+    _IO_new_file_xsputn
+      at ./libio/./libio/fileops.c:1199
+    __printf_buffer_to_file_done::__printf_buffer_flush_to_file
+      at ./stdio-common/printf_buffer_to_file.c:59
+      in /lib/x86_64-linux-gnu/libc.so.6
+    __printf_buffer_to_file_done
+      at ./stdio-common/./stdio-common/printf_buffer_to_file.c:120
+    __vfprintf_internal
+      at ./stdio-common/vfprintf-internal.c:1560
+      in /lib/x86_64-linux-gnu/libc.so.6
+    __printf
+      at ./stdio-common/printf.c:33
+      in /lib/x86_64-linux-gnu/libc.so.6
+    main
+      at /lab/07-leak.c:49
+      in /lab/07-leak.plain
+
+
+total runtime: 0.19s.
+calls to allocation functions: 10002 (52642/s)
+temporary memory allocations: 8000 (42105/s)
+peak heap memory consumption: 189.82K
+peak RSS (including heaptrack overhead): 4.53M
+total memory leaked: 116.10K

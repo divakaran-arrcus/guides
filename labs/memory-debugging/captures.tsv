@@ -19,3 +19,18 @@ f3-chunks.gdb	f3-chunks.c,gdb/f3-chunks.gdb	make -s f3-chunks.plain && gdb -q -b
 05-double-free.asan	05-double-free.c	make -s 05-double-free.asan && ./05-double-free.asan
 05-double-free.core	05-double-free.c,gdb/05-double-free-core.gdb	make -s core-05-double-free >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/05-double-free-core.gdb ./05-double-free.plain cores/05-double-free.plain.core
 t2.build-id	01-null.c	make -s 01-null.stripped; file 01-null.stripped; readelf -n 01-null.stripped | grep 'Build ID'
+06-uaf.asan	06-uaf.c	make -s 06-uaf.asan && ./06-uaf.asan
+06-uaf.memcheck	06-uaf.c	make -s 06-uaf.plain && valgrind ./06-uaf.plain
+06-uaf.core	06-uaf.c,gdb/06-uaf-core.gdb	make -s core-06-uaf >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/06-uaf-core.gdb ./06-uaf.plain cores/06-uaf.plain.core
+07-leak.lsan	07-leak.c	make -s 07-leak.asan && ./07-leak.asan
+07-leak.memcheck	07-leak.c	make -s 07-leak.plain && valgrind --leak-check=full ./07-leak.plain
+07-leak.massif	07-leak.c	make -s 07-leak.plain && valgrind --tool=massif --massif-out-file=/tmp/m ./07-leak.plain; ms_print /tmp/m | head -40
+07-leak.heaptrack	07-leak.c	make -s 07-leak.plain && heaptrack -o /tmp/h ./07-leak.plain; heaptrack_print -a 0 -p 0 -T 0 -l 1 "$(ls /tmp/h*.gz | head -1)"
+08-race.tsan	08-race.c	make -s 08-race.tsan && ./08-race.tsan
+08-race.tsan-atomic	08-race.c	make -s 08-race.tsan && ./08-race.tsan atomic; echo "exit=$?"
+08-race.helgrind	08-race.c	make -s 08-race.plain && valgrind --tool=helgrind ./08-race.plain
+08-race.drd	08-race.c	make -s 08-race.plain && valgrind --tool=drd ./08-race.plain
+08-race.lost-updates	08-race.c	make -s 08-race.plain && ./08-race.plain
+09-deadlock.tsan	09-deadlock.c	make -s 09-deadlock.tsan && ./09-deadlock.tsan inversion
+09-deadlock.helgrind	09-deadlock.c	make -s 09-deadlock.plain && valgrind --tool=helgrind ./09-deadlock.plain inversion
+09-deadlock.gcore	09-deadlock.c,gdb/09-deadlock-core.gdb	make -s 09-deadlock.plain && mkdir -p cores && rm -f cores/09.* && { ./09-deadlock.plain hang & pid=$!; sleep 2; gcore -o cores/09 $pid; kill $pid; } && gdb -q -batch -nx -x gdb/09-deadlock-core.gdb ./09-deadlock.plain cores/09.$pid

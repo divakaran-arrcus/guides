@@ -1,0 +1,69 @@
+# src 08-race.c cf1bcf685c30a76f72bb5be40bc1a891243324df9c2c091f1580027cccdb2813
+# cmd make -s 08-race.plain && valgrind --tool=helgrind ./08-race.plain
+==210== Helgrind, a thread error detector
+==210== Copyright (C) 2007-2017, and GNU GPL'd, by OpenWorks LLP et al.
+==210== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==210== Command: ./08-race.plain
+==210== 
+==210== ---Thread-Announcement------------------------------------------
+==210== 
+==210== Thread #3 was created
+==210==    at 0x4990C73: clone (clone.S:76)
+==210==    by 0x4990DF2: __clone_internal_fallback (clone-internal.c:64)
+==210==    by 0x4990DF2: __clone_internal (clone-internal.c:109)
+==210==    by 0x490360F: create_thread (pthread_create.c:297)
+==210==    by 0x4904264: pthread_create@@GLIBC_2.34 (pthread_create.c:836)
+==210==    by 0x4854975: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x1092A6: main (08-race.c:37)
+==210== 
+==210== ---Thread-Announcement------------------------------------------
+==210== 
+==210== Thread #2 was created
+==210==    at 0x4990C73: clone (clone.S:76)
+==210==    by 0x4990DF2: __clone_internal_fallback (clone-internal.c:64)
+==210==    by 0x4990DF2: __clone_internal (clone-internal.c:109)
+==210==    by 0x490360F: create_thread (pthread_create.c:297)
+==210==    by 0x4904264: pthread_create@@GLIBC_2.34 (pthread_create.c:836)
+==210==    by 0x4854975: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x1092A6: main (08-race.c:37)
+==210== 
+==210== ----------------------------------------------------------------
+==210== 
+==210== Possible data race during read of size 8 at 0x10C2C0 by thread #3
+==210== Locks held: none
+==210==    at 0x1091F3: worker (08-race.c:26)
+==210==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x4903B63: start_thread (pthread_create.c:447)
+==210==    by 0x4990C83: clone (clone.S:100)
+==210== 
+==210== This conflicts with a previous write of size 8 by thread #2
+==210== Locks held: none
+==210==    at 0x1091FE: worker (08-race.c:26)
+==210==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x4903B63: start_thread (pthread_create.c:447)
+==210==    by 0x4990C83: clone (clone.S:100)
+==210==  Address 0x10c2c0 is 0 bytes inside data symbol "stats"
+==210== 
+==210== ----------------------------------------------------------------
+==210== 
+==210== Possible data race during write of size 8 at 0x10C2C0 by thread #3
+==210== Locks held: none
+==210==    at 0x1091FE: worker (08-race.c:26)
+==210==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x4903B63: start_thread (pthread_create.c:447)
+==210==    by 0x4990C83: clone (clone.S:100)
+==210== 
+==210== This conflicts with a previous write of size 8 by thread #2
+==210== Locks held: none
+==210==    at 0x1091FE: worker (08-race.c:26)
+==210==    by 0x4854B7A: ??? (in /usr/libexec/valgrind/vgpreload_helgrind-amd64-linux.so)
+==210==    by 0x4903B63: start_thread (pthread_create.c:447)
+==210==    by 0x4990C83: clone (clone.S:100)
+==210==  Address 0x10c2c0 is 0 bytes inside data symbol "stats"
+==210== 
+expected=4000000 actual=4000000 lost=0
+==210== 
+==210== Use --history-level=approx or =none to gain increased speed, at
+==210== the cost of reduced accuracy of conflicting-access information
+==210== For lists of detected and suppressed errors, rerun with: -s
+==210== ERROR SUMMARY: 6 errors from 2 contexts (suppressed: 4 from 2)

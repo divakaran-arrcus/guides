@@ -45,3 +45,52 @@ f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 05-double-free.core	double free detected in tcache 2
 t2.build-id	BuildID
 t2.build-id	stripped
+06-uaf.asan	ERROR: AddressSanitizer: heap-use-after-free
+06-uaf.asan	READ of size 8
+06-uaf.asan	is located 0 bytes inside of 40-byte region
+06-uaf.asan	freed by thread T0 here
+06-uaf.asan	previously allocated by thread T0 here
+06-uaf.asan	in rx_process /lab/06-uaf\.c:[0-9]+
+06-uaf.memcheck	Invalid read of size 8
+06-uaf.memcheck	is 0 bytes inside a block of size 40 free'd
+06-uaf.memcheck	rx_process \(06-uaf\.c:[0-9]+\)
+06-uaf.core	Program terminated with signal SIGSEGV
+06-uaf.core	^#0 +(0x[0-9a-f]+ in )?rx_process 
+06-uaf.core	^\$3 = 1$
+07-leak.lsan	ERROR: LeakSanitizer: detected memory leaks
+07-leak.lsan	Direct leak of 112000 byte\(s\) in 2000 object\(s\) allocated from:
+07-leak.lsan	in session_open /lab/07-leak\.c:[0-9]+
+07-leak.memcheck	definitely lost: 112,000 bytes in 2,000 blocks
+07-leak.memcheck	session_open \(07-leak\.c:[0-9]+\)
+07-leak.massif	Number of snapshots
+07-leak.massif	Detailed snapshots
+07-leak.massif	^ *[0-9.]+\^ {60,}#$
+07-leak.heaptrack	peak heap memory consumption: [0-9.]+K
+07-leak.heaptrack	leaked
+07-leak.heaptrack	^112\.00K leaked over 2000 calls from:?$
+07-leak.heaptrack	^ +session_open$
+07-leak.heaptrack	total memory leaked: [0-9.]+K
+08-race.tsan	WARNING: ThreadSanitizer: data race
+08-race.tsan	Previous (write|read) of size 8
+08-race.tsan	Location is global 'stats'
+08-race.tsan	#0 worker /lab/08-race\.c:[0-9]+
+08-race.tsan-atomic	^expected=4000000 actual=4000000 lost=0$
+08-race.tsan-atomic	^exit=0$
+08-race.helgrind	Possible data race during (read|write) of size 8
+08-race.helgrind	Locks held: none
+08-race.helgrind	is 0 bytes inside data symbol "stats"$
+08-race.helgrind	at 0x[0-9A-F]+: worker \(08-race\.c:[0-9]+\)
+08-race.drd	Conflicting (load|store) by thread [0-9]+ at 0x[0-9a-f]+ size 8
+08-race.drd	at 0x[0-9A-F]+: worker \(08-race\.c:[0-9]+\)
+08-race.lost-updates	^expected=4000000 actual=[0-9]+ lost=[1-9][0-9]*$
+09-deadlock.tsan	WARNING: ThreadSanitizer: lock-order-inversion \(potential deadlock\)
+09-deadlock.tsan	#1 control_thread /lab/09-deadlock\.c:[0-9]+
+09-deadlock.tsan	#1 stats_thread /lab/09-deadlock\.c:[0-9]+
+09-deadlock.helgrind	lock order "0x[0-9A-Fa-f]+ before 0x[0-9A-Fa-f]+" violated
+09-deadlock.helgrind	Observed \(incorrect\) order is: acquisition of lock at 0x[0-9A-F]+
+09-deadlock.helgrind	by 0x[0-9A-F]+: stats_thread \(09-deadlock\.c:[0-9]+\)
+09-deadlock.helgrind	is 0 bytes inside data symbol "stats_lock"$
+09-deadlock.gcore	__lll_lock_wait .*<stats_lock>
+09-deadlock.gcore	__lll_lock_wait .*<table_lock>
+09-deadlock.gcore	^\$1 = [1-9][0-9]*$
+09-deadlock.gcore	^\$2 = [1-9][0-9]*$
