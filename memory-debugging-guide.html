@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Memory Debugging in C: GDB, Sanitizers, Valgrind &amp; rr</title>
+<title>Memory Debugging from First Principles</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -270,8 +270,6 @@
 
   .divider { height: 1px; background: var(--border); margin: 18px 0; }
 
-  .marker-ok { background: rgba(52,211,153,0.08); border: 1px dashed var(--green); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--green); text-align: center; font-weight: 600; }
-  .marker-bad { background: rgba(248,113,113,0.08); border: 1px dashed var(--red); border-radius: 6px; padding: 9px 12px; margin: 9px 0; font-size: 12.5px; color: var(--red); text-align: center; font-weight: 600; }
 
   /* ===== LIGHT MODE ===== */
   body.light {
@@ -314,10 +312,7 @@
   body.light .info.red { background: rgba(220,38,38,0.05); }
   body.light .info.purple { background: rgba(124,58,237,0.05); }
   body.light .info.yellow { background: rgba(180,83,9,0.05); }
-  body.light .marker-ok { background: rgba(5,150,105,0.06); }
-  body.light .marker-bad { background: rgba(220,38,38,0.06); }
 
-  body.light .term.representative::before { color: var(--orange); }
   body.light .term code, body.light pre.excerpt code, body.light details.src pre code { background: none; color: inherit; }
   body.light .nav-item.active { color: var(--blue); background: rgba(37,99,235,0.08); border-left: 2px solid var(--accent); }
   body.light .sidebar { background: #ffffff; border-right-color: var(--border); }
@@ -372,74 +367,6 @@
     user-select: none;
   }
 
-  /* Custom: try-this exercise boxes */
-  .try-this { background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); border-radius: 10px; padding: 18px; margin: 14px 0; }
-  .try-this-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--green); margin-bottom: 8px; }
-  .try-this p { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
-
-
-  /* Tool-alt callout */
-  aside.tool-alt {
-    background: var(--surface2);
-    border-left: 3px solid var(--purple);
-    border-radius: 8px;
-    padding: 14px 18px;
-    margin: 14px 0;
-    font-size: 14px;
-  }
-  aside.tool-alt::before {
-    content: "Alt tool →";
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--purple);
-    letter-spacing: 1.5px;
-    margin-right: 8px;
-  }
-
-  /* gitlog-report mini-walkthrough box */
-  div.walkthrough {
-    background: linear-gradient(135deg,
-      color-mix(in srgb, var(--cyan) 6%, transparent),
-      color-mix(in srgb, var(--accent) 6%, transparent));
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    padding: 18px 22px;
-    margin: 24px 0;
-  }
-  div.walkthrough h3 {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--cyan);
-    margin-bottom: 10px;
-  }
-
-  /* Card grid for adjacent-tool tours */
-  div.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
-    margin: 18px 0;
-  }
-  div.card-grid > div.tool-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-  }
-  div.card-grid > div.tool-card h4 {
-    color: var(--blue);
-    margin-bottom: 8px;
-  }
-  div.card-grid > div.tool-card .tool-meta {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 8px;
-  }
-
   /* See-also link grid */
   div.see-also {
     display: grid;
@@ -463,7 +390,9 @@
   .term code { background: none; padding: 0; color: inherit; font-size: inherit; }
   .term.representative { border-style: dashed; border-color: var(--orange); position: relative; padding-top: 30px; }
   .term.representative::before { content: 'Representative output \2014  not captured'; position: absolute; top: 7px; left: 14px;
-    font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--orange); white-space: normal; }
+    font-size: 11.5px; font-weight: 700; color: var(--orange); white-space: normal; }
+  body.light .term.representative { border-color: var(--yellow); }
+  body.light .term.representative::before { color: var(--yellow); }
   pre.excerpt { border-left: 3px solid var(--accent); margin: 10px 0; }
   pre.excerpt code { background: none; padding: 0; color: inherit; font-size: inherit; }
   ol.callouts { counter-reset: callout; list-style: none; padding-left: 0; margin: 8px 0 12px; }
@@ -525,17 +454,17 @@
     <div class="nav-group">
       <div class="nav-group-label">Part I · Foundations</div>
       <button class="nav-item" onclick="go('f1-layout')">1. Process Memory Layout</button>
-      <button class="nav-item" onclick="go('f2-frames')">2. Calling Convention &amp; Stack Frames</button>
+      <button class="nav-item" onclick="go('f2-frames')">2. x86-64 Calling Convention &amp; Stack Frames</button>
       <button class="nav-item" onclick="go('f3-allocator')">3. The glibc Allocator</button>
       <button class="nav-item" onclick="go('f4-instrumentation')">4. Instrumentation Models</button>
       <button class="nav-item" onclick="go('f5-memory-model')">5. The C Memory Model</button>
-      <button class="nav-item" onclick="go('f6-atomics-locks')">6. Atomics, Locks &amp; Refcounting</button>
+      <button class="nav-item" onclick="go('f6-atomics-locks')">6. Atomics, Locks, Lock Ordering &amp; Refcounting</button>
     </div>
 
     <div class="nav-group">
       <div class="nav-group-label">Part II · Tool Primers</div>
       <button class="nav-item" onclick="go('t1-gdb-live')">7. GDB on a Live Process</button>
-      <button class="nav-item" onclick="go('t2-cores-symbols')">8. Cores &amp; Symbols</button>
+      <button class="nav-item" onclick="go('t2-cores-symbols')">8. Getting a Usable Core &amp; Symbols</button>
       <button class="nav-item" onclick="go('t3-gdb-core')">9. GDB on a Core</button>
       <button class="nav-item" onclick="go('t4-asan')">10. The ASan Family</button>
       <button class="nav-item" onclick="go('t5-tsan')">11. TSan</button>
@@ -546,20 +475,20 @@
     <div class="nav-group">
       <div class="nav-group-label">Part III · The Bug Ladder</div>
       <button class="nav-item" onclick="go('b1-null')">14. NULL Dereference</button>
-      <button class="nav-item" onclick="go('b2-uninit')">15. Uninitialized Pointer</button>
-      <button class="nav-item" onclick="go('b3-heap-overflow')">16. Heap Overflow</button>
-      <button class="nav-item" onclick="go('b4-stack-smash')">17. Stack Smashing</button>
+      <button class="nav-item" onclick="go('b2-uninit')">15. Uninitialized Pointer / Stack Garbage</button>
+      <button class="nav-item" onclick="go('b3-heap-overflow')">16. Heap Overflow, Off-by-One</button>
+      <button class="nav-item" onclick="go('b4-stack-smash')">17. Stack Smashing (memcpy into a Local Buffer)</button>
       <button class="nav-item" onclick="go('b5-double-free')">18. Double Free</button>
-      <button class="nav-item" onclick="go('b6-uaf')">19. Use-After-Free</button>
+      <button class="nav-item" onclick="go('b6-uaf')">19. Simple Use-After-Free</button>
       <button class="nav-item" onclick="go('b7-leak')">20. Leak &amp; Memory Growth</button>
-      <button class="nav-item" onclick="go('b8-race')">21. Data Race</button>
+      <button class="nav-item" onclick="go('b8-race')">21. Data Race on a Shared Counter or Flag</button>
       <button class="nav-item" onclick="go('b9-deadlock')">22. Lock-Order Deadlock</button>
-      <button class="nav-item" onclick="go('b10-refcount-uaf')">23. Boss: Refcount UAF</button>
+      <button class="nav-item" onclick="go('b10-refcount-uaf')">23. Boss Level: Refcount Use-After-Free</button>
     </div>
 
     <div class="nav-group">
       <div class="nav-group-label">Bridge</div>
-      <button class="nav-item" onclick="go('x1-core-to-repro')">24. From a Core to a Reproducer</button>
+      <button class="nav-item" onclick="go('x1-core-to-repro')">24. From a One-Shot Core to a Reproducer</button>
     </div>
 
     <div class="nav-group">
@@ -613,11 +542,21 @@
     const btn = e.target.closest && e.target.closest('.copy');
     if (!btn) return;
     const code = btn.parentElement.querySelector('code');
-    if (!code || !navigator.clipboard) return;
-    navigator.clipboard.writeText(code.textContent).then(function() {
+    if (!code) return;
+    const text = code.textContent;
+    const done = function() {
       const old = btn.textContent; btn.textContent = 'Copied';
       setTimeout(function() { btn.textContent = old; }, 1200);
-    }, function() {});
+    };
+    const fallback = function() {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { if (document.execCommand('copy')) done(); } catch (err) {}
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
   });
 
   function toggleTheme() {
