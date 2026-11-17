@@ -4,6 +4,6 @@ sequenceDiagram
   participant B as Thread B
   A->>A: write x
   A->>M: unlock(m)
-  M-->>B: synchronizes-with: unlock → lock of the same m
   B->>M: lock(m)
+  M-->>B: synchronizes-with: unlock → lock of the same m
   B->>B: read x (the write happens-before it)
