@@ -1,0 +1,52 @@
+# src f2-frames.c 1ce4fda498f19c2353a36c6310039bf24301b35ddafbf896b2d9a93b90a5211b
+# src gdb/f2-frames.gdb af7364bca942732bfbacb709eb81d9569ed7a2843bd31b57a1c76fc60cea38c9
+# cmd make -s f2-frames.plain && gdb -q -batch -nx -x gdb/f2-frames.gdb ./f2-frames.plain
+Breakpoint 1 at 0x1198: file f2-frames.c, line 11.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1, checksum (data=0x7fffffffebe0 "BGP!", len=4) at f2-frames.c:11
+11	    uint32_t sum = 0;
+#0  checksum (data=0x7fffffffebe0 "BGP!", len=4) at f2-frames.c:11
+#1  0x00005555555551fe in parse_header (pb=0x7fffffffebd0) at f2-frames.c:19
+#2  0x000055555555527a in rx_packet (port=179) at f2-frames.c:27
+#3  0x00005555555552a6 in main () at f2-frames.c:32
+Stack level 0, frame at 0x7fffffffeb98:
+ rip = 0x555555555198 in checksum (f2-frames.c:11); saved rip = 0x5555555551fe
+ called by frame at 0x7fffffffebc0
+ source language c.
+ Arglist at 0x7fffffffeb88, args: data=0x7fffffffebe0 "BGP!", len=4
+ Locals at 0x7fffffffeb88, Previous frame's sp is 0x7fffffffeb98
+ Saved registers:
+  rbp at 0x7fffffffeb88, rip at 0x7fffffffeb90
+0x7fffffffeb88:	0x00007fffffffebb0	0x00005555555551fe
+0x7fffffffeb98:	0x00007fffffffebd0	0x0000000000008000
+Dump of assembler code for function checksum:
+   0x0000555555555189 <+0>:	endbr64
+   0x000055555555518d <+4>:	push   %rbp
+   0x000055555555518e <+5>:	mov    %rsp,%rbp
+   0x0000555555555191 <+8>:	mov    %rdi,-0x18(%rbp)
+   0x0000555555555195 <+12>:	mov    %esi,-0x1c(%rbp)
+=> 0x0000555555555198 <+15>:	movl   $0x0,-0x8(%rbp)
+   0x000055555555519f <+22>:	movl   $0x0,-0x4(%rbp)
+   0x00005555555551a6 <+29>:	jmp    0x5555555551bf <checksum+54>
+   0x00005555555551a8 <+31>:	mov    -0x4(%rbp),%edx
+   0x00005555555551ab <+34>:	mov    -0x18(%rbp),%rax
+   0x00005555555551af <+38>:	add    %rdx,%rax
+   0x00005555555551b2 <+41>:	movzbl (%rax),%eax
+   0x00005555555551b5 <+44>:	movzbl %al,%eax
+   0x00005555555551b8 <+47>:	add    %eax,-0x8(%rbp)
+   0x00005555555551bb <+50>:	addl   $0x1,-0x4(%rbp)
+   0x00005555555551bf <+54>:	mov    -0x4(%rbp),%eax
+   0x00005555555551c2 <+57>:	cmp    -0x1c(%rbp),%eax
+   0x00005555555551c5 <+60>:	jb     0x5555555551a8 <checksum+31>
+   0x00005555555551c7 <+62>:	mov    -0x8(%rbp),%eax
+   0x00005555555551ca <+65>:	mov    %eax,%edx
+   0x00005555555551cc <+67>:	mov    -0x8(%rbp),%eax
+   0x00005555555551cf <+70>:	shr    $0x10,%eax
+   0x00005555555551d2 <+73>:	add    %edx,%eax
+   0x00005555555551d4 <+75>:	pop    %rbp
+   0x00005555555551d5 <+76>:	ret
+End of assembler dump.
+rx_packet: ok
+[Inferior 1 (process 79) exited normally]

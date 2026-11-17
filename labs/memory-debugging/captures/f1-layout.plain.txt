@@ -1,0 +1,32 @@
+# src f1-layout.c 34ab3b2fd54c2df2f78a7b49fac11fb5ee64e8d15abaa8811939a8cde3d6ffe9
+# cmd make -s f1-layout.plain && ./f1-layout.plain
+text    main           0x557adaa4e410
+rodata  banner         0x557adaa4f022
+bss     session_table  0x557adaa510c0
+bss     started        0x557adaa512d0
+heap    session        0x557afe4342a0
+stack   peer           0x7ffe469b8738
+libc    printf         0x7f0a8d942100
+
+557adaa4d000-557adaa4e000 r--p 00000000 fe:01 7898510                    /lab/f1-layout.plain
+557adaa4e000-557adaa4f000 r-xp 00001000 fe:01 7898510                    /lab/f1-layout.plain
+557adaa4f000-557adaa50000 r--p 00002000 fe:01 7898510                    /lab/f1-layout.plain
+557adaa50000-557adaa51000 r--p 00002000 fe:01 7898510                    /lab/f1-layout.plain
+557adaa51000-557adaa52000 rw-p 00003000 fe:01 7898510                    /lab/f1-layout.plain
+557afe434000-557afe455000 rw-p 00000000 00:00 0                          [heap]
+7f0a8d8df000-7f0a8d8e2000 rw-p 00000000 00:00 0 
+7f0a8d8e2000-7f0a8d90a000 r--p 00000000 fe:01 8282950                    /usr/lib/x86_64-linux-gnu/libc.so.6
+7f0a8d90a000-7f0a8da93000 r-xp 00028000 fe:01 8282950                    /usr/lib/x86_64-linux-gnu/libc.so.6
+7f0a8da93000-7f0a8dae2000 r--p 001b1000 fe:01 8282950                    /usr/lib/x86_64-linux-gnu/libc.so.6
+7f0a8dae2000-7f0a8dae6000 r--p 001ff000 fe:01 8282950                    /usr/lib/x86_64-linux-gnu/libc.so.6
+7f0a8dae6000-7f0a8dae8000 rw-p 00203000 fe:01 8282950                    /usr/lib/x86_64-linux-gnu/libc.so.6
+7f0a8dae8000-7f0a8daf5000 rw-p 00000000 00:00 0 
+7f0a8daf9000-7f0a8dafb000 rw-p 00000000 00:00 0 
+7f0a8dafb000-7f0a8dafc000 r--p 00000000 fe:01 8282807                    /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f0a8dafc000-7f0a8db27000 r-xp 00001000 fe:01 8282807                    /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f0a8db27000-7f0a8db31000 r--p 0002c000 fe:01 8282807                    /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f0a8db31000-7f0a8db33000 r--p 00036000 fe:01 8282807                    /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7f0a8db33000-7f0a8db35000 rw-p 00038000 fe:01 8282807                    /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+7ffe46998000-7ffe469b9000 rw-p 00000000 00:00 0                          [stack]
+7ffe469dd000-7ffe469e1000 r--p 00000000 00:00 0                          [vvar]
+7ffe469e1000-7ffe469e3000 r-xp 00000000 00:00 0                          [vdso]

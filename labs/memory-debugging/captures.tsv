@@ -1,2 +1,5 @@
 # id<TAB>sources (comma-separated, "-" = none)<TAB>shell command, run in /lab by run-capture.sh
 00-env	-	gcc --version | head -1; clang --version | head -1; gdb --version | head -1; valgrind --version; rr --version; ldd --version | head -1; uname -m; echo "ulimit -c: $(ulimit -c)"; echo "rr-smoke($(head -1 .rr-caps 2>/dev/null || echo none))"
+f1-layout.plain	f1-layout.c	make -s f1-layout.plain && ./f1-layout.plain
+f2-frames.gdb	f2-frames.c,gdb/f2-frames.gdb	make -s f2-frames.plain && gdb -q -batch -nx -x gdb/f2-frames.gdb ./f2-frames.plain
+f3-chunks.gdb	f3-chunks.c,gdb/f3-chunks.gdb	make -s f3-chunks.plain && gdb -q -batch -nx -x gdb/f3-chunks.gdb ./f3-chunks.plain

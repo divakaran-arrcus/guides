@@ -13,6 +13,8 @@
 #   make core-<lab> [V=<variant>] [ARGS=<args>]   ->  cores/<lab>.<V>[-<ARGS>].core
 # It fails if the program exits normally instead of faulting.
 
+.DEFAULT_GOAL := help
+
 CC    := gcc
 PLAIN := -O0 -g -fno-omit-frame-pointer -pthread
 HDRS  := $(wildcard pktd.h)
@@ -54,7 +56,12 @@ core-%: %.$(V)
 # Keep chained intermediates (e.g. the .plain behind core-<lab>).
 .SECONDARY:
 
+help:
+	@echo "usage: make <lab>.<variant>     variants: plain asan tsan msan pattern stripped reftrace"
+	@echo "       make core-<lab> [V=<variant>] [ARGS=<args>]   GDB writes cores/<lab>.<V>[-<ARGS>].core"
+	@echo "       make clean                 remove every built binary, .debug file and core"
+
 clean:
 	rm -rf cores *.plain *.asan *.tsan *.msan *.pattern *.stripped *.reftrace *.debug
 
-.PHONY: clean
+.PHONY: help clean

@@ -6,3 +6,12 @@
 00-env	valgrind-3\.2
 00-env	rr version
 00-env	rr-smoke\((perfmon|sys_admin|privileged|none)\)
+00-env	ulimit -c: 0
+f1-layout.plain	\[heap\]
+f1-layout.plain	\[stack\]
+f1-layout.plain	r-xp .*f1-layout
+f2-frames.gdb	Stack level 0
+f2-frames.gdb	rip = 0x
+f2-frames.gdb	saved rip
+f3-chunks.gdb	0x0000000000000051
+f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
