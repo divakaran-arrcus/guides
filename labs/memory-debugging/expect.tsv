@@ -118,6 +118,7 @@ pktd-sessions.gdb	^8 of 64 slots in use$
 10.watch	^Hardware watchpoint 2: -location session_table\[7\]->refcnt$
 10.watch	^#1 +0x[0-9a-f]+ in worker_main \(arg=0x2\) at 10-refcount-uaf\.c:[0-9]+$
 10.watch	^Old value = 2$
+10.watch	^HIT 2->1 handle_timeout=1$
 10.watch	^#1 +0x[0-9a-f]+ in handle_timeout \(s=0x[0-9a-f]+\) at 10-refcount-uaf\.c:[0-9]+$
 10.watch	^#0 +tcache_put \(tc_idx=[0-9]+, chunk=0x[0-9a-f]+\) at \./malloc/malloc\.c:[0-9]+$
 10.watch	^#1 +_int_free \(
@@ -125,8 +126,9 @@ pktd-sessions.gdb	^8 of 64 slots in use$
 10.watch	received signal SIGSEGV, Segmentation fault\.$
 10.rr	^rr record: rc=139$
 10.rr	received signal SIGSEGV, Segmentation fault\.$
-10.rr	Hardware watchpoint 1: -location s->refcnt$
+10.rr	Hardware watchpoint 1: -location \$s->refcnt$
 10.rr	^Old value = 179$
+10.rr	^HIT 1->2 handle_timeout=1$
 10.rr	#0 +0x[0-9a-f]+ in tcache_put \(tc_idx=[0-9]+, chunk=0x[0-9a-f]+\) at \./malloc/malloc\.c:[0-9]+$
 10.rr	^#1 +_int_free \(
 10.rr	^#1 +0x[0-9a-f]+ in worker_main \(arg=0x2\) at 10-refcount-uaf\.c:[0-9]+$
@@ -136,6 +138,7 @@ pktd-sessions.gdb	^8 of 64 slots in use$
 10.reftrace	^ +#1 +G refcnt=2 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(worker_main\+0x[0-9a-f]+\)
 10.reftrace	^ +#2 +P refcnt=1 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(handle_timeout\+0x[0-9a-f]+\)
 10.reftrace	^ +#3 +P refcnt=0 tid=[0-9]+ +\./10-refcount-uaf\.reftrace\(worker_main\+0x[0-9a-f]+\)
+10.reftrace	^rc=134$
 t2.stripped-core	^#0 +0x[0-9a-f]+ in \?\? \(\)$
 t2.stripped-core	^#1 +0x[0-9a-f]+ in \?\? \(\)$
 t2.stripped-core	^#0 +table_dump \(\) at /lab/pktd\.h:[0-9]+$
