@@ -1,0 +1,4 @@
+# src 05-double-free.c da7a8a7a77dd8f57409b598e1380ce3bc0b4306acc43333efd972b94e16e6d00
+# cmd make -s 05-double-free.plain && ./05-double-free.plain
+session 5: invalid peer port, dropped
+free(): double free detected in tcache 2

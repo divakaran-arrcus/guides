@@ -1,0 +1,3 @@
+# src 04-stack-smash.c 8f8387cc0b4302a948cfbbe820c2f0abf8479a17083b959c97187bb2425f66a2
+# cmd make -s 04-stack-smash.plain && ./04-stack-smash.plain
+*** stack smashing detected ***: terminated

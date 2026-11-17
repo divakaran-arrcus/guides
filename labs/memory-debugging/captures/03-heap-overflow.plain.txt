@@ -1,0 +1,10 @@
+# src 03-heap-overflow.c f8639c5742a78fa11a68cfbc13507df5c8323452a9d93f9f9bb1ab577017f2c3
+# cmd make -s 03-heap-overflow.plain && ./03-heap-overflow.plain
+03-heap-overflow.c: In function 'main':
+03-heap-overflow.c:24:5: warning: 'strcpy' writing 73 bytes into a region of size 72 overflows the destination [-Wstringop-overflow=]
+   24 |     strcpy(a, cfg_desc);            /* BUG: writes 73 bytes into 72 */
+      |     ^~~~~~~~~~~~~~~~~~~
+03-heap-overflow.c:20:15: note: destination object of size 72 allocated by 'malloc'
+   20 |     char *a = malloc(DESC_MAX);     /* description buffer */
+      |               ^~~~~~~~~~~~~~~~
+free(): invalid pointer

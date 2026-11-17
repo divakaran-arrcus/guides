@@ -1,0 +1,16 @@
+# src 02-uninit.c b4cd5ea018c9dff701adec9c1ca5605f28c3dfd88e776012d71436f3bf49af86
+# cmd make -s 02-uninit.msan && MSAN_OPTIONS=external_symbolizer_path=/usr/bin/addr2line ./02-uninit.msan
+==205==WARNING: MemorySanitizer: use-of-uninitialized-value
+    #0 0x5577b28526d2 in main /lab/02-uninit.c:39
+    #1 0x7f9bf13a31c9 in __libc_start_call_main csu/../sysdeps/x86/libc-start.c:58
+    #2 0x7f9bf13a328a in __libc_start_main_impl csu/../csu/libc-start.c:360
+    #3 0x5577b27ba304 in _start ??:?
+
+  Uninitialized value was stored to memory at
+    #0 0x5577b28526cb in main /lab/02-uninit.c:30
+
+  Uninitialized value was created by an allocation of 'flags.i9' in the stack frame
+    #0 0x5577b28524cd in main /lab/02-uninit.c:26
+
+SUMMARY: MemorySanitizer: use-of-uninitialized-value /lab/02-uninit.c:39 in main
+Exiting

@@ -15,3 +15,31 @@ f2-frames.gdb	rip = 0x
 f2-frames.gdb	saved rip
 f3-chunks.gdb	0x0000000000000051
 f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
+01-null.core	SIGSEGV
+01-null.core	Program terminated with signal SIGSEGV
+01-null.core	= \(struct session \*\) 0x0
+01-null.field.core	0x18
+01-null.field.core	/\* 0x0018 .*peer
+01-null.fnptr.core	0x0
+01-null.fnptr.core	ctrl_dispatch \+ [0-9]+ in section \.text
+02-uninit.memcheck	Conditional jump or move depends on uninitialised value
+02-uninit.memcheck	created by a stack allocation
+02-uninit.msan	MemorySanitizer: use-of-uninitialized-value
+02-uninit.msan	in main /lab/02-uninit.c:[0-9]+
+02-uninit.pattern	0xfefefefe
+03-heap-overflow.asan	heap-buffer-overflow
+03-heap-overflow.asan	0 bytes after
+03-heap-overflow.asan	Shadow bytes around the buggy address
+03-heap-overflow.plain	free\(\): invalid pointer
+03-heap-overflow.core	0x0000000000000000
+04-stack-smash.plain	stack smashing detected
+04-stack-smash.asan	stack-buffer-overflow
+04-stack-smash.core	__stack_chk_fail
+05-double-free.plain	free\(\): double free detected in tcache 2
+05-double-free.asan	attempting double-free
+05-double-free.asan	freed by thread
+05-double-free.asan	previously allocated by thread
+05-double-free.core	abort
+05-double-free.core	free
+t2.build-id	BuildID
+t2.build-id	stripped

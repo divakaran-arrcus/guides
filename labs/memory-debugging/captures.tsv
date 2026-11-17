@@ -3,3 +3,19 @@
 f1-layout.plain	f1-layout.c	make -s f1-layout.plain && ./f1-layout.plain
 f2-frames.gdb	f2-frames.c,gdb/f2-frames.gdb	make -s f2-frames.plain && gdb -q -batch -nx -x gdb/f2-frames.gdb ./f2-frames.plain
 f3-chunks.gdb	f3-chunks.c,gdb/f3-chunks.gdb	make -s f3-chunks.plain && gdb -q -batch -nx -x gdb/f3-chunks.gdb ./f3-chunks.plain
+01-null.core	01-null.c,gdb/01-null-core.gdb	make -s core-01-null ARGS=plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-core.gdb ./01-null.plain cores/01-null.plain-plain.core
+01-null.field.core	01-null.c,gdb/01-null-field.gdb	make -s core-01-null ARGS=field >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-field.gdb ./01-null.plain cores/01-null.plain-field.core
+01-null.fnptr.core	01-null.c,gdb/01-null-fnptr.gdb	make -s core-01-null ARGS=fnptr >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-fnptr.gdb ./01-null.plain cores/01-null.plain-fnptr.core
+02-uninit.memcheck	02-uninit.c	make -s 02-uninit.plain && valgrind --track-origins=yes ./02-uninit.plain
+02-uninit.msan	02-uninit.c	make -s 02-uninit.msan && MSAN_OPTIONS=external_symbolizer_path=/usr/bin/addr2line ./02-uninit.msan
+02-uninit.pattern	02-uninit.c	make -s 02-uninit.pattern && ./02-uninit.pattern
+03-heap-overflow.asan	03-heap-overflow.c	make -s 03-heap-overflow.asan && ./03-heap-overflow.asan
+03-heap-overflow.plain	03-heap-overflow.c	make -s 03-heap-overflow.plain && ./03-heap-overflow.plain
+03-heap-overflow.core	03-heap-overflow.c,gdb/03-heap-overflow-core.gdb	make -s core-03-heap-overflow >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/03-heap-overflow-core.gdb ./03-heap-overflow.plain cores/03-heap-overflow.plain.core
+04-stack-smash.plain	04-stack-smash.c	make -s 04-stack-smash.plain && ./04-stack-smash.plain
+04-stack-smash.asan	04-stack-smash.c	make -s 04-stack-smash.asan && ./04-stack-smash.asan
+04-stack-smash.core	04-stack-smash.c,gdb/04-stack-smash-core.gdb	make -s core-04-stack-smash >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/04-stack-smash-core.gdb ./04-stack-smash.plain cores/04-stack-smash.plain.core
+05-double-free.plain	05-double-free.c	make -s 05-double-free.plain && ./05-double-free.plain
+05-double-free.asan	05-double-free.c	make -s 05-double-free.asan && ./05-double-free.asan
+05-double-free.core	05-double-free.c,gdb/05-double-free-core.gdb	make -s core-05-double-free >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/05-double-free-core.gdb ./05-double-free.plain cores/05-double-free.plain.core
+t2.build-id	01-null.c	make -s 01-null.stripped; file 01-null.stripped; readelf -n 01-null.stripped | grep 'Build ID'

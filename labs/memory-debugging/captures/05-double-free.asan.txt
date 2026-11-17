@@ -1,0 +1,32 @@
+# src 05-double-free.c da7a8a7a77dd8f57409b598e1380ce3bc0b4306acc43333efd972b94e16e6d00
+# cmd make -s 05-double-free.asan && ./05-double-free.asan
+session 5: invalid peer port, dropped
+=================================================================
+==361==ERROR: AddressSanitizer: attempting double-free on 0x506000000080 in thread T0:
+    #0 0x7fb491b704d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x558cce9f0b6a in pktd_shutdown /lab/05-double-free.c:25
+    #2 0x558cce9f0d56 in main /lab/05-double-free.c:38
+    #3 0x7fb4912751c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #4 0x7fb49127528a in __libc_start_main_impl ../csu/libc-start.c:360
+    #5 0x558cce9f0304 in _start (/lab/05-double-free.asan+0x2304) (BuildId: bef298e187cffc6db73cee36bf70d007fbdd7531)
+
+0x506000000080 is located 0 bytes inside of 56-byte region [0x506000000080,0x5060000000b8)
+freed by thread T0 here:
+    #0 0x7fb491b704d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x558cce9f0a23 in session_add /lab/05-double-free.c:16
+    #2 0x558cce9f0cf2 in main /lab/05-double-free.c:36
+    #3 0x7fb4912751c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #4 0x7fb49127528a in __libc_start_main_impl ../csu/libc-start.c:360
+    #5 0x558cce9f0304 in _start (/lab/05-double-free.asan+0x2304) (BuildId: bef298e187cffc6db73cee36bf70d007fbdd7531)
+
+previously allocated by thread T0 here:
+    #0 0x7fb491b719c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x558cce9f0529 in session_new /lab/pktd.h:128
+    #2 0x558cce9f08eb in session_add /lab/05-double-free.c:12
+    #3 0x558cce9f0cf2 in main /lab/05-double-free.c:36
+    #4 0x7fb4912751c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #5 0x7fb49127528a in __libc_start_main_impl ../csu/libc-start.c:360
+    #6 0x558cce9f0304 in _start (/lab/05-double-free.asan+0x2304) (BuildId: bef298e187cffc6db73cee36bf70d007fbdd7531)
+
+SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52 in free
+==361==ABORTING

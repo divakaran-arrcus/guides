@@ -1,0 +1,4 @@
+# src 02-uninit.c b4cd5ea018c9dff701adec9c1ca5605f28c3dfd88e776012d71436f3bf49af86
+# cmd make -s 02-uninit.pattern && ./02-uninit.pattern
+session 2 flags = 0xfefefefe
+active: connecting to the peer
