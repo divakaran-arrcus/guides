@@ -6,6 +6,7 @@ f3-chunks.gdb	f3-chunks.c,gdb/f3-chunks.gdb	make -s f3-chunks.plain && gdb -q -b
 01-null.core	01-null.c,gdb/01-null-core.gdb	make -s core-01-null ARGS=plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-core.gdb ./01-null.plain cores/01-null.plain-plain.core
 01-null.field.core	01-null.c,gdb/01-null-field.gdb	make -s core-01-null ARGS=field >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-field.gdb ./01-null.plain cores/01-null.plain-field.core
 01-null.fnptr.core	01-null.c,gdb/01-null-fnptr.gdb	make -s core-01-null ARGS=fnptr >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-fnptr.gdb ./01-null.plain cores/01-null.plain-fnptr.core
+01-null.asan	01-null.c	make -s 01-null.asan && ASAN_OPTIONS=detect_leaks=0 ./01-null.asan plain
 02-uninit.memcheck	02-uninit.c	make -s 02-uninit.plain && valgrind --track-origins=yes ./02-uninit.plain
 02-uninit.msan	02-uninit.c	make -s 02-uninit.msan && MSAN_OPTIONS=external_symbolizer_path=/usr/bin/addr2line ./02-uninit.msan
 02-uninit.pattern	02-uninit.c	make -s 02-uninit.pattern && ./02-uninit.pattern

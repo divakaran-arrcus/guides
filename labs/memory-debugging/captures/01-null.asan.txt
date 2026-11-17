@@ -1,0 +1,18 @@
+# src 01-null.c 75043e02862e28df809bbaec1bb7d6545a3379ea9f9d54ccdfabd5fe5773d85a
+# cmd make -s 01-null.asan && ASAN_OPTIONS=detect_leaks=0 ./01-null.asan plain
+01-null.c:31:13: runtime error: member access within null pointer of type 'const struct session'
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==24==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x564ac007db8b bp 0x7ffcdf5b43f0 sp 0x7ffcdf5b43e0 T0)
+==24==The signal is caused by a READ memory access.
+==24==Hint: address points to the zero page.
+    #0 0x564ac007db8b in session_id /lab/01-null.c:31
+    #1 0x564ac007dbb8 in rx_plain /lab/01-null.c:37
+    #2 0x564ac007dddf in main /lab/01-null.c:54
+    #3 0x7f5d810591c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #4 0x7f5d8105928a in __libc_start_main_impl ../csu/libc-start.c:360
+    #5 0x564ac007d2e4 in _start (/lab/01-null.asan+0x32e4) (BuildId: 857b9d5cf9a0cb359894655679c9ecee03695e5f)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /lab/01-null.c:31 in session_id
+==24==ABORTING

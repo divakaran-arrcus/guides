@@ -23,6 +23,10 @@ f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 01-null.fnptr.core	^#0 +0x0+ in \?\? \(\)$
 01-null.fnptr.core	^\$1 = \(void \(\*\)\(\)\) 0x0$
 01-null.fnptr.core	ctrl_dispatch \+ [0-9]+ in section \.text
+01-null.asan	^01-null\.c:31:[0-9]+: runtime error: member access within null pointer of type 'const struct session'$
+01-null.asan	SEGV on unknown address 0x0+8 
+01-null.asan	#0 0x[0-9a-f]+ in session_id /lab/01-null\.c:31$
+01-null.asan	#1 0x[0-9a-f]+ in rx_plain /lab/01-null\.c:37$
 02-uninit.memcheck	Conditional jump or move depends on uninitialised value
 02-uninit.memcheck	created by a stack allocation
 02-uninit.msan	MemorySanitizer: use-of-uninitialized-value
@@ -43,6 +47,11 @@ f3-chunks.gdb	next \(mangled\) = 0x[0-9a-f]*[1-9a-f][0-9a-f]*
 05-double-free.core	abort
 05-double-free.core	free
 05-double-free.core	double free detected in tcache 2
+05-double-free.core	^\$1 = \(void \*\) 0x5555555592e0$
+05-double-free.core	^\$2 = 5$
+05-double-free.core	^\$3 = \(struct session \*\) 0x5555555592e0$
+05-double-free.core	^0x5555555592e0:[[:space:]]+0x0000000555555559[[:space:]]+0x[0-9a-f]{16}$
+05-double-free.core	^\$4 = 0x555555559$
 t2.build-id	BuildID
 t2.build-id	stripped
 06-uaf.asan	ERROR: AddressSanitizer: heap-use-after-free
