@@ -80,3 +80,5 @@ each capture against its regexes in `expect.tsv`.
 checks, syncs `captures/` back and runs the repo's leak gate over them.
 `remote.sh --rr-probe` finds the weakest flag that lets `rr record` work on that host. It records
 the result in `.rr-caps`, a local file that is not committed.
+
+<!-- cspell:words apport asan coredump heaptrack msan perfmon pktd reftrace seccomp tsan valgrind -->
