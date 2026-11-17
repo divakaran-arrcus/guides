@@ -1,30 +1,30 @@
-# src 06-uaf.c f2950ecb8652fa636931bfd98bab05087e5de3e8782b72151c210bd3e3d986b4
+# src 06-uaf.c 4e439bc687c5c296b96d9c210b67aaac6a4b679b914e86644eff76f9be6f2a86
 # cmd make -s 06-uaf.plain && valgrind ./06-uaf.plain
-==83== Memcheck, a memory error detector
-==83== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==83== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==83== Command: ./06-uaf.plain
-==83== 
+==40== Memcheck, a memory error detector
+==40== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==40== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==40== Command: ./06-uaf.plain
+==40== 
 rx: job 1 dropped by policy
-==83== Invalid read of size 8
-==83==    at 0x109302: rx_process (06-uaf.c:49)
-==83==    by 0x109398: main (06-uaf.c:62)
-==83==  Address 0x4a740c0 is 0 bytes inside a block of size 40 free'd
-==83==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==83==    by 0x1092E3: rx_policy (06-uaf.c:41)
-==83==    by 0x109365: main (06-uaf.c:60)
-==83==  Block was alloc'd at
-==83==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==83==    by 0x109256: rx_enqueue (06-uaf.c:27)
-==83==    by 0x109355: main (06-uaf.c:59)
-==83== 
+==40== Invalid read of size 8
+==40==    at 0x109302: rx_process (06-uaf.c:49)
+==40==    by 0x109398: main (06-uaf.c:62)
+==40==  Address 0x4a740c0 is 0 bytes inside a block of size 40 free'd
+==40==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==40==    by 0x1092E3: rx_policy (06-uaf.c:41)
+==40==    by 0x109365: main (06-uaf.c:60)
+==40==  Block was alloc'd at
+==40==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==40==    by 0x109256: rx_enqueue (06-uaf.c:27)
+==40==    by 0x109355: main (06-uaf.c:59)
+==40== 
 rx: job 1, 9000 bytes
-==83== 
-==83== HEAP SUMMARY:
-==83==     in use at exit: 0 bytes in 0 blocks
-==83==   total heap usage: 3 allocs, 3 frees, 4,192 bytes allocated
-==83== 
-==83== All heap blocks were freed -- no leaks are possible
-==83== 
-==83== For lists of detected and suppressed errors, rerun with: -s
-==83== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==40== 
+==40== HEAP SUMMARY:
+==40==     in use at exit: 0 bytes in 0 blocks
+==40==   total heap usage: 3 allocs, 3 frees, 4,192 bytes allocated
+==40== 
+==40== All heap blocks were freed -- no leaks are possible
+==40== 
+==40== For lists of detected and suppressed errors, rerun with: -s
+==40== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)

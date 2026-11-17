@@ -2,7 +2,7 @@
  *
  * struct rx_job is 40 bytes: a 0x30 chunk, a size class nothing else in this
  * program allocates, and only one job is ever allocated. So its tcache bin is
- * empty when rx_drop() frees it, and glibc's safe-linked 'next' pointer,
+ * empty when rx_policy() frees it, and glibc's safe-linked 'next' pointer,
  * (pos >> 12) ^ NULL, lands on job->buf. The plain build then loads
  * buf->len from an unmapped address (job >> 12) and faults every time.
  *
