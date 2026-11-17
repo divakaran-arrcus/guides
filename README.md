@@ -35,6 +35,16 @@ Leaf-spine fabrics and the BGP EVPN control plane.
 | BGP EVPN Guide | [bgp-evpn-guide.html](bgp-evpn-guide.html) | From VXLAN fundamentals to production L2VPN — VLANs, VXLAN packet format, BGP EVPN route types, ARP suppression, multi-homing, IRB, and full deployment walkthrough |
 | DC Fabric Design Guide | [dc-fabric-design-guide.html](dc-fabric-design-guide.html) | From legacy 3-tier to modern leaf-spine — IP fabrics, VXLAN, BGP EVPN, multi-tenancy, symmetric IRB, multi-site DCI, and full packet walks |
 
+### Systems Debugging
+
+Finding memory bugs in C daemons, from a live process or from only a core.
+
+| Guide | File | Description |
+|-------|------|-------------|
+| Memory Debugging from First Principles | [memory-debugging-guide.html](memory-debugging-guide.html) | Memory bugs in multithreaded C on Linux x86-64 — process layout, stack frames, the glibc allocator, the C memory model and locks; GDB, cores and symbols, ASan, TSan, Valgrind and rr; a ten-rung bug ladder (NULL deref to a refcount use-after-free that crashes far from its cause), each solved twice: when it reproduces and from only a core; core-to-reproducer workflow, cheat sheet, flag matrix, and glossary. Every terminal block is a real capture |
+
+The runnable lab kit behind every terminal block lives in [labs/memory-debugging/](labs/memory-debugging/) — see its README for building, capturing and re-checking the labs.
+
 ### Gen AI
 
 From AI fundamentals to the modern agentic coding stack.

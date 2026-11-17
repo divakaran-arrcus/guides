@@ -1,0 +1,14 @@
+flowchart TB
+  subgraph THINK["From the core"]
+    direction LR
+    CORE["An impossible state<br/>in the core"] --> WHO["Who can write it?<br/>Search the code"]
+    WHO --> HYP["One hypothesis:<br/>a path or interleaving"]
+  end
+  subgraph REPRO["To a reproducer"]
+    direction LR
+    HAR["Harness: widen the<br/>window, cheap check"] --> LOOP{"Fails?"}
+    LOOP -- not yet --> HAR
+    LOOP -- yes --> REC["rr record<br/>the failing run"]
+    REC --> REP["Replay it as often<br/>as you need"]
+  end
+  THINK --> REPRO

@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant C as control
+  participant W2 as worker 2
+  participant W3 as worker 3
+  participant S as session 7 chunk
+  C->>S: create session 7: refcnt 1
+  W2->>S: session_get(7): 1 → 2
+  W3->>S: handle_timeout(7): put with no get, 2 → 1 (the bug)
+  W2->>S: session_put(7), correct: 1 → 0, free
+  S-->>W2: chunk goes into worker 2's tcache
+  W2->>S: malloc same size, fill a pktbuf (same chunk)
+  C->>S: table_dump() reads s->peer: packet bytes
+  S-->>C: SIGSEGV, far from the cause

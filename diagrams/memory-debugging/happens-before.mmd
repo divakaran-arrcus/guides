@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant A as Thread A
+  participant M as mutex m
+  participant B as Thread B
+  A->>A: write x
+  A->>M: unlock(m)
+  M-->>B: synchronizes-with: unlock → lock of the same m
+  B->>M: lock(m)
+  B->>B: read x (the write happens-before it)

@@ -1,0 +1,3 @@
+flowchart LR
+  CTL["control thread<br/>holds table_lock"] -- waits for stats_lock --> STA["stats thread<br/>holds stats_lock"]
+  STA -- waits for table_lock --> CTL
