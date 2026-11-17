@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # remote.sh — run lab captures on a remote x86-64 Linux Docker host. Runs on your workstation.
 # usage: LAB_HOST=user@host ./remote.sh [capture-id ...]   (no ids = every row of captures.tsv)
+#        CAP_TIMEOUT=<s> raises run-capture.sh's per-capture timeout (default 300 s)
 #        LAB_HOST=user@host ./remote.sh --rr-probe         (decide RR_CAPS, write .rr-caps)
 #
 # Capture run, in order:
@@ -52,7 +53,7 @@ caps=$(sed -n 2p .rr-caps 2>/dev/null || true)
 
 up; build
 set +e
-"${SSH[@]}" "$LAB_HOST" "cd $RDIR && docker run $BASE $caps mdg-lab bash -c './run-capture.sh $ids && ./check.sh $ids'"
+"${SSH[@]}" "$LAB_HOST" "cd $RDIR && docker run $BASE $caps ${CAP_TIMEOUT:+-e CAP_TIMEOUT=$CAP_TIMEOUT} mdg-lab bash -c './run-capture.sh $ids && ./check.sh $ids'"
 run_rc=$?
 "${SSH[@]}" "$LAB_HOST" 'cd mdg-lab && docker run --rm -v "$PWD":/lab mdg-lab chown -R "$(id -u):$(id -g)" /lab'
 set -e
