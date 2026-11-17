@@ -29,7 +29,7 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const OPEN = /<!--(SRC|CAP):([\w.\-/]+)(?: lines=([\d,\-]+))?-->/g;
+const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
 
 function expectedSrc(path, spec, labsDir) {
   const f = join(labsDir, path);
@@ -63,7 +63,7 @@ export function syncHtml(html, labsDir, mode) {
     OPEN.lastIndex = pos;
     const m = OPEN.exec(html);
     if (!m) break;
-    const [open, kind, id, spec] = m;
+    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4], spec = m[5];
     const bodyStart = m.index + open.length;
     const close = `<!--/${kind}:${id}-->`;
     const j = html.indexOf(close, bodyStart);

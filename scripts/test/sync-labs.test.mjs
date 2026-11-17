@@ -126,3 +126,11 @@ test('resolveGuideHtml prefers <slug>-guide.html, falls back to gen-ai', () => {
   writeFileSync(join(root, 'foo-guide.html'), '');
   assert.equal(resolveGuideHtml(root, 'foo'), join(root, 'foo-guide.html'));
 });
+
+test('CAP id charset excludes "/": CAP:a/b is not a CAP block', () => {
+  const dir = lab();
+  const page = '<!--CAP:a/b-->keep<!--/CAP:a/b-->';
+  const r = syncHtml(page, dir, 'write');
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.html, page);
+});

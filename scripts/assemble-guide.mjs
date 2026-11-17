@@ -10,7 +10,7 @@ const argv = process.argv.slice(2);
 const oi = argv.indexOf('--out');
 if (oi !== -1 && !argv[oi + 1]) { console.error('--out needs a file'); process.exit(2); }
 const OUT = oi !== -1 ? argv[oi + 1] : null;
-const SLUG = argv.find((a, i) => !a.startsWith('--') && i !== oi + 1);
+const SLUG = argv.find((a, i) => !a.startsWith('--') && (oi === -1 || i !== oi + 1));
 if (!SLUG) { console.error('usage: assemble-guide.mjs <slug> [--out <file>]'); process.exit(2); }
 const HTML = resolveGuideHtml(ROOT, SLUG);
 const DIR = join(ROOT, '.build', SLUG);
