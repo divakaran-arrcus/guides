@@ -50,8 +50,10 @@ Open the core with `gdb ./01-null.plain cores/01-null.plain-field.core`.
   the host kernel, not namespaced. Inside a container it is read-only. On a host where it pipes
   to a handler (systemd-coredump, apport and the like), a kernel core from the container goes to
   the *host's* handler. It never lands in your working directory.
-- **So the container runs with `--ulimit core=0`.** Kernel cores are switched off. Crashing labs
-  never feed the host's handler, and you never collect a stray core in an unknown place.
+- **So the container runs with `--ulimit core=0`.** With a file `core_pattern` the kernel then
+  writes no core. With a pipe the kernel ignores the limit: it still starts the host's handler and
+  passes it the limit (`%c`). A limit-honouring handler such as systemd-coredump keeps nothing;
+  other handlers may not. Either way, no stray core lands in your working directory.
   `generate-core-file` is GDB writing a file through ptrace, so the limit doesn't apply to it.
 
 ## `docker run` flags
@@ -61,7 +63,7 @@ Open the core with `gdb ./01-null.plain cores/01-null.plain-field.core`.
 | `--rm` | Throw the container away after each run; state lives only in `/lab`. |
 | `--hostname pktd-lab` | Fixed, neutral hostname, so captures never show the real machine's name. |
 | `-v "$PWD":/lab -w /lab` | Work on this directory in place; paths in captures read `/lab/...`. |
-| `--ulimit core=0` | No kernel cores (see above); GDB-written cores still work. |
+| `--ulimit core=0` | No file cores; a limit-honouring pipe handler keeps nothing, though it still runs (see above). GDB-written cores still work. |
 | `--cap-add SYS_PTRACE` | Lets gdb attach to running processes and lets ASan/LSan inspect threads. |
 | `--security-opt seccomp=unconfined` | Allows `personality()` (gdb disables ASLR) and the perf/ptrace calls rr needs. |
 | `--cap-add PERFMON` / `SYS_ADMIN` / `--privileged` | Only for rr: it needs `perf_event_open`. Use the weakest one that works on your host. |
