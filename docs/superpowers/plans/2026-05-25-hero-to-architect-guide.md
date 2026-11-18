@@ -19,8 +19,8 @@
 ## File Structure
 
 Single artifact:
-- Create: `/Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html`
-- Modify: `/Users/divakaran/arrcus_workspace/guides/README.md` (add row to guides table — final task)
+- Create: `hero-to-architect-guide.html`
+- Modify: `README.md` (add row to guides table — final task)
 
 No other files. Embedded CSS + JS in the HTML file (matches the rest of the repo's guides).
 
@@ -48,14 +48,14 @@ No other files. Embedded CSS + JS in the HTML file (matches the rest of the repo
 ## Task 1: Scaffold the HTML file from v1's chrome
 
 **Files:**
-- Create: `/Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html`
-- Read: `/Users/divakaran/arrcus_workspace/guides/gen-ai-zero-to-hero-guide.html` (source pattern)
+- Create: `hero-to-architect-guide.html`
+- Read: `gen-ai-zero-to-hero-guide.html` (source pattern)
 
 - [ ] **Step 1: Copy v1 file as starting point**
 
 ```bash
-cp /Users/divakaran/arrcus_workspace/guides/gen-ai-zero-to-hero-guide.html \
-   /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html
+cp gen-ai-zero-to-hero-guide.html \
+   hero-to-architect-guide.html
 ```
 
 - [ ] **Step 2: Update `<title>` and sidebar brand**
@@ -182,7 +182,7 @@ div.see-also a:hover { text-decoration: underline; }
 First, confirm v1's active-section class name (the snippet below assumes `section active`):
 
 ```bash
-grep -oE 'class="[^"]*active[^"]*"' /Users/divakaran/arrcus_workspace/guides/gen-ai-zero-to-hero-guide.html | sort -u
+grep -oE 'class="[^"]*active[^"]*"' gen-ai-zero-to-hero-guide.html | sort -u
 ```
 
 Expected: `class="section active"`. If v1 uses a different convention (e.g., `is-active`, `current`), use that instead.
@@ -207,7 +207,7 @@ Open `hero-to-architect-guide.html` in a browser. Verify:
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 git add hero-to-architect-guide.html
 git commit -m "feat(hero-to-architect): scaffold guide chrome with adjusted accent"
 ```
@@ -1318,7 +1318,7 @@ git commit -am "docs(hero-to-architect): add Reference — Further Reading"
 - [ ] **Step 1: List all referenced ids (sidebar + see-also links)**
 
 ```bash
-grep -oE "go\('[a-z0-9-]+'\)" /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html \
+grep -oE "go\('[a-z0-9-]+'\)" hero-to-architect-guide.html \
   | sed -E "s/go\('([a-z0-9-]+)'\)/\1/" | sort -u > /tmp/refs.txt
 cat /tmp/refs.txt
 ```
@@ -1328,7 +1328,7 @@ Expected: every id referenced should also appear as a `<section id="...">` (next
 - [ ] **Step 2: Cross-check refs against actual `<section id>` targets**
 
 ```bash
-grep -oE '<section[^>]*id="[a-z0-9-]+"' /Users/divakaran/arrcus_workspace/guides/hero-to-architect-guide.html \
+grep -oE '<section[^>]*id="[a-z0-9-]+"' hero-to-architect-guide.html \
   | sed -E 's/.*id="([^"]+)"/\1/' | sort -u > /tmp/section-ids.txt
 comm -23 /tmp/refs.txt /tmp/section-ids.txt   # refs with no matching section = orphan link
 comm -13 /tmp/refs.txt /tmp/section-ids.txt   # sections with no incoming link (acceptable for some, e.g. welcome)
@@ -1380,7 +1380,7 @@ git commit -am "fix(hero-to-architect): visual polish"
 ## Task 27: README update + final commit
 
 **Files:**
-- Modify: `/Users/divakaran/arrcus_workspace/guides/README.md`
+- Modify: `README.md`
 
 - [ ] **Step 1: Add row to the guides table**
 
@@ -1393,7 +1393,7 @@ In README.md, add to the Guides table:
 - [ ] **Step 2: Update `IDEAS.md` if the guide is listed there**
 
 ```bash
-grep -l "Hero to Architect" /Users/divakaran/arrcus_workspace/guides/IDEAS.md && echo "FOUND — edit the row's Status column to 'Done'" || echo "NOT LISTED — skip"
+grep -l "Hero to Architect" IDEAS.md && echo "FOUND — edit the row's Status column to 'Done'" || echo "NOT LISTED — skip"
 ```
 
 If found, change that row's Status to `Done`. If not listed, no action needed.
@@ -1401,7 +1401,7 @@ If found, change that row's Status to `Done`. If not listed, no action needed.
 - [ ] **Step 3: Verify README renders correctly**
 
 ```bash
-cat /Users/divakaran/arrcus_workspace/guides/README.md
+cat README.md
 ```
 
 - [ ] **Step 4: Final commit**

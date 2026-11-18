@@ -9,9 +9,9 @@
 **Tech Stack:** Vanilla HTML + CSS + JS. No build step. Google Fonts (DM Sans, Source Serif 4, JetBrains Mono).
 
 **Reference inputs:**
-- Spec: `/Users/divakaran/arrcus_workspace/guides/docs/superpowers/specs/2026-05-31-evpn-vxlan-to-srv6-migration-design.md`
-- Template (chrome donor): `/Users/divakaran/arrcus_workspace/guides/mpls-to-srv6-migration-guide.html` (closest playbook-structure peer)
-- CSS donor for `.ph`: `/Users/divakaran/arrcus_workspace/guides/gen-ai-hero-to-architect-guide.html` lines 161–164
+- Spec: `docs/superpowers/specs/2026-05-31-evpn-vxlan-to-srv6-migration-design.md`
+- Template (chrome donor): `mpls-to-srv6-migration-guide.html` (closest playbook-structure peer)
+- CSS donor for `.ph`: `gen-ai-hero-to-architect-guide.html` lines 161–164
 - Sibling guides for prereq cross-links (not modified): `bgp-evpn-guide.html`, `dc-fabric-design-guide.html`, `srv6-complete-guide.html`, `srv6-network-programming-guide.html`
 
 **Guide-section numbering note:** Throughout this plan, "§N" refers to the **guide's** h2 sections per the spec (§FM-1, §FM-2, §1–§23). Not spec-doc sections.
@@ -21,9 +21,9 @@
 ## File Structure
 
 Single artifact:
-- Create: `/Users/divakaran/arrcus_workspace/guides/evpn-vxlan-to-srv6-migration-guide.html`
-- Modify: `/Users/divakaran/arrcus_workspace/guides/README.md` (add a row to the "SRv6 Advanced & Migration" bucket — final task)
-- Modify: `/Users/divakaran/arrcus_workspace/guides/IDEAS.md` (mark #6 Done — final task)
+- Create: `evpn-vxlan-to-srv6-migration-guide.html`
+- Modify: `README.md` (add a row to the "SRv6 Advanced & Migration" bucket — final task)
+- Modify: `IDEAS.md` (mark #6 Done — final task)
 
 No other files. Embedded CSS + JS in the HTML file (matches the rest of the repo's guides).
 
@@ -57,15 +57,15 @@ These identifiers must be reused verbatim across §3, §6, §7, §8, §15, §16,
 ## Task 1: Scaffold the HTML file from the networking-guide template
 
 **Files:**
-- Create: `/Users/divakaran/arrcus_workspace/guides/evpn-vxlan-to-srv6-migration-guide.html`
-- Read: `/Users/divakaran/arrcus_workspace/guides/mpls-to-srv6-migration-guide.html` (template — closest playbook-structure peer)
-- Read: `/Users/divakaran/arrcus_workspace/guides/gen-ai-hero-to-architect-guide.html` lines 161–164 (`.ph` CSS to port)
+- Create: `evpn-vxlan-to-srv6-migration-guide.html`
+- Read: `mpls-to-srv6-migration-guide.html` (template — closest playbook-structure peer)
+- Read: `gen-ai-hero-to-architect-guide.html` lines 161–164 (`.ph` CSS to port)
 
 - [ ] **Step 1: Copy the template as starting point**
 
 ```bash
-cp /Users/divakaran/arrcus_workspace/guides/mpls-to-srv6-migration-guide.html \
-   /Users/divakaran/arrcus_workspace/guides/evpn-vxlan-to-srv6-migration-guide.html
+cp mpls-to-srv6-migration-guide.html \
+   evpn-vxlan-to-srv6-migration-guide.html
 ```
 
 - [ ] **Step 2: Update `<title>` and sidebar brand**
@@ -120,7 +120,7 @@ grep -c '<nav class="sidebar"' evpn-vxlan-to-srv6-migration-guide.html  # expect
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 git add evpn-vxlan-to-srv6-migration-guide.html
 git commit -m "feat(evpn-srv6): scaffold guide from mpls-to-srv6 template; port .ph CSS"
 ```
@@ -1076,7 +1076,7 @@ git commit -m "docs(evpn-srv6): write §23 Glossary"
 - [ ] **Step 1: List all referenced ids**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 grep -oE "go\('[a-z0-9-]+'" evpn-vxlan-to-srv6-migration-guide.html | sed -E "s/go\('([a-z0-9-]+)'/\1/" | sort -u > /tmp/evpn-refs.txt
 cat /tmp/evpn-refs.txt
 ```
@@ -1109,7 +1109,7 @@ git commit -m "fix(evpn-srv6): cross-link verification — repair orphan see-als
 - [ ] **Step 1: Open in default browser, walk every section**
 
 ```bash
-open /Users/divakaran/arrcus_workspace/guides/evpn-vxlan-to-srv6-migration-guide.html
+open evpn-vxlan-to-srv6-migration-guide.html
 ```
 
 Check each of the 25 sections: layout doesn't break, code blocks don't overflow, tables don't blow out on narrow widths, packet diagrams render correctly.
@@ -1153,8 +1153,8 @@ git commit -m "fix(evpn-srv6): visual polish"
 ## Task 23: README + IDEAS.md update + final commit
 
 **Files:**
-- Modify: `/Users/divakaran/arrcus_workspace/guides/README.md`
-- Modify: `/Users/divakaran/arrcus_workspace/guides/IDEAS.md`
+- Modify: `README.md`
+- Modify: `IDEAS.md`
 
 - [ ] **Step 1: Add the guide to README's "SRv6 Advanced & Migration" bucket**
 

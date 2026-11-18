@@ -12,10 +12,10 @@
 
 ## File Structure
 
-- Create: `/Users/divakaran/arrcus_workspace/guides/gen-ai-architect-to-leader-guide.html`
-- Modify: `/Users/divakaran/arrcus_workspace/guides/README.md` (add row to Gen AI table — late task)
-- Modify: `/Users/divakaran/arrcus_workspace/guides/gen-ai-zero-to-hero-guide.html` (add forward link to Part 3 — late task)
-- Modify: `/Users/divakaran/arrcus_workspace/guides/gen-ai-hero-to-architect-guide.html` (add forward link to Part 3 — late task)
+- Create: `gen-ai-architect-to-leader-guide.html`
+- Modify: `README.md` (add row to Gen AI table — late task)
+- Modify: `gen-ai-zero-to-hero-guide.html` (add forward link to Part 3 — late task)
+- Modify: `gen-ai-hero-to-architect-guide.html` (add forward link to Part 3 — late task)
 
 No other files. Embedded CSS + JS in the HTML (matches the repo's other guides).
 
@@ -43,7 +43,7 @@ No other files. Embedded CSS + JS in the HTML (matches the repo's other guides).
 
 **Verification convention (per render step):** the full sidebar (all 23 `go()` targets) is built once in Task 2, but sections are added one task at a time — so a whole-file nav↔section parity check would report every *not-yet-built* section as unlinked until the build finishes. That full parity check therefore lives in **Task 22**. Per task, run only the div-balance check and confirm the id(s) you built *this task* now resolve:
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 f=gen-ai-architect-to-leader-guide.html
 o=$(grep -o "<div" "$f"|wc -l); c=$(grep -o "</div>" "$f"|wc -l); echo "div $o/$c"
 for id in <ids-built-this-task>; do
@@ -57,14 +57,14 @@ Expected: `div N/N` (balanced), and `ok <id>` for every section built this task.
 ## Task 1: Scaffold the HTML file from Part 2's chrome
 
 **Files:**
-- Create: `/Users/divakaran/arrcus_workspace/guides/gen-ai-architect-to-leader-guide.html`
-- Read: `/Users/divakaran/arrcus_workspace/guides/gen-ai-hero-to-architect-guide.html` (source pattern — latest chrome)
+- Create: `gen-ai-architect-to-leader-guide.html`
+- Read: `gen-ai-hero-to-architect-guide.html` (source pattern — latest chrome)
 
 - [ ] **Step 1: Copy Part 2 as the starting point**
 
 ```bash
-cp /Users/divakaran/arrcus_workspace/guides/gen-ai-hero-to-architect-guide.html \
-   /Users/divakaran/arrcus_workspace/guides/gen-ai-architect-to-leader-guide.html
+cp gen-ai-hero-to-architect-guide.html \
+   gen-ai-architect-to-leader-guide.html
 ```
 
 - [ ] **Step 2: Update `<title>` and sidebar brand**
@@ -110,7 +110,7 @@ Do it mechanically, not by eyeballing 8,600 lines:
 - [ ] **Step 6: Verify the shell loads**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 grep -c "<section" gen-ai-architect-to-leader-guide.html   # expect 1 (welcome stub)
 o=$(grep -o "<div" gen-ai-architect-to-leader-guide.html|wc -l); c=$(grep -o "</div>" gen-ai-architect-to-leader-guide.html|wc -l); echo "div $o/$c"
 ```
@@ -439,7 +439,7 @@ git commit -m "docs(architect-to-leader): front matter — Welcome + The Map"
 - [ ] **Step 1: Verify every `go('id')` resolves and every section is reachable**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 f=gen-ai-architect-to-leader-guide.html
 grep -oE "go\('[a-z0-9-]+'\)" "$f"|sed "s/go('//;s/')//"|sort -u > /tmp/n.txt
 grep -oE 'id="[a-z0-9-]+" class="section' "$f"|sed 's/id="//;s/" class.*//'|sort -u > /tmp/s.txt

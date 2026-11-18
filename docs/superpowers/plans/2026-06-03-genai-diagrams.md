@@ -55,7 +55,7 @@ Expected: the binary path prints + `OK`.
 - [ ] **Step 2: Resolve and record the mermaid-cli pin, and smoke-test it against system Chrome**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 cat > puppeteer-config.json <<'EOF'
 { "executablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "args": ["--no-sandbox"] }
 EOF
@@ -76,7 +76,7 @@ Expected set includes: `--bg --surface --surface2 --surface3 --border --border-l
 
 ```bash
 cat > cspell.json <<'EOF'
-{ "version": "0.2", "words": ["mmdc","xychart","RLHF","agentic","gitlog","flexbox","viewBox","puppeteer","Mermaid","mermaid","themeVariables","currentColor","Genie","pyATS","arcOS","SRv6","EVPN"] }
+{ "version": "0.2", "words": ["mmdc","xychart","RLHF","agentic","gitlog","flexbox","viewBox","puppeteer","Mermaid","mermaid","themeVariables","currentColor","Genie","pyATS","SRv6","EVPN"] }
 EOF
 ```
 
@@ -236,7 +236,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { postprocess, lintSvg } from './lib/postprocess.mjs';
 
 const PIN = '@mermaid-js/mermaid-cli@11.4.2';
-const ROOT = '/Users/divakaran/arrcus_workspace/guides';
+const ROOT = '<repo root>';
 const HERE = dirname(fileURLToPath(import.meta.url));     // .../scripts
 const GUIDE = process.argv[2] || 'zero-to-hero';
 const ONLY = process.argv[3];                            // optional: build a single id
@@ -301,7 +301,7 @@ flowchart LR
 - [ ] **Step 4: Create a minimal registry so the orchestrator runs (full registry in Task 4)**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 mkdir -p diagrams/zero-to-hero
 cat > diagrams/zero-to-hero/_registry.mjs <<'EOF'
 export const REGISTRY = {
@@ -315,7 +315,7 @@ EOF
 Render + post-process the spike directly (does **not** touch the guide yet), then eyeball it in a themed harness page:
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node --input-type=module -e "
 import { postprocess, lintSvg } from './scripts/lib/postprocess.mjs';
 import { execFileSync } from 'node:child_process';
@@ -368,7 +368,7 @@ figure.diagram .ann { margin-top: 6px; }
 - [ ] **Step 3: Inject just this diagram**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node scripts/build-diagrams.mjs zero-to-hero agent-loop
 ```
 Expected: `injected 1 diagram(s)`.
@@ -463,7 +463,7 @@ export function tokenFill(id, data, title) {
 - [ ] **Step 2: Unit-check the templates render valid SVG with no raw hex**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node --input-type=module -e "
 import { barChart } from './scripts/lib/templates.mjs';
 const s = barChart('t', {unit:'tokens', bars:[{label:'GPT-3.5',value:4096,display:'4K'},{label:'Gemini 3 Pro',value:1000000,display:'1M'}]}, 'Context windows');
@@ -569,7 +569,7 @@ export const REGISTRY = {
 - [ ] **Step 4: Build all and verify**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node scripts/build-diagrams.mjs zero-to-hero
 f=gen-ai-zero-to-hero-guide.html
 o=$(grep -o "<div" "$f"|wc -l); c=$(grep -o "</div>" "$f"|wc -l); echo "div $o/$c"
@@ -651,7 +651,7 @@ git commit -m "docs(zero-to-hero): add 7 diagrams — family tree, NN, training,
 - [ ] **Step 4: Build all + verify (now 13)**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node scripts/build-diagrams.mjs zero-to-hero
 f=gen-ai-zero-to-hero-guide.html
 echo "markers: $(grep -oE '<!--DIAGRAM:[a-z-]+-->' "$f" | wc -l) (expect 13)"
@@ -676,7 +676,7 @@ git commit -m "docs(zero-to-hero): add 5 diagrams — context-window & pricing c
 - [ ] **Step 1: Idempotency — re-run build, expect zero diff**
 
 ```bash
-cd /Users/divakaran/arrcus_workspace/guides
+cd "$(git rev-parse --show-toplevel)"
 node scripts/build-diagrams.mjs zero-to-hero
 git diff --stat gen-ai-zero-to-hero-guide.html
 ```
