@@ -8710,29 +8710,45 @@ gemini extensions install --source &lt;git-url&gt;</code></pre>
   navBtn.className = 'nav-toggle';
   navBtn.textContent = 'Contents';
   navBtn.setAttribute('aria-expanded', 'false');
-  navBtn.addEventListener('click', e => { e.stopPropagation(); setNavOpen(!document.body.classList.contains('nav-open')); });
-  document.body.append(navBtn);
+  navBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = !document.body.classList.contains('nav-open');
+    setNavOpen(open);
+    // Move focus into the overlay so Tab walks the entries, not the page behind it.
+    if (open) (document.querySelector('.nav-item.active') || document.querySelector('.nav-item'))?.focus();
+  });
+  document.querySelector('.sidebar').before(navBtn);   // tab order: button, then the overlay's entries
   function setNavOpen(open) {
     document.body.classList.toggle('nav-open', open);
     document.querySelector('.nav-toggle')?.setAttribute('aria-expanded', String(open));
   }
+  // A click on the dimmed backdrop only closes the overlay: capture it before it reaches a link or button underneath.
   document.addEventListener('click', e => {
-    if (document.body.classList.contains('nav-open') && !e.target.closest('.sidebar')) setNavOpen(false);
+    if (!document.body.classList.contains('nav-open') || e.target.closest('.sidebar, .nav-toggle')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setNavOpen(false);
+  }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !document.body.classList.contains('nav-open')) return;
+    setNavOpen(false);
+    navBtn.focus();
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') setNavOpen(false); });
 
   // In-content links need an href to be tabbable (and to open in a new tab); go() still handles the click.
   document.querySelectorAll('a[onclick*="go("]').forEach(a => {
     const id = navTarget(a);
     if (!id) return;
-    if (!a.hasAttribute('href')) a.setAttribute('href', '#' + id);
+    const href = a.getAttribute('href');
+    if (!href || href === '#') a.setAttribute('href', '#' + id);
     a.addEventListener('click', e => e.preventDefault());
   });
 
   // Deep links, refresh, Back and Forward: open the section the URL names, or the first page when it names none.
   const home = (document.querySelector('.section.active') || document.querySelector('.section')).id;
   function showFromHash() {
-    const id = decodeURIComponent(location.hash.slice(1));
+    let id = '';
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) {}   // a malformed hash opens the first page
     show(document.getElementById(id)?.classList.contains('section') ? id : home);
   }
   window.addEventListener('hashchange', showFromHash);
