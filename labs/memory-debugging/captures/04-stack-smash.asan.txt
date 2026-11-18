@@ -1,4 +1,6 @@
 # src 04-stack-smash.c 8f8387cc0b4302a948cfbbe820c2f0abf8479a17083b959c97187bb2425f66a2
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 04-stack-smash.asan && ./04-stack-smash.asan
 =================================================================
 ==301==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7f01e7500070 at pc 0x7f01ea1f4923 bp 0x7ffdd8a56e40 sp 0x7ffdd8a565e8

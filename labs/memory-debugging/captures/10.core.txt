@@ -1,6 +1,8 @@
 # src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
 # src pktd-gdb.py e810db0ca107aa466668fa3c91cb5c67611d5775612ef59edc0982f1c2bea7f5
 # src gdb/10-core.gdb 1938294a25327d7e6a7e61b739fe63829ee5dd28c22ff63e56bf103885ec0759
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-10-refcount-uaf >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/10-core.gdb ./10-refcount-uaf.plain cores/10-refcount-uaf.plain.core
 [New LWP 105]
 [New LWP 102]

@@ -1,4 +1,6 @@
 # src 05-double-free.c da7a8a7a77dd8f57409b598e1380ce3bc0b4306acc43333efd972b94e16e6d00
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 05-double-free.asan && ./05-double-free.asan
 session 5: invalid peer port, dropped
 =================================================================

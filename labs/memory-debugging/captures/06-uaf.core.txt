@@ -1,5 +1,7 @@
 # src 06-uaf.c 4e439bc687c5c296b96d9c210b67aaac6a4b679b914e86644eff76f9be6f2a86
 # src gdb/06-uaf-core.gdb 8f193d568b145dd88dcd8c7f6e8f4ef0b16805ad27ca7649967ce8a4d95501c1
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-06-uaf >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/06-uaf-core.gdb ./06-uaf.plain cores/06-uaf.plain.core
 [New LWP 70]
 [Thread debugging using libthread_db enabled]

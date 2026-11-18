@@ -1,5 +1,7 @@
 # src f2-frames.c 1ce4fda498f19c2353a36c6310039bf24301b35ddafbf896b2d9a93b90a5211b
 # src gdb/f2-frames.gdb af7364bca942732bfbacb709eb81d9569ed7a2843bd31b57a1c76fc60cea38c9
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s f2-frames.plain && gdb -q -batch -nx -x gdb/f2-frames.gdb ./f2-frames.plain
 Breakpoint 1 at 0x1198: file f2-frames.c, line 11.
 [Thread debugging using libthread_db enabled]

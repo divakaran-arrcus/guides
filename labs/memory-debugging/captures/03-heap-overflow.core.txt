@@ -1,5 +1,7 @@
 # src 03-heap-overflow.c f8639c5742a78fa11a68cfbc13507df5c8323452a9d93f9f9bb1ab577017f2c3
 # src gdb/03-heap-overflow-core.gdb 83235afa1377cd0709929c6a616c9b19e337c22153c6562b4160bc2278ab2eb8
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-03-heap-overflow >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/03-heap-overflow-core.gdb ./03-heap-overflow.plain cores/03-heap-overflow.plain.core
 [New LWP 271]
 [Thread debugging using libthread_db enabled]

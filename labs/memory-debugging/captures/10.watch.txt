@@ -1,5 +1,7 @@
 # src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
 # src gdb/10-watch.gdb eb74211bdfe6e3be8fab24b25daadfab00fb9b90b328b3e7ef37aa59843a6427
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/10-watch.gdb ./10-refcount-uaf.plain
 Breakpoint 1 at 0x15bb: file 10-refcount-uaf.c, line 38.
 [Thread debugging using libthread_db enabled]

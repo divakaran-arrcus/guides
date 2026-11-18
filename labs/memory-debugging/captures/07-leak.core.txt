@@ -1,6 +1,8 @@
 # src 07-leak.c 8c86e1c2a3ee9e5c04cbe224574084a1f67eb61ca72fe03742e9ebc1f8a01b6c
 # src pktd-gdb.py e810db0ca107aa466668fa3c91cb5c67611d5775612ef59edc0982f1c2bea7f5
 # src gdb/07-leak-core.gdb 2ed8a8796de65fdb6032090678c5260e86e7f5cab79aa1d5a2e309710cd42cfa
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 07-leak.plain && mkdir -p cores && rm -f cores/07-leak.exit.core && gdb -q -batch -nx -ex 'break main' -ex run -ex 'break _exit' -ex continue -ex 'generate-core-file cores/07-leak.exit.core' ./07-leak.plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/07-leak-core.gdb ./07-leak.plain cores/07-leak.exit.core
 [New LWP 40]
 [Thread debugging using libthread_db enabled]

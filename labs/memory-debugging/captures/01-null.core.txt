@@ -1,5 +1,7 @@
 # src 01-null.c 75043e02862e28df809bbaec1bb7d6545a3379ea9f9d54ccdfabd5fe5773d85a
 # src gdb/01-null-core.gdb f013959465b66a40f90ea3ab0001f8aa2819246f53145bcb6a8e6d6b7d7d8752
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-01-null ARGS=plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-core.gdb ./01-null.plain cores/01-null.plain-plain.core
 [New LWP 38]
 [Thread debugging using libthread_db enabled]

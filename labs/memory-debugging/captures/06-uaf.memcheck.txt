@@ -1,4 +1,6 @@
 # src 06-uaf.c 4e439bc687c5c296b96d9c210b67aaac6a4b679b914e86644eff76f9be6f2a86
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 06-uaf.plain && valgrind ./06-uaf.plain
 ==40== Memcheck, a memory error detector
 ==40== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.

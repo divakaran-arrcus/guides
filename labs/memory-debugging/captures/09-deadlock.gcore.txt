@@ -1,5 +1,7 @@
 # src 09-deadlock.c 013fdbb2a8e7d94aa1c7b57205dad88fd7c22f59a6acb9bdec6d0e00d6ee4036
 # src gdb/09-deadlock-core.gdb eab3d067441613de255f99fb263bd1b8f22b1797392df863837052cfa446942c
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 09-deadlock.plain && mkdir -p cores && rm -f cores/09.* && { ./09-deadlock.plain hang & pid=$!; sleep 2; gcore -o cores/09 $pid; kill $pid; } && gdb -q -batch -nx -x gdb/09-deadlock-core.gdb ./09-deadlock.plain cores/09.$pid
 [New LWP 272]
 [New LWP 271]

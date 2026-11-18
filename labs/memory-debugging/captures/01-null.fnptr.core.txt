@@ -1,5 +1,7 @@
 # src 01-null.c 75043e02862e28df809bbaec1bb7d6545a3379ea9f9d54ccdfabd5fe5773d85a
 # src gdb/01-null-fnptr.gdb 959199fe2fb7975a9d48d3e9fb0274bd140c8bdb433e83df45b77fb8c9a8068c
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-01-null ARGS=fnptr >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-fnptr.gdb ./01-null.plain cores/01-null.plain-fnptr.core
 [New LWP 175]
 [Thread debugging using libthread_db enabled]

@@ -1,5 +1,7 @@
 # src 05-double-free.c da7a8a7a77dd8f57409b598e1380ce3bc0b4306acc43333efd972b94e16e6d00
 # src gdb/05-double-free-core.gdb cf5452e65ea8acca333789f4fba0070f44f49c3a46df89631aef20125fea0b3a
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s core-05-double-free >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/05-double-free-core.gdb ./05-double-free.plain cores/05-double-free.plain.core
 [New LWP 54]
 [Thread debugging using libthread_db enabled]

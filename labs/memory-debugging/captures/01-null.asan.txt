@@ -1,4 +1,6 @@
 # src 01-null.c 75043e02862e28df809bbaec1bb7d6545a3379ea9f9d54ccdfabd5fe5773d85a
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 01-null.asan && ASAN_OPTIONS=detect_leaks=0 ./01-null.asan plain
 01-null.c:31:13: runtime error: member access within null pointer of type 'const struct session'
 AddressSanitizer:DEADLYSIGNAL

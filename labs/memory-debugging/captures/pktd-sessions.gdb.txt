@@ -1,6 +1,8 @@
 # src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
 # src pktd-gdb.py e810db0ca107aa466668fa3c91cb5c67611d5775612ef59edc0982f1c2bea7f5
 # src gdb/pktd-sessions.gdb 9a21da8543186b77987dd3bee963f2ae808a1f8c2f03c379b5e707497f6b2e48
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/pktd-sessions.gdb ./10-refcount-uaf.plain
 Breakpoint 1 at 0x15bb: file 10-refcount-uaf.c, line 38.
 [Thread debugging using libthread_db enabled]

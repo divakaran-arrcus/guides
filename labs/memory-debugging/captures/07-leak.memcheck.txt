@@ -1,4 +1,6 @@
 # src 07-leak.c 8c86e1c2a3ee9e5c04cbe224574084a1f67eb61ca72fe03742e9ebc1f8a01b6c
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 07-leak.plain && valgrind --leak-check=full ./07-leak.plain
 ==134== Memcheck, a memory error detector
 ==134== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.

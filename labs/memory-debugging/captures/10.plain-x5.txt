@@ -1,4 +1,6 @@
 # src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
 # cmd make -s 10-refcount-uaf.plain && for i in 1 2 3 4 5; do ./10-refcount-uaf.plain >/tmp/run$i 2>&1; echo "rc=$?" >>/tmp/run$i; echo "run $i: $(tail -1 /tmp/run$i)"; done 2>/dev/null; echo "--- run 1 output:"; cat /tmp/run1; echo "unique=$(for i in 1 2 3 4 5; do md5sum </tmp/run$i; done | sort -u | wc -l)"
 run 1: rc=139
 run 2: rc=139
