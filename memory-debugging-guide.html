@@ -256,7 +256,7 @@
   /* Captions carry inline <code>: render them as one text block, not flex columns. Cap tall diagrams. */
   figure.diagram svg{max-height:560px} figure.diagram figcaption.ann{display:block;text-align:left} figure.diagram figcaption.ann::before{margin-right:5px}
   #d-lock-cycle-n0{width:min(100%,560px)}  /* small diagram: keep it near natural size */
-  @media (max-width: 600px) { figure.diagram { overflow-x: auto; } figure.diagram svg { min-width: 600px; max-width: none !important; } }  /* narrow screens: diagrams scroll inside the figure, text stays legible */
+  @media (max-width: 600px) { figure.diagram { overflow-x: auto; } figure.diagram svg { min-width: max(600px, calc(var(--dw, 800) * 0.75px)); max-width: none !important; max-height: none; } }  /* narrow screens: each diagram scrolls inside its figure at 3/4 natural size (~12px text); --dw is set from its viewBox */
 
   .tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 12px 0; font-size: 13px; }
   .tbl th { background: var(--surface2); padding: 9px 12px; text-align: left; font-weight: 600; color: var(--cyan); border-bottom: 2px solid var(--border); font-size: 12px; }
@@ -7017,6 +7017,9 @@ cores/
     w.append(t);
   });
 
+
+  // Natural diagram width for the narrow-screen rule above.
+  document.querySelectorAll('figure.diagram svg').forEach(s => s.style.setProperty('--dw', s.viewBox.baseVal.width));
 
   // Section id a nav entry or in-content link opens, read from its onclick="go('id')".
   function navTarget(el) {
