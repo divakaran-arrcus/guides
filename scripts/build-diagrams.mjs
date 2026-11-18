@@ -6,13 +6,14 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { postprocess, lintSvg } from './lib/postprocess.mjs';
+import { resolveGuideHtml } from './lib/guide-path.mjs';
 
 const PIN = '@mermaid-js/mermaid-cli@11.4.2';
-const ROOT = '/Users/divakaran/arrcus_workspace/guides';
 const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(HERE, '..');
 const GUIDE = process.argv[2] || 'zero-to-hero';
 const ONLY = process.argv[3];
-const HTML = join(ROOT, `gen-ai-${GUIDE}-guide.html`);
+const HTML = resolveGuideHtml(ROOT, GUIDE);
 const DIR = join(ROOT, 'diagrams', GUIDE);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 

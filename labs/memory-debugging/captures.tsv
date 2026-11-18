@@ -1,0 +1,48 @@
+# id<TAB>sources (comma-separated, "-" = none)<TAB>shell command, run in /lab by run-capture.sh
+00-env	-	gcc --version | head -1; clang --version | head -1; gdb --version | head -1; valgrind --version; rr --version; ldd --version | head -1; uname -m; echo "ulimit -c: $(ulimit -c)"; echo "rr-smoke($(head -1 .rr-caps 2>/dev/null || echo none))"
+f1-layout.plain	f1-layout.c,pktd.h,Makefile	make -s f1-layout.plain && ./f1-layout.plain
+f2-frames.gdb	f2-frames.c,gdb/f2-frames.gdb,pktd.h,Makefile	make -s f2-frames.plain && gdb -q -batch -nx -x gdb/f2-frames.gdb ./f2-frames.plain
+f3-chunks.gdb	f3-chunks.c,gdb/f3-chunks.gdb,pktd.h,Makefile	make -s f3-chunks.plain && gdb -q -batch -nx -x gdb/f3-chunks.gdb ./f3-chunks.plain
+01-null.core	01-null.c,gdb/01-null-core.gdb,pktd.h,Makefile	make -s core-01-null ARGS=plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-core.gdb ./01-null.plain cores/01-null.plain-plain.core
+01-null.field.core	01-null.c,gdb/01-null-field.gdb,pktd.h,Makefile	make -s core-01-null ARGS=field >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-field.gdb ./01-null.plain cores/01-null.plain-field.core
+01-null.fnptr.core	01-null.c,gdb/01-null-fnptr.gdb,pktd.h,Makefile	make -s core-01-null ARGS=fnptr >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/01-null-fnptr.gdb ./01-null.plain cores/01-null.plain-fnptr.core
+01-null.asan	01-null.c,pktd.h,Makefile	make -s 01-null.asan && ASAN_OPTIONS=detect_leaks=0 ./01-null.asan plain
+02-uninit.memcheck	02-uninit.c,pktd.h,Makefile	make -s 02-uninit.plain && valgrind --track-origins=yes ./02-uninit.plain
+02-uninit.msan	02-uninit.c,pktd.h,Makefile	make -s 02-uninit.msan && MSAN_OPTIONS=external_symbolizer_path=/usr/bin/addr2line ./02-uninit.msan
+02-uninit.pattern	02-uninit.c,pktd.h,Makefile	make -s 02-uninit.pattern && ./02-uninit.pattern
+03-heap-overflow.asan	03-heap-overflow.c,pktd.h,Makefile	make -s 03-heap-overflow.asan && ./03-heap-overflow.asan
+03-heap-overflow.plain	03-heap-overflow.c,pktd.h,Makefile	make -s 03-heap-overflow.plain && ./03-heap-overflow.plain
+03-heap-overflow.core	03-heap-overflow.c,gdb/03-heap-overflow-core.gdb,pktd.h,Makefile	make -s core-03-heap-overflow >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/03-heap-overflow-core.gdb ./03-heap-overflow.plain cores/03-heap-overflow.plain.core
+04-stack-smash.plain	04-stack-smash.c,pktd.h,Makefile	make -s 04-stack-smash.plain && ./04-stack-smash.plain
+04-stack-smash.asan	04-stack-smash.c,pktd.h,Makefile	make -s 04-stack-smash.asan && ./04-stack-smash.asan
+04-stack-smash.core	04-stack-smash.c,gdb/04-stack-smash-core.gdb,pktd.h,Makefile	make -s core-04-stack-smash >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/04-stack-smash-core.gdb ./04-stack-smash.plain cores/04-stack-smash.plain.core
+05-double-free.plain	05-double-free.c,pktd.h,Makefile	make -s 05-double-free.plain && ./05-double-free.plain
+05-double-free.asan	05-double-free.c,pktd.h,Makefile	make -s 05-double-free.asan && ./05-double-free.asan
+05-double-free.core	05-double-free.c,gdb/05-double-free-core.gdb,pktd.h,Makefile	make -s core-05-double-free >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/05-double-free-core.gdb ./05-double-free.plain cores/05-double-free.plain.core
+t2.build-id	01-null.c,pktd.h,Makefile	make -s 01-null.stripped; file 01-null.stripped; readelf -n 01-null.stripped | grep 'Build ID'
+06-uaf.asan	06-uaf.c,pktd.h,Makefile	make -s 06-uaf.asan && ./06-uaf.asan
+06-uaf.memcheck	06-uaf.c,pktd.h,Makefile	make -s 06-uaf.plain && valgrind ./06-uaf.plain
+06-uaf.core	06-uaf.c,gdb/06-uaf-core.gdb,pktd.h,Makefile	make -s core-06-uaf >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/06-uaf-core.gdb ./06-uaf.plain cores/06-uaf.plain.core
+07-leak.lsan	07-leak.c,pktd.h,Makefile	make -s 07-leak.asan && ./07-leak.asan
+07-leak.memcheck	07-leak.c,pktd.h,Makefile	make -s 07-leak.plain && valgrind --leak-check=full ./07-leak.plain
+07-leak.massif	07-leak.c,pktd.h,Makefile	make -s 07-leak.plain && valgrind --tool=massif --massif-out-file=/tmp/m ./07-leak.plain; ms_print /tmp/m | head -40
+07-leak.heaptrack	07-leak.c,pktd.h,Makefile	make -s 07-leak.plain && heaptrack -o /tmp/h ./07-leak.plain; heaptrack_print -a 0 -p 0 -T 0 -l 1 "$(ls /tmp/h*.gz | head -1)"
+07-leak.core	07-leak.c,pktd-gdb.py,gdb/07-leak-core.gdb,pktd.h,Makefile	make -s 07-leak.plain && mkdir -p cores && rm -f cores/07-leak.exit.core && gdb -q -batch -nx -ex 'break main' -ex run -ex 'break _exit' -ex continue -ex 'generate-core-file cores/07-leak.exit.core' ./07-leak.plain >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/07-leak-core.gdb ./07-leak.plain cores/07-leak.exit.core
+08-race.tsan	08-race.c,pktd.h,Makefile	make -s 08-race.tsan && ./08-race.tsan
+08-race.tsan-atomic	08-race.c,pktd.h,Makefile	make -s 08-race.tsan && ./08-race.tsan atomic; echo "exit=$?"
+08-race.helgrind	08-race.c,pktd.h,Makefile	make -s 08-race.plain && valgrind --tool=helgrind ./08-race.plain
+08-race.drd	08-race.c,pktd.h,Makefile	make -s 08-race.plain && valgrind --tool=drd ./08-race.plain
+08-race.lost-updates	08-race.c,pktd.h,Makefile	make -s 08-race.plain && ./08-race.plain
+09-deadlock.tsan	09-deadlock.c,pktd.h,Makefile	make -s 09-deadlock.tsan && ./09-deadlock.tsan inversion
+09-deadlock.helgrind	09-deadlock.c,pktd.h,Makefile	make -s 09-deadlock.plain && valgrind --tool=helgrind ./09-deadlock.plain inversion
+09-deadlock.gcore	09-deadlock.c,gdb/09-deadlock-core.gdb,pktd.h,Makefile	make -s 09-deadlock.plain && mkdir -p cores && rm -f cores/09.* && { ./09-deadlock.plain hang & pid=$!; sleep 2; gcore -o cores/09 $pid; kill $pid; } && gdb -q -batch -nx -x gdb/09-deadlock-core.gdb ./09-deadlock.plain cores/09.$pid
+pktd-sessions.gdb	10-refcount-uaf.c,pktd-gdb.py,gdb/pktd-sessions.gdb,pktd.h,Makefile	make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/pktd-sessions.gdb ./10-refcount-uaf.plain
+10.plain-x5	10-refcount-uaf.c,pktd.h,Makefile	make -s 10-refcount-uaf.plain && for i in 1 2 3 4 5; do ./10-refcount-uaf.plain >/tmp/run$i 2>&1; echo "rc=$?" >>/tmp/run$i; echo "run $i: $(tail -1 /tmp/run$i)"; done 2>/dev/null; echo "--- run 1 output:"; cat /tmp/run1; echo "unique=$(for i in 1 2 3 4 5; do md5sum </tmp/run$i; done | sort -u | wc -l)"
+10.core	10-refcount-uaf.c,pktd-gdb.py,gdb/10-core.gdb,pktd.h,Makefile	make -s core-10-refcount-uaf >/dev/null 2>&1 && gdb -q -batch -nx -x gdb/10-core.gdb ./10-refcount-uaf.plain cores/10-refcount-uaf.plain.core
+10.asan	10-refcount-uaf.c,pktd.h,Makefile	make -s 10-refcount-uaf.asan && ./10-refcount-uaf.asan
+10.watch	10-refcount-uaf.c,gdb/10-watch.gdb,pktd.h,Makefile	make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/10-watch.gdb ./10-refcount-uaf.plain
+10.rr	10-refcount-uaf.c,gdb/10-rr.gdb,pktd.h,Makefile	make -s 10-refcount-uaf.plain && export _RR_TRACE_DIR=/tmp/rr && rm -rf /tmp/rr && rr record ./10-refcount-uaf.plain; echo "rr record: rc=$?"; rr replay -o -q < gdb/10-rr.gdb
+10.reftrace	10-refcount-uaf.c,pktd.h,Makefile	make -s 10-refcount-uaf.reftrace && ./10-refcount-uaf.reftrace; echo "rc=$?"
+t2.stripped-core	10-refcount-uaf.c,gdb/t2-stripped.gdb,pktd.h,Makefile	make -s core-10-refcount-uaf V=stripped >/dev/null 2>&1 && mkdir -p cores/nodebug && cp 10-refcount-uaf.stripped cores/nodebug/ && gdb -q -batch -nx -iex 'set debug-file-directory /nonexistent' -x gdb/t2-stripped.gdb cores/nodebug/10-refcount-uaf.stripped cores/10-refcount-uaf.stripped.core
+x1.stress	08-race.c,pktd.h,Makefile	make -s 08-race.plain && for i in $(seq 200); do ./08-race.plain; done >/tmp/stress; echo "runs=$(wc -l </tmp/stress)"; grep -o 'actual=[0-9]*' /tmp/stress | sort | uniq -c | sort -rn | head -5; echo "distinct=$(grep -o 'actual=[0-9]*' /tmp/stress | sort -u | wc -l)"
+x1.rr-chaos	08-race.c,pktd.h,Makefile	make -s 08-race.plain && rm -rf /tmp/rr && mkdir -p /tmp/rr && hit=; for i in $(seq 50); do rr record --chaos -o /tmp/rr/t$i ./08-race.plain >/tmp/rec$i 2>&1; echo "try $i: $(grep -o 'actual=[0-9]* lost=[0-9]*' /tmp/rec$i)"; if grep -q 'lost=[1-9]' /tmp/rec$i; then hit=$i; break; fi; done; if [ -n "$hit" ]; then echo "lossy on try $hit of 50"; echo "--- lossy recording $hit:"; grep '^expected=' /tmp/rec$hit; echo "--- rr replay -a /tmp/rr/t$hit:"; rr replay -a /tmp/rr/t$hit 2>&1 | tee /tmp/rep; r=$(grep -o 'actual=[0-9]*' /tmp/rec$hit); p=$(grep -o 'actual=[0-9]*' /tmp/rep); if [ -n "$r" ] && [ "$r" = "$p" ]; then echo "replay matches lossy recording: $p"; else echo "replay MISMATCH: $r vs $p"; fi; else echo "no lossy recording in 50 tries"; fi

@@ -1,0 +1,6 @@
+flowchart LR
+  Q{"A crash.<br/>Can you make it<br/>happen again?"} -- yes --> A["Path A · It reproduces<br/>sanitizer, Valgrind or rr"]
+  A --> CAUSE["The tool stops<br/>at the cause"]
+  Q -- no --> B["Path B · Only a core<br/>memory, registers,<br/>allocator state"]
+  B --> R["A hypothesis, then<br/>a reproducer (Ch 24)"]
+  R --> BACK["Now it reproduces:<br/>back to Path A"]

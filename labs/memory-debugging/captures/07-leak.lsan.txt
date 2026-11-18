@@ -1,0 +1,18 @@
+# src 07-leak.c 8c86e1c2a3ee9e5c04cbe224574084a1f67eb61ca72fe03742e9ebc1f8a01b6c
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 07-leak.asan && ./07-leak.asan
+
+=================================================================
+==126==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 112000 byte(s) in 2000 object(s) allocated from:
+    #0 0x7fdab10979c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x558b0d3054e9 in session_new /lab/pktd.h:128
+    #2 0x558b0d3058c5 in session_open /lab/07-leak.c:17
+    #3 0x558b0d305c88 in main /lab/07-leak.c:44
+    #4 0x7fdab079b1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #5 0x7fdab079b28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #6 0x558b0d3052c4 in _start (/lab/07-leak.asan+0x22c4) (BuildId: e0eb316839e0694d1046bd0cee381dbae952cdc6)
+
+SUMMARY: AddressSanitizer: 112000 byte(s) leaked in 2000 allocation(s).

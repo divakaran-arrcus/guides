@@ -1,0 +1,10 @@
+# cmd gcc --version | head -1; clang --version | head -1; gdb --version | head -1; valgrind --version; rr --version; ldd --version | head -1; uname -m; echo "ulimit -c: $(ulimit -c)"; echo "rr-smoke($(head -1 .rr-caps 2>/dev/null || echo none))"
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Ubuntu clang version 18.1.3 (1ubuntu1)
+GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1
+valgrind-3.22.0
+rr version 5.7.0 
+ldd (Ubuntu GLIBC 2.39-0ubuntu8.12) 2.39
+x86_64
+ulimit -c: 0
+rr-smoke(sys_admin)

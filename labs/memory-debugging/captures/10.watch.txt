@@ -1,0 +1,88 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# src gdb/10-watch.gdb eb74211bdfe6e3be8fab24b25daadfab00fb9b90b328b3e7ef37aa59843a6427
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 10-refcount-uaf.plain && gdb -q -batch -nx -x gdb/10-watch.gdb ./10-refcount-uaf.plain
+Breakpoint 1 at 0x15bb: file 10-refcount-uaf.c, line 38.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff7da26c0 (LWP 49)]
+[New Thread 0x7ffff75a16c0 (LWP 50)]
+[Switching to Thread 0x7ffff7da26c0 (LWP 49)]
+
+Thread 2 "10-refcount-uaf" hit Breakpoint 1, control_ready () at 10-refcount-uaf.c:38
+38	__attribute__((noinline)) void control_ready(void) { __asm__ volatile("" ::: "memory"); }
+Hardware watchpoint 2: -location session_table[7]->refcnt
+[New Thread 0x7ffff6da06c0 (LWP 51)]
+[New Thread 0x7ffff659f6c0 (LWP 52)]
+[New Thread 0x7ffff5d9e6c0 (LWP 53)]
+[New Thread 0x7ffff559d6c0 (LWP 54)]
+[Switching to Thread 0x7ffff6da06c0 (LWP 51)]
+
+Thread 4 "10-refcount-uaf" hit Hardware watchpoint 2: -location session_table[7]->refcnt
+
+Old value = 1
+New value = 2
+0x000055555555542c in session_get (s=0x7ffff0000cf0) at /lab/pktd.h:144
+144	    int after = __atomic_add_fetch(&s->refcnt, 1, __ATOMIC_RELAXED);
+HIT 1->2 handle_timeout=0
+#0  0x000055555555542c in session_get (s=0x7ffff0000cf0) at /lab/pktd.h:144
+#1  0x00005555555556b0 in worker_main (arg=0x2) at 10-refcount-uaf.c:68
+#2  0x00007ffff7e42b64 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+[Switching to Thread 0x7ffff659f6c0 (LWP 52)]
+
+Thread 5 "10-refcount-uaf" hit Hardware watchpoint 2: -location session_table[7]->refcnt
+
+Old value = 2
+New value = 1
+0x0000555555555458 in session_put (s=0x7ffff0000cf0) at /lab/pktd.h:151
+151	    int after = __atomic_sub_fetch(&s->refcnt, 1, __ATOMIC_ACQ_REL);
+HIT 2->1 handle_timeout=1
+#0  0x0000555555555458 in session_put (s=0x7ffff0000cf0) at /lab/pktd.h:151
+#1  0x0000555555555657 in handle_timeout (s=0x7ffff0000cf0) at 10-refcount-uaf.c:56
+#2  0x00005555555556d7 in worker_main (arg=0x3) at 10-refcount-uaf.c:72
+[Switching to Thread 0x7ffff6da06c0 (LWP 51)]
+
+Thread 4 "10-refcount-uaf" hit Hardware watchpoint 2: -location session_table[7]->refcnt
+
+Old value = 1
+New value = 0
+0x0000555555555458 in session_put (s=0x7ffff0000cf0) at /lab/pktd.h:151
+151	    int after = __atomic_sub_fetch(&s->refcnt, 1, __ATOMIC_ACQ_REL);
+HIT 1->0 handle_timeout=0
+#0  0x0000555555555458 in session_put (s=0x7ffff0000cf0) at /lab/pktd.h:151
+#1  0x00005555555556f8 in worker_main (arg=0x2) at 10-refcount-uaf.c:75
+#2  0x00007ffff7e42b64 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+
+Thread 4 "10-refcount-uaf" hit Hardware watchpoint 2: -location session_table[7]->refcnt
+
+Old value = 0
+New value = 7
+tcache_put (tc_idx=2, chunk=0x7ffff0000ce0) at ./malloc/malloc.c:3166
+warning: 3166	./malloc/malloc.c: No such file or directory
+HIT 0->7 handle_timeout=0
+#0  tcache_put (tc_idx=2, chunk=0x7ffff0000ce0) at ./malloc/malloc.c:3166
+#1  _int_free (av=0x7ffff0000030, p=0x7ffff0000ce0, have_lock=0) at ./malloc/malloc.c:4549
+#2  0x00007ffff7e53e8e in __GI___libc_free (mem=0x7ffff0000cf0) at ./malloc/malloc.c:3398
+
+Thread 4 "10-refcount-uaf" hit Hardware watchpoint 2: -location session_table[7]->refcnt
+
+Old value = 7
+New value = 179
+worker_main (arg=0x2) at 10-refcount-uaf.c:79
+79	        pb->ts = now_ns();
+HIT 7->179 handle_timeout=0
+#0  worker_main (arg=0x2) at 10-refcount-uaf.c:79
+#1  0x00007ffff7e42b64 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#2  0x00007ffff7ecfe8c in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+
+Thread 2 "10-refcount-uaf" received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0x7ffff7da26c0 (LWP 49)]
+table_dump () at /lab/pktd.h:191
+191	               (s->peer->addr >> 8) & 0xff, s->peer->addr & 0xff, s->peer->port);

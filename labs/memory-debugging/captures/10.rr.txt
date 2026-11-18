@@ -1,0 +1,109 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# src gdb/10-rr.gdb 284c4db0087f29a5b4f7c22a2ad11b263b5a6c4c65804842045c96435b082f5b
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 10-refcount-uaf.plain && export _RR_TRACE_DIR=/tmp/rr && rm -rf /tmp/rr && rr record ./10-refcount-uaf.plain; echo "rr record: rc=$?"; rr replay -o -q < gdb/10-rr.gdb
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+bash: line 1:    66 Segmentation fault      rr record ./10-refcount-uaf.plain
+rr record: rc=139
+Reading symbols from /lab/10-refcount-uaf.plain...
+<string>:39: SyntaxWarning: invalid escape sequence '\w'
+Really redefine built-in command "restart"? (y or n) [answered Y; input not from terminal]
+Really redefine built-in command "jump"? (y or n) [answered Y; input not from terminal]
+<string>:2: SyntaxWarning: invalid escape sequence '\.'
+Remote debugging using 127.0.0.1:87
+Reading symbols from /lib64/ld-linux-x86-64.so.2...
+Reading symbols from /usr/lib/debug/.build-id/23/1ab65dd867a89dce29cb958fd5ca50abb1aa34.debug...
+warning: BFD: warning: system-supplied DSO at 0x6fffd000 has a section extending past end of file
+0x00007f7474b70530 in _start () from /lib64/ld-linux-x86-64.so.2
+(rr) (rr) (rr) (rr) (rr) (rr) (rr) (rr) (rr) (rr) (rr) (rr) Continuing.
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+[New Thread 79.80]
+[New Thread 79.81]
+[New Thread 79.82]
+[New Thread 79.83]
+[New Thread 79.84]
+[New Thread 79.85]
+
+Thread 2 received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 79.80]
+table_dump () at /lab/pktd.h:191
+191	               (s->peer->addr >> 8) & 0xff, s->peer->addr & 0xff, s->peer->port);
+(rr) #0  table_dump () at /lab/pktd.h:191
+191	               (s->peer->addr >> 8) & 0xff, s->peer->addr & 0xff, s->peer->port);
+(rr) (rr) Hardware watchpoint 1: -location $s->refcnt
+(rr) (rr) >>>(rr) Continuing.
+
+Thread 2 received signal SIGSEGV, Segmentation fault.
+table_dump () at /lab/pktd.h:191
+191	               (s->peer->addr >> 8) & 0xff, s->peer->addr & 0xff, s->peer->port);
+(rr) #0  table_dump () at /lab/pktd.h:191
+#1  0x000056498a8e8825 in control_main (arg=0x0) at 10-refcount-uaf.c:98
+(More stack frames follow...)
+(rr) Continuing.
+[Switching to Thread 79.82]
+
+Thread 4 hit Hardware watchpoint 1: -location $s->refcnt
+
+Old value = 179
+New value = 7
+0x000056498a8e8714 in worker_main (arg=0x2) at 10-refcount-uaf.c:78
+78	        pb->port = 179;
+HIT 179->7 handle_timeout=0
+(rr) #0  0x000056498a8e8714 in worker_main (arg=0x2) at 10-refcount-uaf.c:78
+#1  0x00007f74749b8b64 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+(More stack frames follow...)
+(rr) Continuing.
+
+Thread 4 hit Hardware watchpoint 1: -location $s->refcnt
+
+Old value = 7
+New value = 0
+0x00007f74749c7425 in tcache_put (tc_idx=2, chunk=0x7f746c000ce0) at ./malloc/malloc.c:3165
+warning: 3165	./malloc/malloc.c: No such file or directory
+HIT 7->0 handle_timeout=0
+(rr) #0  0x00007f74749c7425 in tcache_put (tc_idx=2, chunk=0x7f746c000ce0) at ./malloc/malloc.c:3165
+#1  _int_free (av=0x7f746c000030, p=0x7f746c000ce0, have_lock=0) at ./malloc/malloc.c:4549
+(More stack frames follow...)
+(rr) Continuing.
+
+Thread 4 hit Hardware watchpoint 1: -location $s->refcnt
+
+Old value = 0
+New value = 1
+0x000056498a8e8454 in session_put (s=0x7f746c000cf0) at /lab/pktd.h:151
+151	    int after = __atomic_sub_fetch(&s->refcnt, 1, __ATOMIC_ACQ_REL);
+HIT 0->1 handle_timeout=0
+(rr) #0  0x000056498a8e8454 in session_put (s=0x7f746c000cf0) at /lab/pktd.h:151
+#1  0x000056498a8e86f8 in worker_main (arg=0x2) at 10-refcount-uaf.c:75
+(More stack frames follow...)
+(rr) Continuing.
+[Switching to Thread 79.83]
+
+Thread 5 hit Hardware watchpoint 1: -location $s->refcnt
+
+Old value = 1
+New value = 2
+0x000056498a8e8454 in session_put (s=0x7f746c000cf0) at /lab/pktd.h:151
+151	    int after = __atomic_sub_fetch(&s->refcnt, 1, __ATOMIC_ACQ_REL);
+HIT 1->2 handle_timeout=1
+(rr) #0  0x000056498a8e8454 in session_put (s=0x7f746c000cf0) at /lab/pktd.h:151
+#1  0x000056498a8e8657 in handle_timeout (s=0x7f746c000cf0) at 10-refcount-uaf.c:56
+(More stack frames follow...)
+(rr) A debugging session is active.
+
+	Inferior 1 [process 79] will be detached.
+
+Quit anyway? (y or n) [answered Y; input not from terminal]
+Detaching from program: /lab/10-refcount-uaf.plain, process 79
+[Inferior 1 (process 79) detached]

@@ -1,0 +1,6 @@
+# src 01-null.c 75043e02862e28df809bbaec1bb7d6545a3379ea9f9d54ccdfabd5fe5773d85a
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 01-null.stripped; file 01-null.stripped; readelf -n 01-null.stripped | grep 'Build ID'
+01-null.stripped: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=94110480f02a93766dd2776b7ae3d679657e4790, for GNU/Linux 3.2.0, stripped
+    Build ID: 94110480f02a93766dd2776b7ae3d679657e4790

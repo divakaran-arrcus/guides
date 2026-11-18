@@ -1,0 +1,16 @@
+flowchart TB
+  subgraph RR["Record and replay · rr"]
+    direction TB
+    R1["Record every<br/>nondeterministic input"] --> R2["No checks at all"]
+    R2 --> R3["Replay the same execution,<br/>forwards and backwards,<br/>under GDB"]
+  end
+  subgraph DBT["Dynamic binary translation · Valgrind"]
+    direction TB
+    D1["Unmodified binary"] --> D2["Each block translated<br/>to VEX IR, instrumented,<br/>recompiled, cached"]
+    D2 --> D3["No rebuild<br/>tens of × slower"]
+  end
+  subgraph CT["Compile-time · ASan, MSan, TSan"]
+    direction TB
+    CT1["Compiler inserts a check<br/>before loads and stores"] --> CT2["Runtime replaces malloc,<br/>keeps shadow memory"]
+    CT2 --> CT3["Rebuild required<br/>~2× to 15× slower"]
+  end

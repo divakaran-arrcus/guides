@@ -1,0 +1,30 @@
+# src 07-leak.c 8c86e1c2a3ee9e5c04cbe224574084a1f67eb61ca72fe03742e9ebc1f8a01b6c
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 07-leak.plain && valgrind --leak-check=full ./07-leak.plain
+==134== Memcheck, a memory error detector
+==134== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==134== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==134== Command: ./07-leak.plain
+==134== 
+pktd: 2000 sessions opened and closed, 8000 pkts
+==134== 
+==134== HEAP SUMMARY:
+==134==     in use at exit: 112,000 bytes in 2,000 blocks
+==134==   total heap usage: 10,001 allocs, 8,001 frees, 564,096 bytes allocated
+==134== 
+==134== 112,000 bytes in 2,000 blocks are definitely lost in loss record 1 of 1
+==134==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==134==    by 0x109291: session_new (pktd.h:128)
+==134==    by 0x10934E: session_open (07-leak.c:17)
+==134==    by 0x109477: main (07-leak.c:44)
+==134== 
+==134== LEAK SUMMARY:
+==134==    definitely lost: 112,000 bytes in 2,000 blocks
+==134==    indirectly lost: 0 bytes in 0 blocks
+==134==      possibly lost: 0 bytes in 0 blocks
+==134==    still reachable: 0 bytes in 0 blocks
+==134==         suppressed: 0 bytes in 0 blocks
+==134== 
+==134== For lists of detected and suppressed errors, rerun with: -s
+==134== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)

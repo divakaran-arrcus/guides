@@ -1,0 +1,16 @@
+flowchart TB
+  subgraph RUNSTEP["In the mdg-lab container"]
+    direction LR
+    SRC["Lab sources<br/>*.c, gdb/*.gdb, Makefile"] --> RUN["run-capture.sh<br/>builds and runs the<br/>captures.tsv command"]
+    RUN --> CAP["captures/ID.txt<br/># src: SHA-256 per source<br/># cmd, then the real output"]
+  end
+  subgraph GATES["Before it reaches the page"]
+    direction LR
+    CHK{"check.sh:<br/>matches<br/>expect.tsv?"} -- yes --> LEAK{"On your workstation:<br/>leak-gate.sh over<br/>captures/ clean?"}
+    LEAK -- yes --> SYNC{"sync-labs.mjs:<br/>sources unchanged<br/>since capture?"}
+    SYNC -- yes --> PAGE["Terminal block<br/>in this guide"]
+    CHK -- no --> FAIL["Capture<br/>rejected"]
+    LEAK -- no --> LFAIL["Run<br/>rejected"]
+    SYNC -- no --> STALE["Refuses:<br/>re-capture"]
+  end
+  RUNSTEP --> GATES

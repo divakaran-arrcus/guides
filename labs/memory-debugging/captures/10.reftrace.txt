@@ -1,0 +1,17 @@
+# src 10-refcount-uaf.c ee2874f9a9fee85d469b10eb3e4b9586b680d6e753edf9c9ecdf7fe63681697b
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 10-refcount-uaf.reftrace && ./10-refcount-uaf.reftrace; echo "rc=$?"
+[ 1] id=1 refcnt=1 name=sess-1 peer=10.0.0.1:179
+[ 2] id=2 refcnt=1 name=sess-2 peer=10.0.0.2:179
+[ 3] id=3 refcnt=1 name=sess-3 peer=10.0.0.3:179
+[ 4] id=4 refcnt=1 name=sess-4 peer=10.0.0.4:179
+[ 5] id=5 refcnt=1 name=sess-5 peer=10.0.0.1:179
+[ 6] id=6 refcnt=1 name=sess-6 peer=10.0.0.2:179
+session 7: use after final put
+  #0  N refcnt=1 tid=267  ./10-refcount-uaf.reftrace(control_main+0x52)[0x55d1d788fb0d]
+  #1  G refcnt=2 tid=269  ./10-refcount-uaf.reftrace(worker_main+0x56)[0x55d1d788f9f3]
+  #2  P refcnt=1 tid=270  ./10-refcount-uaf.reftrace(handle_timeout+0x4c)[0x55d1d788f99a]
+  #3  P refcnt=0 tid=269  ./10-refcount-uaf.reftrace(worker_main+0x9e)[0x55d1d788fa3b]
+bash: line 1:   266 Aborted                 ./10-refcount-uaf.reftrace
+rc=134

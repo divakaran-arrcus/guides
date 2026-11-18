@@ -688,7 +688,7 @@
         </table>
 
         <div class="info green">
-          <strong>Recommendation:</strong> For most SP networks, <strong>/32 block + 16-bit uSID</strong> is the right choice. It gives you 6 uSIDs per container (enough for most SR-Policies), 64K node capacity, and maximum SRH compression. This is what Cisco, Arrcus, and most vendors default to.
+          <strong>Recommendation:</strong> For most SP networks, <strong>/32 block + 16-bit uSID</strong> is the right choice. It gives you 6 uSIDs per container (enough for most SR-Policies), 64K node capacity, and maximum SRH compression. This is what Cisco and most vendors default to.
         </div>
 
         <h3>Which IPv6 Range to Use?</h3>
@@ -1365,7 +1365,7 @@
           </div>
           <div class="cmp-c" style="display:flex;flex-direction:column;justify-content:center;">
             <div class="info" style="margin:0;">
-              <strong>H.Encaps.Red is the default in most implementations</strong> (Cisco IOS-XR, ArcOS, Nokia SROS). When vendor documentation says "H.Encaps" it often means H.Encaps.Red in practice. Always check Segments Left in packet captures to confirm which variant is in use.
+              <strong>H.Encaps.Red is the default in most implementations</strong> (Cisco IOS-XR, Nokia SROS). When vendor documentation says "H.Encaps" it often means H.Encaps.Red in practice. Always check Segments Left in packet captures to confirm which variant is in use.
             </div>
           </div>
         </div>
@@ -1721,7 +1721,7 @@
 
       <div class="card">
         <h2>Key CLI Commands (Vendor-Independent Concepts)</h2>
-        <p>The exact syntax varies by vendor (IOS-XR, SROS, ArcOS, Junos), but these are the operations you need:</p>
+        <p>The exact syntax varies by vendor (IOS-XR, SROS, Junos), but these are the operations you need:</p>
 
         <table class="tbl">
           <tr><th>What to Check</th><th>Concept</th><th>SR-MPLS Equivalent</th></tr>

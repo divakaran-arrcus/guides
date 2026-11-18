@@ -1,0 +1,6 @@
+# src 08-race.c cf1bcf685c30a76f72bb5be40bc1a891243324df9c2c091f1580027cccdb2813
+# src pktd.h 0d2650416e680b6859e1b21979b57c6340a2fae7673a97a03fc2617a231dcf85
+# src Makefile aeb1d35e4d5eef83db36a5952173cd9648aaabd900a367abcb4d5feee9df53d3
+# cmd make -s 08-race.tsan && ./08-race.tsan atomic; echo "exit=$?"
+expected=4000000 actual=4000000 lost=0
+exit=0
