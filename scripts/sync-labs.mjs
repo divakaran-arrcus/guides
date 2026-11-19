@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Fill <!--SRC:path-->…<!--/SRC:path--> and <!--CAP:id-->…<!--/CAP:id--> blocks in a guide
-// from labs/<slug>/ files and captures/<id>.txt. --write fills them; --check only verifies.
+// Fill <!--SRC:path-->, <!--CAP:id--> and <!--FLAME:id--> blocks in a guide from labs/<slug>/
+// files and captures/<id>.txt (FLAME renders folded stacks as an SVG flame graph). --write fills them; --check only verifies.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveGuideHtml } from './lib/guide-path.mjs';
+import { renderFlame } from './lib/flamegraph.mjs';
 
 export const escapeHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -29,7 +30,7 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
+const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
 
 function expectedSrc(path, spec, labsDir) {
   if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
@@ -38,9 +39,9 @@ function expectedSrc(path, spec, labsDir) {
   return { body: escapeHtml(selectLines(readFileSync(f, 'utf8'), spec)) };
 }
 
-function expectedCap(id, spec, labsDir) {
+function expectedCap(id, spec, labsDir, kind = 'CAP') {
   const f = join(labsDir, 'captures', `${id}.txt`);
-  if (!existsSync(f)) return { error: `CAP ${id}: captures/${id}.txt not found` };
+  if (!existsSync(f)) return { error: `${kind} ${id}: captures/${id}.txt not found` };
   const lines = readFileSync(f, 'utf8').split('\n');
   let i = 0;
   const errs = [];
@@ -48,11 +49,13 @@ function expectedCap(id, spec, labsDir) {
     const m = lines[i].match(/^# src (\S+) ([0-9a-f]{64})\s*$/);
     if (!m) continue;
     const sf = join(labsDir, m[1]);
-    if (!existsSync(sf)) errs.push(`CAP ${id}: source ${m[1]} missing`);
-    else if (sha256(readFileSync(sf)) !== m[2]) errs.push(`CAP ${id}: stale capture, ${m[1]} changed since capture`);
+    if (!existsSync(sf)) errs.push(`${kind} ${id}: source ${m[1]} missing`);
+    else if (sha256(readFileSync(sf)) !== m[2]) errs.push(`${kind} ${id}: stale capture, ${m[1]} changed since capture`);
   }
   if (errs.length) return { error: errs.join('; ') };
-  return { body: escapeHtml(selectLines(lines.slice(i).join('\n'), spec)) };
+  const body = selectLines(lines.slice(i).join('\n'), spec);
+  if (kind === 'FLAME') return { body: renderFlame(body, { id }) };
+  return { body: escapeHtml(body) };
 }
 
 export function syncHtml(html, labsDir, mode) {
@@ -74,7 +77,7 @@ export function syncHtml(html, labsDir, mode) {
       pos = bodyStart;
       continue;
     }
-    const exp = (kind === 'SRC' ? expectedSrc : expectedCap)(id, spec, labsDir);
+    const exp = kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind);
     out += html.slice(pos, bodyStart);
     const current = html.slice(bodyStart, j);
     if (exp.error) { errors.push(exp.error); out += current; }
