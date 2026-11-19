@@ -6,7 +6,7 @@ Future guides to build. The **Up next** table is in build order; the shipped tab
 
 | Order | Guide | Audience Bridge | Status |
 |-------|-------|-----------------|--------|
-| 1 | **SRv6 Compressed SIDs & Service Programming** | Merges old #9 (SFC) and #10 (G-SID). RFC 9800 flavors side by side (NEXT-C-SID / uSID vs REPLACE-C-SID / G-SID), interop and hardware limits; then service programming: SR-aware (End.AN) vs SR-unaware proxies (End.AS / End.AD / End.AM), stateful chains, chains across domains. Links to `srv6-network-programming-guide.html` for uSID basics instead of repeating them | Next |
+| 1 | **SRv6 Service Programming with uSID** | Old #9 (SFC). uSID only — no G-SID / REPLACE-C-SID. SR-aware (End.AN) vs SR-unaware proxies (End.AS / End.AD / End.AM) in uSID networks, stateful chains, chains across domains. Links to `srv6-network-programming-guide.html` for uSID basics instead of repeating them | Planned |
 | 2 | **Performance & Tracing for Network Daemons** | Sequel to Memory Debugging, reusing its lab kit — `perf`, flame graphs, eBPF / bpftrace, off-CPU time, lock contention, "why is convergence slow" | Planned |
 | 3 | **IS-IS from First Principles** | The IGP under every SR / SRv6 guide — adjacency FSM, LSP flooding and purging, SPF, levels and route leaking, SR / SRv6 TLVs. Lab kit with open-source routing containers | Planned |
 | 4 | **Fast Convergence End to End** | BFD, SPF / LSP throttling, prefix prioritization, BGP PIC core / edge, FIB download time; ties together the existing TI-LFA material | Planned |
