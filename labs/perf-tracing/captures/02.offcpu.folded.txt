@@ -1,0 +1,27 @@
+# src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src bt/offcpu.bt 93080d6aaf70a8fffc4d99a813d8bb0354c3c775a034ae55d9fc4dff88c5fa9a
+# src fold-bt.awk feab913536963d6ed2b2c6b748d3399a90569579e20797564fd9a11d75c52c8f
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# src symbolize.py a4e58cf15e1a2ff53f7fa7c15b761392629d696b98f07a738f2ad2c28d91bbda
+# cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk
+pktd-cli;__GI__IO_default_xsputn 40
+pktd-cli;__strchrnul_evex 34
+pktd-cli;__vfprintf_internal 78
+pktd-cli;__vsnprintf_internal 139
+pktd-cli;_itoa_word 30
+pktd-cli;done_add_func 34
+pktd-cli;outstring_func 28
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 242087
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___pthread_enable_asynccancel 916
+pktd-ctl;__futex_abstimed_wait_common64 370207
+pktd-fib;start_thread;__GI___libc_read 1114
+pktd-push;__futex_abstimed_wait_common64 367604
+pktd-push;start_thread;push_main;__GI___libc_read 1419
+pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50024
+pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min 38
+pktd-spf;start_thread;spf_main;compute_routes;spf_relax 383
+pktd-spf;start_thread;spf_main;compute_routes;spf_run 39
+pktd-spf;start_thread;spf_main;rib_update;futex_wait 308229
+pktd-term;start_thread;__GI___clock_nanosleep 311726
+pktd-term;start_thread;__GI___libc_read 188

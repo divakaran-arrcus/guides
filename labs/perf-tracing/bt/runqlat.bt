@@ -1,0 +1,32 @@
+// runqlat.bt — run-queue latency of pktd threads: time from "ready to run" to "running".
+//   bpftrace -c ./04-sched bt/runqlat.bt ./04-sched              ($1 = the lab binary)
+// A thread becomes ready when it is woken, or when it is preempted while still runnable.
+// Scope: sched tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+
+usdt:$1:pktd:event { @armed = 1; }
+usdt:$1:pktd:converged { exit(); }
+
+tracepoint:sched:sched_wakeup,
+tracepoint:sched:sched_wakeup_new
+/@armed && strncmp(args->comm, "pktd-", 5) == 0/ {
+  @ready[args->pid] = nsecs;
+}
+
+tracepoint:sched:sched_switch /@armed/ {
+  // prev_state 0 = TASK_RUNNING: preempted, so it goes straight back to waiting in the queue.
+  if (args->prev_state == 0 && strncmp(args->prev_comm, "pktd-", 5) == 0) {
+    @ready[args->prev_pid] = nsecs;
+  }
+  $r = @ready[args->next_pid];
+  if ($r) {
+    if (strncmp(args->next_comm, "pktd-io", 7) == 0) {
+      @runq_us["pktd-io*"] = hist((nsecs - $r) / 1000);
+    } else {
+      @runq_us[args->next_comm] = hist((nsecs - $r) / 1000);
+      @runq_total_us[args->next_comm] = sum((nsecs - $r) / 1000);
+    }
+    delete(@ready[args->next_pid]);
+  }
+}
+
+END { clear(@ready); delete(@armed); }

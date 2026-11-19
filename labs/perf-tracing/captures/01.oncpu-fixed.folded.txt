@@ -1,0 +1,30 @@
+# src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src fold-perf.awk 6771ba4311b1a34c286c90da34c61e1c08ec828630ce5f3b5c556d9498cd23b0
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path --fixed >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+01-hot-path;_dl_start_user;_dl_sysdep_start;dl_main;_dl_relocate_object;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;handle_mm_fault;__handle_mm_fault;do_fault;copy_page 1
+01-hot-path;mmap64;entry_SYSCALL_64_after_hwframe;do_syscall_64;vm_mmap_pgoff;do_mmap;mmap_region;mas_store_prealloc;mas_wr_store_entry.isra.0 1
+pktd-ctl;[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];[unknown];clone3;entry_SYSCALL_64_after_hwframe;do_syscall_64;__do_sys_clone3;kernel_clone;wake_up_new_task;select_task_rq_fair;find_idlest_group 1
+pktd-ctl;__brk;asm_exc_page_fault 1
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0 1
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;asm_exc_page_fault 3
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;handle_mm_fault;__handle_mm_fault 2
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;handle_mm_fault;__handle_mm_fault;__mem_cgroup_charge;charge_memcg;__count_memcg_events 1
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;handle_mm_fault;__handle_mm_fault;do_huge_pmd_anonymous_page;vma_alloc_folio;__folio_alloc;__alloc_pages;get_page_from_freelist;clear_page_erms 1
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;handle_mm_fault;__handle_mm_fault;vma_alloc_folio;__folio_alloc;__alloc_pages;get_page_from_freelist;clear_page_erms 1
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;spf_extract_min 8
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;spf_relax 5
+pktd-fib;start_thread;__memmove_evex_unaligned_erms 1
+pktd-fib;start_thread;__memmove_evex_unaligned_erms;asm_exc_page_fault;exc_page_fault;do_user_addr_fault;lock_mm_and_find_vma 1
+pktd-fib;start_thread;__memmove_evex_unaligned_erms;asm_sysvec_apic_timer_interrupt;sysvec_apic_timer_interrupt;__sysvec_apic_timer_interrupt;hrtimer_interrupt;__hrtimer_run_queues;hrtimer_wakeup;try_to_wake_up;ttwu_do_activate;psi_task_change;psi_group_change 1
+pktd-fib;start_thread;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;ksys_read;vfs_read;sock_read_iter;__unix_dgram_recvmsg;__skb_wait_for_more_packets;schedule_timeout;schedule;__schedule;finish_task_switch.isra.0;asm_sysvec_apic_timer_interrupt;sysvec_apic_timer_interrupt;__sysvec_apic_timer_interrupt;hrtimer_interrupt;__hrtimer_run_queues;hrtimer_wakeup;try_to_wake_up;ttwu_do_wakeup;check_preempt_curr;check_preempt_wakeup 1
+pktd-fib;start_thread;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;syscall_exit_to_user_mode;exit_to_user_mode_prepare;__rseq_handle_notify_resume;__get_user_8 1
+pktd-fib;start_thread;syscall_return_via_sysret 1
+pktd-push;start_thread;push_main;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;ksys_read;vfs_read;sock_read_iter;__unix_dgram_recvmsg;__skb_wait_for_more_packets 1
+pktd-push;start_thread;push_main;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;ksys_read;vfs_read;sock_read_iter;__unix_dgram_recvmsg;__skb_wait_for_more_packets;schedule_timeout;schedule;__schedule;dequeue_task_fair;dequeue_entity;update_load_avg 1
+pktd-push;start_thread;push_main;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;ksys_read;vfs_read;sock_read_iter;__unix_dgram_recvmsg;__skb_wait_for_more_packets;schedule_timeout;schedule;__schedule;finish_task_switch.isra.0 1
+pktd-push;start_thread;push_main;read;entry_SYSCALL_64_after_hwframe;do_syscall_64;syscall_exit_to_user_mode;exit_to_user_mode_prepare;switch_fpu_return;restore_fpregs_from_fpstate 1
+pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min 20
+pktd-spf;start_thread;spf_main;compute_routes;spf_relax 11
+pktd-spf;start_thread;spf_main;compute_routes;spf_run 1

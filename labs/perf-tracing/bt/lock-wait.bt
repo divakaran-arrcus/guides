@@ -1,0 +1,22 @@
+// lock-wait.bt — who waits for rib_lock, for how long, and who holds it.
+//   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/lock-wait.bt ./02-lock   ($1 = the lab binary)
+// The uprobes sit on pktd's own wrappers (rib_lock_acquire / rib_lock_release), which exist only
+// in this binary. A uprobe on libc's pthread_mutex_lock would trap in every process on the host.
+
+uprobe:$1:rib_lock_acquire { @want[tid] = nsecs; }
+
+uretprobe:$1:rib_lock_acquire /@want[tid]/ {
+  @wait_us[comm] = hist((nsecs - @want[tid]) / 1000);
+  @wait_total_us[comm] = sum((nsecs - @want[tid]) / 1000);
+  delete(@want[tid]);
+  @got[tid] = nsecs;
+}
+
+uprobe:$1:rib_lock_release /@got[tid]/ {
+  @held_total_us[comm, ustack(perf, 4)] = sum((nsecs - @got[tid]) / 1000);
+  delete(@got[tid]);
+}
+
+usdt:$1:pktd:converged { exit(); }
+
+END { clear(@want); clear(@got); }

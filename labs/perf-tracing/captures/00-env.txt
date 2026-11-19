@@ -1,0 +1,17 @@
+# src probe.sh 986114ee321ffb65436430884b6e8950de8da5d6ae17fd6e36511ef8c7be5606
+# cmd gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep '^PROBE'
+gcc (Debian 12.2.0-14+deb12u1) 12.2.0
+perf version 6.1.192
+bpftrace v0.17.0
+kernel 6.1.0-40-amd64
+cpus 16
+PROBE perf-stat-hw ok
+PROBE perf-stat-sw ok
+PROBE perf-record-g ok
+PROBE perf-sched-tp ok
+PROBE perf-sched-timehist ok
+PROBE perf-trace ok
+PROBE perf-lock-bpf fail
+PROBE bpftrace-uprobe ok
+PROBE bpftrace-tp-comm ok
+PROBE bpftrace-sched ok

@@ -1,0 +1,10 @@
+# src 05-throttle.c 555bd9a3100c89847fe65f74c962560b071138691472935663178b92f383a24d
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 05-throttle && perf stat -e task-clock,context-switches ./05-throttle 2>&1 >/dev/null | grep -v '^ *$'
+ Performance counter stats for './05-throttle':
+             34.49 msec task-clock                       #    0.010 CPUs utilized          
+               109      context-switches                 #    3.160 K/sec                  
+       3.337732250 seconds time elapsed
+       0.018881000 seconds user
+       0.018824000 seconds sys

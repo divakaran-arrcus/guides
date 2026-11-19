@@ -1,0 +1,37 @@
+# src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src bt/syscalls.bt dbac8400b601650b291591adf647261aa0819bcf8b12f246f5ef7a5c626de89d
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 03-syscalls && bpftrace -o /tmp/bt.out -c ./03-syscalls bt/syscalls.bt ./03-syscalls >/dev/null && cat /tmp/bt.out
+Attaching 7 probes...
+
+@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
+@calls[pktd-push, tracepoint:syscalls:sys_enter_write]: 24000
+@calls[pktd-fib, tracepoint:syscalls:sys_enter_read]: 24000
+@calls[pktd-push, tracepoint:syscalls:sys_enter_read]: 24000
+@read_us[pktd-fib]: 
+[1]                    3 |                                                    |
+[2, 4)                37 |                                                    |
+[4, 8)               101 |                                                    |
+[8, 16)             5477 |@@@@@@@@@@@@@@@@@@@                                 |
+[16, 32)           14416 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)            3121 |@@@@@@@@@@@                                         |
+[64, 128)            676 |@@                                                  |
+[128, 256)           126 |                                                    |
+[256, 512)            37 |                                                    |
+[512, 1K)              5 |                                                    |
+[1K, 2K)               1 |                                                    |
+
+@read_us[pktd-push]: 
+[2, 4)                24 |                                                    |
+[4, 8)                29 |                                                    |
+[8, 16)             5354 |@@@@@@@@@@@@@@@@@@@                                 |
+[16, 32)           14126 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)            3586 |@@@@@@@@@@@@@                                       |
+[64, 128)            696 |@@                                                  |
+[128, 256)           141 |                                                    |
+[256, 512)            33 |                                                    |
+[512, 1K)             10 |                                                    |
+[1K, 2K)               1 |                                                    |
+
+

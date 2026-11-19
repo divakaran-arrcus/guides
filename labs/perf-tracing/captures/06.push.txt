@@ -1,0 +1,23 @@
+# src 06-boss.c 8940f7829e40d0d4f42f0b4d5143bb33ad104f37bab04dff4da495aa20ebe7ed
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 06-boss && ./06-boss --fix=push
+fixes applied: push
+pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.045 ms  hold       begin
+T+   200.124 ms  hold       end
+T+   200.124 ms  compute    begin
+T+   590.199 ms  compute    end
+T+   590.199 ms  rib        begin
+T+   590.271 ms  rib        end
+T+   590.347 ms  push       begin
+T+   596.168 ms  push       end
+
+budget  stage      ms        share
+budget  hold        200.079   33.6%
+budget  compute     390.074   65.4%
+budget  rib           0.072    0.0%
+budget  push          5.820    1.0%
+budget  handoff       0.121    0.0%
+converged_ms=596.168

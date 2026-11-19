@@ -1,0 +1,26 @@
+// offcpu.bt — off-CPU time by thread and user stack, between the event and convergence.
+//   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
+// Scope: the sched_switch tracepoint fires for every thread on the host, so the filter keeps
+// only threads named pktd-*; the program is armed by pktd's own USDT probes and exits at
+// convergence. Output is microseconds per (thread, stack); symbolize.py names the frames
+// (PKTD_MAPS saves the lab's memory map for it) and fold-bt.awk turns it into folded stacks.
+
+usdt:$1:pktd:event { @armed = 1; }
+usdt:$1:pktd:converged { exit(); }
+
+tracepoint:sched:sched_switch /@armed/ {
+  // Going off-CPU: remember when, and where in user space.
+  if (strncmp(args->prev_comm, "pktd-", 5) == 0) {
+    @start[args->prev_pid] = nsecs;
+    @stack[args->prev_pid] = ustack(perf);
+  }
+  // Coming back on: charge the time to the stack it left from.
+  $s = @start[args->next_pid];
+  if ($s) {
+    @offcpu_us[args->next_comm, @stack[args->next_pid]] = sum((nsecs - $s) / 1000);
+    delete(@start[args->next_pid]);
+    delete(@stack[args->next_pid]);
+  }
+}
+
+END { clear(@start); clear(@stack); delete(@armed); }

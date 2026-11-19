@@ -1,0 +1,36 @@
+# id<TAB>sources (comma-separated, "-" = none)<TAB>shell command, run in /lab by run-capture.sh
+00-env	probe.sh	gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep '^PROBE'
+f1.run	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes && ./f1-where-time-goes
+f1.perf-stat	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes && perf stat -e task-clock,context-switches,cpu-migrations ./f1-where-time-goes 2>&1 >/dev/null | grep -v '^ *$'
+00.timeline	00-baseline.c,pipeline.h,Makefile	make -s 00-baseline && ./00-baseline
+00.stages-bt	00-baseline.c,pipeline.h,bt/stages.bt,Makefile	make -s 00-baseline && bpftrace -o /tmp/bt.out -c ./00-baseline bt/stages.bt ./00-baseline >/dev/null && cat /tmp/bt.out
+01.timeline	01-hot-path.c,pipeline.h,compare.sh,Makefile	make -s 01-hot-path && ./compare.sh 01-hot-path
+01.perf-stat	01-hot-path.c,pipeline.h,Makefile	make -s 01-hot-path && perf stat -e task-clock,cycles,instructions,context-switches ./01-hot-path 2>&1 >/dev/null | grep -v '^ *$'
+01.perf-report	01-hot-path.c,pipeline.h,Makefile	make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path >/dev/null 2>&1 && perf report -i /tmp/p.data --stdio --no-children --sort comm,sym --percent-limit 2 -g caller,0.5,callee --stdio 2>/dev/null | grep -v -e '^$' -e '^# *$' | head -40
+01.perf-report-dwarf	01-hot-path.c,pipeline.h,Makefile	make -s 01-hot-path && perf record -q -F 999 --call-graph dwarf -o /tmp/p.data ./01-hot-path >/dev/null 2>&1 && perf report -i /tmp/p.data --stdio --no-children --sort comm,sym --percent-limit 2 -g caller,0.5,callee 2>/dev/null | grep -v -e '^$' -e '^# *$' | head -30
+01.oncpu.folded	01-hot-path.c,pipeline.h,fold-perf.awk,Makefile	make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+01.oncpu-fixed.folded	01-hot-path.c,pipeline.h,fold-perf.awk,Makefile	make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path --fixed >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+02.timeline	02-lock.c,pipeline.h,compare.sh,Makefile	make -s 02-lock && ./compare.sh 02-lock
+02.oncpu.folded	02-lock.c,pipeline.h,fold-perf.awk,Makefile	make -s 02-lock && perf record -q -F 999 -g -o /tmp/p.data ./02-lock >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+02.offcpu.folded	02-lock.c,pipeline.h,bt/offcpu.bt,fold-bt.awk,Makefile,symbolize.py	make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk
+02.lock-wait	02-lock.c,pipeline.h,bt/lock-wait.bt,Makefile,symbolize.py	make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
+02.lock-wait-fixed	02-lock.c,pipeline.h,bt/lock-wait.bt,Makefile,symbolize.py	make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c './02-lock --fixed' bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
+03.timeline	03-syscalls.c,pipeline.h,compare.sh,Makefile	make -s 03-syscalls && ./compare.sh 03-syscalls
+03.perf-trace	03-syscalls.c,pipeline.h,Makefile	make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls >/dev/null && grep -v '^ *$' /tmp/tr
+03.perf-trace-fixed	03-syscalls.c,pipeline.h,Makefile	make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls --fixed >/dev/null && grep -v '^ *$' /tmp/tr
+03.syscalls-bt	03-syscalls.c,pipeline.h,bt/syscalls.bt,Makefile	make -s 03-syscalls && bpftrace -o /tmp/bt.out -c ./03-syscalls bt/syscalls.bt ./03-syscalls >/dev/null && cat /tmp/bt.out
+04.timeline	04-sched.c,pipeline.h,compare.sh,Makefile	make -s 04-sched && ./compare.sh 04-sched
+04.runqlat-bt	04-sched.c,pipeline.h,bt/runqlat.bt,Makefile	make -s 04-sched && bpftrace -o /tmp/bt.out -c ./04-sched bt/runqlat.bt ./04-sched >/dev/null && cat /tmp/bt.out
+04.timehist	04-sched.c,pipeline.h,Makefile	make -s 04-sched && perf record -q -e sched:sched_switch,sched:sched_wakeup -o /tmp/s.data ./04-sched >/dev/null 2>&1 && perf sched timehist -i /tmp/s.data 2>/dev/null | grep -E '^ +time|^ +-|pktd-spf' | head -24
+05.timeline	05-throttle.c,pipeline.h,compare.sh,Makefile	make -s 05-throttle && ./compare.sh 05-throttle
+05.perf-stat	05-throttle.c,pipeline.h,Makefile	make -s 05-throttle && perf stat -e task-clock,context-switches ./05-throttle 2>&1 >/dev/null | grep -v '^ *$'
+05.oncpu.folded	05-throttle.c,pipeline.h,fold-perf.awk,Makefile	make -s 05-throttle && perf record -q -F 999 -g -o /tmp/p.data ./05-throttle >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+05.hold-bt	05-throttle.c,pipeline.h,bt/hold.bt,Makefile	make -s 05-throttle && bpftrace -o /tmp/bt.out -c ./05-throttle bt/hold.bt ./05-throttle >/dev/null && cat /tmp/bt.out
+05.perf-trace	05-throttle.c,pipeline.h,Makefile	make -s 05-throttle && perf trace -s -o /tmp/tr ./05-throttle >/dev/null && grep -v '^ *$' /tmp/tr
+06.none	06-boss.c,pipeline.h,Makefile	make -s 06-boss && ./06-boss
+06.oncpu.folded	06-boss.c,pipeline.h,fold-perf.awk,Makefile	make -s 06-boss && perf record -q -F 999 -g -o /tmp/p.data ./06-boss >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk
+06.push	06-boss.c,pipeline.h,Makefile	make -s 06-boss && ./06-boss --fix=push
+06.push-hot	06-boss.c,pipeline.h,Makefile	make -s 06-boss && ./06-boss --fix=push,hot
+06.lock-wait	06-boss.c,pipeline.h,bt/lock-wait.bt,Makefile,symbolize.py	make -s 06-boss && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c './06-boss --fix=push,hot' bt/lock-wait.bt ./06-boss >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
+06.push-hot-lock	06-boss.c,pipeline.h,Makefile	make -s 06-boss && ./06-boss --fix=push,hot,lock
+06.all	06-boss.c,pipeline.h,Makefile	make -s 06-boss && ./06-boss --fix=all
