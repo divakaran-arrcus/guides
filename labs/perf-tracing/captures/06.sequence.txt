@@ -1,0 +1,103 @@
+# src 06-boss.c 8940f7829e40d0d4f42f0b4d5143bb33ad104f37bab04dff4da495aa20ebe7ed
+# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 06-boss && for f in none push push,hot push,hot,lock all; do if [ $f = none ]; then ./06-boss; else ./06-boss --fix=$f; fi; done > /tmp/seq; cat /tmp/seq; awk '/^fixes applied/{f=$3} /^pktd route/{if(f=="")f="none"} /^budget  [a-z]/ && $2!="stage"{s=$4+0; if(s>top){top=s; st=$2}} /^converged_ms=/{printf "summary  fixes=%-15s converged_ms=%-9s largest=%s (%.1f%%)\n", f, substr($0,14), st, top; f=""; top=0}' /tmp/seq
+pktd route pipeline  lab=06-boss variant=before  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.092 ms  hold       begin
+T+   200.246 ms  hold       end
+T+   200.246 ms  compute    begin
+T+   609.647 ms  compute    end
+T+   609.647 ms  rib        begin
+T+   609.736 ms  rib        end
+T+   609.841 ms  push       begin
+T+  1390.833 ms  push       end
+
+budget  stage      ms        share
+budget  hold        200.153   14.4%
+budget  compute     409.401   29.4%
+budget  rib           0.089    0.0%
+budget  push        780.993   56.2%
+budget  handoff       0.198    0.0%
+converged_ms=1390.833
+fixes applied: push
+pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.216 ms  hold       begin
+T+   200.421 ms  hold       end
+T+   200.422 ms  compute    begin
+T+   651.405 ms  compute    end
+T+   651.405 ms  rib        begin
+T+   651.485 ms  rib        end
+T+   651.562 ms  push       begin
+T+   655.630 ms  push       end
+
+budget  stage      ms        share
+budget  hold        200.205   30.5%
+budget  compute     450.983   68.8%
+budget  rib           0.080    0.0%
+budget  push          4.068    0.6%
+budget  handoff       0.294    0.0%
+converged_ms=655.630
+fixes applied: push,hot
+pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.096 ms  hold       begin
+T+   200.344 ms  hold       end
+T+   200.344 ms  compute    begin
+T+   233.931 ms  compute    end
+T+   233.932 ms  rib        begin
+T+   518.881 ms  rib        end
+T+   518.949 ms  push       begin
+T+   523.283 ms  push       end
+
+budget  stage      ms        share
+budget  hold        200.247   38.3%
+budget  compute      33.587    6.4%
+budget  rib         284.949   54.5%
+budget  push          4.334    0.8%
+budget  handoff       0.166    0.0%
+converged_ms=523.283
+fixes applied: push,hot,lock
+pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.188 ms  hold       begin
+T+   200.575 ms  hold       end
+T+   200.576 ms  compute    begin
+T+   217.786 ms  compute    end
+T+   217.787 ms  rib        begin
+T+   217.875 ms  rib        end
+T+   217.961 ms  push       begin
+T+   222.161 ms  push       end
+
+budget  stage      ms        share
+budget  hold        200.387   90.2%
+budget  compute      17.211    7.7%
+budget  rib           0.089    0.0%
+budget  push          4.201    1.9%
+budget  handoff       0.274    0.1%
+converged_ms=222.161
+fixes applied: all
+pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=32
+T+     0.000 ms  event      link change injected
+T+     0.243 ms  hold       begin
+T+    50.438 ms  hold       end
+T+    50.438 ms  compute    begin
+T+    86.295 ms  compute    end
+T+    86.295 ms  rib        begin
+T+    86.426 ms  rib        end
+T+    86.558 ms  push       begin
+T+    94.860 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.195   52.9%
+budget  compute      35.856   37.8%
+budget  rib           0.130    0.1%
+budget  push          8.302    8.8%
+budget  handoff       0.376    0.4%
+converged_ms=94.860
+summary  fixes=none            converged_ms=1390.833  largest=push (56.2%)
+summary  fixes=push            converged_ms=655.630   largest=compute (68.8%)
+summary  fixes=push,hot        converged_ms=523.283   largest=rib (54.5%)
+summary  fixes=push,hot,lock   converged_ms=222.161   largest=hold (90.2%)
+summary  fixes=all             converged_ms=94.860    largest=hold (52.9%)

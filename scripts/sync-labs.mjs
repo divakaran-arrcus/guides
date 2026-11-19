@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-// Fill <!--SRC:path-->, <!--CAP:id--> and <!--FLAME:id--> blocks in a guide from labs/<slug>/
-// files and captures/<id>.txt (FLAME renders folded stacks as an SVG flame graph). --write fills them; --check only verifies.
+// Fill <!--SRC:path-->, <!--CAP:id-->, <!--FLAME:id--> and <!--TL:id--> blocks in a guide from
+// labs/<slug>/ files and captures/<id>.txt (FLAME renders folded stacks as an SVG flame graph,
+// TL renders pktd pipeline timelines as bars). --write fills them; --check only verifies.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveGuideHtml } from './lib/guide-path.mjs';
 import { renderFlame } from './lib/flamegraph.mjs';
+import { renderTimeline } from './lib/timeline.mjs';
 
 export const escapeHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -30,7 +32,7 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
+const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME|TL):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
 
 function expectedSrc(path, spec, labsDir) {
   if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
@@ -55,6 +57,7 @@ function expectedCap(id, spec, labsDir, kind = 'CAP') {
   if (errs.length) return { error: errs.join('; ') };
   const body = selectLines(lines.slice(i).join('\n'), spec);
   if (kind === 'FLAME') return { body: renderFlame(body, { id }) };
+  if (kind === 'TL') return { body: renderTimeline(body) };
   return { body: escapeHtml(body) };
 }
 

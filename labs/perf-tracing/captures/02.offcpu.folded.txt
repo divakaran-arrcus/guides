@@ -3,25 +3,27 @@
 # src bt/offcpu.bt 93080d6aaf70a8fffc4d99a813d8bb0354c3c775a034ae55d9fc4dff88c5fa9a
 # src fold-bt.awk feab913536963d6ed2b2c6b748d3399a90569579e20797564fd9a11d75c52c8f
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# src symbolize.py a4e58cf15e1a2ff53f7fa7c15b761392629d696b98f07a738f2ad2c28d91bbda
+# src symbolize.py 75b9d5d9e8aa27a5939f1c15406242aec2bcad362285533418f7db4f97fc5d49
 # cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk
-pktd-cli;__GI__IO_default_xsputn 40
-pktd-cli;__strchrnul_evex 34
-pktd-cli;__vfprintf_internal 78
-pktd-cli;__vsnprintf_internal 139
-pktd-cli;_itoa_word 30
-pktd-cli;done_add_func 34
-pktd-cli;outstring_func 28
-pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 242087
-pktd-cli;start_thread;cli_main;cli_show_rib;__GI___pthread_enable_asynccancel 916
-pktd-ctl;__futex_abstimed_wait_common64 370207
-pktd-fib;start_thread;__GI___libc_read 1114
-pktd-push;__futex_abstimed_wait_common64 367604
-pktd-push;start_thread;push_main;__GI___libc_read 1419
-pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50024
-pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min 38
-pktd-spf;start_thread;spf_main;compute_routes;spf_relax 383
-pktd-spf;start_thread;spf_main;compute_routes;spf_run 39
-pktd-spf;start_thread;spf_main;rib_update;futex_wait 308229
-pktd-term;start_thread;__GI___clock_nanosleep 311726
-pktd-term;start_thread;__GI___libc_read 188
+pktd-cli;IO_validate_vtable 70
+pktd-cli;_IO_old_init 42
+pktd-cli;__GI__IO_default_xsputn 156
+pktd-cli;__find_specmb 174
+pktd-cli;__strchrnul_evex 72
+pktd-cli;__vfprintf_internal 409
+pktd-cli;_itoa_word 201
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 190150
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___pthread_disable_asynccancel 42
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___pthread_enable_asynccancel 60
+pktd-cli;start_thread;cli_main;cli_show_rib;__vsnprintf_internal 49
+pktd-ctl;__futex_abstimed_wait_common64 386629
+pktd-fib;start_thread;__GI___libc_read 10941
+pktd-push;__futex_abstimed_wait_common64 370815
+pktd-push;start_thread;push_main;__GI___libc_read 7321
+pktd-push;start_thread;push_main;__GI___libc_write 64
+pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50426
+pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min 259
+pktd-spf;start_thread;spf_main;compute_routes;spf_relax 177
+pktd-spf;start_thread;spf_main;compute_routes;spf_run 212
+pktd-spf;start_thread;spf_main;rib_update;futex_wait 286595
+pktd-term;start_thread;__GI___clock_nanosleep 323844

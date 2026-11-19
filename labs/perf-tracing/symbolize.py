@@ -30,17 +30,22 @@ def main():
     maps = load_maps(sys.argv[1])
     text = sys.stdin.read().splitlines()
     wanted = {}  # path -> set of file offsets
-    where = {}   # address -> (path, offset)
-    for line in text:
+    where = {}   # line number -> (path, offset)
+    first = True  # the first frame of a stack is the exact instruction pointer
+    for n, line in enumerate(text):
         m = FRAME.match(line)
         if not m:
+            first = True
             continue
         addr = int(m.group(2), 16)
+        # Every frame but the first is a return address, which points just past its call
+        # instruction; look up the call itself, or a call at a function's end names the next one.
+        adj = 0 if first else 1
+        first = False
         for lo, hi, off, path in maps:
             if lo <= addr < hi:
-                # A return address points just past the call; look up the call itself.
-                where[addr] = (path, addr - lo + off - 1)
-                wanted.setdefault(path, set()).add(addr - lo + off - 1)
+                where[n] = (path, addr - lo + off - adj)
+                wanted.setdefault(path, set()).add(addr - lo + off - adj)
                 break
     names = {}
     for path, offs in wanted.items():
@@ -50,10 +55,10 @@ def main():
         for i, o in enumerate(offs):
             fn = out[2 * i] if 2 * i < len(out) else '??'
             names[(path, o)] = '[unknown]' if fn == '??' else fn
-    for line in text:
+    for n, line in enumerate(text):
         m = FRAME.match(line)
-        if m and int(m.group(2), 16) in where:
-            path, o = where[int(m.group(2), 16)]
+        if m and n in where:
+            path, o = where[n]
             line = f'{m.group(1)}{m.group(2)} {names[(path, o)]} ({path})'
         print(line)
 

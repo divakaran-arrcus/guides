@@ -121,4 +121,4 @@ checks, syncs `captures/` back and runs the repo's leak gate over them. `remote.
 - **`remote.sh` needs a leak-term list** (`$(git rev-parse --git-common-dir)/info/leak-terms` or
   `$LEAK_TERMS`); without one the leak gate exits 2 and `remote.sh` fails, by design.
 
-<!-- cspell:words bpfcc bpftrace kallsyms memlock offcputime perfmon pktd runqlat seccomp timehist uprobe uprobes ustack -->
+<!-- cspell:words bpfcc bpftrace kallsyms kprobes libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack -->

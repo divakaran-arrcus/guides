@@ -2,24 +2,24 @@
 # src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
 # src bt/lock-wait.bt e9fd043d587ab5b3db6249c24a9f8d96331ba90c5b798b513e86d06c48657d1e
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# src symbolize.py a4e58cf15e1a2ff53f7fa7c15b761392629d696b98f07a738f2ad2c28d91bbda
+# src symbolize.py 75b9d5d9e8aa27a5939f1c15406242aec2bcad362285533418f7db4f97fc5d49
 # cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
 Attaching 5 probes...
 
 @held_total_us[pktd-spf, 
-	5565f4df4910 rib_lock_acquire (/lab/02-lock)
-	5565f4df4a95 rib_update (/lab/02-lock)
-	5565f4df4b52 spf_main (/lab/02-lock)
-	7fba63fc91f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 107
+	557f266ad910 rib_lock_release (/lab/02-lock)
+	557f266ada95 rib_update (/lab/02-lock)
+	557f266adb52 spf_main (/lab/02-lock)
+	7f53543e71f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 70
 @held_total_us[pktd-cli, 
-	5565f4df4910 rib_lock_acquire (/lab/02-lock)
-	5565f4df495f cli_show_rib (/lab/02-lock)
-	5565f4df4a22 cli_main (/lab/02-lock)
-	7fba63fc91f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 311303
-@wait_total_us[pktd-cli]: 168
-@wait_total_us[pktd-spf]: 301030
+	557f266ad910 rib_lock_release (/lab/02-lock)
+	557f266ad95f cli_show_rib (/lab/02-lock)
+	557f266ada22 cli_main (/lab/02-lock)
+	7f53543e71f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 313722
+@wait_total_us[pktd-cli]: 194
+@wait_total_us[pktd-spf]: 290213
 @wait_us[pktd-cli]: 
 [128, 256)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 

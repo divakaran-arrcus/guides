@@ -2,26 +2,26 @@
 # src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
 # src bt/lock-wait.bt e9fd043d587ab5b3db6249c24a9f8d96331ba90c5b798b513e86d06c48657d1e
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# src symbolize.py a4e58cf15e1a2ff53f7fa7c15b761392629d696b98f07a738f2ad2c28d91bbda
+# src symbolize.py 75b9d5d9e8aa27a5939f1c15406242aec2bcad362285533418f7db4f97fc5d49
 # cmd make -s 06-boss && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c './06-boss --fix=push,hot' bt/lock-wait.bt ./06-boss >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
 Attaching 5 probes...
 
 @held_total_us[pktd-spf, 
-	55f37a2f1b00 rib_lock_acquire (/lab/06-boss)
-	55f37a2f1c85 rib_update (/lab/06-boss)
-	55f37a2f1d42 spf_main (/lab/06-boss)
-	7f8dfaadc1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 128
+	5579e83b2b00 rib_lock_release (/lab/06-boss)
+	5579e83b2c85 rib_update (/lab/06-boss)
+	5579e83b2d42 spf_main (/lab/06-boss)
+	7f4c95cbb1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 192
 @held_total_us[pktd-cli, 
-	55f37a2f1b00 rib_lock_acquire (/lab/06-boss)
-	55f37a2f1b4f cli_show_rib (/lab/06-boss)
-	55f37a2f1c12 cli_main (/lab/06-boss)
-	7f8dfaadc1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 305471
-@wait_total_us[pktd-cli]: 142
-@wait_total_us[pktd-spf]: 266755
+	5579e83b2b00 rib_lock_release (/lab/06-boss)
+	5579e83b2b4f cli_show_rib (/lab/06-boss)
+	5579e83b2c12 cli_main (/lab/06-boss)
+	7f4c95cbb1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 314772
+@wait_total_us[pktd-cli]: 88
+@wait_total_us[pktd-spf]: 283424
 @wait_us[pktd-cli]: 
-[128, 256)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64, 128)              1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 
 @wait_us[pktd-spf]: 
 [256K, 512K)           1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|

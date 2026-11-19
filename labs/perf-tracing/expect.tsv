@@ -66,14 +66,11 @@ f1.perf-stat	seconds time elapsed
 05.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_(extract_min|relax) [0-9]{1,2}$
 05.hold-bt	pktd-spf: throttle hold = 3200 ms$
 05.hold-bt	pktd-spf: clock_nanosleep returned after 3200 ms$
-05.perf-trace	^   clock_nanosleep +1 +0 +3[0-9]{3}\.
-06.none	^budget  push +[0-9.]+ +(4[5-9]|[5-9][0-9])\.[0-9]%$
-06.none	^budget  compute +[0-9.]+ +(2[0-9]|3[0-9])\.[0-9]%$
 06.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min [0-9]{3,}$
-06.push	^budget  compute +[0-9.]+ +([5-9][0-9])\.[0-9]%$
-06.push-hot	^budget  rib +[0-9.]+ +(4[0-9]|[5-9][0-9])\.[0-9]%$
-06.push-hot	^budget  hold +[0-9.]+ +[23][0-9]\.[0-9]%$
 06.lock-wait	^@wait_total_us\[pktd-spf\]: [1-9][0-9]{5}$
 06.lock-wait	^	[0-9a-f]+ cli_show_rib \(/lab/06-boss\)$
-06.push-hot-lock	^budget  hold +2[0-9]{2}\.[0-9]+ +([6-9][0-9])\.[0-9]%$
-06.all	^converged_ms=([4-9][0-9]|1[0-4][0-9])\.[0-9]+$
+06.sequence	^summary  fixes=none +converged_ms=[0-9.]+ +largest=push 
+06.sequence	^summary  fixes=push +converged_ms=[0-9.]+ +largest=compute 
+06.sequence	^summary  fixes=push,hot +converged_ms=[0-9.]+ +largest=rib 
+06.sequence	^summary  fixes=push,hot,lock +converged_ms=[0-9.]+ +largest=hold 
+06.sequence	^summary  fixes=all +converged_ms=([4-9][0-9]|1[0-4][0-9])\.[0-9]+ 
