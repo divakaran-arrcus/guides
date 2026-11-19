@@ -5,11 +5,13 @@
 set -eu
 lab=$1
 fix=${2:---fixed}
-./"$lab" > /tmp/compare.before
-./"$lab" "$fix" > /tmp/compare.after
-cat /tmp/compare.before
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+./"$lab" > "$tmp/before"
+./"$lab" "$fix" > "$tmp/after"
+cat "$tmp/before"
 echo "--- with $fix:"
-cat /tmp/compare.after
-b=$(sed -n 's/^converged_ms=//p' /tmp/compare.before)
-a=$(sed -n 's/^converged_ms=//p' /tmp/compare.after)
+cat "$tmp/after"
+b=$(sed -n 's/^converged_ms=//p' "$tmp/before")
+a=$(sed -n 's/^converged_ms=//p' "$tmp/after")
 awk -v b="$b" -v a="$a" 'BEGIN { printf "speedup=%.1fx  (%.1f ms -> %.1f ms)\n", b / a, b, a }'

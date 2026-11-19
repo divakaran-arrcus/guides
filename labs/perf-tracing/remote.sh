@@ -21,7 +21,7 @@ SSH=(ssh -o BatchMode=yes)
 RSH="ssh -o BatchMode=yes"
 RDIR=ptg-lab
 # Expanded by the host's shell after "cd ptg-lab", so $PWD is the host's lab copy.
-BASE='--rm --hostname pktd-lab -v "$PWD":/lab -w /lab -v /sys/kernel/tracing:/sys/kernel/tracing:ro --ulimit memlock=-1 --cap-add SYS_ADMIN --cap-add SYSLOG --cap-add SYS_PTRACE --security-opt seccomp=unconfined'
+BASE='--rm --hostname pktd-lab -v "$PWD":/lab -w /lab -v /sys/kernel/tracing:/sys/kernel/tracing:ro --ulimit memlock=-1 --cap-add SYS_ADMIN --cap-add SYSLOG'
 LABS='f1-where-time-goes 00-baseline 01-hot-path 02-lock 03-syscalls 04-sched 05-throttle 06-boss'
 # Built binaries and perf data live only on the host: never uploaded, never deleted by --delete.
 KEEP=(--exclude 'perf.data*' --exclude '.*.sh')

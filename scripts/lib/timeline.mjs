@@ -39,7 +39,8 @@ export function renderTimeline(text) {
   const pct = v => (100 * v / scale).toFixed(2);
   const out = ['<div class="tl">'];
   for (const r of runs) {
-    out.push(`<div class="tl-cap"><strong>${esc(r.label)}</strong> · converged in ${r.total.toFixed(1)} ms</div>`);
+    const done = r.total ? `converged in ${r.total.toFixed(1)} ms` : 'no converged_ms line in the capture';
+    out.push(`<div class="tl-cap"><strong>${esc(r.label)}</strong> · ${done}</div>`);
     for (const s of r.stages) {
       const d = s.end - s.begin;
       out.push(`<div class="tl-row"><span class="tl-lab">${esc(s.name)}</span><span class="tl-track">`

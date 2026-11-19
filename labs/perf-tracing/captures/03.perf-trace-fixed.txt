@@ -1,77 +1,17 @@
 # src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# cmd make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls --fixed >/dev/null && grep -v '^ *$' /tmp/tr
- Summary of events:
- pktd-ctl (544), 128 events, 21.8%
+# cmd make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls --fixed >/dev/null && awk '/^ pktd-(push|fib) /{p=1} /^ pktd-(ctl|spf) /{p=0} p' /tmp/tr | grep -E '^ pktd-|^   (syscall|---)|^ +\(msec\)|^   (read|write|futex) '
+ pktd-fib (54), 203 events, 33.6%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   clock_nanosleep        1      0    97.391    97.391    97.391    97.391      0.00%
-   futex                  4      0    62.441     0.019    15.610    58.196     91.10%
-   clone3                 3      0     1.815     0.533     0.605     0.677      6.87%
-   mmap                  14      0     0.219     0.007     0.016     0.047     18.32%
-   mprotect               6      0     0.104     0.013     0.017     0.025      9.72%
-   munmap                 1      0     0.094     0.094     0.094     0.094      0.00%
-   socketpair             1      0     0.046     0.046     0.046     0.046      0.00%
-   newfstatat             3      0     0.040     0.007     0.013     0.024     40.06%
-   openat                 2      0     0.039     0.017     0.019     0.022     13.87%
-   rt_sigprocmask         7      0     0.029     0.003     0.004     0.011     27.36%
-   shutdown               1      0     0.014     0.014     0.014     0.014      0.00%
-   brk                    3      0     0.014     0.003     0.005     0.007     31.08%
-   access                 1      1     0.014     0.014     0.014     0.014      0.00%
-   setsockopt             1      0     0.009     0.009     0.009     0.009      0.00%
-   prctl                  1      0     0.008     0.008     0.008     0.008      0.00%
-   pread64                2      0     0.008     0.004     0.004     0.004      2.49%
-   close                  2      0     0.007     0.004     0.004     0.004      5.94%
-   read                   1      0     0.007     0.007     0.007     0.007      0.00%
-   write                  1      0     0.005     0.005     0.005     0.005      0.00%
-   ioctl                  1      1     0.004     0.004     0.004     0.004      0.00%
-   getrandom              1      0     0.004     0.004     0.004     0.004      0.00%
-   rt_sigaction           1      0     0.003     0.003     0.003     0.003      0.00%
-   prlimit64              1      0     0.003     0.003     0.003     0.003      0.00%
-   arch_prctl             1      0     0.003     0.003     0.003     0.003      0.00%
-   set_tid_address        1      0     0.003     0.003     0.003     0.003      0.00%
-   rseq                   1      0     0.003     0.003     0.003     0.003      0.00%
-   set_robust_list        1      0     0.003     0.003     0.003     0.003      0.00%
-   execve                 1      0     0.000     0.000     0.000     0.000      0.00%
- pktd-fib (545), 204 events, 34.7%
+   read                  48      0   183.592     0.027     3.825   179.166     97.54%
+   write                 47      0     2.054     0.024     0.044     0.152      7.25%
+ pktd-push (56), 210 events, 34.7%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   read                  48      0   159.505     0.035     3.323   157.060     98.43%
-   write                 47      0     0.517     0.008     0.011     0.033      6.97%
-   madvise                1      0     0.021     0.021     0.021     0.021      0.00%
-   prctl                  1      0     0.012     0.012     0.012     0.012      0.00%
-   rt_sigprocmask         2      0     0.008     0.003     0.004     0.005     24.65%
-   rseq                   1      0     0.005     0.005     0.005     0.005      0.00%
-   set_robust_list        1      0     0.002     0.002     0.002     0.002      0.00%
-   clone3                 1      0     0.000     0.000     0.000     0.000      0.00%
- pktd-spf (546), 30 events, 5.1%
-   syscall            calls  errors  total       min       avg       max       stddev
-                                     (msec)    (msec)    (msec)    (msec)        (%)
-   --------------- --------  ------ -------- --------- --------- ---------     ------
-   futex                  3      0    98.203     0.004    32.734    98.175     99.96%
-   clock_nanosleep        1      0    48.660    48.660    48.660    48.660      0.00%
-   mmap                   1      0     0.042     0.042     0.042     0.042      0.00%
-   munmap                 2      0     0.029     0.009     0.015     0.021     41.50%
-   madvise                1      0     0.016     0.016     0.016     0.016      0.00%
-   mprotect               1      0     0.011     0.011     0.011     0.011      0.00%
-   prctl                  1      0     0.009     0.009     0.009     0.009      0.00%
-   rt_sigprocmask         2      0     0.007     0.003     0.003     0.003      4.64%
-   rseq                   1      0     0.004     0.004     0.004     0.004      0.00%
-   set_robust_list        1      0     0.002     0.002     0.002     0.002      0.00%
-   clone3                 1      0     0.000     0.000     0.000     0.000      0.00%
- pktd-push (547), 210 events, 35.7%
-   syscall            calls  errors  total       min       avg       max       stddev
-                                     (msec)    (msec)    (msec)    (msec)        (%)
-   --------------- --------  ------ -------- --------- --------- ---------     ------
-   futex                  4      0   155.553     0.003    38.888    97.561     61.35%
-   read                  47      0     2.387     0.027     0.051     0.256      9.58%
-   write                 47      0     0.921     0.013     0.020     0.063      5.36%
-   prctl                  1      0     0.023     0.023     0.023     0.023      0.00%
-   madvise                1      0     0.014     0.014     0.014     0.014      0.00%
-   rt_sigprocmask         2      0     0.007     0.003     0.003     0.004      6.51%
-   rseq                   1      0     0.004     0.004     0.004     0.004      0.00%
-   set_robust_list        1      0     0.002     0.002     0.002     0.002      0.00%
-   clone3                 1      0     0.000     0.000     0.000     0.000      0.00%
+   futex                  4      0   177.327     0.007    44.332    99.249     58.54%
+   read                  47      0     6.831     0.072     0.145     0.358      5.49%
+   write                 47      0     1.325     0.015     0.028     0.156     11.63%

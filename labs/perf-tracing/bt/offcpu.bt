@@ -1,4 +1,4 @@
-// offcpu.bt — off-CPU time by thread and user stack, between the event and convergence.
+// offcpu.bt — blocked (off-CPU) time by thread and user stack, between the event and convergence.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
 // Scope: the sched_switch tracepoint fires for every thread on the host, so the filter keeps
 // only threads named pktd-*; the program is armed by pktd's own USDT probes and exits at
@@ -8,9 +8,12 @@
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
-tracepoint:sched:sched_switch /@armed/ {
-  // Going off-CPU: remember when, and where in user space.
-  if (strncmp(args->prev_comm, "pktd-", 5) == 0) {
+tracepoint:sched:sched_switch
+/@armed && (strncmp(args->prev_comm, "pktd-", 5) == 0 || strncmp(args->next_comm, "pktd-", 5) == 0)/ {
+  // Going off-CPU to sleep: remember when, and where in user space. A thread switched out while
+  // still runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn't blocked: it
+  // is waiting in the run queue, which runqlat.bt measures, so it is not counted here.
+  if (strncmp(args->prev_comm, "pktd-", 5) == 0 && args->prev_state != 0 && args->prev_state != 0x100) {
     @start[args->prev_pid] = nsecs;
     @stack[args->prev_pid] = ustack(perf);
   }

@@ -1,22 +1,22 @@
 # src 00-baseline.c 396df9e93db8ff9d6d2a920f7569f229d650af1546b786f570d628b0b895c832
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 00-baseline && ./00-baseline
 pktd route pipeline  lab=00-baseline variant=before  nodes=1500 routes=24000 changes=64
 T+     0.000 ms  event      link change injected
-T+     0.072 ms  hold       begin
-T+    50.777 ms  hold       end
-T+    50.778 ms  compute    begin
-T+    73.637 ms  compute    end
-T+    73.637 ms  rib        begin
-T+    73.795 ms  rib        end
-T+    73.912 ms  push       begin
-T+    79.261 ms  push       end
+T+     0.071 ms  hold       begin
+T+    50.174 ms  hold       end
+T+    50.175 ms  compute    begin
+T+    60.848 ms  compute    end
+T+    60.848 ms  rib        begin
+T+    60.930 ms  rib        end
+T+    61.002 ms  push       begin
+T+    63.818 ms  push       end
 
 budget  stage      ms        share
-budget  hold         50.705   64.0%
-budget  compute      22.859   28.8%
-budget  rib           0.158    0.2%
-budget  push          5.348    6.7%
-budget  handoff       0.191    0.2%
-converged_ms=79.261
+budget  hold         50.103   78.5%
+budget  compute      10.673   16.7%
+budget  rib           0.082    0.1%
+budget  push          2.816    4.4%
+budget  handoff       0.144    0.2%
+converged_ms=63.818

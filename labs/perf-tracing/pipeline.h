@@ -244,7 +244,7 @@ static int thr_hold_ms = HOLD_INIT_MS;
 
 static void throttle_history(void) {
   /* The link flapped C.flaps times ten minutes ago; each flap doubled the hold. */
-  for (int i = 0; i < C.flaps && thr_hold_ms < HOLD_MAX_MS; i++) thr_hold_ms *= 2;
+  for (int i = 0; i < C.flaps; i++) thr_hold_ms = thr_hold_ms * 2 > HOLD_MAX_MS ? HOLD_MAX_MS : thr_hold_ms * 2;
   thr_last_ns = now_ns() - 600ull * 1000000000ull;
 }
 
@@ -424,6 +424,16 @@ static void save_maps(void) {
   if (out) fclose(out);
 }
 
+/* Start a thread that already has its name: a new thread inherits its creator's name, and some
+ * tools (perf trace) keep the name they saw first. So the creator wears the name for a moment.
+ * A pipeline thread that fails to start would leave the others waiting for ever: stop instead. */
+static void start_thread(pthread_t *t, void *(*fn)(void *), void *arg, const char *name) {
+  pthread_setname_np(pthread_self(), name);
+  int err = pthread_create(t, NULL, fn, arg);
+  pthread_setname_np(pthread_self(), "pktd-ctl");
+  if (err) { fprintf(stderr, "pthread_create: %s\n", strerror(err)); exit(1); }
+}
+
 /* Run one convergence event with the given configuration. */
 static int pipeline_main(const struct cfg *cfg) {
   C = *cfg;
@@ -444,15 +454,19 @@ static int pipeline_main(const struct cfg *cfg) {
   setsockopt(fib_fd[0], SOL_SOCKET, SO_SNDBUF, &sz, sizeof sz);
 
   pthread_t spf, push, fibt, cli, term, poll[32];
-  pthread_create(&fibt, NULL, fib_main, NULL);
-  pthread_create(&spf, NULL, spf_main, NULL);
-  pthread_create(&push, NULL, push_main, NULL);
+  start_thread(&fibt, fib_main, NULL, "pktd-fib");
+  start_thread(&spf, spf_main, NULL, "pktd-spf");
+  start_thread(&push, push_main, NULL, "pktd-push");
   if (C.cli_walk) {
     if (pipe(term_fd) != 0) { perror("pipe"); return 1; }
-    pthread_create(&cli, NULL, cli_main, NULL);
-    pthread_create(&term, NULL, term_main, NULL);
+    start_thread(&cli, cli_main, NULL, "pktd-cli");
+    start_thread(&term, term_main, NULL, "pktd-term");
   }
-  for (int i = 0; i < C.pollers && i < 32; i++) pthread_create(&poll[i], NULL, poller_main, (void *)(intptr_t)i);
+  for (int i = 0; i < C.pollers && i < 32; i++) {
+    char name[16];
+    snprintf(name, sizeof name, "pktd-io%d", i);
+    start_thread(&poll[i], poller_main, (void *)(intptr_t)i, name);
+  }
   usleep(100000); /* let every thread reach its wait */
 
   pthread_mutex_lock(&ev_mu);

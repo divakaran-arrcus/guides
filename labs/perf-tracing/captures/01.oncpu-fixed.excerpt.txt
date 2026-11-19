@@ -1,0 +1,9 @@
+# src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src fold-perf.awk 150a6aea5aabed7de33b04dbdb55504cdca11f0896a5b230b943a92cea40a9e3
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path --fixed >/dev/null 2>&1 && perf script -i /tmp/p.data -F comm,ip,sym | awk -f fold-perf.awk | grep -E ';spf_(extract_min|relax) [0-9]+$'
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;spf_extract_min 14
+pktd-ctl;__libc_start_call_main;main;pipeline_main.constprop.0;spf_relax 18
+pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min 17
+pktd-spf;start_thread;spf_main;compute_routes;spf_relax 26

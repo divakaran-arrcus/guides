@@ -1,29 +1,29 @@
 # src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src bt/lock-wait.bt e9fd043d587ab5b3db6249c24a9f8d96331ba90c5b798b513e86d06c48657d1e
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# src symbolize.py 75b9d5d9e8aa27a5939f1c15406242aec2bcad362285533418f7db4f97fc5d49
+# src symbolize.py db93d342336cdce5a594b78a98924356699b7a3ce72a491c31c579fc0f3aca9e
 # cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c './02-lock --fixed' bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
 Attaching 5 probes...
 
 @held_total_us[pktd-spf, 
-	55f5a9849910 rib_lock_release (/lab/02-lock)
-	55f5a9849a95 rib_update (/lab/02-lock)
-	55f5a9849b52 spf_main (/lab/02-lock)
-	7f94751051f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 99
+	562daa1869e0 rib_lock_release (/lab/02-lock)
+	562daa186b65 rib_update (/lab/02-lock)
+	562daa186c22 spf_main (/lab/02-lock)
+	7f45490371f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 160
 @held_total_us[pktd-cli, 
-	55f5a9849910 rib_lock_release (/lab/02-lock)
-	55f5a984999f cli_show_rib (/lab/02-lock)
-	55f5a9849a22 cli_main (/lab/02-lock)
-	7f94751051f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 658
-@wait_total_us[pktd-spf]: 20
-@wait_total_us[pktd-cli]: 31
+	562daa1869e0 rib_lock_release (/lab/02-lock)
+	562daa186a6f cli_show_rib (/lab/02-lock)
+	562daa186af2 cli_main (/lab/02-lock)
+	7f45490371f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 1239
+@wait_total_us[pktd-spf]: 28
+@wait_total_us[pktd-cli]: 73
 @wait_us[pktd-cli]: 
-[16, 32)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 
 @wait_us[pktd-spf]: 
-[8, 16)                1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[16, 32)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 
 

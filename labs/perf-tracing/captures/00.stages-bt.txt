@@ -1,19 +1,19 @@
 # src 00-baseline.c 396df9e93db8ff9d6d2a920f7569f229d650af1546b786f570d628b0b895c832
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src bt/stages.bt 45fa907788e380a694bac350f103fd7a75a6046c71ff0cb217131fcde16fdf16
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 00-baseline && bpftrace -o /tmp/bt.out -c ./00-baseline bt/stages.bt ./00-baseline >/dev/null && cat /tmp/bt.out
 Attaching 8 probes...
 T+       0 us  event
-T+     206 us  hold     begin
-T+   50535 us  hold     end    took 50337 us
-T+   50586 us  compute  begin
-T+   75264 us  compute  end    took 24686 us
-T+   75347 us  rib      begin
-T+   75555 us  rib      end    took 213 us
-T+   75924 us  push     begin
-T+   86182 us  push     end    took 10266 us
-T+   86406 us  converged
+T+     279 us  hold     begin
+T+   50430 us  hold     end    took 50158 us
+T+   50456 us  compute  begin
+T+   58410 us  compute  end    took 7957 us
+T+   58435 us  rib      begin
+T+   58496 us  rib      end    took 62 us
+T+   58578 us  push     begin
+T+   62172 us  push     end    took 3598 us
+T+   62263 us  converged
 
 
 

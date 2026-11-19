@@ -21,8 +21,7 @@ From this directory:
 ```sh
 docker run -it --rm --hostname pktd-lab -v "$PWD":/lab -w /lab \
   -v /sys/kernel/tracing:/sys/kernel/tracing:ro --ulimit memlock=-1 \
-  --cap-add SYS_ADMIN --cap-add SYSLOG --cap-add SYS_PTRACE --security-opt seccomp=unconfined \
-  ptg-lab bash
+  --cap-add SYS_ADMIN --cap-add SYSLOG ptg-lab bash
 ```
 
 ## Run a lab
@@ -45,7 +44,7 @@ went: on a CPU, waiting in the run queue, or blocked.
 | `02-lock` | a "show rib" walker holds `rib_lock` while writing to a slow terminal | off-CPU flame graph (`bt/offcpu.bt`), `bt/lock-wait.bt` |
 | `03-syscalls` | one message and one ack per route | `perf trace -s`, `bt/syscalls.bt` |
 | `04-sched` | busy-polling threads, pipeline threads at nice 10, 2 CPUs | schedstat, `bt/runqlat.bt`, `perf sched timehist` |
-| `05-throttle` | the SPF backoff never resets | the timeline, `bt/hold.bt`, `perf trace -s` |
+| `05-throttle` | the SPF backoff never resets | the timeline, `bt/hold.bt` |
 | `06-boss` | four of the above at once | all of them |
 
 ## Scripts
@@ -68,10 +67,11 @@ went: on a CPU, waiting in the run queue, or blocked.
 | `-v "$PWD":/lab -w /lab` | Work on this directory in place. |
 | `-v /sys/kernel/tracing:...:ro` | Tracepoint formats for `perf` and bpftrace. Read-only: nothing is written there. |
 | `--ulimit memlock=-1` | bpftrace raises its locked-memory limit; this stops it warning that it can't. |
-| `--cap-add SYS_ADMIN` | `perf_event_open` and `bpf()` under `perf_event_paranoid=3` (Debian's strictest level). `CAP_PERFMON` + `CAP_BPF` suffice on hosts with paranoid ≤ 2. |
-| `--cap-add SYSLOG` | Lets `perf` read kernel symbol addresses, so kernel frames have names. |
-| `--cap-add SYS_PTRACE` | Lets `perf` and bpftrace read the traced process's memory for user stacks. |
-| `--security-opt seccomp=unconfined` | Docker's default seccomp profile blocks `perf_event_open` and `bpf()`. |
+| `--cap-add SYS_ADMIN` | `perf_event_open` and `bpf()` under `perf_event_paranoid=3` (Debian's strictest level). `CAP_PERFMON` + `CAP_BPF` suffice on hosts with paranoid ≤ 2. Docker's default seccomp profile allows both syscalls once the container has `CAP_SYS_ADMIN`, so no seccomp change is needed. |
+| `--cap-add SYSLOG` | Lets `perf` read kernel symbol addresses (when the host's `kptr_restrict` is 0 or 1), so kernel frames have names. |
+
+`SYS_PTRACE` and `seccomp=unconfined` are not needed: the kernel collects user stacks itself, and
+every probe in `probe.sh` passes without them.
 
 ## Shared hosts: the rules these labs follow
 
@@ -83,6 +83,9 @@ share, keep every probe scoped to your own processes:
   libc traps in every process on the host that uses it.
 - Tracepoints and kprobes fire for every thread on the host, so filter in the probe (these labs
   use the `pktd-` thread names) and arm them only between the lab's own USDT probes.
+  A thread-name filter can't tell two people's runs apart: if someone else runs these labs on
+  the same host at the same time, their `pktd-*` threads land in your histograms. (A PID filter
+  would need the host's PID, which the container doesn't know.) Don't run captures concurrently.
 - Every run is bounded: the scripts exit at `pktd:converged`, and `run-capture.sh` adds a timeout.
 - bcc tools (`offcputime`, `runqlat`, …) take a PID, but inside a container the PID you know is not
   the one the kernel sees; without a usable filter they trace the whole host, so these labs don't
@@ -121,4 +124,4 @@ checks, syncs `captures/` back and runs the repo's leak gate over them. `remote.
 - **`remote.sh` needs a leak-term list** (`$(git rev-parse --git-common-dir)/info/leak-terms` or
   `$LEAK_TERMS`); without one the leak gate exits 2 and `remote.sh` fails, by design.
 
-<!-- cspell:words bpfcc bpftrace kallsyms kprobes libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack -->
+<!-- cspell:words bpfcc bpftrace kallsyms kprobes kptr libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack -->

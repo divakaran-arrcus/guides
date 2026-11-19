@@ -21,7 +21,7 @@ static int has(const char *list, const char *w) {
 int main(int argc, char **argv) {
   const char *fix = NULL;
   for (int i = 1; i < argc; i++) if (strncmp(argv[i], "--fix=", 6) == 0) fix = argv[i] + 6;
-  struct cfg c = { .lab = "06-boss", .fixed = fix != NULL, .nodes = 1500, .changes = 32,
+  struct cfg c = { .lab = "06-boss", .fixed = fix != NULL, .nodes = 1500, .changes = 48,
                    .spf_per_change = !has(fix, "hot"),
                    .cli_walk = 1, .walk_holds_lock = !has(fix, "lock"),
                    .stop_and_wait = !has(fix, "push"),

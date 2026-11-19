@@ -1,10 +1,11 @@
 # src 04-sched.c 52b9aedae0f756568e242916fe599a46a0b762f0bed588e518b6cf0a5f3d2a55
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 04-sched && perf record -q -e sched:sched_switch,sched:sched_wakeup -o /tmp/s.data ./04-sched >/dev/null 2>&1 && perf sched timehist -i /tmp/s.data 2>/dev/null | grep -E '^ +time|^ +-|pktd-spf' | head -24
            time    cpu  task name                       wait time  sch delay   run time
- 8364714.895810 [0015]  pktd-spf[669/666]                   0.000      0.000      0.515 
- 8364714.997648 [0015]  pktd-spf[669/666]                 101.805      0.000      0.031 
- 8364715.051475 [0015]  pktd-spf[669/666]                  50.489      0.000      3.337 
- 8364715.150788 [0015]  pktd-spf[669/666]                  98.165      0.000      1.147 
- 8364715.207766 [0015]  pktd-spf[669/666]                  53.062      0.000      3.916 
+ 8367464.635011 [0015]  pktd-spf[744/741]                   0.000      0.000      0.521 
+ 8367464.736730 [0015]  pktd-spf[744/741]                 101.667      0.000      0.051 
+ 8367464.787732 [0015]  pktd-spf[744/741]                  48.867      0.000      2.134 
+ 8367464.822136 [0015]  pktd-spf[744/741]                  33.310      0.000      1.093 
+ 8367464.854183 [0015]  pktd-spf[744/741]                  31.939      0.000      0.108 
+ 8367464.857953 [0015]  pktd-spf[744/741]                   0.000      0.000      3.769 

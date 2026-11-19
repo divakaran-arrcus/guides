@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <sched.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -91,17 +93,22 @@ static void *t_queue(void *a) {
   return NULL;
 }
 
+static void start(pthread_t *t, void *(*fn)(void *), void *arg) {
+  int err = pthread_create(t, NULL, fn, arg);
+  if (err) { fprintf(stderr, "pthread_create: %s\n", strerror(err)); exit(1); }
+}
+
 int main(void) {
   cpu_set_t all;
   long cpu = 0;
   sched_getaffinity(0, sizeof all, &all);
   for (int c = CPU_SETSIZE - 1; c >= 0; c--) if (CPU_ISSET(c, &all)) { cpu = c; break; }
   pthread_t t[7];
-  pthread_create(&t[0], NULL, t_spin, NULL);
-  pthread_create(&t[1], NULL, t_sleep, NULL);
-  pthread_create(&t[2], NULL, t_holder, NULL);
-  pthread_create(&t[3], NULL, t_lock, NULL);
-  for (int i = 0; i < 3; i++) pthread_create(&t[4 + i], NULL, t_queue, (void *)cpu);
+  start(&t[0], t_spin, NULL);
+  start(&t[1], t_sleep, NULL);
+  start(&t[2], t_holder, NULL);
+  start(&t[3], t_lock, NULL);
+  for (int i = 0; i < 3; i++) start(&t[4 + i], t_queue, (void *)cpu);
   for (int i = 0; i < 7; i++) pthread_join(t[i], NULL);
   return 0;
 }

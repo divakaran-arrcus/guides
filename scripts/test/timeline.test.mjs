@@ -44,6 +44,12 @@ test('blocks share one time scale', () => {
   assert.match(html, /converged in 100\.0 ms/);
 });
 
+test('a run without converged_ms says so instead of claiming 0 ms', () => {
+  const html = renderTimeline(block('before', 80).replace(/^converged_ms=.*$/m, ''));
+  assert.match(html, /no converged_ms line/);
+  assert.doesNotMatch(html, /converged in 0\.0 ms/);
+});
+
 test('no timeline in the text renders an explicit note, not an empty figure', () => {
   assert.match(renderTimeline('nothing here\n'), /no timeline/);
 });

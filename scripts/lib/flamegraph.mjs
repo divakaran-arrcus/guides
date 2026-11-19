@@ -32,9 +32,10 @@ function hue(name) {
   return h % 5;
 }
 
-function depth(n) {
+// Rows actually drawn: frames under minPct are not drawn, so they must not add height either.
+function depth(n, min) {
   let d = 0;
-  for (const c of n.children.values()) d = Math.max(d, depth(c));
+  for (const c of n.children.values()) if (c.value >= min) d = Math.max(d, depth(c, min));
   return d + 1;
 }
 
@@ -48,7 +49,7 @@ export function renderFlame(text, { id, title, width = 960, rowH = 17, minPct = 
       + `<text x="${width / 2}" y="24" text-anchor="middle" ${font} style="fill:var(--text-muted)">no samples: the process was not on a CPU</text></svg>\n`;
   }
   const total = root.value;
-  const rows = depth(root);
+  const rows = depth(root, (minPct / 100) * total);
   const height = rows * rowH + 2;
   const out = [];
   const charW = 6.6;

@@ -43,6 +43,13 @@ test('tiny frames are not drawn but still count toward the total', () => {
   assert.match(svg, /all \(1000 samples, 100(\.0)?%\)/);
 });
 
+test('height counts only drawn rows: a deep 1-sample stack does not stretch the svg', () => {
+  const deep = 'main;' + Array.from({ length: 100 }, (_, i) => `f${i}`).join(';') + ' 1\n';
+  const svg = renderFlame('main;hot 999\n' + deep, { id: 'h', rowH: 17 });
+  const h = Number(svg.match(/viewBox="0 0 960 (\d+)"/)[1]);
+  assert.ok(h <= 3 * 17 + 2, `height ${h} should cover root, main and hot only`);
+});
+
 test('output is deterministic and themed by CSS variables', () => {
   const f = 'main;a;b 3\nmain;c 2\n';
   assert.equal(renderFlame(f, { id: 'd' }), renderFlame(f, { id: 'd' }));

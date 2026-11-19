@@ -4,7 +4,8 @@
 bpftrace prints ustack(perf) frames as "<hex-address> <symbol> (<path>)". Inside a container it
 knows the traced thread only by its host PID, which does not exist in the container's /proc, so
 every frame comes out as "[unknown]". The lab saves its own /proc/self/maps (PKTD_MAPS=<file>);
-this script maps each address to a file and offset and asks addr2line for the function.
+this script maps each address to a file offset, converts it to the ELF virtual address with the
+file's LOAD segments (readelf -lW), and asks addr2line for the function.
 Reads bpftrace output on stdin, writes it to stdout with frames rewritten as
 "<hex-address> <function> (<path>)"; every other line passes through unchanged.
 """
@@ -24,6 +25,25 @@ def load_maps(path):
                 lo, hi = (int(x, 16) for x in p[0].split('-'))
                 maps.append((lo, hi, int(p[2], 16), p[5]))
     return maps
+
+
+def load_segments(path):
+    """(p_offset, p_vaddr, p_filesz) of each LOAD segment, from readelf -lW."""
+    out = subprocess.run(['readelf', '-lW', path], capture_output=True, text=True).stdout
+    segs = []
+    for line in out.splitlines():
+        p = line.split()
+        if p and p[0] == 'LOAD':
+            segs.append((int(p[1], 16), int(p[2], 16), int(p[4], 16)))
+    return segs
+
+
+def to_vaddr(segs, off):
+    """addr2line wants the ELF virtual address; the maps give a file offset."""
+    for p_off, p_vaddr, p_filesz in segs:
+        if p_off <= off < p_off + p_filesz:
+            return off - p_off + p_vaddr
+    return off
 
 
 def main():
@@ -50,7 +70,8 @@ def main():
     names = {}
     for path, offs in wanted.items():
         offs = sorted(offs)
-        out = subprocess.run(['addr2line', '-f', '-e', path] + [hex(o) for o in offs],
+        segs = load_segments(path)
+        out = subprocess.run(['addr2line', '-f', '-e', path] + [hex(to_vaddr(segs, o)) for o in offs],
                              capture_output=True, text=True).stdout.splitlines()
         for i, o in enumerate(offs):
             fn = out[2 * i] if 2 * i < len(out) else '??'

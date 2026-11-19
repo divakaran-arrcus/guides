@@ -1,23 +1,23 @@
 # src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
-# src pipeline.h 83c404d5cb97acb533250cf46a37cd6e8053fc367fcbd79cacd6d4d1ff0dff9a
+# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path >/dev/null 2>&1 && perf report -i /tmp/p.data --stdio --no-children --sort comm,sym --percent-limit 2 -g caller,0.5,callee --stdio 2>/dev/null | grep -v -e '^$' -e '^# *$' | head -40
 # To display the perf.data header info, please use --header/--header-only options.
 # Total Lost Samples: 0
-# Samples: 726  of event 'cycles'
-# Event count (approx.): 1269999007
+# Samples: 765  of event 'cycles'
+# Event count (approx.): 1423639693
 # Overhead  Command    Symbol                            
 # ........  .........  ..................................
-    51.63%  pktd-spf   [.] spf_relax
+    51.71%  pktd-spf   [.] spf_relax
             |
             ---spf_relax
                compute_routes
                spf_main
                start_thread
-    42.94%  pktd-spf   [.] spf_extract_min
+    43.04%  pktd-spf   [.] spf_extract_min
             |
             ---spf_extract_min
                compute_routes
                spf_main
                start_thread
-# (Tip: Use --symfs <dir> if your symbol files are in non-standard locations)
+# (Tip: Generate a script for your data: perf script -g <lang>)

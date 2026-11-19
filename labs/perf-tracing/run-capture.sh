@@ -29,11 +29,16 @@ while IFS=$'\t' read -r id srcs cmd; do
     [ $hit -eq 1 ] || continue
   fi
   out=captures/$id.txt
+  if [ "$srcs" != "-" ]; then
+    IFS=',' read -ra files <<< "$srcs"
+    for f in "${files[@]}"; do
+      [ -f "$f" ] || { echo "run-capture: $id: source not found: $f" >&2; exit 2; }
+    done
+  fi
   {
     if [ "$srcs" != "-" ]; then
       IFS=',' read -ra files <<< "$srcs"
       for f in "${files[@]}"; do
-        [ -f "$f" ] || { echo "run-capture: $id: source not found: $f" >&2; exit 2; }
         echo "# src $f $(sha256sum "$f" | cut -d' ' -f1)"
       done
     fi

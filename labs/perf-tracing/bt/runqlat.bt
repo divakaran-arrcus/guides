@@ -12,9 +12,11 @@ tracepoint:sched:sched_wakeup_new
   @ready[args->pid] = nsecs;
 }
 
-tracepoint:sched:sched_switch /@armed/ {
-  // prev_state 0 = TASK_RUNNING: preempted, so it goes straight back to waiting in the queue.
-  if (args->prev_state == 0 && strncmp(args->prev_comm, "pktd-", 5) == 0) {
+tracepoint:sched:sched_switch
+/@armed && (strncmp(args->prev_comm, "pktd-", 5) == 0 || strncmp(args->next_comm, "pktd-", 5) == 0)/ {
+  // Preempted while runnable, so straight back to waiting in the queue: prev_state is 0
+  // (TASK_RUNNING), or 0x100 when the preemption happened inside the kernel.
+  if ((args->prev_state == 0 || args->prev_state == 0x100) && strncmp(args->prev_comm, "pktd-", 5) == 0) {
     @ready[args->prev_pid] = nsecs;
   }
   $r = @ready[args->next_pid];
