@@ -1,17 +1,17 @@
 # src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
-# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls >/dev/null && awk '/^ pktd-(push|fib) /{p=1} /^ pktd-(ctl|spf) /{p=0} p' /tmp/tr | grep -E '^ pktd-|^   (syscall|---)|^ +\(msec\)|^   (read|write|futex) '
- pktd-fib (34), 95705 events, 49.9%
+ pktd-fib (594), 95772 events, 49.9%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   read               24001      0   956.279     0.004     0.040   167.008     17.47%
-   write              23985      0   286.343     0.004     0.012     0.706      0.43%
- pktd-push (36), 95809 events, 50.0%
+   read               23989      0   841.114     0.004     0.035   157.193     18.70%
+   write              23956      0   232.048     0.004     0.010     0.298      0.43%
+ pktd-push (596), 95814 events, 50.0%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   read               24000      0   880.266     0.003     0.037     1.540      0.43%
-   write              23976      0   242.975     0.003     0.010     0.675      0.51%
-   futex                  4      0   164.792     0.004    41.198    99.450     60.15%
+   read               23999      0   709.103     0.003     0.030     0.841      0.44%
+   write              23966      0   227.577     0.004     0.009     6.417      2.85%
+   futex                  4      0    58.612     0.000    14.653    58.602     99.98%

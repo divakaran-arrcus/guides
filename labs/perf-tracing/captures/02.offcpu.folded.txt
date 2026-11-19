@@ -1,17 +1,17 @@
 # src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
-# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
 # src bt/offcpu.bt d0dfc6db32218bea3824cdb533210841a478aee3f7213c058ca8cf681f1641e3
 # src fold-bt.awk feab913536963d6ed2b2c6b748d3399a90569579e20797564fd9a11d75c52c8f
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # src symbolize.py db93d342336cdce5a594b78a98924356699b7a3ce72a491c31c579fc0f3aca9e
 # cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk
-pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 171633
-pktd-ctl;__futex_abstimed_wait_common64 386142
-pktd-fib;start_thread;__GI___libc_read 5468
-pktd-push;__futex_abstimed_wait_common64 360742
-pktd-push;futex_wait 19
-pktd-push;start_thread;push_main;__GI___libc_read 6350
-pktd-spf;__GI_mprotect 29
-pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50175
-pktd-spf;start_thread;spf_main;rib_update;futex_wait 288719
-pktd-term;start_thread;__GI___clock_nanosleep 304343
+pktd-cli;__vfprintf_internal 19
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 226641
+pktd-ctl;__futex_abstimed_wait_common64 384657
+pktd-fib;start_thread;__GI___libc_read 2016
+pktd-push;__futex_abstimed_wait_common64 358967
+pktd-push;start_thread;push_main;__GI___libc_read 2303
+pktd-spf;__GI_mprotect 30
+pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50046
+pktd-spf;start_thread;spf_main;rib_update;futex_wait 296839
+pktd-term;start_thread;__GI___clock_nanosleep 303221

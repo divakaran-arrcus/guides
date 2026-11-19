@@ -32,7 +32,8 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME|TL):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
+// FLAME also takes unit=us for graphs weighted by microseconds (off-CPU) instead of samples.
+const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME|TL):([\w.\-]+))(?: lines=([\d,\-]+))?(?: unit=(us))?-->/g;
 
 function expectedSrc(path, spec, labsDir) {
   if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
@@ -41,7 +42,7 @@ function expectedSrc(path, spec, labsDir) {
   return { body: escapeHtml(selectLines(readFileSync(f, 'utf8'), spec)) };
 }
 
-function expectedCap(id, spec, labsDir, kind = 'CAP') {
+function expectedCap(id, spec, labsDir, kind = 'CAP', unit) {
   const f = join(labsDir, 'captures', `${id}.txt`);
   if (!existsSync(f)) return { error: `${kind} ${id}: captures/${id}.txt not found` };
   const lines = readFileSync(f, 'utf8').split('\n');
@@ -56,7 +57,7 @@ function expectedCap(id, spec, labsDir, kind = 'CAP') {
   }
   if (errs.length) return { error: errs.join('; ') };
   const body = selectLines(lines.slice(i).join('\n'), spec);
-  if (kind === 'FLAME') return { body: renderFlame(body, { id }) };
+  if (kind === 'FLAME') return { body: renderFlame(body, { id, unit }) };
   if (kind === 'TL') return { body: renderTimeline(body) };
   return { body: escapeHtml(body) };
 }
@@ -70,7 +71,7 @@ export function syncHtml(html, labsDir, mode) {
     OPEN.lastIndex = pos;
     const m = OPEN.exec(html);
     if (!m) break;
-    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4], spec = m[5];
+    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4], spec = m[5], unit = m[6];
     const bodyStart = m.index + open.length;
     const close = `<!--/${kind}:${id}-->`;
     const j = html.indexOf(close, bodyStart);
@@ -80,7 +81,7 @@ export function syncHtml(html, labsDir, mode) {
       pos = bodyStart;
       continue;
     }
-    const exp = kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind);
+    const exp = kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind, unit);
     out += html.slice(pos, bodyStart);
     const current = html.slice(bodyStart, j);
     if (exp.error) { errors.push(exp.error); out += current; }

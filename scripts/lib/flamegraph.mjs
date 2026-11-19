@@ -39,14 +39,16 @@ function depth(n, min) {
   return d + 1;
 }
 
-export function renderFlame(text, { id, title, width = 960, rowH = 17, minPct = 0.5 } = {}) {
+// unit: 'samples' (on-CPU profiles) or 'us' (off-CPU graphs weighted by microseconds blocked).
+export function renderFlame(text, { id, title, width = 960, rowH = 17, minPct = 0.5, unit = 'samples' } = {}) {
+  const units = unit === 'us' ? 'µs' : 'samples';
   const root = parseFolded(text);
   const label = esc(title ?? `Flame graph ${id ?? ''}`.trim());
   const font = 'font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11"';
   if (root.value === 0) {
     return `<svg class="flame" role="img" aria-label="${label}: no samples" viewBox="0 0 ${width} 40" width="100%">`
       + `<rect x="0.5" y="0.5" width="${width - 1}" height="39" rx="4" style="fill:none;stroke:var(--border)"/>`
-      + `<text x="${width / 2}" y="24" text-anchor="middle" ${font} style="fill:var(--text-muted)">no samples: the process was not on a CPU</text></svg>\n`;
+      + `<text x="${width / 2}" y="24" text-anchor="middle" ${font} style="fill:var(--text-muted)">${unit === 'us' ? 'no blocked time recorded' : 'no samples: the process was not on a CPU'}</text></svg>\n`;
   }
   const total = root.value;
   const rows = depth(root, (minPct / 100) * total);
@@ -58,7 +60,7 @@ export function renderFlame(text, { id, title, width = 960, rowH = 17, minPct = 
     if (pct < minPct) return;
     const w = (n.value / total) * width;
     const y = height - (level + 1) * rowH;
-    const tip = `${esc(n.name)} (${n.value} samples, ${pct.toFixed(1)}%)`;
+    const tip = `${esc(n.name)} (${n.value} ${units}, ${pct.toFixed(1)}%)`;
     const fits = Math.floor((w - 6) / charW);
     let txt = '';
     if (fits >= 3) txt = n.name.length <= fits ? n.name : `${n.name.slice(0, fits - 2)}..`;

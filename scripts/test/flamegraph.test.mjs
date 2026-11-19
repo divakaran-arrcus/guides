@@ -50,6 +50,22 @@ test('height counts only drawn rows: a deep 1-sample stack does not stretch the 
   assert.ok(h <= 3 * 17 + 2, `height ${h} should cover root, main and hot only`);
 });
 
+test('unit us labels microseconds, and its empty graph says so', () => {
+  assert.match(renderFlame('a;b 250\n', { id: 'u', unit: 'us' }), /b \(250 µs, 100\.0%\)/);
+  assert.match(renderFlame('', { id: 'u', unit: 'us' }), /no blocked time/);
+  assert.match(renderFlame('a;b 3\n', { id: 'u' }), /b \(3 samples/);
+});
+
+test('sync-labs passes unit=us from the FLAME marker', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fu-'));
+  mkdirSync(join(dir, 'captures'));
+  writeFileSync(join(dir, 'captures', 'x.folded.txt'), '# cmd x\nmain;wait 42\n');
+  const w = syncHtml('<!--FLAME:x.folded unit=us--><!--/FLAME:x.folded-->', dir, 'write');
+  assert.deepEqual(w.errors, []);
+  assert.match(w.html, /wait \(42 µs/);
+  assert.deepEqual(syncHtml(w.html, dir, 'check').errors, []);
+});
+
 test('output is deterministic and themed by CSS variables', () => {
   const f = 'main;a;b 3\nmain;c 2\n';
   assert.equal(renderFlame(f, { id: 'd' }), renderFlame(f, { id: 'd' }));

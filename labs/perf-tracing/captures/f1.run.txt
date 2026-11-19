@@ -1,9 +1,9 @@
 # src f1-where-time-goes.c ef6cd71378222aadf14ac9bf029328371ad00057e505fad07bb8928ad32b4e9f
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s f1-where-time-goes && ./f1-where-time-goes
+q0     wall   957 ms = on-cpu   333 + runq-wait   680 + off-cpu     0
+q1     wall   954 ms = on-cpu   333 + runq-wait   682 + off-cpu     0
+q2     wall   958 ms = on-cpu   333 + runq-wait   683 + off-cpu     0
+spin   wall   962 ms = on-cpu  1000 + runq-wait    18 + off-cpu     0
+lock   wall   995 ms = on-cpu   100 + runq-wait     1 + off-cpu   893
 sleep  wall  1000 ms = on-cpu     0 + runq-wait     0 + off-cpu  1000
-lock   wall  1001 ms = on-cpu   100 + runq-wait     2 + off-cpu   899
-spin   wall  1028 ms = on-cpu  1000 + runq-wait     5 + off-cpu    23
-q0     wall  1037 ms = on-cpu   333 + runq-wait   682 + off-cpu    23
-q1     wall  1036 ms = on-cpu   333 + runq-wait   683 + off-cpu    19
-q2     wall  1036 ms = on-cpu   333 + runq-wait   685 + off-cpu    18

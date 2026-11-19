@@ -1,7 +1,8 @@
 #!/bin/bash
 # probe.sh — which perf / eBPF capabilities work in this container on this host?
 # Prints one "PROBE <name> ok|fail" line per capability. Every probe is scoped to its own
-# child process (no system-wide perf, no unfiltered tracepoints) and runs under a timeout.
+# child process or this container's cgroup (no system-wide perf, no unfiltered tracepoints) and
+# runs under a timeout.
 set -u
 cd "$(dirname "$0")" || exit 2
 T="timeout -k 2 20"
@@ -16,13 +17,13 @@ p() { # name, command...
 
 p perf-stat-hw      "perf stat -e cycles,instructions -x, -- $work 2>&1 | grep -q '^[0-9]*,,cycles'"
 p perf-stat-sw      "perf stat -e task-clock,context-switches -- $work"
-p perf-record-g     "perf record -q -g -o /tmp/p.data -- $work && perf report -i /tmp/p.data --stdio 2>/dev/null | grep -q main"
+p perf-record-g     "perf record -q -g -o /tmp/p.data -- $work 2>&1; perf report -i /tmp/p.data --stdio --no-children 2>&1 | grep -E 'Samples|main|error|Error' | tee /tmp/probe.report; grep -q ' main$' /tmp/probe.report"
 p perf-sched-tp     "perf record -q -e sched:sched_switch -o /tmp/s.data -- sleep 0.1 && perf script -i /tmp/s.data | grep -q sched_switch"
 p perf-sched-timehist "perf record -q -e sched:sched_switch,sched:sched_wakeup,sched:sched_waking,sched:sched_stat_runtime -o /tmp/t.data -- $work && perf sched timehist -i /tmp/t.data 2>&1 | grep -q probe-spin"
 p perf-trace        "perf trace -s -- sleep 0.1 2>&1 | grep -q nanosleep"
 # Read the help text only: running it could attach to more than this container.
 p perf-lock-bpf     "! perf lock contention -h 2>&1 | grep 'not built-in'"
 p bpftrace-uprobe   "bpftrace -e 'uprobe:$work:main { printf(\"hit\\n\"); exit(); }' -c $work | grep -q hit"
-p bpftrace-tp-comm  "bpftrace -e 'tracepoint:syscalls:sys_enter_clock_nanosleep /comm == \"sleep\"/ { printf(\"hit\\n\"); exit(); }' -c '/bin/sleep 0.2' | grep -q hit"
-p bpftrace-sched    "bpftrace -e 'tracepoint:sched:sched_switch /args->prev_comm == \"probe-spin\"/ { @[args->prev_state] = count(); }' -c $work"
+p bpftrace-tp-comm  "bpftrace -e 'tracepoint:syscalls:sys_enter_clock_nanosleep /cgroup == cgroupid(\"/sys/fs/cgroup\") && comm == \"sleep\"/ { printf(\"hit\\n\"); exit(); }' -c '/bin/sleep 0.2' | grep -q hit"
+p bpftrace-sched    "bpftrace -e 'tracepoint:sched:sched_switch /cgroup == cgroupid(\"/sys/fs/cgroup\") && args->prev_comm == \"probe-spin\"/ { @[args->prev_state] = count(); }' -c $work"
 echo "kernel $(uname -r); perf $(perf version 2>&1 | head -1); $(bpftrace --version)"

@@ -47,7 +47,7 @@ struct cfg {
   int flaps;           /* bug 05: earlier flaps already in the throttle's history */
   int hold_reset;      /* fix 05: reset the backoff after a quiet period */
   int schedstat;       /* print per-thread schedstat at exit */
-  int pipeline_nice;   /* bug 04: nice value of the pipeline threads (spf, push, fib) */
+  int spf_nice;        /* bug 04: nice value of the SPF thread */
 };
 
 #define PREFIXES_PER_NODE 16
@@ -158,10 +158,10 @@ NOINLINE static void rib_update(void) {
   rib_lock_release();
 }
 
-/* Lab 04: someone lowered the pipeline threads' priority "to protect the I/O pollers".
+/* Lab 04: someone set the SPF thread to nice 10, as "background work" behind the I/O pollers.
  * On Linux, setpriority() on a thread id changes just that thread. Raising nice needs no privilege. */
 static void set_nice(void) {
-  if (C.pipeline_nice) setpriority(PRIO_PROCESS, (id_t)gettid(), C.pipeline_nice);
+  if (C.spf_nice) setpriority(PRIO_PROCESS, (id_t)gettid(), C.spf_nice);
 }
 
 /* ---------- per-thread schedstat (lab 04) ---------- */
@@ -308,7 +308,6 @@ NOINLINE static void push_routes(void) {
 static void *fib_main(void *arg) {
   (void)arg;
   pthread_setname_np(pthread_self(), "pktd-fib");
-  set_nice();
   static struct route buf[BATCH];
   int have = 0;
   for (;;) {
@@ -365,7 +364,6 @@ static void *spf_main(void *arg) {
 static void *push_main(void *arg) {
   (void)arg;
   pthread_setname_np(pthread_self(), "pktd-push");
-  set_nice();
   pthread_mutex_lock(&ev_mu);
   while (!rib_done) pthread_cond_wait(&ev_cv, &ev_mu);
   pthread_mutex_unlock(&ev_mu);

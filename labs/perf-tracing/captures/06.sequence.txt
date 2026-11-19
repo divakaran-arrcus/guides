@@ -1,103 +1,103 @@
-# src 06-boss.c ac2438935271dc0ab3f7388447b006d52ee068375834ae9264b280903df3ee5c
-# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src 06-boss.c a0df7458c8c86d5a81717f8697a55aa79bc31a3f8c45bed3b2404621dd8687c9
+# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 06-boss && for f in none push push,hot push,hot,lock all; do if [ $f = none ]; then ./06-boss; else ./06-boss --fix=$f; fi; done > /tmp/seq; cat /tmp/seq; awk '/^fixes applied/{f=$3} /^pktd route/{if(f=="")f="none"} /^budget  [a-z]/ && $2!="stage"{s=$4+0; if(s>top){top=s; st=$2}} /^converged_ms=/{printf "summary  fixes=%-15s converged_ms=%-9s largest=%s (%.1f%%)\n", f, substr($0,14), st, top; f=""; top=0}' /tmp/seq
 pktd route pipeline  lab=06-boss variant=before  nodes=1500 routes=24000 changes=48
 T+     0.000 ms  event      link change injected
-T+     0.063 ms  hold       begin
-T+   200.195 ms  hold       end
-T+   200.195 ms  compute    begin
-T+   606.406 ms  compute    end
-T+   606.406 ms  rib        begin
-T+   606.491 ms  rib        end
-T+   606.557 ms  push       begin
-T+  1436.629 ms  push       end
+T+     0.072 ms  hold       begin
+T+   200.162 ms  hold       end
+T+   200.162 ms  compute    begin
+T+   830.783 ms  compute    end
+T+   830.783 ms  rib        begin
+T+   830.863 ms  rib        end
+T+   830.929 ms  push       begin
+T+  1714.554 ms  push       end
 
 budget  stage      ms        share
-budget  hold        200.132   13.9%
-budget  compute     406.211   28.3%
-budget  rib           0.084    0.0%
-budget  push        830.071   57.8%
-budget  handoff       0.130    0.0%
-converged_ms=1436.629
+budget  hold        200.090   11.7%
+budget  compute     630.620   36.8%
+budget  rib           0.081    0.0%
+budget  push        883.625   51.5%
+budget  handoff       0.138    0.0%
+converged_ms=1714.554
 fixes applied: push
 pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=48
 T+     0.000 ms  event      link change injected
-T+     0.082 ms  hold       begin
-T+   200.182 ms  hold       end
-T+   200.182 ms  compute    begin
-T+   602.659 ms  compute    end
-T+   602.659 ms  rib        begin
-T+   602.720 ms  rib        end
-T+   602.896 ms  push       begin
-T+   606.471 ms  push       end
+T+     0.092 ms  hold       begin
+T+   200.208 ms  hold       end
+T+   200.208 ms  compute    begin
+T+   796.536 ms  compute    end
+T+   796.536 ms  rib        begin
+T+   796.609 ms  rib        end
+T+   796.652 ms  push       begin
+T+   799.257 ms  push       end
 
 budget  stage      ms        share
-budget  hold        200.099   33.0%
-budget  compute     402.477   66.4%
-budget  rib           0.060    0.0%
-budget  push          3.575    0.6%
-budget  handoff       0.259    0.0%
-converged_ms=606.471
+budget  hold        200.115   25.0%
+budget  compute     596.328   74.6%
+budget  rib           0.073    0.0%
+budget  push          2.604    0.3%
+budget  handoff       0.136    0.0%
+converged_ms=799.257
 fixes applied: push,hot
 pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=48
 T+     0.000 ms  event      link change injected
-T+     0.053 ms  hold       begin
-T+   200.140 ms  hold       end
-T+   200.140 ms  compute    begin
-T+   210.780 ms  compute    end
-T+   210.780 ms  rib        begin
-T+   502.284 ms  rib        end
-T+   502.351 ms  push       begin
-T+   504.731 ms  push       end
+T+     0.067 ms  hold       begin
+T+   200.222 ms  hold       end
+T+   200.223 ms  compute    begin
+T+   218.279 ms  compute    end
+T+   218.280 ms  rib        begin
+T+   510.881 ms  rib        end
+T+   510.941 ms  push       begin
+T+   514.183 ms  push       end
 
 budget  stage      ms        share
-budget  hold        200.087   39.6%
-budget  compute      10.640    2.1%
-budget  rib         291.504   57.8%
-budget  push          2.380    0.5%
-budget  handoff       0.120    0.0%
-converged_ms=504.731
+budget  hold        200.155   38.9%
+budget  compute      18.057    3.5%
+budget  rib         292.602   56.9%
+budget  push          3.242    0.6%
+budget  handoff       0.127    0.0%
+converged_ms=514.183
 fixes applied: push,hot,lock
 pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=48
 T+     0.000 ms  event      link change injected
-T+     0.079 ms  hold       begin
-T+   200.216 ms  hold       end
-T+   200.216 ms  compute    begin
-T+   212.952 ms  compute    end
-T+   212.952 ms  rib        begin
-T+   213.046 ms  rib        end
-T+   213.117 ms  push       begin
-T+   216.469 ms  push       end
+T+     0.089 ms  hold       begin
+T+   200.772 ms  hold       end
+T+   200.772 ms  compute    begin
+T+   224.527 ms  compute    end
+T+   224.527 ms  rib        begin
+T+   224.640 ms  rib        end
+T+   224.738 ms  push       begin
+T+   231.623 ms  push       end
 
 budget  stage      ms        share
-budget  hold        200.138   92.5%
-budget  compute      12.735    5.9%
-budget  rib           0.093    0.0%
-budget  push          3.352    1.5%
-budget  handoff       0.151    0.1%
-converged_ms=216.469
+budget  hold        200.682   86.6%
+budget  compute      23.755   10.3%
+budget  rib           0.113    0.0%
+budget  push          6.885    3.0%
+budget  handoff       0.188    0.1%
+converged_ms=231.623
 fixes applied: all
 pktd route pipeline  lab=06-boss variant=fixed  nodes=1500 routes=24000 changes=48
 T+     0.000 ms  event      link change injected
-T+     0.091 ms  hold       begin
-T+    50.201 ms  hold       end
-T+    50.201 ms  compute    begin
-T+    57.819 ms  compute    end
-T+    57.819 ms  rib        begin
-T+    57.903 ms  rib        end
-T+    58.020 ms  push       begin
-T+    61.025 ms  push       end
+T+     0.088 ms  hold       begin
+T+    50.278 ms  hold       end
+T+    50.278 ms  compute    begin
+T+    80.488 ms  compute    end
+T+    80.488 ms  rib        begin
+T+    80.588 ms  rib        end
+T+    80.818 ms  push       begin
+T+    87.482 ms  push       end
 
 budget  stage      ms        share
-budget  hold         50.110   82.1%
-budget  compute       7.618   12.5%
-budget  rib           0.084    0.1%
-budget  push          3.005    4.9%
-budget  handoff       0.208    0.3%
-converged_ms=61.025
-summary  fixes=none            converged_ms=1436.629  largest=push (57.8%)
-summary  fixes=push            converged_ms=606.471   largest=compute (66.4%)
-summary  fixes=push,hot        converged_ms=504.731   largest=rib (57.8%)
-summary  fixes=push,hot,lock   converged_ms=216.469   largest=hold (92.5%)
-summary  fixes=all             converged_ms=61.025    largest=hold (82.1%)
+budget  hold         50.190   57.4%
+budget  compute      30.209   34.5%
+budget  rib           0.100    0.1%
+budget  push          6.664    7.6%
+budget  handoff       0.319    0.4%
+converged_ms=87.482
+summary  fixes=none            converged_ms=1714.554  largest=push (51.5%)
+summary  fixes=push            converged_ms=799.257   largest=compute (74.6%)
+summary  fixes=push,hot        converged_ms=514.183   largest=rib (56.9%)
+summary  fixes=push,hot,lock   converged_ms=231.623   largest=hold (86.6%)
+summary  fixes=all             converged_ms=87.482    largest=hold (57.4%)

@@ -19,11 +19,11 @@ f1.run	^q0 +wall .* runq-wait +([5-7][0-9][0-9]) \+
 f1.perf-stat	msec task-clock .* CPUs utilized
 f1.perf-stat	seconds time elapsed
 00.timeline	^budget  hold +[0-9.]+ +[0-9.]+%$
-00.timeline	^converged_ms=([4-9][0-9]|1[0-4][0-9])\.[0-9]+$
+00.timeline	^converged_ms=[4-9][0-9]\.[0-9]+$
 00.stages-bt	^T\+ +[0-9]+ us  hold +begin$
 00.stages-bt	^T\+ +[0-9]+ us  push +end +took [0-9]+ us$
 00.stages-bt	^T\+ +[0-9]+ us  converged$
-01.timeline	^budget  compute +[0-9.]+ +([6-9][0-9]|100)\.[0-9]%$
+01.timeline	^budget  compute +[0-9.]+ +9[0-9]\.[0-9]%$
 01.timeline	^speedup=([4-9]|[1-9][0-9]+)\.[0-9]x
 01.perf-stat	insn per cycle
 01.perf-stat	msec task-clock
@@ -76,3 +76,10 @@ f1.perf-stat	seconds time elapsed
 06.sequence	^summary  fixes=all +converged_ms=([4-9][0-9]|1[0-4][0-9])\.[0-9]+ 
 01.oncpu-fixed.excerpt	^pktd-ctl;__libc_start_call_main;main;pipeline_main[.a-z0-9]*;spf_(extract_min|relax) [0-9]+$
 01.oncpu-fixed.excerpt	^pktd-spf;start_thread;spf_main;compute_routes;spf_(extract_min|relax) [0-9]+$
+01.timeline	^budget  compute +[0-9]{1,2}\.[0-9]+ +[0-9.]+%$
+02.lock-wait-fixed	^\]: [0-9]{2,4}$
+04.timehist	pktd-spf\[[0-9/]+\] +[1-9][0-9]*\.[0-9]{3} +0\.000 
+04.runqlat-bt	^--- the same run, as the lab reports it:$
+04.runqlat-bt	^schedstat  pktd-spf +[0-9.]+ +[0-9.]+$
+06.oncpu.folded	^pktd-push;start_thread;push_main;
+04.timeline	^budget  compute +[0-9.]+ +[4-9][0-9]\.[0-9]%$

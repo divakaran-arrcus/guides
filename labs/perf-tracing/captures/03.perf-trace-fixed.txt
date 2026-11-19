@@ -1,17 +1,17 @@
 # src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
-# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls --fixed >/dev/null && awk '/^ pktd-(push|fib) /{p=1} /^ pktd-(ctl|spf) /{p=0} p' /tmp/tr | grep -E '^ pktd-|^   (syscall|---)|^ +\(msec\)|^   (read|write|futex) '
- pktd-fib (54), 203 events, 33.6%
+ pktd-fib (614), 204 events, 33.7%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   read                  48      0   183.592     0.027     3.825   179.166     97.54%
-   write                 47      0     2.054     0.024     0.044     0.152      7.25%
- pktd-push (56), 210 events, 34.7%
+   read                  48      0   177.688     0.017     3.702   172.226     96.86%
+   write                 47      0     1.337     0.012     0.028     0.060      5.24%
+ pktd-push (616), 200 events, 33.0%
    syscall            calls  errors  total       min       avg       max       stddev
                                      (msec)    (msec)    (msec)    (msec)        (%)
    --------------- --------  ------ -------- --------- --------- ---------     ------
-   futex                  4      0   177.327     0.007    44.332    99.249     58.54%
-   read                  47      0     6.831     0.072     0.145     0.358      5.49%
-   write                 47      0     1.325     0.015     0.028     0.156     11.63%
+   futex                  4      0    73.016     0.000    18.254    72.999     99.97%
+   read                  47      0     5.667     0.072     0.121     0.287      5.40%
+   write                 47      0     1.877     0.021     0.040     0.094      6.62%

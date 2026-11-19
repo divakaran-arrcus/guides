@@ -1,11 +1,13 @@
-# src 04-sched.c 52b9aedae0f756568e242916fe599a46a0b762f0bed588e518b6cf0a5f3d2a55
-# src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
+# src 04-sched.c 9f129e90e708b401fed2f7bf8773b000a153bb5431649ee8e770622062ef0653
+# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
-# cmd make -s 04-sched && perf record -q -e sched:sched_switch,sched:sched_wakeup -o /tmp/s.data ./04-sched >/dev/null 2>&1 && perf sched timehist -i /tmp/s.data 2>/dev/null | grep -E '^ +time|^ +-|pktd-spf' | head -24
+# cmd make -s 04-sched && perf record -q -e sched:sched_switch,sched:sched_wakeup -o /tmp/s.data ./04-sched >/dev/null 2>&1 && perf sched timehist -i /tmp/s.data 2>/dev/null | grep -E '^ +time|pktd-spf\[[0-9]+/' | head -24
            time    cpu  task name                       wait time  sch delay   run time
- 8367464.635011 [0015]  pktd-spf[744/741]                   0.000      0.000      0.521 
- 8367464.736730 [0015]  pktd-spf[744/741]                 101.667      0.000      0.051 
- 8367464.787732 [0015]  pktd-spf[744/741]                  48.867      0.000      2.134 
- 8367464.822136 [0015]  pktd-spf[744/741]                  33.310      0.000      1.093 
- 8367464.854183 [0015]  pktd-spf[744/741]                  31.939      0.000      0.108 
- 8367464.857953 [0015]  pktd-spf[744/741]                   0.000      0.000      3.769 
+ 8374935.776368 [0015]  pktd-spf[32/29]                     0.000      0.000      0.406 
+ 8374935.882130 [0015]  pktd-spf[32/29]                   105.730      0.000      0.030 
+ 8374935.934472 [0015]  pktd-spf[32/29]                    51.157      0.000      1.184 
+ 8374935.936286 [0015]  pktd-spf[32/29]                     0.000      0.000      1.814 
+ 8374935.975890 [0015]  pktd-spf[32/29]                    38.396      0.000      1.207 
+ 8374935.990758 [0015]  pktd-spf[32/29]                    10.877      0.000      3.990 
+ 8374936.073100 [0015]  pktd-spf[32/29]                    80.438      0.000      1.902 
+ 8374936.102762 [0015]  pktd-spf[32/29]                    29.591      0.000      0.070 

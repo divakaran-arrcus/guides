@@ -43,7 +43,7 @@ went: on a CPU, waiting in the run queue, or blocked.
 | `01-hot-path` | a full SPF per link change | `perf stat`, `perf record`, on-CPU flame graph |
 | `02-lock` | a "show rib" walker holds `rib_lock` while writing to a slow terminal | off-CPU flame graph (`bt/offcpu.bt`), `bt/lock-wait.bt` |
 | `03-syscalls` | one message and one ack per route | `perf trace -s`, `bt/syscalls.bt` |
-| `04-sched` | busy-polling threads, pipeline threads at nice 10, 2 CPUs | schedstat, `bt/runqlat.bt`, `perf sched timehist` |
+| `04-sched` | busy-polling threads, the SPF thread at nice 10, 2 CPUs | schedstat, `bt/runqlat.bt`, `perf sched timehist` |
 | `05-throttle` | the SPF backoff never resets | the timeline, `bt/hold.bt` |
 | `06-boss` | four of the above at once | all of them |
 
@@ -71,7 +71,8 @@ went: on a CPU, waiting in the run queue, or blocked.
 | `--cap-add SYSLOG` | Lets `perf` read kernel symbol addresses (when the host's `kptr_restrict` is 0 or 1), so kernel frames have names. |
 
 `SYS_PTRACE` and `seccomp=unconfined` are not needed: the kernel collects user stacks itself, and
-every probe in `probe.sh` passes without them.
+every other probe in `probe.sh` passes without them (the failing one, `perf-lock-bpf`, is a feature
+Debian 12's perf is built without).
 
 ## Shared hosts: the rules these labs follow
 
