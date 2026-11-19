@@ -1103,7 +1103,7 @@ converged_ms=81.288
 
   <div class="card">
     <h2>5.3 The same timeline from outside</h2>
-    <p>You won't always be able to rebuild a daemon with print statements. If the stage boundaries are USDT probes, a tracer can rebuild the timeline from outside. <code>bt/stages.bt</code> attaches to the four probes in the lab binary (the binary's path is <code>$1</code>):</p>
+    <p>You won't always be able to rebuild a daemon with print statements. If the stage boundaries are USDT probes, a tracer can rebuild the timeline from outside. <code>bt/stages.bt</code> attaches to the lab binary's <code>event</code>, <code>stage</code> and <code>converged</code> probes (the binary's path is <code>$1</code>):</p>
     <details class="src" open><summary>bt/stages.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/stages.bt-->// stages.bt — the convergence timeline from pktd&#39;s USDT probes, with no help from the program.
 //   bpftrace -c ./00-baseline bt/stages.bt ./00-baseline        ($1 = the lab binary)
 // USDT probes live in the binary, so this traces only that program.
@@ -1143,7 +1143,7 @@ T+   61305 us  converged
 <!--/CAP:00.stages-bt--></code></pre>
     <ol class="callouts">
       <li>Line 1: bpftrace has attached its probes to the binary; it started the lab only after that (<code>-c</code>), so no stage is missed.</li>
-      <li>Lines 3–10: the same stages in microseconds. This was a separate run, so the numbers differ slightly from 5.2.</li>
+      <li>Lines 3–10: the same stages in microseconds. This was a separate run, so the numbers differ from 5.2 (compute varies most from run to run), but the shape is the same: hold first, compute second, RIB and push small.</li>
       <li>Line 11: <code>exit()</code> at <code>pktd:converged</code> ends the trace, so nothing stays loaded after the event.</li>
     </ol>
     <div class="info green"><strong>Takeaway for your own daemon:</strong> four USDT probes (event, stage begin, stage end, converged) cost a <code>nop</code> each when nobody is tracing, and they turn every future "convergence is slow" into a five-minute measurement. <a onclick="go('b1-your-daemon')">Ch 12</a> picks this up.</div>
@@ -1206,7 +1206,7 @@ converged_ms=711.072<!--/CAP:01.timeline--></code></pre>
        0.028930000 seconds sys
 <!--/CAP:01.perf-stat--></code></pre>
     <ol class="callouts">
-      <li>Line 2: well over half a second of CPU time in under a second elapsed (line 6): close to one CPU busy for most of the run, and most of the run is the compute stage. <code>pktd-spf</code> was computing, not waiting.</li>
+      <li>Line 2: well over half a second of CPU time in under a second elapsed (line 6): most of a CPU busy for most of the run, and most of the run is the compute stage. <code>pktd-spf</code> was computing, not waiting.</li>
       <li>Lines 3–4: cycles and instructions from the PMU: about 1.4 instructions per cycle. That's ordinary for a loop over arrays, so the CPU isn't mostly stalled on memory; it simply has a lot to do.</li>
       <li>Line 5: a few hundred context switches in under a second. Nothing blocks for long.</li>
     </ol>
@@ -1330,7 +1330,7 @@ NOINLINE static void compute_routes(void) {
 </div>
 <!--/TL:01.timeline-->
     <pre class="term"><code><!--CAP:01.timeline lines=38-->speedup=10.5x  (711.1 ms -&gt; 67.8 ms)<!--/CAP:01.timeline--></code></pre>
-    <p>The flame graph of the fixed run is in <a onclick="go('f4-flame-graphs')">Ch 4</a>: the same two plateaus, with a few dozen SPF samples instead of several hundred.</p>
+    <p>The flame graph of the fixed run is in <a onclick="go('f4-flame-graphs')">Ch 4</a>: the same two plateaus, with a couple of dozen SPF samples instead of several hundred.</p>
     <details class="deep"><summary>Deep dive: when the plateau is a memory stall</summary>
       <p>Here IPC was about 1.4, so the loops were limited by how much work they do. If <code>perf stat</code> had shown an IPC well under 1, the CPU would be waiting on memory, and the fix might be data layout rather than less work. <code>perf stat -e cache-misses,cache-references</code> or <code>perf stat -d</code> confirms it. That's micro-architecture; for convergence, doing less work is almost always the bigger win.</p>
     </details>
@@ -1351,7 +1351,7 @@ budget  rib         283.932   77.5%
 budget  push          4.219    1.2%
 budget  handoff       0.186    0.1%
 converged_ms=366.261<!--/CAP:02.timeline--></code></pre>
-    <p>The <code>rib</code> stage owns over three-quarters of the time to converge. That stage is a loop that writes 24,000 small structs into an array, normally about 0.1 ms. Nothing in it could take 300 ms of CPU.</p>
+    <p>The <code>rib</code> stage owns about three-quarters of the time to converge. That stage is a loop that writes 24,000 small structs into an array, normally about 0.1 ms. Nothing in it could take 300 ms of CPU.</p>
   </div>
 
   <div class="card">
@@ -1637,7 +1637,7 @@ NOINLINE static void cli_show_rib(void) {
 ]: 545
 @wait_total_us[pktd-cli]: 30
 @wait_total_us[pktd-spf]: 30<!--/CAP:02.lock-wait-fixed--></code></pre>
-    <p>The walker now holds the lock for around a millisecond (the <code>]:</code> line under <code>cli_show_rib</code>), and <code>@wait_total_us[pktd-spf]</code> drops to tens of microseconds.</p>
+    <p>The walker now holds the lock for well under a millisecond (the <code>]:</code> line under <code>cli_show_rib</code>), and <code>@wait_total_us[pktd-spf]</code> drops to tens of microseconds.</p>
     <!--TL:02.timeline--><div class="tl">
 <div class="tl-cap"><strong>before</strong> · converged in 366.3 ms</div>
 <div class="tl-row"><span class="tl-lab">hold</span><span class="tl-track"><span class="tl-bar tl-hold" style="left:0.02%;width:13.70%" title="hold: 50.2 ms"></span></span><span class="tl-ms">50.2 ms</span></div>
@@ -1699,7 +1699,7 @@ converged_ms=960.005<!--/CAP:03.timeline--></code></pre>
 
   <div class="card">
     <h2>8.3 The same, scoped, with a latency histogram</h2>
-    <p><code>bt/syscalls.bt</code> counts <code>read</code> and <code>write</code> by thread, between the event and convergence, and histograms how long each <code>read</code> blocks. The syscall tracepoints fire for every process on the host, so every probe filters on the container's cgroup and the <code>pktd-</code> thread names.</p>
+    <p><code>bt/syscalls.bt</code> counts <code>read</code> and <code>write</code> by thread, between the event and convergence, and histograms how long each <code>read</code> blocks. The syscall tracepoints fire for every process on the host, so the entry probes filter on the container's cgroup and the <code>pktd-</code> thread names; the exit probes only match threads an entry probe recorded.</p>
     <details class="src"><summary>bt/syscalls.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/syscalls.bt-->// syscalls.bt — read/write calls and read latency per pktd thread, event to convergence.
 //   bpftrace -c ./03-syscalls bt/syscalls.bt ./03-syscalls       ($1 = the lab binary)
 // Scope: syscall tracepoints fire host-wide, so every probe filters on this container&#39;s cgroup
@@ -1775,7 +1775,7 @@ NOINLINE static void push_routes(void) {
    read                  47      0     5.667     0.072     0.121     0.287      5.40%
    write                 47      0     1.877     0.021     0.040     0.094      6.62%
 <!--/CAP:03.perf-trace-fixed--></code></pre>
-    <p>About 47 reads and 47 writes per thread instead of 24,000. The push thread's <code>futex</code> row is it waiting for the RIB before the event: idle, not push time.</p>
+    <p>About 47 reads and 47 writes per thread instead of 24,000. The push thread's <code>futex</code> row is it waiting for the SPF thread to finish the RIB stage before push begins: idle, not push time.</p>
     <!--TL:03.timeline--><div class="tl">
 <div class="tl-cap"><strong>before</strong> · converged in 960.0 ms</div>
 <div class="tl-row"><span class="tl-lab">hold</span><span class="tl-track"><span class="tl-bar tl-hold" style="left:0.01%;width:5.22%" title="hold: 50.1 ms"></span></span><span class="tl-ms">50.1 ms</span></div>
@@ -1900,10 +1900,10 @@ schedstat  pktd-spf          10.9         192.2
 <!--/CAP:04.runqlat-bt--></code></pre>
     <ol class="callouts">
       <li>The <code>@runq_total_us</code> lines: total run-queue wait between the event and convergence. <code>pktd-spf</code> waited on the order of a hundred milliseconds or more; the others, far less.</li>
-      <li>The <code>@runq_us[pktd-spf]</code> histogram: the SPF thread's individual waits, from a few short ones to several of tens or hundreds of milliseconds. Each one is a stretch in which the thread was ready and the scheduler ran something else. (The capture keeps this thread's histogram only.)</li>
-      <li>The last lines: the lab's own schedstat for <code>pktd-spf</code> from <em>the same run</em>. Its run-queue column agrees with the bpftrace total to within a few percent: two independent measurements of one wait.</li>
+      <li>The <code>@runq_us[pktd-spf]</code> histogram: the SPF thread's individual waits, a few short waits and a couple of long ones, tens of milliseconds each, that make up almost all of the total. Each one is a stretch in which the thread was ready and the scheduler ran something else. (The capture keeps this thread's histogram only.)</li>
+      <li>The last lines: the lab's own schedstat for <code>pktd-spf</code> from <em>the same run</em>. Its run-queue column agrees roughly with the bpftrace total, within about 10% (schedstat counts the thread's whole life, bpftrace only event to convergence): two independent measurements of one wait.</li>
     </ol>
-    <p>This was a separate run, so its total differs from schedstat's; both say the same thing.</p>
+    <p>This was a separate run from 9.2's, so its totals differ from the schedstat figure there; both say the same thing.</p>
   </div>
 
   <div class="card">
@@ -2243,8 +2243,8 @@ budget  rib         292.602   56.9%
 budget  push          3.242    0.6%
 budget  handoff       0.127    0.0%
 converged_ms=514.183<!--/CAP:06.sequence--></code></pre>
-    <p>Compute is down to about 10 ms, but convergence improved far less than compute did. <strong>The RIB stage has jumped from 0.1 ms to about 300 ms,</strong> and nothing about the RIB changed.</p></div>
-    <div class="stp"><div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">RIB: about 55%. The off-CPU and lock lenses</div></div><p>The walker starts when compute begins and holds <code>rib_lock</code> for about 300 ms. While compute took several hundred milliseconds, the walker finished before the RIB stage wanted the lock, so the lock problem was there all along, hidden behind the slow compute. Once compute takes 10 ms, the RIB stage arrives while the walker still holds the lock, and waits out almost the whole 300 ms that compute used to fill.</p>
+    <p>Compute is down to a few tens of milliseconds, but convergence improved far less than compute did. <strong>The RIB stage has jumped from 0.1 ms to about 300 ms,</strong> and nothing about the RIB changed.</p></div>
+    <div class="stp"><div class="stp-h"><div class="stp-n org">3</div><div class="stp-t">RIB: about 55%. The off-CPU and lock lenses</div></div><p>The walker starts when compute begins and holds <code>rib_lock</code> for about 300 ms. While compute took several hundred milliseconds, the walker finished before the RIB stage wanted the lock, so the lock problem was there all along, hidden behind the slow compute. Once compute takes only tens of milliseconds, the RIB stage arrives while the walker still holds the lock, and waits out almost the whole 300 ms that compute used to fill.</p>
     <pre class="term"><code><!--CAP:06.lock-wait lines=9-16-->@held_total_us[pktd-cli, 
 	561e81437be0 rib_lock_release (/lab/06-boss)
 	561e81437c2f cli_show_rib (/lab/06-boss)
