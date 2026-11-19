@@ -1,16 +1,31 @@
 # Guide Ideas
 
-Future guides to build, ordered by priority.
+Future guides to build. The **Up next** table is in build order; the shipped table is the record.
 
-| # | Guide | Audience Bridge | Status |
-|---|-------|----------------|--------|
-| 1 | **MPLS to SRv6 Migration** | Connects SRv6 + EVPN guides — coexistence, interworking, cutover | Done |
-| 2 | **SR-MPLS Complete Guide** | Prequel — SR-MPLS for LDP/RSVP-TE engineers | Done |
-| 3 | **Data Center Fabric Design** | Spine-leaf architecture, underlay design, overlay choices | Done |
-| 4 | **Network Automation with BGP** | Provisioning EVPN/SRv6 VPNs programmatically | Planned |
-| 5 | **Segment Routing Policy (SR-TE)** | Traffic engineering — ODN, PCE, constraints, optimization | Done |
-| 6 | **EVPN-VXLAN to EVPN-SRv6 Migration** | Moving DC overlay from VXLAN to SRv6 data plane | Done — shipped 2026-06-01 as `evpn-vxlan-to-srv6-migration-guide.html` (25 sections, comparison + 4-phase playbook, 5 packet walks) |
-| 7 | **SRv6 Network Programming** | Advanced SRv6 ops — uSID operations, TE policies, binding SIDs, cross-domain chaining, packet walks | Next |
-| 8 | **SRv6 TI-LFA & Fast Reroute** | SRv6 protection deep dive — micro-SID repair paths, node/link/SRLG protection, convergence timescales | Done (audit-and-fill, not standalone) — content already ~60% covered in sr-mpls + srv6 guides; gaps filled in place: srv6-complete got algorithmic depth (P/Q space, protection scoping, convergence budget), sr-mpls got TI-LFA+Flex-Algo + double-failure limits, sr-te-policy got FRR-vs-policy-layer callout |
-| 9 | **SRv6 Service Chaining (SFC)** | Service function chaining with SRv6 — End.AN, firewall/DPI steering, uSID SFC, NFV integration | Planned |
-| 10 | **SRv6 G-SID and Compressed SRv6** | Generalized SID for carrier-scale SRv6 — G-SID vs uSID, reduced overhead, interop | Planned |
+## Up next
+
+| Order | Guide | Audience Bridge | Status |
+|-------|-------|-----------------|--------|
+| 1 | **SRv6 Service Programming with uSID** | Old #9 (SFC). uSID only — no G-SID / REPLACE-C-SID. SR-aware (End.AN) vs SR-unaware proxies (End.AS / End.AD / End.AM) in uSID networks, stateful chains, chains across domains. Links to `srv6-network-programming-guide.html` for uSID basics instead of repeating them | Planned |
+| 2 | **Performance & Tracing for Network Daemons** | Sequel to Memory Debugging, reusing its lab kit — `perf`, flame graphs, eBPF / bpftrace, off-CPU time, lock contention, "why is convergence slow" | Planned |
+| 3 | **IS-IS from First Principles** | The IGP under every SR / SRv6 guide — adjacency FSM, LSP flooding and purging, SPF, levels and route leaking, SR / SRv6 TLVs. Lab kit with open-source routing containers | Planned |
+| 4 | **Fast Convergence End to End** | BFD, SPF / LSP throttling, prefix prioritization, BGP PIC core / edge, FIB download time; ties together the existing TI-LFA material | Planned |
+| 5 | **Network Automation with BGP** | Provisioning EVPN / SRv6 VPNs from code — gNMI / YANG, intent checks | Planned |
+
+## Shipped
+
+| Guide | File | Notes |
+|-------|------|-------|
+| MPLS to SRv6 Migration | `mpls-to-srv6-migration-guide.html` | Coexistence, interworking, cutover |
+| SR-MPLS Complete Guide | `sr-mpls-guide.html` | Prequel for LDP / RSVP-TE engineers |
+| Data Center Fabric Design | `dc-fabric-design-guide.html` | Spine-leaf, underlay, overlay choices |
+| Segment Routing Policy (SR-TE) | `sr-te-policy-guide.html` | ODN, PCE, constraints, optimization |
+| EVPN-VXLAN to EVPN-SRv6 Migration | `evpn-vxlan-to-srv6-migration-guide.html` | 2026-06-01 — comparison, 4-phase playbook, 5 packet walks |
+| SRv6 Network Programming | `srv6-network-programming-guide.html` | 2026-03-14 — uSID ops, TE policies, binding SIDs, cross-domain, packet walks |
+| SRv6 TI-LFA & Fast Reroute | — | Audit-and-fill, not standalone: gaps filled in `srv6-complete`, `sr-mpls` and `sr-te-policy` |
+| Gen-AI: Zero to Hero | `gen-ai-zero-to-hero-guide.html` | 2026-05-26 |
+| Gen-AI: Hero to Architect | `gen-ai-hero-to-architect-guide.html` | 2026-05-27 |
+| Gen-AI: Architect to Leader | `gen-ai-architect-to-leader-guide.html` | 2026-06-01 |
+| Gen-AI: Harness Engineering | `gen-ai-harness-engineering-guide.html` | 2026-11-02 — Part 4 |
+| Memory Debugging from First Principles | `memory-debugging-guide.html` | 2026-11-17 — with `labs/memory-debugging/` kit |
+| Chess for Kids | `chess-for-kids-guide.html` | 2026-06-13 |
