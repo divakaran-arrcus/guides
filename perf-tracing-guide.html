@@ -9,7 +9,7 @@
   cspell:words perror pipefail procps pthread runq sched schedstat setname setpriority setsockopt
   cspell:words socketpair splitlines srcs ssize stdatomic stdint strchr strcmp strncmp sysctls systemtap timedwait
   cspell:words timespec tnames topo tracefs tracepoint tracepoints unistd uretprobe usleep vmlinux
-  cspell:words filesz fprintf mktemp readelf segs strerror vaddr
+  cspell:words cgroupid filesz fprintf mktemp readelf segs strerror vaddr
   cspell:ignore doesn
   Flame graphs (kernel and libc symbols that change between captures) are excluded with cspell:disable.
 -->
@@ -598,6 +598,7 @@ PROBE perf-sched-tp ok
 PROBE perf-sched-timehist ok
 PROBE perf-trace ok
 PROBE perf-lock-bpf fail
+                              (not built-in because no BUILD_BPF_SKEL=1)
 PROBE bpftrace-uprobe ok
 PROBE bpftrace-tp-comm ok
 PROBE bpftrace-sched ok
@@ -800,7 +801,7 @@ q2     wall  1036 ms = on-cpu   333 + runq-wait   685 + off-cpu    18
       <tr><td><code>--ulimit memlock=-1</code></td><td>bpftrace tries to raise its locked-memory limit and warns when it can't</td></tr>
     </table>
     <p>That's all: <code>SYS_PTRACE</code> isn't needed (the kernel collects user stacks itself, without ptrace), and neither is <code>seccomp=unconfined</code>. Every probe in the kit passes with only the flags above.</p>
-    <div class="info red"><strong>These flags reach the host kernel.</strong> A probe loaded from the container runs in the one kernel every tenant shares, and a tracepoint fires for every thread on the machine. The labs therefore attach <code>perf</code> only to their own commands, put uprobes only on their own binaries, filter tracepoints to threads named <code>pktd-*</code>, and arm everything between their own USDT probes. <a onclick="go('ref-shared-host')">Shared-Host Rules</a> has the full list.</div>
+    <div class="info red"><strong>These flags reach the host kernel.</strong> A probe loaded from the container runs in the one kernel every tenant shares, and a tracepoint fires for every thread on the machine. The labs therefore attach <code>perf</code> only to their own commands, put uprobes only on their own binaries, filter tracepoints to their own container's cgroup and threads named <code>pktd-*</code>, and arm everything between their own USDT probes. <a onclick="go('ref-shared-host')">Shared-Host Rules</a> has the full list.</div>
   </div>
 
   <div class="card">
@@ -813,7 +814,7 @@ q2     wall  1036 ms = on-cpu   333 + runq-wait   685 + off-cpu    18
 
   <div class="card">
     <h2>3.5 This is why</h2>
-    <div class="info purple"><strong>This is why every probe in the labs is scoped.</strong> A uprobe on <code>pthread_mutex_lock</code> in libc would put a breakpoint into every process on the host that uses libc. The labs instead probe <code>rib_lock_acquire</code>, a wrapper that exists only in their own binary. A <code>sched_switch</code> tracepoint fires for every thread on the host, so it filters to <code>pktd-*</code> in the kernel, before any work is done.</div>
+    <div class="info purple"><strong>This is why every probe in the labs is scoped.</strong> A uprobe on <code>pthread_mutex_lock</code> in libc would put a breakpoint into every process on the host that uses libc. The labs instead probe <code>rib_lock_acquire</code>, a wrapper that exists only in their own binary. A <code>sched_switch</code> tracepoint fires for every thread on the host, so it filters in the kernel, before any work is done: on the container's own cgroup (<code>cgroup == cgroupid("/sys/fs/cgroup")</code>; inside a container with cgroup v2 that path is the container's cgroup) and on the <code>pktd-</code> thread names. One subtlety: <code>cgroup</code> is the cgroup of whichever task is running when the event fires. For a <code>sched_switch</code> that is the outgoing task, and a wake-up can fire from an interrupt in anyone's context. So the scripts check the cgroup where the current task is theirs, note those thread ids, and match wake-ups and switch-ins against that list.</div>
   </div>
 </section>
 
@@ -991,7 +992,7 @@ pktd-spf;start_thread;spf_main;compute_routes;spf_relax 26
 
   <div class="card">
     <h2>4.3 Off-CPU flame graphs</h2>
-    <p>Same picture, different weights: each stack is weighted by the <em>microseconds</em> the thread spent blocked with that stack, not by samples. You build one by tracing, because there is nothing to sample while a thread is asleep: record when a thread leaves the CPU and where from, record when it comes back, and add up the difference by stack. <a onclick="go('r2-lock')">Ch 7</a> does exactly that with a short bpftrace script.</p>
+    <p>Same picture, different weights: each stack is weighted by the <em>microseconds</em> the thread spent blocked with that stack, not by samples. You build one by tracing, because there is nothing to sample while a thread is asleep: record when a thread goes to sleep and where from, record when it is woken, and add up the difference by stack. <a onclick="go('r2-lock')">Ch 7</a> does exactly that with a short bpftrace script.</p>
     <div class="info yellow"><strong>Off-CPU graphs include idle by design.</strong> A worker waiting for work and a worker stuck behind a lock look alike: both are blocked. Restrict the graph to the window that matters (the labs arm their probes at the event and stop at convergence) and read the threads on the critical path first.</div>
   </div>
 
@@ -1469,59 +1470,62 @@ converged_ms=363.472<!--/CAP:02.timeline--></code></pre>
 
   <div class="card">
     <h2>7.3 Off-CPU: where each thread waited</h2>
-    <p><code>bt/offcpu.bt</code> traces <code>sched_switch</code>. When a <code>pktd-</code> thread leaves a CPU, it records the time and the user stack; when that thread comes back, it charges the gap to that stack. It is armed by the lab's own <code>pktd:event</code> probe and exits at <code>pktd:converged</code>.</p>
+    <p><code>bt/offcpu.bt</code> traces <code>sched_switch</code>. When a <code>pktd-</code> thread in this container goes to sleep, it records the time and the user stack; when that thread is woken, it charges the gap to that stack. A thread that is preempted is not asleep, so it isn't counted: its wait is run-queue time (<a onclick="go('r4-sched')">Ch 9</a>). It is armed by the lab's own <code>pktd:event</code> probe and exits at <code>pktd:converged</code>.</p>
     <details class="src" open><summary>bt/offcpu.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/offcpu.bt-->// offcpu.bt — blocked (off-CPU) time by thread and user stack, between the event and convergence.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
-// Scope: the sched_switch tracepoint fires for every thread on the host, so the filter keeps
-// only threads named pktd-*; the program is armed by pktd&#39;s own USDT probes and exits at
+// Blocked time runs from the switch-out to the wake-up: the run-queue wait after the wake-up is
+// runqlat.bt&#39;s, not this script&#39;s.
+// Scope: sched tracepoints fire for every thread on the host. A switch-out runs in the outgoing
+// task, so `cgroup` identifies it: only pktd- threads in this container&#39;s cgroup are recorded,
+// and wake-ups are matched against those thread ids. Armed by pktd&#39;s own USDT probes; exits at
 // convergence. Output is microseconds per (thread, stack); symbolize.py names the frames
 // (PKTD_MAPS saves the lab&#39;s memory map for it) and fold-bt.awk turns it into folded stacks.
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
+// Going to sleep: remember when, and where in user space. A thread switched out while still
+// runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn&#39;t blocked.
 tracepoint:sched:sched_switch
-/@armed &amp;&amp; (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 || strncmp(args-&gt;next_comm, &quot;pktd-&quot;, 5) == 0)/ {
-  // Going off-CPU to sleep: remember when, and where in user space. A thread switched out while
-  // still runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn&#39;t blocked: it
-  // is waiting in the run queue, which runqlat.bt measures, so it is not counted here.
-  if (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 &amp;&amp; args-&gt;prev_state != 0 &amp;&amp; args-&gt;prev_state != 0x100) {
-    @start[args-&gt;prev_pid] = nsecs;
-    @stack[args-&gt;prev_pid] = ustack(perf);
-  }
-  // Coming back on: charge the time to the stack it left from.
-  $s = @start[args-&gt;next_pid];
-  if ($s) {
-    @offcpu_us[args-&gt;next_comm, @stack[args-&gt;next_pid]] = sum((nsecs - $s) / 1000);
-    delete(@start[args-&gt;next_pid]);
-    delete(@stack[args-&gt;next_pid]);
-  }
+/@armed &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 &amp;&amp;
+ args-&gt;prev_state != 0 &amp;&amp; args-&gt;prev_state != 0x100/ {
+  @start[args-&gt;prev_pid] = nsecs;
+  @stack[args-&gt;prev_pid] = ustack(perf);
+  @name[args-&gt;prev_pid] = args-&gt;prev_comm;
 }
 
-END { clear(@start); clear(@stack); delete(@armed); }
+// Woken: charge the blocked time to the stack it went to sleep from.
+tracepoint:sched:sched_wakeup /@start[args-&gt;pid]/ {
+  @offcpu_us[@name[args-&gt;pid], @stack[args-&gt;pid]] = sum((nsecs - @start[args-&gt;pid]) / 1000);
+  delete(@start[args-&gt;pid]);
+  delete(@stack[args-&gt;pid]);
+  delete(@name[args-&gt;pid]);
+}
+
+END { clear(@start); clear(@stack); clear(@name); delete(@armed); }
 <!--/SRC:bt/offcpu.bt--></code></pre></details>
     <pre class="excerpt"><code>PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock
 ./symbolize.py /tmp/maps &lt; /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk</code></pre>
     <figure class="flame"><!-- cspell:disable --><!--FLAME:02.offcpu.folded--><svg class="flame" role="img" aria-label="Flame graph 02.offcpu.folded" viewBox="0 0 960 104" width="100%">
-<g><title>all (1551913 samples, 100.0%)</title><rect x="0.00" y="87" width="959.50" height="16" rx="2" style="fill:var(--flame-3)"/><text x="3.00" y="99" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">all</text></g>
-<g><title>pktd-cli (207416 samples, 13.4%)</title><rect x="0.00" y="70" width="127.81" height="16" rx="2" style="fill:var(--flame-2)"/><text x="3.00" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-cli</text></g>
-<g><title>start_thread (207416 samples, 13.4%)</title><rect x="0.00" y="53" width="127.81" height="16" rx="2" style="fill:var(--flame-1)"/><text x="3.00" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
-<g><title>cli_main (207416 samples, 13.4%)</title><rect x="0.00" y="36" width="127.81" height="16" rx="2" style="fill:var(--flame-1)"/><text x="3.00" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">cli_main</text></g>
-<g><title>cli_show_rib (207416 samples, 13.4%)</title><rect x="0.00" y="19" width="127.81" height="16" rx="2" style="fill:var(--flame-4)"/><text x="3.00" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">cli_show_rib</text></g>
-<g><title>__GI___libc_write (207391 samples, 13.4%)</title><rect x="0.00" y="2" width="127.79" height="16" rx="2" style="fill:var(--flame-0)"/><text x="3.00" y="14" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__GI___libc_write</text></g>
-<g><title>pktd-ctl (357631 samples, 23.0%)</title><rect x="128.31" y="70" width="220.73" height="16" rx="2" style="fill:var(--flame-3)"/><text x="131.31" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-ctl</text></g>
-<g><title>__futex_abstimed_wait_common64 (357631 samples, 23.0%)</title><rect x="128.31" y="53" width="220.73" height="16" rx="2" style="fill:var(--flame-1)"/><text x="131.31" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__futex_abstimed_wait_common64</text></g>
-<g><title>pktd-push (355747 samples, 22.9%)</title><rect x="350.76" y="70" width="219.56" height="16" rx="2" style="fill:var(--flame-3)"/><text x="353.76" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-push</text></g>
-<g><title>__futex_abstimed_wait_common64 (352466 samples, 22.7%)</title><rect x="350.76" y="53" width="217.53" height="16" rx="2" style="fill:var(--flame-1)"/><text x="353.76" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__futex_abstimed_wait_common64</text></g>
-<g><title>pktd-spf (330943 samples, 21.3%)</title><rect x="570.82" y="70" width="204.22" height="16" rx="2" style="fill:var(--flame-4)"/><text x="573.82" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-spf</text></g>
-<g><title>start_thread (330943 samples, 21.3%)</title><rect x="570.82" y="53" width="204.22" height="16" rx="2" style="fill:var(--flame-1)"/><text x="573.82" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
-<g><title>spf_main (330943 samples, 21.3%)</title><rect x="570.82" y="36" width="204.22" height="16" rx="2" style="fill:var(--flame-0)"/><text x="573.82" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">spf_main</text></g>
-<g><title>__GI___clock_nanosleep (50096 samples, 3.2%)</title><rect x="570.82" y="19" width="30.49" height="16" rx="2" style="fill:var(--flame-3)"/><text x="573.82" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">_..</text></g>
-<g><title>rib_update (280847 samples, 18.1%)</title><rect x="601.81" y="19" width="173.23" height="16" rx="2" style="fill:var(--flame-3)"/><text x="604.81" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">rib_update</text></g>
-<g><title>futex_wait (280847 samples, 18.1%)</title><rect x="601.81" y="2" width="173.23" height="16" rx="2" style="fill:var(--flame-3)"/><text x="604.81" y="14" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">futex_wait</text></g>
-<g><title>pktd-term (298198 samples, 19.2%)</title><rect x="775.54" y="70" width="183.96" height="16" rx="2" style="fill:var(--flame-0)"/><text x="778.54" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-term</text></g>
-<g><title>start_thread (298198 samples, 19.2%)</title><rect x="775.54" y="53" width="183.96" height="16" rx="2" style="fill:var(--flame-1)"/><text x="778.54" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
-<g><title>__GI___clock_nanosleep (298198 samples, 19.2%)</title><rect x="775.54" y="36" width="183.96" height="16" rx="2" style="fill:var(--flame-3)"/><text x="778.54" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__GI___clock_nanosleep</text></g>
+<g><title>all (1573620 samples, 100.0%)</title><rect x="0.00" y="87" width="959.50" height="16" rx="2" style="fill:var(--flame-3)"/><text x="3.00" y="99" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">all</text></g>
+<g><title>pktd-cli (171633 samples, 10.9%)</title><rect x="0.00" y="70" width="104.21" height="16" rx="2" style="fill:var(--flame-2)"/><text x="3.00" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-cli</text></g>
+<g><title>start_thread (171633 samples, 10.9%)</title><rect x="0.00" y="53" width="104.21" height="16" rx="2" style="fill:var(--flame-1)"/><text x="3.00" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
+<g><title>cli_main (171633 samples, 10.9%)</title><rect x="0.00" y="36" width="104.21" height="16" rx="2" style="fill:var(--flame-1)"/><text x="3.00" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">cli_main</text></g>
+<g><title>cli_show_rib (171633 samples, 10.9%)</title><rect x="0.00" y="19" width="104.21" height="16" rx="2" style="fill:var(--flame-4)"/><text x="3.00" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">cli_show_rib</text></g>
+<g><title>__GI___libc_write (171633 samples, 10.9%)</title><rect x="0.00" y="2" width="104.21" height="16" rx="2" style="fill:var(--flame-0)"/><text x="3.00" y="14" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__GI___libc_..</text></g>
+<g><title>pktd-ctl (386142 samples, 24.5%)</title><rect x="104.71" y="70" width="235.07" height="16" rx="2" style="fill:var(--flame-3)"/><text x="107.71" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-ctl</text></g>
+<g><title>__futex_abstimed_wait_common64 (386142 samples, 24.5%)</title><rect x="104.71" y="53" width="235.07" height="16" rx="2" style="fill:var(--flame-1)"/><text x="107.71" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__futex_abstimed_wait_common64</text></g>
+<g><title>pktd-push (367111 samples, 23.3%)</title><rect x="343.61" y="70" width="223.46" height="16" rx="2" style="fill:var(--flame-3)"/><text x="346.61" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-push</text></g>
+<g><title>__futex_abstimed_wait_common64 (360742 samples, 22.9%)</title><rect x="343.61" y="53" width="219.57" height="16" rx="2" style="fill:var(--flame-1)"/><text x="346.61" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__futex_abstimed_wait_common64</text></g>
+<g><title>pktd-spf (338923 samples, 21.5%)</title><rect x="567.57" y="70" width="206.26" height="16" rx="2" style="fill:var(--flame-4)"/><text x="570.57" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-spf</text></g>
+<g><title>start_thread (338894 samples, 21.5%)</title><rect x="567.59" y="53" width="206.25" height="16" rx="2" style="fill:var(--flame-1)"/><text x="570.59" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
+<g><title>spf_main (338894 samples, 21.5%)</title><rect x="567.59" y="36" width="206.25" height="16" rx="2" style="fill:var(--flame-0)"/><text x="570.59" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">spf_main</text></g>
+<g><title>__GI___clock_nanosleep (50175 samples, 3.2%)</title><rect x="567.59" y="19" width="30.11" height="16" rx="2" style="fill:var(--flame-3)"/><text x="570.59" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">_..</text></g>
+<g><title>rib_update (288719 samples, 18.3%)</title><rect x="598.20" y="19" width="175.64" height="16" rx="2" style="fill:var(--flame-3)"/><text x="601.20" y="31" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">rib_update</text></g>
+<g><title>futex_wait (288719 samples, 18.3%)</title><rect x="598.20" y="2" width="175.64" height="16" rx="2" style="fill:var(--flame-3)"/><text x="601.20" y="14" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">futex_wait</text></g>
+<g><title>pktd-term (304343 samples, 19.3%)</title><rect x="774.33" y="70" width="185.17" height="16" rx="2" style="fill:var(--flame-0)"/><text x="777.33" y="82" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">pktd-term</text></g>
+<g><title>start_thread (304343 samples, 19.3%)</title><rect x="774.33" y="53" width="185.17" height="16" rx="2" style="fill:var(--flame-1)"/><text x="777.33" y="65" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">start_thread</text></g>
+<g><title>__GI___clock_nanosleep (304343 samples, 19.3%)</title><rect x="774.33" y="36" width="185.17" height="16" rx="2" style="fill:var(--flame-3)"/><text x="777.33" y="48" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="11" style="fill:var(--flame-text)">__GI___clock_nanosleep</text></g>
 </svg>
 <!--/FLAME:02.offcpu.folded--><!-- cspell:enable --><figcaption>Off-CPU flame graph of <code>02-lock</code>, event to convergence, weighted by microseconds blocked.</figcaption></figure>
     <ul>
@@ -1674,17 +1678,18 @@ converged_ms=905.281<!--/CAP:03.timeline--></code></pre>
 
   <div class="card">
     <h2>8.3 The same, scoped, with a latency histogram</h2>
-    <p><code>bt/syscalls.bt</code> counts <code>read</code> and <code>write</code> by thread, between the event and convergence, and histograms how long each <code>read</code> blocks. The syscall tracepoints fire for every process on the host, so every probe filters on the <code>pktd-</code> thread names.</p>
+    <p><code>bt/syscalls.bt</code> counts <code>read</code> and <code>write</code> by thread, between the event and convergence, and histograms how long each <code>read</code> blocks. The syscall tracepoints fire for every process on the host, so every probe filters on the container's cgroup and the <code>pktd-</code> thread names.</p>
     <details class="src"><summary>bt/syscalls.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/syscalls.bt-->// syscalls.bt — read/write calls and read latency per pktd thread, event to convergence.
 //   bpftrace -c ./03-syscalls bt/syscalls.bt ./03-syscalls       ($1 = the lab binary)
-// Scope: syscall tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+// Scope: syscall tracepoints fire host-wide, so every probe filters on this container&#39;s cgroup
+// and the pktd- thread names.
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
 tracepoint:syscalls:sys_enter_write,
 tracepoint:syscalls:sys_enter_read
-/@armed &amp;&amp; strncmp(comm, &quot;pktd-&quot;, 5) == 0/ {
+/@armed &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(comm, &quot;pktd-&quot;, 5) == 0/ {
   @calls[comm, probe] = count();
   @since[tid] = nsecs;
 }
@@ -1698,22 +1703,19 @@ tracepoint:syscalls:sys_exit_write /@since[tid]/ { delete(@since[tid]); }
 
 END { clear(@since); delete(@armed); }
 <!--/SRC:bt/syscalls.bt--></code></pre></details>
-    <pre class="term"><code><!--CAP:03.syscalls-bt-->@calls[pktd-push, tracepoint:syscalls:sys_enter_read]: 24000
+    <pre class="term"><code><!--CAP:03.syscalls-bt-->@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
+@calls[pktd-push, tracepoint:syscalls:sys_enter_read]: 24000
 @calls[pktd-fib, tracepoint:syscalls:sys_enter_read]: 24000
 @calls[pktd-push, tracepoint:syscalls:sys_enter_write]: 24000
-@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
 @read_us[pktd-push]: 
-[2, 4)                57 |                                                    |
-[4, 8)                71 |                                                    |
-[8, 16)              168 |                                                    |
-[16, 32)           20110 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[32, 64)            3067 |@@@@@@@                                             |
-[64, 128)            429 |@                                                   |
-[128, 256)            74 |                                                    |
-[256, 512)            15 |                                                    |
-[512, 1K)              6 |                                                    |
-[1K, 2K)               2 |                                                    |
-[2K, 4K)               1 |                                                    |
+[2, 4)                46 |                                                    |
+[4, 8)                50 |                                                    |
+[8, 16)             1161 |@@                                                  |
+[16, 32)           20857 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)            1601 |@@@                                                 |
+[64, 128)            253 |                                                    |
+[128, 256)            21 |                                                    |
+[256, 512)            11 |                                                    |
 <!--/CAP:03.syscalls-bt--></code></pre>
     <ol class="callouts">
       <li>Lines 1–4: exactly 24,000 of each, one per route.</li>
@@ -1807,22 +1809,30 @@ schedstat  pktd-push          0.8           1.0<!--/CAP:04.timeline--></code></p
     <details class="src"><summary>bt/runqlat.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/runqlat.bt-->// runqlat.bt — run-queue latency of pktd threads: time from &quot;ready to run&quot; to &quot;running&quot;.
 //   bpftrace -c ./04-sched bt/runqlat.bt ./04-sched              ($1 = the lab binary)
 // A thread becomes ready when it is woken, or when it is preempted while still runnable.
-// Scope: sched tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+// Scope: sched tracepoints fire host-wide. `cgroup` is the cgroup of the task running when the
+// event fires, so it identifies our threads only on the switch-out side (the event runs in the
+// outgoing task). Our thread ids are recorded there, filtered on this container&#39;s cgroup and the
+// pktd- names; wake-ups and switch-ins are then matched against that set.
+
+tracepoint:sched:sched_switch
+/cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0/ {
+  @ours[args-&gt;prev_pid] = 1;   // every pktd thread blocks once before the event, so it is known
+}
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
 tracepoint:sched:sched_wakeup,
 tracepoint:sched:sched_wakeup_new
-/@armed &amp;&amp; strncmp(args-&gt;comm, &quot;pktd-&quot;, 5) == 0/ {
+/@armed &amp;&amp; @ours[args-&gt;pid]/ {
   @ready[args-&gt;pid] = nsecs;
 }
 
 tracepoint:sched:sched_switch
-/@armed &amp;&amp; (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 || strncmp(args-&gt;next_comm, &quot;pktd-&quot;, 5) == 0)/ {
+/@armed &amp;&amp; (@ours[args-&gt;prev_pid] || @ours[args-&gt;next_pid])/ {
   // Preempted while runnable, so straight back to waiting in the queue: prev_state is 0
   // (TASK_RUNNING), or 0x100 when the preemption happened inside the kernel.
-  if ((args-&gt;prev_state == 0 || args-&gt;prev_state == 0x100) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0) {
+  if ((args-&gt;prev_state == 0 || args-&gt;prev_state == 0x100) &amp;&amp; @ours[args-&gt;prev_pid]) {
     @ready[args-&gt;prev_pid] = nsecs;
   }
   $r = @ready[args-&gt;next_pid];
@@ -1837,25 +1847,25 @@ tracepoint:sched:sched_switch
   }
 }
 
-END { clear(@ready); delete(@armed); }
+END { clear(@ready); clear(@ours); delete(@armed); }
 <!--/SRC:bt/runqlat.bt--></code></pre></details>
-    <pre class="term"><code><!--CAP:04.runqlat-bt-->@runq_total_us[pktd-ctl]: 63
-@runq_total_us[pktd-fib]: 76880
-@runq_total_us[pktd-push]: 100175
-@runq_total_us[pktd-spf]: 508076
+    <pre class="term"><code><!--CAP:04.runqlat-bt-->@runq_total_us[pktd-ctl]: 61
+@runq_total_us[pktd-fib]: 272
+@runq_total_us[pktd-push]: 958
+@runq_total_us[pktd-spf]: 139523
 @runq_us[pktd-spf]: 
-[32, 64)               1 |@@@@@@@@                                            |
+[16, 32)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
+[32, 64)               0 |                                                    |
 [64, 128)              0 |                                                    |
 [128, 256)             0 |                                                    |
-[256, 512)             0 |                                                    |
+[256, 512)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
 [512, 1K)              0 |                                                    |
-[1K, 2K)               1 |@@@@@@@@                                            |
-[2K, 4K)               1 |@@@@@@@@                                            |
+[1K, 2K)               0 |                                                    |
+[2K, 4K)               2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 [4K, 8K)               0 |                                                    |
 [8K, 16K)              0 |                                                    |
-[16K, 32K)             2 |@@@@@@@@@@@@@@@@@                                   |
-[32K, 64K)             6 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[64K, 128K)            2 |@@@@@@@@@@@@@@@@@                                   |
+[16K, 32K)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
+[32K, 64K)             2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 <!--/CAP:04.runqlat-bt--></code></pre>
     <ol class="callouts">
       <li>Lines 1–4: total run-queue wait between the event and convergence: hundreds of milliseconds for <code>pktd-spf</code>, far less for each of the others.</li>
@@ -2143,7 +2153,7 @@ converged_ms=3217.983<!--/CAP:05.timeline--></code></pre>
     <details class="src"><summary>bt/hold.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/hold.bt-->// hold.bt — what the SPF thread does between the event and the start of compute.
 //   bpftrace -c ./05-throttle bt/hold.bt ./05-throttle            ($1 = the lab binary)
 // The pktd:hold USDT probe reports the throttle&#39;s chosen hold; the syscall tracepoints (filtered
-// to the pktd-spf thread) show the sleep it turns into.
+// to this container&#39;s cgroup and the pktd-spf thread) show the sleep it turns into.
 
 usdt:$1:pktd:event { @t0 = nsecs; printf(&quot;T+%8d us  event\n&quot;, 0); }
 
@@ -2151,7 +2161,7 @@ usdt:$1:pktd:hold {
   printf(&quot;T+%8d us  %s: throttle hold = %d ms\n&quot;, (nsecs - @t0) / 1000, comm, arg0);
 }
 
-tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 &amp;&amp; comm == &quot;pktd-spf&quot;/ { @slept[tid] = nsecs; }
+tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; comm == &quot;pktd-spf&quot;/ { @slept[tid] = nsecs; }
 
 tracepoint:syscalls:sys_exit_clock_nanosleep /@slept[tid]/ {
   printf(&quot;T+%8d us  %s: clock_nanosleep returned after %d ms\n&quot;, (nsecs - @t0) / 1000, comm,
@@ -2164,9 +2174,9 @@ usdt:$1:pktd:converged { printf(&quot;T+%8d us  converged\n&quot;, (nsecs - @t0)
 END { delete(@t0); clear(@slept); }
 <!--/SRC:bt/hold.bt--></code></pre></details>
     <pre class="term"><code><!--CAP:05.hold-bt lines=2-5-->T+       0 us  event
-T+     467 us  pktd-spf: throttle hold = 3200 ms
-T+ 3200696 us  pktd-spf: clock_nanosleep returned after 3200 ms
-T+ 3216304 us  converged<!--/CAP:05.hold-bt--></code></pre>
+T+     153 us  pktd-spf: throttle hold = 3200 ms
+T+ 3200392 us  pktd-spf: clock_nanosleep returned after 3200 ms
+T+ 3230685 us  converged<!--/CAP:05.hold-bt--></code></pre>
     <ol class="callouts">
       <li>Line 2: the throttle chose a <strong>3,200 ms</strong> hold. Its initial hold is 50 ms.</li>
       <li>Line 3: the SPF thread slept for exactly that long.</li>
@@ -2639,9 +2649,9 @@ bpftrace -e 'tracepoint:syscalls:sys_enter_write /comm == "mythread"/ { @[comm] 
       <tr><td>Never change host sysctls (<code>perf_event_paranoid</code>, <code>kptr_restrict</code>, …) or use <code>sudo</code></td><td>They're global; grant capabilities to your container instead</td></tr>
       <tr><td>No system-wide <code>perf</code>: no <code>-a</code>, <code>perf top</code> or <code>perf sched record</code></td><td>They record every tenant's processes</td></tr>
       <tr><td>uprobes only on your own binaries</td><td>A uprobe on a shared library traps in every process that maps it</td></tr>
-      <tr><td>Filter tracepoints and kprobes in the probe, by your thread names or cgroup</td><td>They fire for every thread on the host; filter before doing any work</td></tr>
+      <tr><td>Filter tracepoints and kprobes in the probe, by your container's cgroup and your thread names</td><td>They fire for every thread on the host; filter before doing any work. The <code>cgroup</code> builtin is the running task's, so check it where that task is yours (a switch-out, a syscall), then match other events by thread id</td></tr>
       <tr><td>Arm on your own event, end at your own event, and keep a timeout</td><td>Nothing stays loaded; a hung run can't leave probes behind</td></tr>
-      <tr><td>Don't use tools that can only trace the whole host from your container</td><td>bcc tools' <code>-p</code> expects a host PID; without it they trace everything</td></tr>
+      <tr><td>Don't use tools that can only trace the whole host from your container</td><td>bcc tools' <code>-p</code> expects a host PID; without it they trace everything. Check a tool's mode from its help text rather than running it to find out</td></tr>
       <tr><td>Keep host identity out of captures</td><td>Fixed <code>--hostname</code>; no <code>perf report --header</code> (it prints the host name and CPU model)</td></tr>
       <tr><td>Prefer the weakest capability that works</td><td><code>CAP_PERFMON</code> + <code>CAP_BPF</code> where <code>perf_event_paranoid</code> ≤ 2; <code>CAP_SYS_ADMIN</code> only where it must be</td></tr>
     </table>
@@ -2736,15 +2746,17 @@ share, keep every probe scoped to your own processes:
 - No system-wide `perf` (`-a`, `perf sched record`, `perf top`): attach to a command or a PID.
 - bpftrace: USDT probes and uprobes on your own binary only. A uprobe on a shared library such as
   libc traps in every process on the host that uses it.
-- Tracepoints and kprobes fire for every thread on the host, so filter in the probe (these labs
-  use the `pktd-` thread names) and arm them only between the lab&#39;s own USDT probes.
-  A thread-name filter can&#39;t tell two people&#39;s runs apart: if someone else runs these labs on
-  the same host at the same time, their `pktd-*` threads land in your histograms. (A PID filter
-  would need the host&#39;s PID, which the container doesn&#39;t know.) Don&#39;t run captures concurrently.
+- Tracepoints and kprobes fire for every thread on the host, so filter in the probe and arm them
+  only between the lab&#39;s own USDT probes. These labs filter on the container&#39;s own cgroup
+  (`cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;)`: inside a container with cgroup v2, that path is the
+  container&#39;s cgroup) and on the `pktd-` thread names. The cgroup filter is what keeps someone
+  else&#39;s run of the same labs, on the same host, out of your histograms; a PID filter would need
+  the host&#39;s PID, which the container doesn&#39;t know.
 - Every run is bounded: the scripts exit at `pktd:converged`, and `run-capture.sh` adds a timeout.
 - bcc tools (`offcputime`, `runqlat`, …) take a PID, but inside a container the PID you know is not
   the one the kernel sees; without a usable filter they trace the whole host, so these labs don&#39;t
-  use them.
+  use them. `probe.sh` checks `perf lock contention`&#39;s BPF mode from its help text rather than
+  running it, for the same reason.
 
 ## Why `symbolize.py` exists
 
@@ -2779,7 +2791,7 @@ checks, syncs `captures/` back and runs the repo&#39;s leak gate over them. `rem
 - **`remote.sh` needs a leak-term list** (`$(git rev-parse --git-common-dir)/info/leak-terms` or
   `$LEAK_TERMS`); without one the leak gate exits 2 and `remote.sh` fails, by design.
 
-&lt;!-- cspell:words bpfcc bpftrace kallsyms kprobes kptr libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack --&gt;
+&lt;!-- cspell:words bpfcc bpftrace cgroupid kallsyms kprobes kptr libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack --&gt;
 <!--/SRC:README.md--></code></pre></details>
     <details class="src"><summary>Dockerfile</summary><button class="copy">Copy</button><pre><code><!--SRC:Dockerfile--># ptg-lab: the performance &amp; tracing lab toolchain. Build: docker build -t ptg-lab - &lt; Dockerfile
 # Debian 12 because its perf (linux-perf 6.1) matches a 6.1 kernel; the base is pinned by digest.
@@ -3568,33 +3580,36 @@ END { clear(@name); clear(@begin); delete(@t0); }
 <!--/SRC:bt/stages.bt--></code></pre></details>
     <details class="src"><summary>bt/offcpu.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/offcpu.bt-->// offcpu.bt — blocked (off-CPU) time by thread and user stack, between the event and convergence.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
-// Scope: the sched_switch tracepoint fires for every thread on the host, so the filter keeps
-// only threads named pktd-*; the program is armed by pktd&#39;s own USDT probes and exits at
+// Blocked time runs from the switch-out to the wake-up: the run-queue wait after the wake-up is
+// runqlat.bt&#39;s, not this script&#39;s.
+// Scope: sched tracepoints fire for every thread on the host. A switch-out runs in the outgoing
+// task, so `cgroup` identifies it: only pktd- threads in this container&#39;s cgroup are recorded,
+// and wake-ups are matched against those thread ids. Armed by pktd&#39;s own USDT probes; exits at
 // convergence. Output is microseconds per (thread, stack); symbolize.py names the frames
 // (PKTD_MAPS saves the lab&#39;s memory map for it) and fold-bt.awk turns it into folded stacks.
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
+// Going to sleep: remember when, and where in user space. A thread switched out while still
+// runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn&#39;t blocked.
 tracepoint:sched:sched_switch
-/@armed &amp;&amp; (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 || strncmp(args-&gt;next_comm, &quot;pktd-&quot;, 5) == 0)/ {
-  // Going off-CPU to sleep: remember when, and where in user space. A thread switched out while
-  // still runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn&#39;t blocked: it
-  // is waiting in the run queue, which runqlat.bt measures, so it is not counted here.
-  if (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 &amp;&amp; args-&gt;prev_state != 0 &amp;&amp; args-&gt;prev_state != 0x100) {
-    @start[args-&gt;prev_pid] = nsecs;
-    @stack[args-&gt;prev_pid] = ustack(perf);
-  }
-  // Coming back on: charge the time to the stack it left from.
-  $s = @start[args-&gt;next_pid];
-  if ($s) {
-    @offcpu_us[args-&gt;next_comm, @stack[args-&gt;next_pid]] = sum((nsecs - $s) / 1000);
-    delete(@start[args-&gt;next_pid]);
-    delete(@stack[args-&gt;next_pid]);
-  }
+/@armed &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 &amp;&amp;
+ args-&gt;prev_state != 0 &amp;&amp; args-&gt;prev_state != 0x100/ {
+  @start[args-&gt;prev_pid] = nsecs;
+  @stack[args-&gt;prev_pid] = ustack(perf);
+  @name[args-&gt;prev_pid] = args-&gt;prev_comm;
 }
 
-END { clear(@start); clear(@stack); delete(@armed); }
+// Woken: charge the blocked time to the stack it went to sleep from.
+tracepoint:sched:sched_wakeup /@start[args-&gt;pid]/ {
+  @offcpu_us[@name[args-&gt;pid], @stack[args-&gt;pid]] = sum((nsecs - @start[args-&gt;pid]) / 1000);
+  delete(@start[args-&gt;pid]);
+  delete(@stack[args-&gt;pid]);
+  delete(@name[args-&gt;pid]);
+}
+
+END { clear(@start); clear(@stack); clear(@name); delete(@armed); }
 <!--/SRC:bt/offcpu.bt--></code></pre></details>
     <details class="src"><summary>bt/lock-wait.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/lock-wait.bt-->// lock-wait.bt — who waits for rib_lock, for how long, and who holds it.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/lock-wait.bt ./02-lock   ($1 = the lab binary)
@@ -3621,14 +3636,15 @@ END { clear(@want); clear(@got); }
 <!--/SRC:bt/lock-wait.bt--></code></pre></details>
     <details class="src"><summary>bt/syscalls.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/syscalls.bt-->// syscalls.bt — read/write calls and read latency per pktd thread, event to convergence.
 //   bpftrace -c ./03-syscalls bt/syscalls.bt ./03-syscalls       ($1 = the lab binary)
-// Scope: syscall tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+// Scope: syscall tracepoints fire host-wide, so every probe filters on this container&#39;s cgroup
+// and the pktd- thread names.
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
 tracepoint:syscalls:sys_enter_write,
 tracepoint:syscalls:sys_enter_read
-/@armed &amp;&amp; strncmp(comm, &quot;pktd-&quot;, 5) == 0/ {
+/@armed &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(comm, &quot;pktd-&quot;, 5) == 0/ {
   @calls[comm, probe] = count();
   @since[tid] = nsecs;
 }
@@ -3645,22 +3661,30 @@ END { clear(@since); delete(@armed); }
     <details class="src"><summary>bt/runqlat.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/runqlat.bt-->// runqlat.bt — run-queue latency of pktd threads: time from &quot;ready to run&quot; to &quot;running&quot;.
 //   bpftrace -c ./04-sched bt/runqlat.bt ./04-sched              ($1 = the lab binary)
 // A thread becomes ready when it is woken, or when it is preempted while still runnable.
-// Scope: sched tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+// Scope: sched tracepoints fire host-wide. `cgroup` is the cgroup of the task running when the
+// event fires, so it identifies our threads only on the switch-out side (the event runs in the
+// outgoing task). Our thread ids are recorded there, filtered on this container&#39;s cgroup and the
+// pktd- names; wake-ups and switch-ins are then matched against that set.
+
+tracepoint:sched:sched_switch
+/cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0/ {
+  @ours[args-&gt;prev_pid] = 1;   // every pktd thread blocks once before the event, so it is known
+}
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
 tracepoint:sched:sched_wakeup,
 tracepoint:sched:sched_wakeup_new
-/@armed &amp;&amp; strncmp(args-&gt;comm, &quot;pktd-&quot;, 5) == 0/ {
+/@armed &amp;&amp; @ours[args-&gt;pid]/ {
   @ready[args-&gt;pid] = nsecs;
 }
 
 tracepoint:sched:sched_switch
-/@armed &amp;&amp; (strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0 || strncmp(args-&gt;next_comm, &quot;pktd-&quot;, 5) == 0)/ {
+/@armed &amp;&amp; (@ours[args-&gt;prev_pid] || @ours[args-&gt;next_pid])/ {
   // Preempted while runnable, so straight back to waiting in the queue: prev_state is 0
   // (TASK_RUNNING), or 0x100 when the preemption happened inside the kernel.
-  if ((args-&gt;prev_state == 0 || args-&gt;prev_state == 0x100) &amp;&amp; strncmp(args-&gt;prev_comm, &quot;pktd-&quot;, 5) == 0) {
+  if ((args-&gt;prev_state == 0 || args-&gt;prev_state == 0x100) &amp;&amp; @ours[args-&gt;prev_pid]) {
     @ready[args-&gt;prev_pid] = nsecs;
   }
   $r = @ready[args-&gt;next_pid];
@@ -3675,12 +3699,12 @@ tracepoint:sched:sched_switch
   }
 }
 
-END { clear(@ready); delete(@armed); }
+END { clear(@ready); clear(@ours); delete(@armed); }
 <!--/SRC:bt/runqlat.bt--></code></pre></details>
     <details class="src"><summary>bt/hold.bt</summary><button class="copy">Copy</button><pre><code><!--SRC:bt/hold.bt-->// hold.bt — what the SPF thread does between the event and the start of compute.
 //   bpftrace -c ./05-throttle bt/hold.bt ./05-throttle            ($1 = the lab binary)
 // The pktd:hold USDT probe reports the throttle&#39;s chosen hold; the syscall tracepoints (filtered
-// to the pktd-spf thread) show the sleep it turns into.
+// to this container&#39;s cgroup and the pktd-spf thread) show the sleep it turns into.
 
 usdt:$1:pktd:event { @t0 = nsecs; printf(&quot;T+%8d us  event\n&quot;, 0); }
 
@@ -3688,7 +3712,7 @@ usdt:$1:pktd:hold {
   printf(&quot;T+%8d us  %s: throttle hold = %d ms\n&quot;, (nsecs - @t0) / 1000, comm, arg0);
 }
 
-tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 &amp;&amp; comm == &quot;pktd-spf&quot;/ { @slept[tid] = nsecs; }
+tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 &amp;&amp; cgroup == cgroupid(&quot;/sys/fs/cgroup&quot;) &amp;&amp; comm == &quot;pktd-spf&quot;/ { @slept[tid] = nsecs; }
 
 tracepoint:syscalls:sys_exit_clock_nanosleep /@slept[tid]/ {
   printf(&quot;T+%8d us  %s: clock_nanosleep returned after %d ms\n&quot;, (nsecs - @t0) / 1000, comm,
@@ -3872,7 +3896,8 @@ p perf-record-g     &quot;perf record -q -g -o /tmp/p.data -- $work &amp;&amp; p
 p perf-sched-tp     &quot;perf record -q -e sched:sched_switch -o /tmp/s.data -- sleep 0.1 &amp;&amp; perf script -i /tmp/s.data | grep -q sched_switch&quot;
 p perf-sched-timehist &quot;perf record -q -e sched:sched_switch,sched:sched_wakeup,sched:sched_waking,sched:sched_stat_runtime -o /tmp/t.data -- $work &amp;&amp; perf sched timehist -i /tmp/t.data 2&gt;&amp;1 | grep -q probe-spin&quot;
 p perf-trace        &quot;perf trace -s -- sleep 0.1 2&gt;&amp;1 | grep -q nanosleep&quot;
-p perf-lock-bpf     &quot;perf lock contention -b -- sleep 0.1&quot;
+# Read the help text only: running it could attach to more than this container.
+p perf-lock-bpf     &quot;! perf lock contention -h 2&gt;&amp;1 | grep &#39;not built-in&#39;&quot;
 p bpftrace-uprobe   &quot;bpftrace -e &#39;uprobe:$work:main { printf(\&quot;hit\\n\&quot;); exit(); }&#39; -c $work | grep -q hit&quot;
 p bpftrace-tp-comm  &quot;bpftrace -e &#39;tracepoint:syscalls:sys_enter_clock_nanosleep /comm == \&quot;sleep\&quot;/ { printf(\&quot;hit\\n\&quot;); exit(); }&#39; -c &#39;/bin/sleep 0.2&#39; | grep -q hit&quot;
 p bpftrace-sched    &quot;bpftrace -e &#39;tracepoint:sched:sched_switch /args-&gt;prev_comm == \&quot;probe-spin\&quot;/ { @[args-&gt;prev_state] = count(); }&#39; -c $work&quot;
@@ -3882,7 +3907,7 @@ echo &quot;kernel $(uname -r); perf $(perf version 2&gt;&amp;1 | head -1); $(bpf
   <div class="card">
     <h2>Capture pipeline (maintainers)</h2>
     <details class="src"><summary>captures.tsv</summary><button class="copy">Copy</button><pre><code><!--SRC:captures.tsv--># id&lt;TAB&gt;sources (comma-separated, &quot;-&quot; = none)&lt;TAB&gt;shell command, run in /lab by run-capture.sh
-00-env	probe.sh	gcc --version | head -1; perf version; bpftrace --version; echo &quot;kernel $(uname -r)&quot;; echo &quot;cpus $(nproc)&quot;; ./probe.sh | grep &#39;^PROBE&#39;
+00-env	probe.sh	gcc --version | head -1; perf version; bpftrace --version; echo &quot;kernel $(uname -r)&quot;; echo &quot;cpus $(nproc)&quot;; ./probe.sh | grep -E &#39;^(PROBE|    )&#39;
 f1.run	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes &amp;&amp; ./f1-where-time-goes
 f1.perf-stat	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes &amp;&amp; perf stat -e task-clock,context-switches,cpu-migrations ./f1-where-time-goes 2&gt;&amp;1 &gt;/dev/null | grep -v &#39;^ *$&#39;
 00.timeline	00-baseline.c,pipeline.h,Makefile	make -s 00-baseline &amp;&amp; ./00-baseline

@@ -1,22 +1,30 @@
 // runqlat.bt — run-queue latency of pktd threads: time from "ready to run" to "running".
 //   bpftrace -c ./04-sched bt/runqlat.bt ./04-sched              ($1 = the lab binary)
 // A thread becomes ready when it is woken, or when it is preempted while still runnable.
-// Scope: sched tracepoints fire host-wide, so every probe filters on the pktd- thread names.
+// Scope: sched tracepoints fire host-wide. `cgroup` is the cgroup of the task running when the
+// event fires, so it identifies our threads only on the switch-out side (the event runs in the
+// outgoing task). Our thread ids are recorded there, filtered on this container's cgroup and the
+// pktd- names; wake-ups and switch-ins are then matched against that set.
+
+tracepoint:sched:sched_switch
+/cgroup == cgroupid("/sys/fs/cgroup") && strncmp(args->prev_comm, "pktd-", 5) == 0/ {
+  @ours[args->prev_pid] = 1;   // every pktd thread blocks once before the event, so it is known
+}
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
 tracepoint:sched:sched_wakeup,
 tracepoint:sched:sched_wakeup_new
-/@armed && strncmp(args->comm, "pktd-", 5) == 0/ {
+/@armed && @ours[args->pid]/ {
   @ready[args->pid] = nsecs;
 }
 
 tracepoint:sched:sched_switch
-/@armed && (strncmp(args->prev_comm, "pktd-", 5) == 0 || strncmp(args->next_comm, "pktd-", 5) == 0)/ {
+/@armed && (@ours[args->prev_pid] || @ours[args->next_pid])/ {
   // Preempted while runnable, so straight back to waiting in the queue: prev_state is 0
   // (TASK_RUNNING), or 0x100 when the preemption happened inside the kernel.
-  if ((args->prev_state == 0 || args->prev_state == 0x100) && strncmp(args->prev_comm, "pktd-", 5) == 0) {
+  if ((args->prev_state == 0 || args->prev_state == 0x100) && @ours[args->prev_pid]) {
     @ready[args->prev_pid] = nsecs;
   }
   $r = @ready[args->next_pid];
@@ -31,4 +39,4 @@ tracepoint:sched:sched_switch
   }
 }
 
-END { clear(@ready); delete(@armed); }
+END { clear(@ready); clear(@ours); delete(@armed); }

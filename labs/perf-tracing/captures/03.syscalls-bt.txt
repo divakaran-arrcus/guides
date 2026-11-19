@@ -1,21 +1,18 @@
 # src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
 # src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
-# src bt/syscalls.bt dbac8400b601650b291591adf647261aa0819bcf8b12f246f5ef7a5c626de89d
+# src bt/syscalls.bt b52957668b705f51dc81b34d74c5737515b2dc1862ab8237afe440e5192ea93a
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 03-syscalls && bpftrace -o /tmp/bt.out -c ./03-syscalls bt/syscalls.bt ./03-syscalls >/dev/null && awk '/^@calls/ {print} /^@read_us\[pktd-push\]/ {p=1} p && /^$/ {exit} p' /tmp/bt.out
+@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
 @calls[pktd-push, tracepoint:syscalls:sys_enter_read]: 24000
 @calls[pktd-fib, tracepoint:syscalls:sys_enter_read]: 24000
 @calls[pktd-push, tracepoint:syscalls:sys_enter_write]: 24000
-@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
 @read_us[pktd-push]: 
-[2, 4)                57 |                                                    |
-[4, 8)                71 |                                                    |
-[8, 16)              168 |                                                    |
-[16, 32)           20110 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[32, 64)            3067 |@@@@@@@                                             |
-[64, 128)            429 |@                                                   |
-[128, 256)            74 |                                                    |
-[256, 512)            15 |                                                    |
-[512, 1K)              6 |                                                    |
-[1K, 2K)               2 |                                                    |
-[2K, 4K)               1 |                                                    |
+[2, 4)                46 |                                                    |
+[4, 8)                50 |                                                    |
+[8, 16)             1161 |@@                                                  |
+[16, 32)           20857 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)            1601 |@@@                                                 |
+[64, 128)            253 |                                                    |
+[128, 256)            21 |                                                    |
+[256, 512)            11 |                                                    |

@@ -81,15 +81,17 @@ share, keep every probe scoped to your own processes:
 - No system-wide `perf` (`-a`, `perf sched record`, `perf top`): attach to a command or a PID.
 - bpftrace: USDT probes and uprobes on your own binary only. A uprobe on a shared library such as
   libc traps in every process on the host that uses it.
-- Tracepoints and kprobes fire for every thread on the host, so filter in the probe (these labs
-  use the `pktd-` thread names) and arm them only between the lab's own USDT probes.
-  A thread-name filter can't tell two people's runs apart: if someone else runs these labs on
-  the same host at the same time, their `pktd-*` threads land in your histograms. (A PID filter
-  would need the host's PID, which the container doesn't know.) Don't run captures concurrently.
+- Tracepoints and kprobes fire for every thread on the host, so filter in the probe and arm them
+  only between the lab's own USDT probes. These labs filter on the container's own cgroup
+  (`cgroup == cgroupid("/sys/fs/cgroup")`: inside a container with cgroup v2, that path is the
+  container's cgroup) and on the `pktd-` thread names. The cgroup filter is what keeps someone
+  else's run of the same labs, on the same host, out of your histograms; a PID filter would need
+  the host's PID, which the container doesn't know.
 - Every run is bounded: the scripts exit at `pktd:converged`, and `run-capture.sh` adds a timeout.
 - bcc tools (`offcputime`, `runqlat`, …) take a PID, but inside a container the PID you know is not
   the one the kernel sees; without a usable filter they trace the whole host, so these labs don't
-  use them.
+  use them. `probe.sh` checks `perf lock contention`'s BPF mode from its help text rather than
+  running it, for the same reason.
 
 ## Why `symbolize.py` exists
 
@@ -124,4 +126,4 @@ checks, syncs `captures/` back and runs the repo's leak gate over them. `remote.
 - **`remote.sh` needs a leak-term list** (`$(git rev-parse --git-common-dir)/info/leak-terms` or
   `$LEAK_TERMS`); without one the leak gate exits 2 and `remote.sh` fails, by design.
 
-<!-- cspell:words bpfcc bpftrace kallsyms kprobes kptr libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack -->
+<!-- cspell:words bpfcc bpftrace cgroupid kallsyms kprobes kptr libc memlock offcpu offcputime perfmon pktd runqlat sched schedstat seccomp timehist tracepoint tracepoints uprobe uprobes ustack -->

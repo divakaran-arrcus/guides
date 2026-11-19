@@ -1,7 +1,7 @@
 // hold.bt — what the SPF thread does between the event and the start of compute.
 //   bpftrace -c ./05-throttle bt/hold.bt ./05-throttle            ($1 = the lab binary)
 // The pktd:hold USDT probe reports the throttle's chosen hold; the syscall tracepoints (filtered
-// to the pktd-spf thread) show the sleep it turns into.
+// to this container's cgroup and the pktd-spf thread) show the sleep it turns into.
 
 usdt:$1:pktd:event { @t0 = nsecs; printf("T+%8d us  event\n", 0); }
 
@@ -9,7 +9,7 @@ usdt:$1:pktd:hold {
   printf("T+%8d us  %s: throttle hold = %d ms\n", (nsecs - @t0) / 1000, comm, arg0);
 }
 
-tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 && comm == "pktd-spf"/ { @slept[tid] = nsecs; }
+tracepoint:syscalls:sys_enter_clock_nanosleep /@t0 && cgroup == cgroupid("/sys/fs/cgroup") && comm == "pktd-spf"/ { @slept[tid] = nsecs; }
 
 tracepoint:syscalls:sys_exit_clock_nanosleep /@slept[tid]/ {
   printf("T+%8d us  %s: clock_nanosleep returned after %d ms\n", (nsecs - @t0) / 1000, comm,

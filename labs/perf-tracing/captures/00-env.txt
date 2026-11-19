@@ -1,5 +1,5 @@
-# src probe.sh 986114ee321ffb65436430884b6e8950de8da5d6ae17fd6e36511ef8c7be5606
-# cmd gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep '^PROBE'
+# src probe.sh 34dd1099ff70d0741563633e4f72c74fe3efc9593e112b877c91adf7809db926
+# cmd gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep -E '^(PROBE|    )'
 gcc (Debian 12.2.0-14+deb12u1) 12.2.0
 perf version 6.1.192
 bpftrace v0.17.0
@@ -12,6 +12,7 @@ PROBE perf-sched-tp ok
 PROBE perf-sched-timehist ok
 PROBE perf-trace ok
 PROBE perf-lock-bpf fail
+                              (not built-in because no BUILD_BPF_SKEL=1)
 PROBE bpftrace-uprobe ok
 PROBE bpftrace-tp-comm ok
 PROBE bpftrace-sched ok

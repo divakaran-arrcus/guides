@@ -1,29 +1,32 @@
 // offcpu.bt — blocked (off-CPU) time by thread and user stack, between the event and convergence.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
-// Scope: the sched_switch tracepoint fires for every thread on the host, so the filter keeps
-// only threads named pktd-*; the program is armed by pktd's own USDT probes and exits at
+// Blocked time runs from the switch-out to the wake-up: the run-queue wait after the wake-up is
+// runqlat.bt's, not this script's.
+// Scope: sched tracepoints fire for every thread on the host. A switch-out runs in the outgoing
+// task, so `cgroup` identifies it: only pktd- threads in this container's cgroup are recorded,
+// and wake-ups are matched against those thread ids. Armed by pktd's own USDT probes; exits at
 // convergence. Output is microseconds per (thread, stack); symbolize.py names the frames
 // (PKTD_MAPS saves the lab's memory map for it) and fold-bt.awk turns it into folded stacks.
 
 usdt:$1:pktd:event { @armed = 1; }
 usdt:$1:pktd:converged { exit(); }
 
+// Going to sleep: remember when, and where in user space. A thread switched out while still
+// runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn't blocked.
 tracepoint:sched:sched_switch
-/@armed && (strncmp(args->prev_comm, "pktd-", 5) == 0 || strncmp(args->next_comm, "pktd-", 5) == 0)/ {
-  // Going off-CPU to sleep: remember when, and where in user space. A thread switched out while
-  // still runnable (prev_state 0, or 0x100 for a preemption inside the kernel) isn't blocked: it
-  // is waiting in the run queue, which runqlat.bt measures, so it is not counted here.
-  if (strncmp(args->prev_comm, "pktd-", 5) == 0 && args->prev_state != 0 && args->prev_state != 0x100) {
-    @start[args->prev_pid] = nsecs;
-    @stack[args->prev_pid] = ustack(perf);
-  }
-  // Coming back on: charge the time to the stack it left from.
-  $s = @start[args->next_pid];
-  if ($s) {
-    @offcpu_us[args->next_comm, @stack[args->next_pid]] = sum((nsecs - $s) / 1000);
-    delete(@start[args->next_pid]);
-    delete(@stack[args->next_pid]);
-  }
+/@armed && cgroup == cgroupid("/sys/fs/cgroup") && strncmp(args->prev_comm, "pktd-", 5) == 0 &&
+ args->prev_state != 0 && args->prev_state != 0x100/ {
+  @start[args->prev_pid] = nsecs;
+  @stack[args->prev_pid] = ustack(perf);
+  @name[args->prev_pid] = args->prev_comm;
 }
 
-END { clear(@start); clear(@stack); delete(@armed); }
+// Woken: charge the blocked time to the stack it went to sleep from.
+tracepoint:sched:sched_wakeup /@start[args->pid]/ {
+  @offcpu_us[@name[args->pid], @stack[args->pid]] = sum((nsecs - @start[args->pid]) / 1000);
+  delete(@start[args->pid]);
+  delete(@stack[args->pid]);
+  delete(@name[args->pid]);
+}
+
+END { clear(@start); clear(@stack); clear(@name); delete(@armed); }

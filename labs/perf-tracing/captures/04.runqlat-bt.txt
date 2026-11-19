@@ -1,22 +1,22 @@
 # src 04-sched.c 52b9aedae0f756568e242916fe599a46a0b762f0bed588e518b6cf0a5f3d2a55
 # src pipeline.h e8a228b5ac9d48828f7446e1c0c0e96cf4cbf0f6a18f8be050b254d589aa8c91
-# src bt/runqlat.bt 40090d3740656e1518adbd901a158862459d7ee1f31e55c4fafcffa654da14df
+# src bt/runqlat.bt 29ce56772e56d4ab136cd746ef47045400eb106ddc1e08ef237c82b8cab97fc2
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 04-sched && bpftrace -o /tmp/bt.out -c ./04-sched bt/runqlat.bt ./04-sched >/dev/null && awk '/^@runq_total_us/ {print} /^@runq_us\[pktd-spf\]/ {p=1} p && /^$/ {exit} p' /tmp/bt.out
-@runq_total_us[pktd-ctl]: 63
-@runq_total_us[pktd-fib]: 76880
-@runq_total_us[pktd-push]: 100175
-@runq_total_us[pktd-spf]: 508076
+@runq_total_us[pktd-ctl]: 61
+@runq_total_us[pktd-fib]: 272
+@runq_total_us[pktd-push]: 958
+@runq_total_us[pktd-spf]: 139523
 @runq_us[pktd-spf]: 
-[32, 64)               1 |@@@@@@@@                                            |
+[16, 32)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
+[32, 64)               0 |                                                    |
 [64, 128)              0 |                                                    |
 [128, 256)             0 |                                                    |
-[256, 512)             0 |                                                    |
+[256, 512)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
 [512, 1K)              0 |                                                    |
-[1K, 2K)               1 |@@@@@@@@                                            |
-[2K, 4K)               1 |@@@@@@@@                                            |
+[1K, 2K)               0 |                                                    |
+[2K, 4K)               2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 [4K, 8K)               0 |                                                    |
 [8K, 16K)              0 |                                                    |
-[16K, 32K)             2 |@@@@@@@@@@@@@@@@@                                   |
-[32K, 64K)             6 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[64K, 128K)            2 |@@@@@@@@@@@@@@@@@                                   |
+[16K, 32K)             1 |@@@@@@@@@@@@@@@@@@@@@@@@@@                          |
+[32K, 64K)             2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|

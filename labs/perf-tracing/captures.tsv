@@ -1,5 +1,5 @@
 # id<TAB>sources (comma-separated, "-" = none)<TAB>shell command, run in /lab by run-capture.sh
-00-env	probe.sh	gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep '^PROBE'
+00-env	probe.sh	gcc --version | head -1; perf version; bpftrace --version; echo "kernel $(uname -r)"; echo "cpus $(nproc)"; ./probe.sh | grep -E '^(PROBE|    )'
 f1.run	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes && ./f1-where-time-goes
 f1.perf-stat	f1-where-time-goes.c,Makefile	make -s f1-where-time-goes && perf stat -e task-clock,context-switches,cpu-migrations ./f1-where-time-goes 2>&1 >/dev/null | grep -v '^ *$'
 00.timeline	00-baseline.c,pipeline.h,Makefile	make -s 00-baseline && ./00-baseline
