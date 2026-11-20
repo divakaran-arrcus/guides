@@ -50,6 +50,20 @@ test('a run without converged_ms says so instead of claiming 0 ms', () => {
   assert.doesNotMatch(html, /converged in 0\.0 ms/);
 });
 
+test('a stage with no end (a truncated capture) is marked incomplete, not 0 ms', () => {
+  const cut = block('before', 120).split('\n').filter(l => !/push +end/.test(l)).join('\n');
+  const html = renderTimeline(cut);
+  assert.match(html, /push<\/span><span class="tl-track"><\/span><span class="tl-ms">incomplete/);
+  assert.doesNotMatch(html, /NaN/);
+});
+
+test('a timeline with no duration does not draw NaN bars', () => {
+  const zero = 'pktd route pipeline  lab=x variant=before\nT+     0.000 ms  hold       begin\nT+     0.000 ms  hold       end\n';
+  const html = renderTimeline(zero);
+  assert.match(html, /no duration/);
+  assert.doesNotMatch(html, /NaN/);
+});
+
 test('no timeline in the text renders an explicit note, not an empty figure', () => {
   assert.match(renderTimeline('nothing here\n'), /no timeline/);
 });

@@ -66,6 +66,15 @@ test('sync-labs passes unit=us from the FLAME marker', () => {
   assert.deepEqual(syncHtml(w.html, dir, 'check').errors, []);
 });
 
+test('a lines= excerpt with a gap renders: the inserted gap line is not a stack', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fg-'));
+  mkdirSync(join(dir, 'captures'));
+  writeFileSync(join(dir, 'captures', 'g.folded.txt'), '# cmd x\nmain;a 2\nmain;b 3\nmain;c 4\n');
+  const w = syncHtml('<!--FLAME:g.folded lines=1,3--><!--/FLAME:g.folded-->', dir, 'write');
+  assert.deepEqual(w.errors, []);
+  assert.match(w.html, /all \(6 samples/);
+});
+
 test('output is deterministic and themed by CSS variables', () => {
   const f = 'main;a;b 3\nmain;c 2\n';
   assert.equal(renderFlame(f, { id: 'd' }), renderFlame(f, { id: 'd' }));

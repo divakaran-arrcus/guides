@@ -1,21 +1,23 @@
 # src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
-# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
-# src bt/syscalls.bt b52957668b705f51dc81b34d74c5737515b2dc1862ab8237afe440e5192ea93a
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src bt/syscalls.bt 3e4e46577a80b7f9526d3dbd4f0eeefc9d7fe47312d2e11f732364af05de917b
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 03-syscalls && bpftrace -o /tmp/bt.out -c ./03-syscalls bt/syscalls.bt ./03-syscalls >/dev/null && awk '/^@calls/ {print} /^@read_us\[pktd-push\]/ {p=1} p && /^$/ {exit} p' /tmp/bt.out
+@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
 @calls[pktd-push, tracepoint:syscalls:sys_enter_write]: 24000
 @calls[pktd-fib, tracepoint:syscalls:sys_enter_read]: 24000
 @calls[pktd-push, tracepoint:syscalls:sys_enter_read]: 24000
-@calls[pktd-fib, tracepoint:syscalls:sys_enter_write]: 24000
 @read_us[pktd-push]: 
-[2, 4)                29 |                                                    |
-[4, 8)                53 |                                                    |
-[8, 16)               37 |                                                    |
-[16, 32)           16312 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[32, 64)            6697 |@@@@@@@@@@@@@@@@@@@@@                               |
-[64, 128)            631 |@@                                                  |
-[128, 256)           166 |                                                    |
-[256, 512)            48 |                                                    |
-[512, 1K)             22 |                                                    |
-[1K, 2K)               4 |                                                    |
-[2K, 4K)               1 |                                                    |
+[2, 4)                40 |                                                    |
+[4, 8)                56 |                                                    |
+[8, 16)              445 |@                                                   |
+[16, 32)           18666 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[32, 64)            4290 |@@@@@@@@@@@                                         |
+[64, 128)            373 |@                                                   |
+[128, 256)            95 |                                                    |
+[256, 512)            26 |                                                    |
+[512, 1K)              5 |                                                    |
+[1K, 2K)               1 |                                                    |
+[2K, 4K)               0 |                                                    |
+[4K, 8K)               2 |                                                    |
+[8K, 16K)              1 |                                                    |

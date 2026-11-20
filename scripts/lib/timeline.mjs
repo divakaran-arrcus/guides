@@ -23,7 +23,7 @@ export function parseTimelines(text) {
     if ((m = line.match(/^T\+\s*([\d.]+) ms\s+(\w+)\s+(begin|end)$/)) && STAGES.includes(m[2])) {
       const t = Number(m[1]);
       let s = cur.stages.find(x => x.name === m[2]);
-      if (!s) { s = { name: m[2], begin: t, end: t }; cur.stages.push(s); }
+      if (!s) { s = { name: m[2], begin: t, end: null }; cur.stages.push(s); }
       if (m[3] === 'begin') s.begin = t; else s.end = t;
     } else if ((m = line.match(/^converged_ms=([\d.]+)/))) {
       cur.total = Number(m[1]);
@@ -35,13 +35,19 @@ export function parseTimelines(text) {
 export function renderTimeline(text) {
   const runs = parseTimelines(text);
   if (!runs.length) return '<div class="tl"><div class="tl-cap">no timeline in this capture</div></div>\n';
-  const scale = Math.max(...runs.map(r => r.total || Math.max(...r.stages.map(s => s.end))));
+  const scale = Math.max(...runs.map(r => r.total || Math.max(...r.stages.map(s => s.end ?? s.begin))));
+  if (!(scale > 0)) return '<div class="tl"><div class="tl-cap">timeline has no duration in this capture</div></div>\n';
   const pct = v => (100 * v / scale).toFixed(2);
   const out = ['<div class="tl">'];
   for (const r of runs) {
     const done = r.total ? `converged in ${r.total.toFixed(1)} ms` : 'no converged_ms line in the capture';
     out.push(`<div class="tl-cap"><strong>${esc(r.label)}</strong> · ${done}</div>`);
     for (const s of r.stages) {
+      if (s.end === null) {
+        out.push(`<div class="tl-row"><span class="tl-lab">${esc(s.name)}</span><span class="tl-track"></span>`
+          + `<span class="tl-ms">incomplete</span></div>`);
+        continue;
+      }
       const d = s.end - s.begin;
       out.push(`<div class="tl-row"><span class="tl-lab">${esc(s.name)}</span><span class="tl-track">`
         + `<span class="tl-bar tl-${esc(s.name)}" style="left:${pct(s.begin)}%;width:${pct(d)}%" title="${esc(s.name)}: ${d.toFixed(1)} ms"></span>`

@@ -1,29 +1,30 @@
 # src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
-# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
 # src bt/lock-wait.bt e9fd043d587ab5b3db6249c24a9f8d96331ba90c5b798b513e86d06c48657d1e
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # src symbolize.py db93d342336cdce5a594b78a98924356699b7a3ce72a491c31c579fc0f3aca9e
-# cmd make -s 02-lock && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out
+# cmd make -s 02-lock && rm -f /tmp/maps && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/lock-wait.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | tee /tmp/sym.out && awk '/^@held_total_us\[pktd-cli, *$/ {p=1} p && /^\]: / {print "cli_held_us=" $2; exit}' /tmp/sym.out
 Attaching 5 probes...
 
 @held_total_us[pktd-spf, 
-	559945732990 rib_lock_release (/lab/02-lock)
-	559945732b15 rib_update (/lab/02-lock)
-	559945732bd2 spf_main (/lab/02-lock)
-	7f27f62621f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 52
+	562953841b10 rib_lock_release (/lab/02-lock)
+	562953841c95 rib_update (/lab/02-lock)
+	562953841d52 spf_main (/lab/02-lock)
+	7f2b320db1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 140
 @held_total_us[pktd-cli, 
-	559945732990 rib_lock_release (/lab/02-lock)
-	5599457329df cli_show_rib (/lab/02-lock)
-	559945732aa2 cli_main (/lab/02-lock)
-	7f27f62621f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
-]: 303013
-@wait_total_us[pktd-cli]: 69
-@wait_total_us[pktd-spf]: 289644
+	562953841b10 rib_lock_release (/lab/02-lock)
+	562953841b5f cli_show_rib (/lab/02-lock)
+	562953841c22 cli_main (/lab/02-lock)
+	7f2b320db1f5 start_thread (/usr/lib/x86_64-linux-gnu/libc.so.6)
+]: 317246
+@wait_total_us[pktd-cli]: 126
+@wait_total_us[pktd-spf]: 279176
 @wait_us[pktd-cli]: 
-[32, 64)               1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[64, 128)              1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 
 @wait_us[pktd-spf]: 
 [256K, 512K)           1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
 
 
+cli_held_us=317246

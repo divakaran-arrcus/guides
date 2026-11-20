@@ -1,4 +1,5 @@
-// offcpu.bt — blocked (off-CPU) time by thread and user stack, between the event and convergence.
+// offcpu.bt — blocked (off-CPU) time by thread and user stack: sleeps that start after the event
+// and end (are woken) before convergence. A thread already asleep at the event isn't counted.
 //   PKTD_MAPS=/tmp/maps bpftrace -c ./02-lock bt/offcpu.bt ./02-lock     ($1 = the lab binary)
 // Blocked time runs from the switch-out to the wake-up: the run-queue wait after the wake-up is
 // runqlat.bt's, not this script's.

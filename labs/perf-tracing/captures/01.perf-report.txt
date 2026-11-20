@@ -1,23 +1,23 @@
 # src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
-# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 01-hot-path && perf record -q -F 999 -g -o /tmp/p.data ./01-hot-path >/dev/null 2>&1 && perf report -i /tmp/p.data --stdio --no-children --sort comm,sym --percent-limit 2 -g caller,0.5,callee --stdio 2>/dev/null | grep -v -e '^$' -e '^# *$' | head -40
 # To display the perf.data header info, please use --header/--header-only options.
 # Total Lost Samples: 0
-# Samples: 769  of event 'cycles'
-# Event count (approx.): 1399553437
-# Overhead  Command    Symbol                                       
-# ........  .........  .............................................
-    51.11%  pktd-spf   [.] spf_relax
-            |
-            ---spf_relax
-               compute_routes
-               spf_main
-               start_thread
-    44.97%  pktd-spf   [.] spf_extract_min
+# Samples: 907  of event 'cycles'
+# Event count (approx.): 1951090754
+# Overhead  Command    Symbol                            
+# ........  .........  ..................................
+    68.02%  pktd-spf   [.] spf_extract_min
             |
             ---spf_extract_min
                compute_routes
                spf_main
                start_thread
-# (Tip: Use parent filter to see specific call path: perf report -p <regex>)
+    27.52%  pktd-spf   [.] spf_relax
+            |
+            ---spf_relax
+               compute_routes
+               spf_main
+               start_thread
+# (Tip: To record callchains for each sample: perf record -g)

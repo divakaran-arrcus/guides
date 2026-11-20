@@ -1,12 +1,12 @@
 # src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
-# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 01-hot-path && perf stat -e task-clock,cycles,instructions,context-switches ./01-hot-path 2>&1 >/dev/null | grep -v '^ *$'
  Performance counter stats for './01-hot-path':
-            579.47 msec task-clock                       #    0.722 CPUs utilized          
-        1339080770      cycles                           #    2.311 GHz                    
-        1916422967      instructions                     #    1.43  insn per cycle         
-               274      context-switches                 #  472.844 /sec                   
-       0.802637475 seconds time elapsed
-       0.560461000 seconds user
-       0.028930000 seconds sys
+            827.78 msec task-clock                       #    0.815 CPUs utilized          
+        1929770346      cycles                           #    2.331 GHz                    
+        1915692595      instructions                     #    0.99  insn per cycle         
+               179      context-switches                 #  216.240 /sec                   
+       1.015947385 seconds time elapsed
+       0.823142000 seconds user
+       0.020002000 seconds sys

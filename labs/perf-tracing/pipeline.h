@@ -119,7 +119,7 @@ NOINLINE static void spf_relax(int u, uint32_t *parent) {
 NOINLINE static void spf_run(void) {
   uint8_t *done = calloc(N, 1);
   uint32_t *parent = malloc(N * sizeof *parent);
-  for (int v = 0; v < N; v++) { dist[v] = UINT32_MAX; parent[v] = UINT32_MAX; }
+  for (int v = 0; v < N; v++) { dist[v] = UINT32_MAX; parent[v] = UINT32_MAX; firsthop[v] = UINT32_MAX; }
   dist[0] = 0;
   for (int i = 0; i < N; i++) {
     int u = spf_extract_min(done);
@@ -158,7 +158,7 @@ NOINLINE static void rib_update(void) {
   rib_lock_release();
 }
 
-/* Lab 04: someone set the SPF thread to nice 10, as "background work" behind the I/O pollers.
+/* Lab 04: someone set the SPF thread to nice 15, as "background work" behind the I/O pollers.
  * On Linux, setpriority() on a thread id changes just that thread. Raising nice needs no privilege. */
 static void set_nice(void) {
   if (C.spf_nice) setpriority(PRIO_PROCESS, (id_t)gettid(), C.spf_nice);
@@ -319,6 +319,7 @@ static void *fib_main(void *arg) {
     uint32_t ack = (uint32_t)have;
     if (write(fib_fd[1], &ack, sizeof ack) != sizeof ack) break;
   }
+  close(fib_fd[1]); /* if we stopped early, push's next read sees EOF instead of waiting for ever */
   schedstat_self("pktd-fib");
   return NULL;
 }
@@ -383,10 +384,27 @@ static void pin_cpus(int n) {
   sched_setaffinity(0, sizeof pick, &pick);
 }
 
+/* Threads record their schedstat as they exit, in no fixed order: print the pipeline threads
+ * first (spf, push, fib), then the rest by name, so the output's layout is the same every run. */
+static int sched_rank(const char *n) {
+  return !strcmp(n, "pktd-spf") ? 0 : !strcmp(n, "pktd-push") ? 1 : !strcmp(n, "pktd-fib") ? 2 : 3;
+}
+
+static int sched_cmp(const void *a, const void *b) {
+  int x = *(const int *)a, y = *(const int *)b;
+  int rx = sched_rank(tnames[x]), ry = sched_rank(tnames[y]);
+  return rx != ry ? rx - ry : strcmp(tnames[x], tnames[y]);
+}
+
 static void print_schedstat(void) {
+  int order[64];
+  for (int i = 0; i < ntids; i++) order[i] = i;
+  qsort(order, (size_t)ntids, sizeof order[0], sched_cmp);
   printf("\nschedstat  thread       on-cpu ms  runq-wait ms\n");
-  for (int i = 0; i < ntids; i++)
+  for (int k = 0; k < ntids; k++) {
+    int i = order[k];
     printf("schedstat  %-12s %9.1f %13.1f\n", tnames[i], t_run[i] / 1e6, t_wait[i] / 1e6);
+  }
 }
 
 static void print_timeline(void) {

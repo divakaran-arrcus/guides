@@ -32,8 +32,18 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-// FLAME also takes unit=us for graphs weighted by microseconds (off-CPU) instead of samples.
-const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP|FLAME|TL):([\w.\-]+))(?: lines=([\d,\-]+))?(?: unit=(us))?-->/g;
+// Attributes, in any order: lines=<spec> (every kind), unit=us (FLAME only: a graph weighted by
+// microseconds, e.g. off-CPU, instead of samples). A marker with a valid id but attributes this
+// doesn't accept is reported, never skipped: a skipped marker would let stale content pass --check.
+const ATTRS = '((?: (?:lines=[\\d,\\-]+|unit=us))*)';
+const OPEN = new RegExp(`<!--(?:(SRC):([\\w.\\-/]+)|(CAP|FLAME|TL):([\\w.\\-]+))${ATTRS}-->`, 'g');
+const MARKER_LIKE = /<!--(?:SRC:[\w.\-/]+|(?:CAP|FLAME|TL):[\w.\-]+) [^>]*?-->/g;
+
+function parseAttrs(s) {
+  const a = {};
+  for (const m of (s || '').matchAll(/ (lines|unit)=(\S+)/g)) a[m[1]] = m[2];
+  return a;
+}
 
 function expectedSrc(path, spec, labsDir) {
   if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
@@ -71,7 +81,8 @@ export function syncHtml(html, labsDir, mode) {
     OPEN.lastIndex = pos;
     const m = OPEN.exec(html);
     if (!m) break;
-    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4], spec = m[5], unit = m[6];
+    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4];
+    const { lines: spec, unit } = parseAttrs(m[5]);
     const bodyStart = m.index + open.length;
     const close = `<!--/${kind}:${id}-->`;
     const j = html.indexOf(close, bodyStart);
@@ -81,7 +92,8 @@ export function syncHtml(html, labsDir, mode) {
       pos = bodyStart;
       continue;
     }
-    const exp = kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind, unit);
+    const exp = unit && kind !== 'FLAME' ? { error: `${kind} ${id}: unit= only applies to FLAME markers` }
+      : kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind, unit);
     out += html.slice(pos, bodyStart);
     const current = html.slice(bodyStart, j);
     if (exp.error) { errors.push(exp.error); out += current; }
@@ -93,6 +105,11 @@ export function syncHtml(html, labsDir, mode) {
     pos = j;
   }
   out += html.slice(pos);
+  // Anything that looks like a marker (a valid id followed by attributes) but isn't one OPEN accepts.
+  const exact = new RegExp(`^${OPEN.source}$`);
+  for (const m of html.matchAll(MARKER_LIKE)) {
+    if (!exact.test(m[0])) errors.push(`unrecognised marker attributes: ${m[0]}`);
+  }
   return { html: mode === 'write' ? out : html, errors };
 }
 

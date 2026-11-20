@@ -1,43 +1,43 @@
 # src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
-# src pipeline.h 95cd576b2c5ab500ca5dfab008dab707ebd89761a36a66aff8303ff17fc48059
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
 # src compare.sh 06ab7513734091eb6526160e8900a7dd3cf10526090edb13a0119e1d70f04c25
 # src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
 # cmd make -s 02-lock && ./compare.sh 02-lock
 pktd route pipeline  lab=02-lock variant=before  nodes=1500 routes=24000 changes=64
 T+     0.000 ms  event      link change injected
-T+     0.091 ms  hold       begin
-T+    50.283 ms  hold       end
-T+    50.283 ms  compute    begin
-T+    78.015 ms  compute    end
-T+    78.016 ms  rib        begin
-T+   361.948 ms  rib        end
-T+   362.042 ms  push       begin
-T+   366.261 ms  push       end
+T+     0.098 ms  hold       begin
+T+    50.215 ms  hold       end
+T+    50.216 ms  compute    begin
+T+    65.738 ms  compute    end
+T+    65.739 ms  rib        begin
+T+   354.071 ms  rib        end
+T+   354.262 ms  push       begin
+T+   359.287 ms  push       end
 
 budget  stage      ms        share
-budget  hold         50.192   13.7%
-budget  compute      27.732    7.6%
-budget  rib         283.932   77.5%
-budget  push          4.219    1.2%
-budget  handoff       0.186    0.1%
-converged_ms=366.261
+budget  hold         50.117   13.9%
+budget  compute      15.523    4.3%
+budget  rib         288.332   80.3%
+budget  push          5.025    1.4%
+budget  handoff       0.290    0.1%
+converged_ms=359.287
 --- with --fixed:
 pktd route pipeline  lab=02-lock variant=fixed  nodes=1500 routes=24000 changes=64
 T+     0.000 ms  event      link change injected
-T+     0.145 ms  hold       begin
-T+    50.463 ms  hold       end
-T+    50.463 ms  compute    begin
-T+    75.551 ms  compute    end
-T+    75.551 ms  rib        begin
-T+    75.670 ms  rib        end
-T+    75.872 ms  push       begin
-T+    83.410 ms  push       end
+T+     0.106 ms  hold       begin
+T+    50.235 ms  hold       end
+T+    50.236 ms  compute    begin
+T+    67.506 ms  compute    end
+T+    67.506 ms  rib        begin
+T+    67.594 ms  rib        end
+T+    67.630 ms  push       begin
+T+    70.600 ms  push       end
 
 budget  stage      ms        share
-budget  hold         50.317   60.3%
-budget  compute      25.088   30.1%
-budget  rib           0.119    0.1%
-budget  push          7.538    9.0%
-budget  handoff       0.348    0.4%
-converged_ms=83.410
-speedup=4.4x  (366.3 ms -> 83.4 ms)
+budget  hold         50.129   71.0%
+budget  compute      17.270   24.5%
+budget  rib           0.088    0.1%
+budget  push          2.971    4.2%
+budget  handoff       0.142    0.2%
+converged_ms=70.600
+speedup=5.1x  (359.3 ms -> 70.6 ms)
