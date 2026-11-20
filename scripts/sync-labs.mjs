@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-// Fill <!--SRC:path-->…<!--/SRC:path--> and <!--CAP:id-->…<!--/CAP:id--> blocks in a guide
-// from labs/<slug>/ files and captures/<id>.txt. --write fills them; --check only verifies.
+// Fill <!--SRC:path-->, <!--CAP:id-->, <!--FLAME:id--> and <!--TL:id--> blocks in a guide from
+// labs/<slug>/ files and captures/<id>.txt (FLAME renders folded stacks as an SVG flame graph,
+// TL renders pktd pipeline timelines as bars). --write fills them; --check only verifies.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveGuideHtml } from './lib/guide-path.mjs';
+import { renderFlame } from './lib/flamegraph.mjs';
+import { renderTimeline } from './lib/timeline.mjs';
 
 export const escapeHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -29,7 +32,18 @@ export function selectLines(text, spec) {
 }
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex');
-const OPEN = /<!--(?:(SRC):([\w.\-/]+)|(CAP):([\w.\-]+))(?: lines=([\d,\-]+))?-->/g;
+// Attributes, in any order: lines=<spec> (every kind), unit=us (FLAME only: a graph weighted by
+// microseconds, e.g. off-CPU, instead of samples). A marker with a valid id but attributes this
+// doesn't accept is reported, never skipped: a skipped marker would let stale content pass --check.
+const ATTRS = '((?: (?:lines=[\\d,\\-]+|unit=us))*)';
+const OPEN = new RegExp(`<!--(?:(SRC):([\\w.\\-/]+)|(CAP|FLAME|TL):([\\w.\\-]+))${ATTRS}-->`, 'g');
+const MARKER_LIKE = /<!--(?:SRC:[\w.\-/]+|(?:CAP|FLAME|TL):[\w.\-]+) [^>]*?-->/g;
+
+function parseAttrs(s) {
+  const a = {};
+  for (const m of (s || '').matchAll(/ (lines|unit)=(\S+)/g)) a[m[1]] = m[2];
+  return a;
+}
 
 function expectedSrc(path, spec, labsDir) {
   if (path.startsWith('/') || path.split('/').includes('..')) return { error: `SRC ${path}: unsafe path (absolute or contains ..)` };
@@ -38,9 +52,9 @@ function expectedSrc(path, spec, labsDir) {
   return { body: escapeHtml(selectLines(readFileSync(f, 'utf8'), spec)) };
 }
 
-function expectedCap(id, spec, labsDir) {
+function expectedCap(id, spec, labsDir, kind = 'CAP', unit) {
   const f = join(labsDir, 'captures', `${id}.txt`);
-  if (!existsSync(f)) return { error: `CAP ${id}: captures/${id}.txt not found` };
+  if (!existsSync(f)) return { error: `${kind} ${id}: captures/${id}.txt not found` };
   const lines = readFileSync(f, 'utf8').split('\n');
   let i = 0;
   const errs = [];
@@ -48,11 +62,14 @@ function expectedCap(id, spec, labsDir) {
     const m = lines[i].match(/^# src (\S+) ([0-9a-f]{64})\s*$/);
     if (!m) continue;
     const sf = join(labsDir, m[1]);
-    if (!existsSync(sf)) errs.push(`CAP ${id}: source ${m[1]} missing`);
-    else if (sha256(readFileSync(sf)) !== m[2]) errs.push(`CAP ${id}: stale capture, ${m[1]} changed since capture`);
+    if (!existsSync(sf)) errs.push(`${kind} ${id}: source ${m[1]} missing`);
+    else if (sha256(readFileSync(sf)) !== m[2]) errs.push(`${kind} ${id}: stale capture, ${m[1]} changed since capture`);
   }
   if (errs.length) return { error: errs.join('; ') };
-  return { body: escapeHtml(selectLines(lines.slice(i).join('\n'), spec)) };
+  const body = selectLines(lines.slice(i).join('\n'), spec);
+  if (kind === 'FLAME') return { body: renderFlame(body, { id, unit }) };
+  if (kind === 'TL') return { body: renderTimeline(body) };
+  return { body: escapeHtml(body) };
 }
 
 export function syncHtml(html, labsDir, mode) {
@@ -64,7 +81,8 @@ export function syncHtml(html, labsDir, mode) {
     OPEN.lastIndex = pos;
     const m = OPEN.exec(html);
     if (!m) break;
-    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4], spec = m[5];
+    const open = m[0], kind = m[1] ?? m[3], id = m[2] ?? m[4];
+    const { lines: spec, unit } = parseAttrs(m[5]);
     const bodyStart = m.index + open.length;
     const close = `<!--/${kind}:${id}-->`;
     const j = html.indexOf(close, bodyStart);
@@ -74,7 +92,8 @@ export function syncHtml(html, labsDir, mode) {
       pos = bodyStart;
       continue;
     }
-    const exp = (kind === 'SRC' ? expectedSrc : expectedCap)(id, spec, labsDir);
+    const exp = unit && kind !== 'FLAME' ? { error: `${kind} ${id}: unit= only applies to FLAME markers` }
+      : kind === 'SRC' ? expectedSrc(id, spec, labsDir) : expectedCap(id, spec, labsDir, kind, unit);
     out += html.slice(pos, bodyStart);
     const current = html.slice(bodyStart, j);
     if (exp.error) { errors.push(exp.error); out += current; }
@@ -86,6 +105,11 @@ export function syncHtml(html, labsDir, mode) {
     pos = j;
   }
   out += html.slice(pos);
+  // Anything that looks like a marker (a valid id followed by attributes) but isn't one OPEN accepts.
+  const exact = new RegExp(`^${OPEN.source}$`);
+  for (const m of html.matchAll(MARKER_LIKE)) {
+    if (!exact.test(m[0])) errors.push(`unrecognised marker attributes: ${m[0]}`);
+  }
   return { html: mode === 'write' ? out : html, errors };
 }
 

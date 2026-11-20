@@ -1,0 +1,43 @@
+# src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src compare.sh 06ab7513734091eb6526160e8900a7dd3cf10526090edb13a0119e1d70f04c25
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 03-syscalls && ./compare.sh 03-syscalls
+pktd route pipeline  lab=03-syscalls variant=before  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     0.145 ms  hold       begin
+T+    50.452 ms  hold       end
+T+    50.452 ms  compute    begin
+T+    66.879 ms  compute    end
+T+    66.879 ms  rib        begin
+T+    66.970 ms  rib        end
+T+    67.060 ms  push       begin
+T+  1060.008 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.308    4.7%
+budget  compute      16.426    1.5%
+budget  rib           0.091    0.0%
+budget  push        992.948   93.7%
+budget  handoff       0.235    0.0%
+converged_ms=1060.008
+--- with --fixed:
+pktd route pipeline  lab=03-syscalls variant=fixed  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     0.065 ms  hold       begin
+T+    50.517 ms  hold       end
+T+    50.517 ms  compute    begin
+T+    66.774 ms  compute    end
+T+    66.775 ms  rib        begin
+T+    66.844 ms  rib        end
+T+    66.904 ms  push       begin
+T+    70.090 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.452   72.0%
+budget  compute      16.257   23.2%
+budget  rib           0.069    0.1%
+budget  push          3.186    4.5%
+budget  handoff       0.126    0.2%
+converged_ms=70.090
+speedup=15.1x  (1060.0 ms -> 70.1 ms)

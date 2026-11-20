@@ -127,6 +127,19 @@ test('resolveGuideHtml prefers <slug>-guide.html, falls back to gen-ai', () => {
   assert.equal(resolveGuideHtml(root, 'foo'), join(root, 'foo-guide.html'));
 });
 
+test('attributes in either order are accepted; unknown or misplaced ones are errors', () => {
+  const dir = lab({}, { 'c.folded': '# cmd x\nmain;w 5\n' });
+  const ok = syncHtml('<!--FLAME:c.folded unit=us lines=1--><!--/FLAME:c.folded-->', dir, 'write');
+  assert.deepEqual(ok.errors, []);
+  assert.match(ok.html, /w \(5 µs/);
+  for (const bad of ['<!--FLAME:c.folded unit=ms-->stale<!--/FLAME:c.folded-->',
+                     '<!--CAP:c.folded unit=us-->stale<!--/CAP:c.folded-->',
+                     '<!--CAP:c.folded line=1-->stale<!--/CAP:c.folded-->']) {
+    const r = syncHtml(bad, dir, 'check');
+    assert.equal(r.errors.length, 1, bad);
+  }
+});
+
 test('CAP id charset excludes "/": CAP:a/b is not a CAP block', () => {
   const dir = lab();
   const page = '<!--CAP:a/b-->keep<!--/CAP:a/b-->';

@@ -7,10 +7,9 @@ Future guides to build. The **Up next** table is in build order; the shipped tab
 | Order | Guide | Audience Bridge | Status |
 |-------|-------|-----------------|--------|
 | 1 | **SRv6 Service Programming with uSID** | Old #9 (SFC). uSID only — no G-SID / REPLACE-C-SID. SR-aware (End.AN) vs SR-unaware proxies (End.AS / End.AD / End.AM) in uSID networks, stateful chains, chains across domains. Links to `srv6-network-programming-guide.html` for uSID basics instead of repeating them | Planned |
-| 2 | **Performance & Tracing for Network Daemons** | Sequel to Memory Debugging, reusing its lab kit — `perf`, flame graphs, eBPF / bpftrace, off-CPU time, lock contention, "why is convergence slow" | Planned |
-| 3 | **IS-IS from First Principles** | The IGP under every SR / SRv6 guide — adjacency FSM, LSP flooding and purging, SPF, levels and route leaking, SR / SRv6 TLVs. Lab kit with open-source routing containers | Planned |
-| 4 | **Fast Convergence End to End** | BFD, SPF / LSP throttling, prefix prioritization, BGP PIC core / edge, FIB download time; ties together the existing TI-LFA material | Planned |
-| 5 | **Network Automation with BGP** | Provisioning EVPN / SRv6 VPNs from code — gNMI / YANG, intent checks | Planned |
+| 2 | **IS-IS from First Principles** | The IGP under every SR / SRv6 guide — adjacency FSM, LSP flooding and purging, SPF, levels and route leaking, SR / SRv6 TLVs. Lab kit with open-source routing containers | Planned |
+| 3 | **Fast Convergence End to End** | BFD, SPF / LSP throttling, prefix prioritization, BGP PIC core / edge, FIB download time; ties together the existing TI-LFA material | Planned |
+| 4 | **Network Automation with BGP** | Provisioning EVPN / SRv6 VPNs from code — gNMI / YANG, intent checks | Planned |
 
 ## Shipped
 
@@ -28,4 +27,5 @@ Future guides to build. The **Up next** table is in build order; the shipped tab
 | Gen-AI: Architect to Leader | `gen-ai-architect-to-leader-guide.html` | 2026-06-01 |
 | Gen-AI: Harness Engineering | `gen-ai-harness-engineering-guide.html` | 2026-11-02 — Part 4 |
 | Memory Debugging from First Principles | `memory-debugging-guide.html` | 2026-11-17 — with `labs/memory-debugging/` kit |
+| Performance & Tracing for Network Daemons | `perf-tracing-guide.html` | 2026-11-19 — sequel to Memory Debugging, with `labs/perf-tracing/` kit |
 | Chess for Kids | `chess-for-kids-guide.html` | 2026-06-13 |

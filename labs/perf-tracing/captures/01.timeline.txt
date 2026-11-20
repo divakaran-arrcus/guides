@@ -1,0 +1,43 @@
+# src 01-hot-path.c d4c155610422b25249084d3f692ab475b9bd9b7df1a6e471dd0ccace471794e7
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src compare.sh 06ab7513734091eb6526160e8900a7dd3cf10526090edb13a0119e1d70f04c25
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 01-hot-path && ./compare.sh 01-hot-path
+pktd route pipeline  lab=01-hot-path variant=before  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     3.808 ms  hold       begin
+T+    53.949 ms  hold       end
+T+    53.949 ms  compute    begin
+T+   893.423 ms  compute    end
+T+   893.423 ms  rib        begin
+T+   893.500 ms  rib        end
+T+   893.537 ms  push       begin
+T+   895.901 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.141    5.6%
+budget  compute     839.474   93.7%
+budget  rib           0.076    0.0%
+budget  push          2.364    0.3%
+budget  handoff       3.845    0.4%
+converged_ms=895.901
+--- with --fixed:
+pktd route pipeline  lab=01-hot-path variant=fixed  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     0.046 ms  hold       begin
+T+    50.183 ms  hold       end
+T+    50.183 ms  compute    begin
+T+    63.726 ms  compute    end
+T+    63.726 ms  rib        begin
+T+    63.787 ms  rib        end
+T+    63.824 ms  push       begin
+T+    66.876 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.137   75.0%
+budget  compute      13.543   20.3%
+budget  rib           0.061    0.1%
+budget  push          3.051    4.6%
+budget  handoff       0.084    0.1%
+converged_ms=66.876
+speedup=13.4x  (895.9 ms -> 66.9 ms)

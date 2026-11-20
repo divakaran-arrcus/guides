@@ -1,0 +1,11 @@
+# src 04-sched.c 0289673a2bbbc711df9c2675a2f8538dfa0dbbb847e0e0bb45c7f71c4222cd26
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 04-sched && perf record -q -e sched:sched_switch,sched:sched_wakeup -o /tmp/s.data ./04-sched >/dev/null 2>&1 && perf sched timehist -i /tmp/s.data 2>/dev/null | grep -E '^ +time|pktd-spf\[[0-9]+/' | head -24
+           time    cpu  task name                       wait time  sch delay   run time
+ 8421794.606199 [0015]  pktd-spf[759/756]                   0.000      0.000      0.906 
+ 8421794.702722 [0015]  pktd-spf[759/756]                  96.501      0.000      0.020 
+ 8421794.755265 [0015]  pktd-spf[759/756]                  48.878      0.000      3.664 
+ 8421795.126143 [0015]  pktd-spf[759/756]                 367.241      0.000      3.636 
+ 8421795.538587 [0015]  pktd-spf[759/756]                 410.904      0.000      1.540 
+ 8421795.718925 [0015]  pktd-spf[759/756]                 180.287      0.000      0.050 

@@ -1,0 +1,23 @@
+// syscalls.bt — read/write calls and read latency per pktd thread, event to convergence.
+//   bpftrace -c ./03-syscalls bt/syscalls.bt ./03-syscalls       ($1 = the lab binary)
+// Scope: syscall tracepoints fire host-wide, so the entry probes filter on this container's
+// cgroup and the pktd- thread names; the exit probes only match threads an entry probe recorded.
+
+usdt:$1:pktd:event { @armed = 1; }
+usdt:$1:pktd:converged { exit(); }
+
+tracepoint:syscalls:sys_enter_write,
+tracepoint:syscalls:sys_enter_read
+/@armed && cgroup == cgroupid("/sys/fs/cgroup") && strncmp(comm, "pktd-", 5) == 0/ {
+  @calls[comm, probe] = count();
+  @since[tid] = nsecs;
+}
+
+tracepoint:syscalls:sys_exit_read /@since[tid]/ {
+  @read_us[comm] = hist((nsecs - @since[tid]) / 1000);
+  delete(@since[tid]);
+}
+
+tracepoint:syscalls:sys_exit_write /@since[tid]/ { delete(@since[tid]); }
+
+END { clear(@since); delete(@armed); }

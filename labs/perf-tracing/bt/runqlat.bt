@@ -1,0 +1,44 @@
+// runqlat.bt — run-queue latency of pktd threads: time from "ready to run" to "running".
+//   bpftrace -c ./04-sched bt/runqlat.bt ./04-sched              ($1 = the lab binary)
+// A thread becomes ready when it is woken from sleep, or when it is preempted while still
+// runnable. sched_wakeup also fires for a thread that is already running (a wake-up that finds
+// it awake), so a wake-up counts only for a thread this script saw go to sleep.
+// Scope: sched tracepoints fire host-wide. `cgroup` is the cgroup of the task running when the
+// event fires, which for sched_switch is the outgoing task: our threads are recognised there, on
+// this container's cgroup and the pktd- names, and everything else is matched by thread id.
+
+tracepoint:sched:sched_switch
+/cgroup == cgroupid("/sys/fs/cgroup") && strncmp(args->prev_comm, "pktd-", 5) == 0/ {
+  // prev_state 0 (TASK_RUNNING), or 0x100 for a preemption inside the kernel: still runnable,
+  // so it goes straight back to waiting in the queue. Anything else: it went to sleep.
+  if (args->prev_state == 0 || args->prev_state == 0x100) {
+    if (@armed) { @ready[args->prev_pid] = nsecs; }
+  } else {
+    @asleep[args->prev_pid] = 1;
+  }
+}
+
+usdt:$1:pktd:event { @armed = 1; }
+usdt:$1:pktd:converged { exit(); }
+
+tracepoint:sched:sched_wakeup,
+tracepoint:sched:sched_wakeup_new
+/@asleep[args->pid]/ {
+  delete(@asleep[args->pid]);
+  if (@armed) { @ready[args->pid] = nsecs; }
+}
+
+// Switch-in: the wait ends. (This event runs in the outgoing task, so match the incoming thread
+// by id, not by cgroup.)
+tracepoint:sched:sched_switch /@armed && @ready[args->next_pid]/ {
+  $w = (nsecs - @ready[args->next_pid]) / 1000;
+  if (strncmp(args->next_comm, "pktd-io", 7) == 0) {
+    @runq_us["pktd-io*"] = hist($w);
+  } else {
+    @runq_us[args->next_comm] = hist($w);
+    @runq_total_us[args->next_comm] = sum($w);
+  }
+  delete(@ready[args->next_pid]);
+}
+
+END { clear(@ready); clear(@asleep); delete(@armed); }

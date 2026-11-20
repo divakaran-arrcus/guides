@@ -1,0 +1,15 @@
+# src 02-lock.c bc4d2eb7c2ec6332ec3b82a49c274055a57f527abcad6140f71dfd49e357da6e
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src bt/offcpu.bt faf1c1c8fdf4241040c16e633ddc9de3e9c05f490cd7da5babde570ae76de3cc
+# src fold-bt.awk feab913536963d6ed2b2c6b748d3399a90569579e20797564fd9a11d75c52c8f
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# src symbolize.py db93d342336cdce5a594b78a98924356699b7a3ce72a491c31c579fc0f3aca9e
+# cmd make -s 02-lock && rm -f /tmp/maps && PKTD_MAPS=/tmp/maps bpftrace -o /tmp/bt.out -c ./02-lock bt/offcpu.bt ./02-lock >/dev/null && ./symbolize.py /tmp/maps < /tmp/bt.out | awk -v map=@offcpu_us -f fold-bt.awk
+pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write 182487
+pktd-ctl;__futex_abstimed_wait_common64 373571
+pktd-fib;start_thread;__GI___libc_read 3776
+pktd-push;__futex_abstimed_wait_common64 365423
+pktd-push;start_thread;push_main;__GI___libc_read 4456
+pktd-spf;start_thread;spf_main;__GI___clock_nanosleep 50107
+pktd-spf;start_thread;spf_main;rib_update;futex_wait 293747
+pktd-term;start_thread;__GI___clock_nanosleep 308640

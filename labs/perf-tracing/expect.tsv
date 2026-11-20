@@ -1,0 +1,89 @@
+# id<TAB>POSIX ERE, matched against the capture body (the # src / # cmd header is skipped).
+# One or more lines per id; every regex must match somewhere in captures/<id>.txt.
+# Timings vary between runs, so these check shape (which stage dominates, before/after ratios),
+# never exact numbers.
+00-env	^gcc .* 12\.
+00-env	^perf version 6\.1\.
+00-env	^bpftrace v0\.17\.
+00-env	^PROBE perf-record-g ok$
+00-env	^PROBE perf-sched-timehist ok$
+00-env	^PROBE perf-trace ok$
+00-env	^PROBE bpftrace-uprobe ok$
+00-env	^PROBE bpftrace-tp-comm ok$
+00-env	^PROBE bpftrace-sched ok$
+f1.run	^spin +wall +[0-9]+ ms = on-cpu +(9[5-9][0-9]|10[0-4][0-9]) \+
+f1.run	^sleep +wall +(9[5-9][0-9]|10[0-4][0-9]) ms = on-cpu +[0-9] \+ runq-wait +[0-9] \+
+f1.run	^lock +wall .* off-cpu +(8[5-9][0-9]|9[0-4][0-9])$
+f1.run	^q0 +wall .* runq-wait +([5-7][0-9][0-9]) \+
+f1.perf-stat	msec task-clock .* CPUs utilized
+f1.perf-stat	seconds time elapsed
+00.timeline	^budget  hold +[0-9.]+ +[0-9.]+%$
+00.timeline	^converged_ms=[4-9][0-9]\.[0-9]+$
+00.stages-bt	^T\+ +[0-9]+ us  hold +begin$
+00.stages-bt	^T\+ +[0-9]+ us  push +end +took [0-9]+ us$
+00.stages-bt	^T\+ +[0-9]+ us  converged$
+01.timeline	^budget  compute +[0-9.]+ +9[0-9]\.[0-9]%$
+01.timeline	^speedup=([4-9]|[1-9][0-9]+)\.[0-9]x
+01.perf-stat	insn per cycle
+01.perf-stat	msec task-clock
+01.perf-report	^ +[0-9.]+% +pktd-spf +\[\.\] spf_extract_min *$
+01.perf-report	^ +[0-9.]+% +pktd-spf +\[\.\] spf_relax *$
+01.perf-report	^ +---spf_extract_min$
+01.perf-report	^ +compute_routes$
+01.perf-report-dwarf	^ +---spf_extract_min$
+01.perf-report-dwarf	^ +spf_run$
+01.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min [0-9]{3,}$
+01.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_relax [0-9]{3,}$
+01.oncpu-fixed.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_(extract_min|relax) [0-9]{1,2}$
+02.timeline	^budget  rib +[0-9.]+ +([6-9][0-9]|100)\.[0-9]%$
+02.timeline	^speedup=([3-9]|[1-9][0-9]+)\.[0-9]x
+02.oncpu.folded	^pktd-cli;start_thread;cli_main;cli_show_rib;
+02.offcpu.folded	^pktd-spf;start_thread;spf_main;rib_update;[a-z_]+ ([2-9][0-9]{5})$
+02.offcpu.folded	^pktd-cli;start_thread;cli_main;cli_show_rib;__GI___libc_write [0-9]{5,}$
+02.offcpu.folded	^pktd-spf;start_thread;spf_main;__GI___clock_nanosleep [0-9]+$
+02.lock-wait	^@wait_total_us\[pktd-spf\]: [2-9][0-9]{5}$
+02.lock-wait	^	[0-9a-f]+ cli_show_rib \(/lab/02-lock\)$
+02.lock-wait	^@held_total_us\[pktd-cli, $
+02.lock-wait-fixed	^@wait_total_us\[pktd-spf\]: [0-9]{1,4}$
+03.timeline	^budget  push +[0-9.]+ +([6-9][0-9]|100)\.[0-9]%$
+03.timeline	^speedup=([4-9]|[1-9][0-9]+)\.[0-9]x
+03.perf-trace	^ pktd-push \([0-9]+\), [0-9]{5,} events
+03.perf-trace	^   read +2[0-9]{4} +0
+03.perf-trace-fixed	^ pktd-push \([0-9]+\), [0-9]{2,3} events
+03.syscalls-bt	^@calls\[pktd-push, tracepoint:syscalls:sys_enter_write\]: 24000$
+03.syscalls-bt	^@calls\[pktd-fib, tracepoint:syscalls:sys_enter_read\]: 24000$
+03.syscalls-bt	^@read_us\[pktd-push\]: $
+04.timeline	^schedstat  pktd-spf +[0-9.]+ +([5-9][0-9]|[1-9][0-9]{2,})\.[0-9]$
+04.timeline	^speedup=([2-9]|[1-9][0-9]+)\.[0-9]x
+04.runqlat-bt	^@runq_total_us\[pktd-spf\]: [0-9]{5,}$
+04.runqlat-bt	^@runq_us\[pktd-spf\]: $
+04.timehist	wait time +sch delay +run time
+04.timehist	pktd-spf\[[0-9]+/[0-9]+\]
+05.timeline	^budget  hold +3[0-9]{3}\.[0-9]+ +9[0-9]\.[0-9]%$
+05.timeline	^speedup=([1-9][0-9]+)\.[0-9]x
+05.perf-stat	0\.0[0-9]+ CPUs utilized
+05.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_(extract_min|relax) [0-9]{1,2}$
+05.hold-bt	pktd-spf: throttle hold = 3200 ms$
+05.hold-bt	pktd-spf: clock_nanosleep returned after 320[0-9] ms$
+06.oncpu.folded	^pktd-spf;start_thread;spf_main;compute_routes;spf_extract_min [0-9]{3,}$
+06.lock-wait	^@wait_total_us\[pktd-spf\]: [1-9][0-9]{5}$
+06.lock-wait	^	[0-9a-f]+ cli_show_rib \(/lab/06-boss\)$
+06.sequence	^summary  fixes=none +converged_ms=[0-9.]+ +largest=push 
+06.sequence	^summary  fixes=push +converged_ms=[0-9.]+ +largest=compute 
+06.sequence	^summary  fixes=push,hot +converged_ms=[0-9.]+ +largest=rib 
+06.sequence	^summary  fixes=push,hot,lock +converged_ms=[0-9.]+ +largest=hold 
+06.sequence	^summary  fixes=all +converged_ms=([4-9][0-9]|1[0-4][0-9])\.[0-9]+ 
+01.oncpu-fixed.excerpt	^pktd-ctl;__libc_start_call_main;main;pipeline_main[.a-z0-9]*;spf_(extract_min|relax) [0-9]+$
+01.oncpu-fixed.excerpt	^pktd-spf;start_thread;spf_main;compute_routes;spf_(extract_min|relax) [0-9]+$
+01.timeline	^budget  compute +[0-9]{1,2}\.[0-9]+ +[0-9.]+%$
+04.timehist	pktd-spf\[[0-9/]+\] +[1-9][0-9]*\.[0-9]{3} +0\.000 
+04.runqlat-bt	^--- the same run, as the lab reports it:$
+04.runqlat-bt	^schedstat  pktd-spf +[0-9.]+ +[0-9.]+$
+06.oncpu.folded	^pktd-push;start_thread;push_main;
+04.timeline	^budget  compute +[0-9.]+ +[4-9][0-9]\.[0-9]%$
+00-env	^PROBE perf-lock-bpf fail$
+00-env	^PROBE cgroup-v2 ok$
+02.lock-wait	^cli_held_us=[1-9][0-9]{5}$
+02.lock-wait-fixed	^cli_held_us=[0-9]{1,4}$
+06.lock-wait	^cli_held_us=[1-9][0-9]{5}$
+04.runqlat-bt	^bpftrace/schedstat=(0\.[89][0-9]|1\.[01][0-9])$

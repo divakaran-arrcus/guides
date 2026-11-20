@@ -1,0 +1,28 @@
+# src 04-sched.c 0289673a2bbbc711df9c2675a2f8538dfa0dbbb847e0e0bb45c7f71c4222cd26
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src bt/runqlat.bt b64aac3555c362ecd37e74688cb5242ae6cf566accf1abe209879edd6cf20f74
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 04-sched && bpftrace -o /tmp/bt.out -c ./04-sched bt/runqlat.bt ./04-sched > /tmp/run.out && awk '/^@runq_total_us/ {print} /^@runq_us\[pktd-spf\]/ {p=1} p && /^$/ {exit} p' /tmp/bt.out && echo '--- the same run, as the lab reports it:' && grep -E '^(budget  compute|schedstat  (thread|pktd-spf) )' /tmp/run.out && awk '/^@runq_total_us\[pktd-spf\]/ {b=$2} /^schedstat  pktd-spf / {s=$4*1000} END {printf "bpftrace/schedstat=%.2f\n", b/s}' /tmp/bt.out /tmp/run.out
+@runq_total_us[pktd-ctl]: 7
+@runq_total_us[pktd-push]: 98
+@runq_total_us[pktd-fib]: 210
+@runq_total_us[pktd-spf]: 295604
+@runq_us[pktd-spf]: 
+[16, 32)               2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                  |
+[32, 64)               2 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                  |
+[64, 128)              1 |@@@@@@@@@@@@@@@@@                                   |
+[128, 256)             1 |@@@@@@@@@@@@@@@@@                                   |
+[256, 512)             1 |@@@@@@@@@@@@@@@@@                                   |
+[512, 1K)              1 |@@@@@@@@@@@@@@@@@                                   |
+[1K, 2K)               0 |                                                    |
+[2K, 4K)               0 |                                                    |
+[4K, 8K)               0 |                                                    |
+[8K, 16K)              0 |                                                    |
+[16K, 32K)             1 |@@@@@@@@@@@@@@@@@                                   |
+[32K, 64K)             0 |                                                    |
+[64K, 128K)            3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+--- the same run, as the lab reports it:
+budget  compute     191.127   56.5%
+schedstat  thread       on-cpu ms  runq-wait ms
+schedstat  pktd-spf           8.4         261.6
+bpftrace/schedstat=1.13

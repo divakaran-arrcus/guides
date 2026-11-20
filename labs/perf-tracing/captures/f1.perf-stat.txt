@@ -1,0 +1,10 @@
+# src f1-where-time-goes.c ef6cd71378222aadf14ac9bf029328371ad00057e505fad07bb8928ad32b4e9f
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s f1-where-time-goes && perf stat -e task-clock,context-switches,cpu-migrations ./f1-where-time-goes 2>&1 >/dev/null | grep -v '^ *$'
+ Performance counter stats for './f1-where-time-goes':
+           2103.78 msec task-clock                       #    2.056 CPUs utilized          
+               334      context-switches                 #  158.762 /sec                   
+                 6      cpu-migrations                   #    2.852 /sec                   
+       1.023405397 seconds time elapsed
+       0.947296000 seconds user
+       1.157366000 seconds sys

@@ -37,13 +37,14 @@ Leaf-spine fabrics and the BGP EVPN control plane.
 
 ### Systems Debugging
 
-Finding memory bugs in C daemons, from a live process or from only a core.
+Finding memory bugs and slowdowns in C daemons: from a live process, from only a core, and from a convergence timeline.
 
 | Guide | File | Description |
 |-------|------|-------------|
 | Memory Debugging from First Principles | [memory-debugging-guide.html](memory-debugging-guide.html) | Memory bugs in multithreaded C on Linux x86-64 — process layout, stack frames, the glibc allocator, the C memory model and locks; GDB, cores and symbols, ASan, TSan, Valgrind and rr; a ten-rung bug ladder (NULL deref to a refcount use-after-free that crashes far from its cause), each solved twice: when it reproduces and from only a core; core-to-reproducer workflow, cheat sheet, flag matrix, and glossary. Every terminal block is a real capture |
+| Performance & Tracing for Network Daemons | [perf-tracing-guide.html](perf-tracing-guide.html) | Why is convergence slow? Where a thread's time goes (on-CPU, run queue, blocked), counting vs sampling vs tracing, `perf_event` and eBPF under the hood, flame graphs; the convergence timeline and latency budget as the method; a ladder of five slowdowns (hot path, lock contention, per-route syscalls, run-queue wait, a throttle that never decays) and a boss level that mixes them; shared-host tracing rules. Every terminal block and flame graph comes from a real capture |
 
-The runnable lab kit behind every terminal block lives in [labs/memory-debugging/](labs/memory-debugging/) — see its README for building, capturing and re-checking the labs.
+The runnable lab kits behind every terminal block live in [labs/memory-debugging/](labs/memory-debugging/) and [labs/perf-tracing/](labs/perf-tracing/) — see each README for building, capturing and re-checking the labs.
 
 ### Gen AI
 

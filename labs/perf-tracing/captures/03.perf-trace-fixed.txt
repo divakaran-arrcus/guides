@@ -1,0 +1,17 @@
+# src 03-syscalls.c 8cbdbdb47147359300d218e04625f19b95700458e4aed51166dad46e42aeef33
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 03-syscalls && perf trace -s -o /tmp/tr ./03-syscalls --fixed >/dev/null && awk '/^ pktd-(push|fib) /{p=1} /^ pktd-(ctl|spf) /{p=0} p' /tmp/tr | grep -E '^ pktd-|^   (syscall|---)|^ +\(msec\)|^   (read|write|futex) '
+ pktd-fib (624), 206 events, 33.9%
+   syscall            calls  errors  total       min       avg       max       stddev
+                                     (msec)    (msec)    (msec)    (msec)        (%)
+   --------------- --------  ------ -------- --------- --------- ---------     ------
+   read                  48      0   203.460     0.057     4.239   198.135     97.33%
+   write                 47      0     1.620     0.021     0.034     0.116      6.73%
+ pktd-push (626), 209 events, 34.4%
+   syscall            calls  errors  total       min       avg       max       stddev
+                                     (msec)    (msec)    (msec)    (msec)        (%)
+   --------------- --------  ------ -------- --------- --------- ---------     ------
+   futex                  4      0   196.320     0.005    49.080   108.522     58.31%
+   read                  47      0     6.424     0.079     0.137     0.319      5.31%
+   write                 47      0     1.765     0.019     0.038     0.183      9.57%

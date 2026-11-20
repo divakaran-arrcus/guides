@@ -1,0 +1,21 @@
+// stages.bt — the convergence timeline from pktd's USDT probes, with no help from the program.
+//   bpftrace -c ./00-baseline bt/stages.bt ./00-baseline        ($1 = the lab binary)
+// USDT probes live in the binary, so this traces only that program.
+
+BEGIN { @name[0] = "hold"; @name[1] = "compute"; @name[2] = "rib"; @name[3] = "push"; }
+
+usdt:$1:pktd:event { @t0 = nsecs; printf("T+%8d us  event\n", 0); }
+
+usdt:$1:pktd:stage /arg1 == 1/ {
+  @begin[arg0] = nsecs;
+  printf("T+%8d us  %-8s begin\n", (nsecs - @t0) / 1000, @name[arg0]);
+}
+
+usdt:$1:pktd:stage /arg1 == 0/ {
+  printf("T+%8d us  %-8s end    took %d us\n", (nsecs - @t0) / 1000, @name[arg0],
+         (nsecs - @begin[arg0]) / 1000);
+}
+
+usdt:$1:pktd:converged { printf("T+%8d us  converged\n", (nsecs - @t0) / 1000); exit(); }
+
+END { clear(@name); clear(@begin); delete(@t0); }

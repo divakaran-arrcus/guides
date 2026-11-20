@@ -1,0 +1,69 @@
+# src 04-sched.c 0289673a2bbbc711df9c2675a2f8538dfa0dbbb847e0e0bb45c7f71c4222cd26
+# src pipeline.h 0d0337b467e6ef923b496d2843f0c1077987c03ca3b375545d2dfb84cea8479d
+# src compare.sh 06ab7513734091eb6526160e8900a7dd3cf10526090edb13a0119e1d70f04c25
+# src Makefile 12bfddac2937a6eb9feb0a9cb960010df35ea9053da2a634ebd9954186aab8c8
+# cmd make -s 04-sched && ./compare.sh 04-sched
+pktd route pipeline  lab=04-sched variant=before  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     0.040 ms  hold       begin
+T+    51.187 ms  hold       end
+T+    51.187 ms  compute    begin
+T+   724.295 ms  compute    end
+T+   724.295 ms  rib        begin
+T+   724.362 ms  rib        end
+T+   724.393 ms  push       begin
+T+   726.321 ms  push       end
+
+budget  stage      ms        share
+budget  hold         51.146    7.0%
+budget  compute     673.108   92.7%
+budget  rib           0.066    0.0%
+budget  push          1.929    0.3%
+budget  handoff       0.072    0.0%
+converged_ms=726.321
+
+schedstat  thread       on-cpu ms  runq-wait ms
+schedstat  pktd-spf           9.8         827.4
+schedstat  pktd-push          1.3           0.1
+schedstat  pktd-fib           1.4          18.1
+schedstat  pktd-io0         213.6         796.6
+schedstat  pktd-io1         205.6         804.4
+schedstat  pktd-io2         334.1         666.0
+schedstat  pktd-io3         326.9         672.9
+schedstat  pktd-io4         195.0         787.6
+schedstat  pktd-io5         321.6         660.9
+schedstat  pktd-io6         195.6         786.8
+schedstat  pktd-io7         197.1         785.4
+--- with --fixed:
+pktd route pipeline  lab=04-sched variant=fixed  nodes=1500 routes=24000 changes=64
+T+     0.000 ms  event      link change injected
+T+     0.041 ms  hold       begin
+T+    50.137 ms  hold       end
+T+    50.138 ms  compute    begin
+T+    57.930 ms  compute    end
+T+    57.930 ms  rib        begin
+T+    57.991 ms  rib        end
+T+    58.070 ms  push       begin
+T+    59.484 ms  push       end
+
+budget  stage      ms        share
+budget  hold         50.097   84.2%
+budget  compute       7.792   13.1%
+budget  rib           0.061    0.1%
+budget  push          1.414    2.4%
+budget  handoff       0.120    0.2%
+converged_ms=59.484
+
+schedstat  thread       on-cpu ms  runq-wait ms
+schedstat  pktd-spf           4.8           0.7
+schedstat  pktd-push          0.7           0.2
+schedstat  pktd-fib           1.0           0.2
+schedstat  pktd-io0           0.3           0.8
+schedstat  pktd-io1           0.5           0.1
+schedstat  pktd-io2           0.2           0.5
+schedstat  pktd-io3           0.3           0.2
+schedstat  pktd-io4           0.2           0.2
+schedstat  pktd-io5           0.3           0.4
+schedstat  pktd-io6           0.2           0.7
+schedstat  pktd-io7           0.2           0.8
+speedup=12.2x  (726.3 ms -> 59.5 ms)
